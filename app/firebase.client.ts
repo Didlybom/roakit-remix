@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, inMemoryPersistence, setPersistence } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const app = initializeApp({
     apiKey: 'AIzaSyBTXYXdUDVIO62ZNM4TYxzDBBjq-9tXiUg',
@@ -12,7 +13,10 @@ const app = initializeApp({
 
 const auth = getAuth(app);
 
-// let Remix handle the persistence via session cookies
-setPersistence(auth, inMemoryPersistence);
+// Note: we copy the JWT to our cookie for server-side Remix, so this would work with no persistence here but...
+// ...for the rest such as Firestore client-side access, we use this persistence
+ setPersistence(auth, browserLocalPersistence);
 
-export { auth };
+const firestore = getFirestore(app);
+
+export { auth, firestore };

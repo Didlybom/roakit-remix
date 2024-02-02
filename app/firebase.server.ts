@@ -1,17 +1,18 @@
 import { App, initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
-import { Auth, getAuth } from 'firebase-admin/auth';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 let app: App;
-let auth: Auth;
 
 if (getApps().length === 0) {
   app = initializeApp({
     credential: cert(require('../firebase-service-account.json')),
   });
-  auth = getAuth(app);
 } else {
   app = getApp();
-  auth = getAuth(app);
 }
 
-export { auth };
+const auth = getAuth(app);
+const firestore = getFirestore();
+
+export { auth, firestore };
