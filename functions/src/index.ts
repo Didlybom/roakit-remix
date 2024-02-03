@@ -1,10 +1,6 @@
 /**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ * See https://github.com/penx/remix-google-cloud-functions
+ * See https://firebase.google.com/docs/functions
  */
 
 import { onRequest } from 'firebase-functions/v2/https';
@@ -13,7 +9,7 @@ import { createRequestHandler } from 'remix-google-cloud-functions';
 const remixApp = onRequest(
   createRequestHandler({
     build: require('../build/remix.js'),
-  })
+  }),
 );
 
 module.exports = { remixApp };

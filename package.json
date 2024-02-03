@@ -1,41 +1,46 @@
 {
-  "name": "material-ui-remix-ts",
-  "version": "5.0.0",
+  "name": "roakit-remix",
+  "version": "0.0.1",
   "private": true,
+  "sideEffects": false,
   "scripts": {
     "build": "remix build",
     "dev": "remix dev --manual",
+    "lint": "eslint --ext .js,.ts .",
     "start": "remix-serve ./build/index.js",
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@emotion/cache": "latest",
-    "@emotion/react": "latest",
-    "@emotion/server": "latest",
-    "@emotion/styled": "latest",
-    "@mui/material": "latest",
-    "@mui/icons-material": "latest",
-    "@remix-run/css-bundle": "latest",
-    "@remix-run/node": "latest",
-    "@remix-run/react": "latest",
-    "@remix-run/serve": "latest",
-    "@remix-run/server-runtime": "latest",
+    "@emotion/cache": "^11.11.0",
+    "@emotion/react": "^11.11.3",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.7",
+    "@mui/material": "^5.15.7",
+    "@remix-run/css-bundle": "^2.6.0",
+    "@remix-run/node": "^2.6.0",
+    "@remix-run/react": "^2.6.0",
+    "@remix-run/serve": "^2.6.0",
+    "@remix-run/server-runtime": "^2.6.0",
     "firebase": "^10.7.2",
     "firebase-admin": "^12.0.0",
-    "react": "latest",
-    "react-dom": "latest",
-    "uuid": "latest"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@remix-run/dev": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@types/uuid": "latest",
-    "prettier": "latest",
+    "@remix-run/dev": "^2.6.0",
+    "@types/react": "^18.2.52",
+    "@types/react-dom": "^18.2.18",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-import": "^2.29.1",
+    "prettier": "^3.2.4",
     "typescript": "^5.3.3"
   },
   "engines": {
     "node": "18"
-  },
-  "sideEffects": false
+  }
 }

@@ -51,7 +51,9 @@ export default function Index() {
 
   React.useEffect(() => {
     const fetchFirestore = async () => {
-      let response = stringifyDocuments(await getDocs(collection(firestoreClient, 'olebra_dev1')));
+      const response = stringifyDocuments(
+        await getDocs(collection(firestoreClient, 'olebra_dev1')),
+      );
       setFirestoreData(response);
     };
     fetchFirestore();
