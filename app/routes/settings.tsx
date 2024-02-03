@@ -42,19 +42,19 @@ function CustomTabPanel(props: TabPanelProps) {
 export default function Settings() {
   const [tabValue, setTabValue] = React.useState(0);
 
-  const [jiraName, setJiraName] = React.useState('Webhook for ROAKIT');
-  const [jiraURI, setJiraURI] = React.useState('https://liason.roakit.com/jira');
-  const [jiraScope, setJiraScope] = React.useState('all issues');
-  const [jiraEvents, setJiraEvents] = React.useState('all events');
+  const [jiraName] = React.useState('Webhook for ROAKIT');
+  const [jiraURI] = React.useState('https://liason.roakit.com/jira');
+  const [jiraScope] = React.useState('all issues');
+  const [jiraEvents] = React.useState('all events');
 
-  const [gitHubURI, setGitHubURI] = React.useState('https://liason.roakit.com/github');
+  const [gitHubURI] = React.useState('https://liason.roakit.com/github');
   const [gitHubSecret, setGitHubSecret] = React.useState(uuidv4());
 
-  const [confluenceName, setConfluenceName] = React.useState('Webhook for ROAKIT');
-  const [confluenceURI, setConfluenceURI] = React.useState('https://liason.roakit.com/confluence');
+  const [confluenceName] = React.useState('Webhook for ROAKIT');
+  const [confluenceURI] = React.useState('https://liason.roakit.com/confluence');
   const [confluenceSecret, setConfluenceSecret] = React.useState(uuidv4());
-  const [confluenceEvents, setConfluenceEvents] = React.useState(
-    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed'
+  const [confluenceEvents] = React.useState(
+    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed',
   );
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -85,7 +85,7 @@ export default function Settings() {
                 id="jira-name"
                 sx={{ width: '50ch' }}
                 value={jiraName}
-                onChange={(e) => setJiraName(e.target.value)}
+                disabled
               />
               <IconButton onClick={() => navigator.clipboard.writeText(jiraName)}>
                 <ContentCopyIcon />
@@ -97,7 +97,7 @@ export default function Settings() {
                 id="jira-uri"
                 sx={{ width: '50ch' }}
                 value={jiraURI}
-                onChange={(e) => setJiraURI(e.target.value)}
+                disabled
               />
               <IconButton onClick={() => navigator.clipboard.writeText(jiraURI)}>
                 <ContentCopyIcon />
@@ -109,7 +109,7 @@ export default function Settings() {
                 id="jira-scope"
                 sx={{ width: '50ch' }}
                 value={jiraScope}
-                onChange={(e) => setJiraScope(e.target.value)}
+                disabled
               />
               <IconButton onClick={() => navigator.clipboard.writeText(jiraScope)}>
                 <ContentCopyIcon />
@@ -121,7 +121,7 @@ export default function Settings() {
                 id="jira-events"
                 sx={{ width: '50ch' }}
                 value={jiraEvents}
-                onChange={(e) => setJiraEvents(e.target.value)}
+                disabled
               />
               <IconButton onClick={() => navigator.clipboard.writeText(jiraEvents)}>
                 <ContentCopyIcon />
@@ -139,7 +139,7 @@ export default function Settings() {
                 id="github-uri"
                 sx={{ width: '50ch' }}
                 value={gitHubURI}
-                onChange={(e) => setGitHubURI(e.target.value)}
+                disabled
               />
               <IconButton
                 onClick={() => {
@@ -183,7 +183,7 @@ export default function Settings() {
                 label="Confluence Name"
                 id="confluence-name"
                 value={confluenceName}
-                onChange={(e) => setConfluenceName(e.target.value)}
+                disabled
                 sx={{ width: '50ch' }}
               />
               <IconButton onClick={() => navigator.clipboard.writeText(confluenceName)}>
@@ -195,7 +195,7 @@ export default function Settings() {
                 label="Confluence URL"
                 id="confluence-url"
                 value={confluenceURI}
-                onChange={(e) => setConfluenceURI(e.target.value)}
+                disabled
                 sx={{ width: '50ch' }}
               />
               <IconButton onClick={() => navigator.clipboard.writeText(confluenceURI)}>
@@ -217,7 +217,6 @@ export default function Settings() {
                   ),
                 }}
               />
-
               <IconButton onClick={() => navigator.clipboard.writeText(confluenceSecret)}>
                 <ContentCopyIcon />
               </IconButton>
@@ -227,7 +226,7 @@ export default function Settings() {
                 label="Confluence Events"
                 id="confluence-events"
                 value={confluenceEvents}
-                onChange={(e) => setConfluenceEvents(e.target.value)}
+                disabled
                 sx={{ width: '50ch' }}
               />
               <IconButton onClick={() => navigator.clipboard.writeText(confluenceEvents)}>
