@@ -8,3 +8,4 @@ node_modules
 .firebase
 .DS_Store
 firebase-service-account.json
+firebase-debug.log
