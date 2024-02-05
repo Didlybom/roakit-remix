@@ -2,12 +2,27 @@ import * as React from 'react';
 import { Link as RemixLink } from '@remix-run/react';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Box, IconButton, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Link,
+  List,
+  ListItem,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { v4 as uuidv4 } from 'uuid';
 import { sessionCookie } from '~/cookies.server';
 import { auth as serverAuth } from '~/firebase.server';
+
+import jiraImage from '~/images/jira-webhook.png';
+import githubImage from '~/images/github-webhook.png';
+import confluenceImage from '~/images/confluence-webhook.png';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -127,6 +142,36 @@ export default function Settings() {
                 <ContentCopyIcon />
               </IconButton>
             </Box>
+            <Typography>
+              In your Jira administration console, go to <strong>System WebHooks</strong> in the
+              Advanced section click the "Create a Webhook" button.
+              <List sx={{ listStyleType: 'disc', pl: 2, lineHeight: '80%' }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
+                  <strong>Scope</strong> and <strong>Event</strong> settings as indicated above.
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  To register the new webhook, click "Create".
+                </ListItem>
+              </List>
+              More information on configuring and using Jira webhooks can be found on their website
+              at{' '}
+              <Link
+                target={'_blank'}
+                href="https://developer.atlassian.com/server/jira/platform/webhooks/"
+              >
+                https://developer.atlassian.com/server/jira/platform/webhooks/
+              </Link>
+              .
+            </Typography>
+            <Box sx={{ m: 5 }}>
+              <Stack>
+                <Typography variant={'caption'}>Screenshot: </Typography>
+                <Box sx={{ border: 1, p: 2 }}>
+                  <img src={jiraImage} width="870" height="389" />
+                </Box>
+              </Stack>
+            </Box>
           </Stack>
         </Box>
       </CustomTabPanel>
@@ -172,6 +217,39 @@ export default function Settings() {
                 <ContentCopyIcon />
               </IconButton>
             </Box>
+            <Typography>
+              In your GitHub website, navigate to the <strong>Webhook</strong> page for your
+              organization. You will need to create a new webhook for <strong>Liaison</strong> by
+              clicking the "Add webhook" button in the upper right corner.
+              <List sx={{ listStyleType: 'disc', pl: 2, lineHeight: '80%' }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <strong>Payload URL: </strong> copy the value from the field above
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <strong>Content type :</strong> set this option to <code>application/json</code>{' '}
+                  to deliver to <strong>Liaison</strong> as JSON formatted text
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  <strong>Secret: </strong> a high entropy value shared with{' '}
+                  <strong>Liaison</strong> used to validate webhook deliveries; copy the value from
+                  the field above
+                </ListItem>
+              </List>
+              More information on configuring and using GitHub webhooks can be found on their
+              website at{' '}
+              <Link target={'_blank'} href="https://docs.github.com/en/webhooks/about-webhooks">
+                https://docs.github.com/en/webhooks/about-webhooks
+              </Link>
+              .
+              <Box sx={{ m: 5 }}>
+                <Stack>
+                  <Typography variant={'caption'}>Screenshot: </Typography>
+                  <Box sx={{ border: 1, p: 2 }}>
+                    <img src={githubImage} width="768" height="794" />
+                  </Box>
+                </Stack>
+              </Box>
+            </Typography>
           </Stack>
         </Box>
       </CustomTabPanel>
@@ -233,6 +311,50 @@ export default function Settings() {
                 <ContentCopyIcon />
               </IconButton>
             </Box>
+            <Typography>
+              In your Confluence website, the administrator needs Confluence Administrator or System
+              Administrator permissions to create the webhook using the values indicated above.
+              <List sx={{ listStyleType: 'disc', pl: 2, lineHeight: '80%' }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Add a <strong>Name</strong> for the new webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Enter the <strong>URL</strong> of the <strong>Liaison</strong> service
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Enter the <strong>secret</strong> for the <strong>Liaison</strong> service
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Select <strong>Test connection</strong> to verify your connection
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Choose the Events that should trigger the webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Select <strong>Active</strong> to enable the webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Click <strong>Save</strong>
+                </ListItem>
+              </List>
+              More information on configuring and using Confluence webhooks can be found on their
+              website at{' '}
+              <Link
+                target={'_blank'}
+                href="https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html"
+              >
+                https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html
+              </Link>
+              .
+              <Box sx={{ m: 5 }}>
+                <Stack>
+                  <Typography variant={'caption'}>Screenshot: </Typography>
+                  <Box sx={{ border: 1 }}>
+                    <img src={confluenceImage} width="800" height="604" />
+                  </Box>
+                </Stack>
+              </Box>
+            </Typography>
           </Stack>
         </Box>
       </CustomTabPanel>
