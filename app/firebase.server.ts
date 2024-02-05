@@ -5,11 +5,14 @@ import { getFirestore } from 'firebase-admin/firestore';
 let app: App;
 
 if (getApps().length === 0) {
-  app = initializeApp({
-    // credential: cert(JSON.parse(`${process.env.FIREBASE_SERVICE_ACCOUNT}`)),
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    credential: cert(require('../firebase-service-account.json')),
-  });
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    app = initializeApp({
+      credential: cert(JSON.parse(`${process.env.FIREBASE_SERVICE_ACCOUNT}`)),
+    });
+  } else {
+    // Firebase deploy script goes there when it checks the code, otherwiswe we expect to have env.FIREBASE_SERVICE_ACCOUNT set
+    app = initializeApp();
+  }
 } else {
   app = getApp();
 }
