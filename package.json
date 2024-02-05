@@ -5,6 +5,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "remix build",
+    "deploy": "firebase deploy --only hosting,functions:remixApp",
     "dev": "remix dev --manual",
     "lint": "eslint --ext .js,.ts .",
     "start": "remix-serve ./build/index.js",
