@@ -19,6 +19,7 @@
     "@google-cloud/secret-manager": "^5.0.1",
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.15.7",
+    "@mui/x-data-grid": "^6.19.3",
     "@remix-run/css-bundle": "^2.6.0",
     "@remix-run/node": "^2.6.0",
     "@remix-run/react": "^2.6.0",
@@ -32,14 +33,14 @@
   },
   "devDependencies": {
     "@remix-run/dev": "^2.6.0",
-    "@types/react": "^18.2.52",
+    "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.18",
     "@types/uuid": "^9.0.8",
-    "@typescript-eslint/eslint-plugin": "^6.20.0",
-    "@typescript-eslint/parser": "^6.20.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
-    "prettier": "^3.2.4",
+    "prettier": "^3.2.5",
     "typescript": "^5.3.3"
   },
   "engines": {
