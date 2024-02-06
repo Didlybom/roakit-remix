@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link as RemixLink } from '@remix-run/react';
+import { Link as RemixLink, useLoaderData } from '@remix-run/react';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import {
@@ -8,6 +8,7 @@ import {
   Link,
   List,
   ListItem,
+  Snackbar,
   Stack,
   Tab,
   Tabs,
@@ -23,6 +24,7 @@ import { auth as serverAuth } from '~/firebase.server';
 import jiraImage from '~/images/jira-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import confluenceImage from '~/images/confluence-webhook.png';
+import { createClientId } from '~/utils/client-id.server';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,7 +40,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   try {
     await serverAuth.verifySessionCookie(jwt);
-    return null;
+    return { clientId: createClientId(1000, 1000)}; // FIXME client id
   } catch (e) {
     return redirect('/logout');
   }
@@ -55,22 +57,31 @@ function CustomTabPanel(props: TabPanelProps) {
 }
 
 export default function Settings() {
+  const serverData = useLoaderData<typeof loader>();
+
   const [tabValue, setTabValue] = React.useState(0);
 
   const [jiraName] = React.useState('Webhook for ROAKIT');
-  const [jiraURI] = React.useState('https://liason.roakit.com/jira');
+  const [jiraURI] = React.useState(`https://liaison.roakit.com/jira/${serverData.clientId}`);
   const [jiraScope] = React.useState('all issues');
   const [jiraEvents] = React.useState('all events');
 
-  const [gitHubURI] = React.useState('https://liason.roakit.com/github');
+  const [gitHubURI] = React.useState(`https://liaison.roakit.com/github/${serverData.clientId}`);
   const [gitHubSecret, setGitHubSecret] = React.useState(uuidv4());
 
   const [confluenceName] = React.useState('Webhook for ROAKIT');
-  const [confluenceURI] = React.useState('https://liason.roakit.com/confluence');
+  const [confluenceURI] = React.useState(`https://liaison.roakit.com/confluence/${serverData.clientId}`);
   const [confluenceSecret, setConfluenceSecret] = React.useState(uuidv4());
   const [confluenceEvents] = React.useState(
     'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed',
   );
+
+  const [showCopyConfirmation, setShowCopyConfirmation] = React.useState(false);
+
+  const handleCopyClick = (content: string) => {
+    navigator.clipboard.writeText(content)
+    setShowCopyConfirmation(true);
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -78,6 +89,17 @@ export default function Settings() {
 
   return (
     <React.Fragment>
+      <Snackbar
+        open={showCopyConfirmation}
+        autoHideDuration={3000}
+        onClose={(event: React.SyntheticEvent | Event, reason?: string) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setShowCopyConfirmation(false);
+        }}
+        message="Copied to clipboard!"
+      />
       <Typography variant="h6" component="div" sx={{ mb: 2 }}>
         <Link underline="none" to="/" component={RemixLink}>
           ROAKIT
@@ -96,19 +118,19 @@ export default function Settings() {
           <Stack spacing={4} maxWidth={600}>
             <Stack direction={'row'}>
               <TextField label="JIRA Name" id="jira-name" value={jiraName} fullWidth disabled />
-              <IconButton onClick={() => navigator.clipboard.writeText(jiraName)}>
+              <IconButton onClick={() => handleCopyClick(jiraName)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
             <Stack direction={'row'}>
               <TextField label="JIRA URI" id="jira-uri" value={jiraURI} fullWidth disabled />
-              <IconButton onClick={() => navigator.clipboard.writeText(jiraURI)}>
+              <IconButton onClick={() => handleCopyClick(jiraURI)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
             <Stack direction={'row'}>
               <TextField label="JIRA Scope" id="jira-scope" value={jiraScope} fullWidth disabled />
-              <IconButton onClick={() => navigator.clipboard.writeText(jiraScope)}>
+              <IconButton onClick={() => handleCopyClick(jiraScope)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -120,7 +142,7 @@ export default function Settings() {
                 fullWidth
                 disabled
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(jiraEvents)}>
+              <IconButton onClick={() => handleCopyClick(jiraEvents)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -162,11 +184,7 @@ export default function Settings() {
           <Stack spacing={4} maxWidth={600}>
             <Stack direction={'row'}>
               <TextField label="GitHub URI" id="github-uri" value={gitHubURI} fullWidth disabled />
-              <IconButton
-                onClick={() => {
-                  navigator.clipboard.writeText(gitHubURI);
-                }}
-              >
+              <IconButton onClick={() => handleCopyClick(gitHubURI)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -185,7 +203,7 @@ export default function Settings() {
                   ),
                 }}
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(gitHubSecret)}>
+              <IconButton onClick={() => handleCopyClick(gitHubSecret)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -231,7 +249,7 @@ export default function Settings() {
                 fullWidth
                 disabled
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(confluenceName)}>
+              <IconButton onClick={() => handleCopyClick(confluenceName)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -243,7 +261,7 @@ export default function Settings() {
                 fullWidth
                 disabled
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(confluenceURI)}>
+              <IconButton onClick={() => handleCopyClick(confluenceURI)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -262,7 +280,7 @@ export default function Settings() {
                   ),
                 }}
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(confluenceSecret)}>
+              <IconButton onClick={() => handleCopyClick(confluenceSecret)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -274,7 +292,7 @@ export default function Settings() {
                 fullWidth
                 disabled
               />
-              <IconButton onClick={() => navigator.clipboard.writeText(confluenceEvents)}>
+              <IconButton onClick={() => handleCopyClick(confluenceEvents)}>
                 <ContentCopyIcon />
               </IconButton>
             </Stack>
@@ -315,7 +333,6 @@ export default function Settings() {
             .
             <Stack sx={{ mt: 4 }}>
               <Typography variant={'caption'}>Screenshot: </Typography>
-
               <img
                 src={confluenceImage}
                 width="800"
