@@ -12,13 +12,5 @@
   "tabWidth": 2,
   "trailingComma": "es5",
   "useTabs": false,
-  "printWidth": 100,
-  "overrides": [
-    {
-      "files": ["*.html"],
-      "options": {
-        "tabWidth": 4
-      }
-    }
-  ]
+  "printWidth": 100
 }

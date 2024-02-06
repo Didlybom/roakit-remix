@@ -6,21 +6,24 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:import/errors',
-    'plugin:import/warnings',
-    'plugin:import/typescript',
-    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-type-checked',
+    'plugin:@typescript-eslint/stylistic-type-checked',
+    'plugin:react/recommended',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: ['tsconfig.json', 'tsconfig.dev.json'],
     sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
   },
   ignorePatterns: ['/build/**/*'],
-  plugins: ['@typescript-eslint', 'import'],
+  plugins: ['@typescript-eslint', '@stylistic', 'react'],
   rules: {
     quotes: ['error', 'single'],
-    'import/no-unresolved': 0,
-    indent: ['error', 2, { offsetTernaryExpressions: true }],
+    'react/jsx-uses-react': 'error',
+    'react/jsx-uses-vars': 'error',
+    // '@stylistic/jsx/jsx-indent': ['error', 2],
   },
 };

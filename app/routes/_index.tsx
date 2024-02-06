@@ -1,15 +1,15 @@
-import * as React from 'react';
-import { collection, QuerySnapshot, onSnapshot, query } from 'firebase/firestore';
-import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
-import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import SettingsIcon from '@mui/icons-material/Settings';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
+import { useLoaderData } from '@remix-run/react';
+import { QuerySnapshot, collection, onSnapshot, query } from 'firebase/firestore';
+import * as React from 'react';
 import { sessionCookie } from '~/cookies.server';
-import { auth as serverAuth } from '~/firebase.server';
 import { firestore as firestoreClient } from '~/firebase.client';
+import { auth as serverAuth } from '~/firebase.server';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -17,9 +17,9 @@ export const meta: MetaFunction = () => [
   { name: 'description', content: 'ROAKIT Prototype' },
 ];
 
-type ServerData = {
+interface ServerData {
   isLoggedIn: boolean;
-};
+}
 
 const githubColumns: GridColDef[] = [
   { field: 'id', headerName: 'id', width: 250 },
@@ -27,7 +27,7 @@ const githubColumns: GridColDef[] = [
     field: 'timestamp',
     headerName: 'Date',
     type: 'dateTime',
-    valueGetter: (params) => new Date(params.value),
+    valueGetter: (params) => new Date(params.value as number),
     width: 200,
   },
   { field: 'repositoryName', headerName: 'Repositoy' },
@@ -45,10 +45,10 @@ const githubRows = (snapshot: QuerySnapshot) => {
     const props = docData.properties;
     data.push({
       id: doc.id,
-      timestamp: docData.eventTimestamp,
-      repositoryName: props.repository?.name,
-      author: props.pusher?.name || props.pusher?.email,
-      commit: props.commits[0]?.message,
+      timestamp: docData.eventTimestamp as number,
+      repositoryName: props.repository?.name as string,
+      author: (props.pusher?.name || props.pusher?.email) as string,
+      commit: props.commits[0]?.message as string,
     });
   });
   return data;
@@ -56,7 +56,7 @@ const githubRows = (snapshot: QuerySnapshot) => {
 
 // verify jwt
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<ServerData> => {
-  const jwt = await sessionCookie.parse(request.headers.get('Cookie'));
+  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
   if (!jwt) {
     return { isLoggedIn: false };
   }

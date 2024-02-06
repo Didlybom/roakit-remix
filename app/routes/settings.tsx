@@ -1,7 +1,5 @@
-import * as React from 'react';
-import { Link as RemixLink, useLoaderData } from '@remix-run/react';
-import type { LoaderFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
   IconButton,
@@ -15,15 +13,17 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+import { redirect } from '@remix-run/node';
+import { Link as RemixLink, useLoaderData } from '@remix-run/react';
+import * as React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { sessionCookie } from '~/cookies.server';
 import { auth as serverAuth } from '~/firebase.server';
 
-import jiraImage from '~/images/jira-webhook.png';
-import githubImage from '~/images/github-webhook.png';
 import confluenceImage from '~/images/confluence-webhook.png';
+import githubImage from '~/images/github-webhook.png';
+import jiraImage from '~/images/jira-webhook.png';
 import { createClientId } from '~/utils/client-id.server';
 
 interface TabPanelProps {
@@ -34,13 +34,13 @@ interface TabPanelProps {
 
 // verify jwt
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const jwt = await sessionCookie.parse(request.headers.get('Cookie'));
+  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
   if (!jwt) {
     return redirect('/login');
   }
   try {
     await serverAuth.verifySessionCookie(jwt);
-    return { clientId: createClientId(1000, 1000)}; // FIXME client id
+    return { clientId: createClientId(1000, 1000) }; // FIXME client id
   } catch (e) {
     return redirect('/logout');
   }
@@ -70,16 +70,18 @@ export default function Settings() {
   const [gitHubSecret, setGitHubSecret] = React.useState(uuidv4());
 
   const [confluenceName] = React.useState('Webhook for ROAKIT');
-  const [confluenceURI] = React.useState(`https://liaison.roakit.com/confluence/${serverData.clientId}`);
+  const [confluenceURI] = React.useState(
+    `https://liaison.roakit.com/confluence/${serverData.clientId}`
+  );
   const [confluenceSecret, setConfluenceSecret] = React.useState(uuidv4());
   const [confluenceEvents] = React.useState(
-    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed',
+    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed'
   );
 
   const [showCopyConfirmation, setShowCopyConfirmation] = React.useState(false);
 
   const handleCopyClick = (content: string) => {
-    navigator.clipboard.writeText(content)
+    void navigator.clipboard.writeText(content);
     setShowCopyConfirmation(true);
   };
 
@@ -149,14 +151,14 @@ export default function Settings() {
           </Stack>
           <Typography sx={{ mt: 5 }}>
             In your Jira administration console, go to <strong>System WebHooks</strong> in the
-            Advanced section click the "Create a Webhook" button.
+            Advanced section click the [Create a Webhook] button.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
                 In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
                 <strong>Scope</strong> and <strong>Event</strong> settings as indicated above.
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                To register the new webhook, click "Create".
+                To register the new webhook, click [Create].
               </ListItem>
             </List>
             More information on configuring and using Jira webhooks can be found on their{' '}
@@ -211,7 +213,7 @@ export default function Settings() {
           <Typography sx={{ mt: 5 }}>
             In your GitHub website, navigate to the <strong>Webhook</strong> page for your
             organization. You will need to create a new webhook for <strong>Liaison</strong> by
-            clicking the "Add webhook" button in the upper right corner.
+            clicking the [Add webhook] button in the upper right corner.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
                 <strong>Payload URL: </strong> copy the value from the field above
