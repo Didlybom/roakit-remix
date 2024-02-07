@@ -92,7 +92,7 @@ export default function Index() {
             ROAKIT
           </Typography>
           <Button
-            href="/settings"
+            href="/liaison"
             disabled={!serverData.isLoggedIn}
             variant="contained"
             startIcon={<SettingsIcon />}

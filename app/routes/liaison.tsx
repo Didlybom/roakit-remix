@@ -11,8 +11,10 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Link as RemixLink, useLoaderData } from '@remix-run/react';
@@ -20,7 +22,6 @@ import * as React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { sessionCookie } from '~/cookies.server';
 import { auth as serverAuth } from '~/firebase.server';
-
 import confluenceImage from '~/images/confluence-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
@@ -40,7 +41,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   try {
     await serverAuth.verifySessionCookie(jwt);
-    return { clientId: createClientId(1000, 1000) }; // FIXME client id
+    return { clientId: createClientId(1010, 1010) }; // FIXME client id
   } catch (e) {
     return redirect('/logout');
   }
@@ -66,8 +67,8 @@ export default function Settings() {
   const [jiraScope] = React.useState('all issues');
   const [jiraEvents] = React.useState('all events');
 
-  const [gitHubURI] = React.useState(`https://liaison.roakit.com/github/${serverData.clientId}`);
-  const [gitHubSecret, setGitHubSecret] = React.useState(uuidv4());
+  const [githubURI] = React.useState(`https://liaison.roakit.com/github/${serverData.clientId}`);
+  const [githubSecret, setGithubSecret] = React.useState(uuidv4());
 
   const [confluenceName] = React.useState('Webhook for ROAKIT');
   const [confluenceURI] = React.useState(
@@ -88,6 +89,14 @@ export default function Settings() {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  const copyIcon = (action: () => void) => (
+    <Tooltip title="Copy to clipboard">
+      <IconButton onClick={action}>
+        <ContentCopyIcon />
+      </IconButton>
+    </Tooltip>
+  );
 
   return (
     <React.Fragment>
@@ -117,37 +126,43 @@ export default function Settings() {
       </Box>
       <CustomTabPanel value={tabValue} index={0}>
         <Box component="form" noValidate autoComplete="off">
-          <Stack spacing={4} maxWidth={600}>
-            <Stack direction={'row'}>
-              <TextField label="JIRA Name" id="jira-name" value={jiraName} fullWidth disabled />
-              <IconButton onClick={() => handleCopyClick(jiraName)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField label="JIRA URI" id="jira-uri" value={jiraURI} fullWidth disabled />
-              <IconButton onClick={() => handleCopyClick(jiraURI)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField label="JIRA Scope" id="jira-scope" value={jiraScope} fullWidth disabled />
-              <IconButton onClick={() => handleCopyClick(jiraScope)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField
-                label="JIRA Events"
-                id="jira-events"
-                value={jiraEvents}
-                fullWidth
-                disabled
-              />
-              <IconButton onClick={() => handleCopyClick(jiraEvents)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
+          <Stack spacing={3} maxWidth={600}>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField label="JIRA Name" id="jira-name" value={jiraName} fullWidth disabled />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraName))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField label="JIRA URI" id="jira-uri" value={jiraURI} fullWidth disabled />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraURI))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="JIRA Scope"
+                  id="jira-scope"
+                  value={jiraScope}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraScope))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="JIRA Events"
+                  id="jira-events"
+                  value={jiraEvents}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraEvents))}</Grid>
+            </Grid>
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
             In your Jira administration console, go to <strong>System WebHooks</strong> in the
@@ -183,32 +198,38 @@ export default function Settings() {
       </CustomTabPanel>
       <CustomTabPanel value={tabValue} index={1}>
         <Box component="form" noValidate autoComplete="off">
-          <Stack spacing={4} maxWidth={600}>
-            <Stack direction={'row'}>
-              <TextField label="GitHub URI" id="github-uri" value={gitHubURI} fullWidth disabled />
-              <IconButton onClick={() => handleCopyClick(gitHubURI)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField
-                label="GitHub Secret"
-                id="github-secret"
-                value={gitHubSecret}
-                onChange={(e) => setGitHubSecret(e.target.value)}
-                fullWidth
-                InputProps={{
-                  endAdornment: (
-                    <IconButton onClick={() => setGitHubSecret(uuidv4())}>
-                      <RefreshIcon />
-                    </IconButton>
-                  ),
-                }}
-              />
-              <IconButton onClick={() => handleCopyClick(gitHubSecret)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
+          <Stack spacing={3} maxWidth={600}>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="GitHub URI"
+                  id="github-uri"
+                  value={githubURI}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubURI))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="GitHub Secret"
+                  id="github-secret"
+                  value={githubSecret}
+                  onChange={(e) => setGithubSecret(e.target.value)}
+                  fullWidth
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton onClick={() => setGithubSecret(uuidv4())}>
+                        <RefreshIcon />
+                      </IconButton>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubSecret))}</Grid>
+            </Grid>
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
             In your GitHub website, navigate to the <strong>Webhook</strong> page for your
@@ -234,7 +255,6 @@ export default function Settings() {
             .
             <Stack sx={{ mt: 4 }}>
               <Typography variant={'caption'}>Screenshot: </Typography>
-
               <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
             </Stack>
           </Typography>
@@ -242,62 +262,62 @@ export default function Settings() {
       </CustomTabPanel>
       <CustomTabPanel value={tabValue} index={2}>
         <Box component="form" noValidate autoComplete="off">
-          <Stack spacing={4} maxWidth={600}>
-            <Stack direction={'row'}>
-              <TextField
-                label="Confluence Name"
-                id="confluence-name"
-                value={confluenceName}
-                fullWidth
-                disabled
-              />
-              <IconButton onClick={() => handleCopyClick(confluenceName)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField
-                label="Confluence URL"
-                id="confluence-url"
-                value={confluenceURI}
-                fullWidth
-                disabled
-              />
-              <IconButton onClick={() => handleCopyClick(confluenceURI)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField
-                label="Confluence Secret"
-                id="confluence-secret"
-                value={confluenceSecret}
-                onChange={(e) => setConfluenceSecret(e.target.value)}
-                fullWidth
-                InputProps={{
-                  endAdornment: (
-                    <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
-                      <RefreshIcon />
-                    </IconButton>
-                  ),
-                }}
-              />
-              <IconButton onClick={() => handleCopyClick(confluenceSecret)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
-            <Stack direction={'row'}>
-              <TextField
-                label="Confluence Events"
-                id="confluence-events"
-                value={confluenceEvents}
-                fullWidth
-                disabled
-              />
-              <IconButton onClick={() => handleCopyClick(confluenceEvents)}>
-                <ContentCopyIcon />
-              </IconButton>
-            </Stack>
+          <Stack spacing={3} maxWidth={600}>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="Confluence Name"
+                  id="confluence-name"
+                  value={confluenceName}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceName))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="Confluence URL"
+                  id="confluence-url"
+                  value={confluenceURI}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceURI))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="Confluence Secret"
+                  id="confluence-secret"
+                  value={confluenceSecret}
+                  onChange={(e) => setConfluenceSecret(e.target.value)}
+                  fullWidth
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                        <RefreshIcon />
+                      </IconButton>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceSecret))}</Grid>
+            </Grid>
+            <Grid container spacing={1}>
+              <Grid xs={11}>
+                <TextField
+                  label="Confluence Events"
+                  id="confluence-events"
+                  value={confluenceEvents}
+                  fullWidth
+                  disabled
+                />
+              </Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceEvents))}</Grid>
+            </Grid>
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
             In your Confluence website, the administrator needs Confluence Administrator or System

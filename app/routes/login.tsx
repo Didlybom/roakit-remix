@@ -1,13 +1,13 @@
-import * as React from 'react';
-import { Link as RemixLink, useFetcher } from '@remix-run/react';
-import { redirect } from '@remix-run/node';
-import type { ActionFunctionArgs } from '@remix-run/node';
-import Typography from '@mui/material/Typography';
 import { Box, Button, Link, Stack, TextField } from '@mui/material';
+import Typography from '@mui/material/Typography';
+import type { ActionFunctionArgs } from '@remix-run/node';
+import { redirect } from '@remix-run/node';
+import { Link as RemixLink, useFetcher } from '@remix-run/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import * as React from 'react';
+import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
 import { auth as serverAuth } from '~/firebase.server';
-import { sessionCookie } from '~/cookies.server';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
@@ -34,7 +34,7 @@ export default function Login() {
   const fetcher = useFetcher();
   const [errorMessage, setErrorMessage] = React.useState('');
 
-  async function handleSubmit(e: React.SyntheticEvent) {
+  async function handleSubmit(e: React.SyntheticEvent): Promise<void> {
     e.preventDefault();
     const target = e.target as typeof e.target & {
       email: { value: string };
