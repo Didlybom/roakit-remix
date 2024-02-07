@@ -8,16 +8,17 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { createRequestHandler } from 'remix-google-cloud-functions';
 
 const firebaseServiceAccount = defineSecret('FIREBASE_SERVICE_ACCOUNT');
+const liaisonServiceSecret = defineSecret('LIAISON_SERVICE_SECRET');
 
 const remixApp = onRequest(
   {
     memory: '512MiB',
     region: 'us-west1',
-    secrets: [firebaseServiceAccount],
+    secrets: [firebaseServiceAccount, liaisonServiceSecret],
   },
   createRequestHandler({
     build: require('../build/remix.js'),
-  }),
+  })
 );
 
 module.exports = { remixApp };

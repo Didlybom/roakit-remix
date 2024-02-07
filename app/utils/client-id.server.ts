@@ -17,8 +17,9 @@ export function createClientId(customerId: number, feedId: number): string {
 
   const buffer: Buffer = Buffer.from(payload.serializeBinary());
   // Generate `Checksum` field and inject it into our `payload`.
+
   payload.checksum = crypto
-    .createHmac(ALGORITHM, 'gQrYw8b7iMJY45TJBKTO32sKqaxrzAeuqitBPc2g') // FIXME key
+    .createHmac(ALGORITHM, process.env.LIAISON_SERVICE_SECRET!)
     .update(buffer)
     .digest(HEX_ENCODING)
     .substring(0, CHECKSUM_LENGTH);
