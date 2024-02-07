@@ -30,9 +30,9 @@ const githubColumns: GridColDef[] = [
     valueGetter: (params) => new Date(params.value as number),
     width: 200,
   },
-  { field: 'repositoryName', headerName: 'Repositoy' },
-  { field: 'author', headerName: 'Author' },
-  { field: 'commit', headerName: 'Activity', width: '100%' },
+  { field: 'repositoryName', headerName: 'Repositoy', width: 100 },
+  { field: 'author', headerName: 'Author', width: 100 },
+  { field: 'commit', headerName: 'Activity', minWidth: 300, flex: 1 },
 ];
 
 const githubRows = (snapshot: QuerySnapshot) => {
@@ -120,6 +120,8 @@ export default function Index() {
             <DataGrid
               columns={githubColumns}
               rows={githubData}
+              density="compact"
+              disableRowSelectionOnClick={true}
               initialState={{
                 sorting: {
                   sortModel: [{ field: 'timestamp', sort: 'desc' }],

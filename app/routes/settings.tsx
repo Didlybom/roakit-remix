@@ -102,7 +102,7 @@ export default function Settings() {
         }}
         message="Copied to clipboard!"
       />
-      <Typography variant="h6" component="div" sx={{ mb: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2 }}>
         <Link underline="none" to="/" component={RemixLink}>
           ROAKIT
         </Link>{' '}
@@ -149,7 +149,7 @@ export default function Settings() {
               </IconButton>
             </Stack>
           </Stack>
-          <Typography sx={{ mt: 5 }}>
+          <Typography component="div" sx={{ mt: 5 }}>
             In your Jira administration console, go to <strong>System WebHooks</strong> in the
             Advanced section click the [Create a Webhook] button.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
@@ -210,7 +210,7 @@ export default function Settings() {
               </IconButton>
             </Stack>
           </Stack>
-          <Typography sx={{ mt: 5 }}>
+          <Typography component="div" sx={{ mt: 5 }}>
             In your GitHub website, navigate to the <strong>Webhook</strong> page for your
             organization. You will need to create a new webhook for <strong>Liaison</strong> by
             clicking the [Add webhook] button in the upper right corner.
@@ -299,7 +299,7 @@ export default function Settings() {
               </IconButton>
             </Stack>
           </Stack>
-          <Typography sx={{ mt: 5 }}>
+          <Typography component="div" sx={{ mt: 5 }}>
             In your Confluence website, the administrator needs Confluence Administrator or System
             Administrator permissions to create the webhook using the values indicated above.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
