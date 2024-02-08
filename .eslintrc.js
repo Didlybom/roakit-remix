@@ -24,6 +24,13 @@ module.exports = {
     quotes: ['error', 'single'],
     'react/jsx-uses-react': 'error',
     'react/jsx-uses-vars': 'error',
-    // '@stylistic/jsx/jsx-indent': ['error', 2],
+    '@typescript-eslint/no-misused-promises': [
+      2,
+      {
+        checksVoidReturn: {
+          attributes: false,
+        },
+      },
+    ],
   },
 };

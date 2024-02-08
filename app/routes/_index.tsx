@@ -1,12 +1,13 @@
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
+import { PrefetchPageLinks, useLoaderData } from '@remix-run/react';
 import { QuerySnapshot, collection, onSnapshot, query } from 'firebase/firestore';
 import * as React from 'react';
+import { z } from 'zod';
 import { sessionCookie } from '~/cookies.server';
 import { firestore as firestoreClient } from '~/firebase.client';
 import { auth as serverAuth } from '~/firebase.server';
@@ -35,20 +36,37 @@ const githubColumns: GridColDef[] = [
   { field: 'commit', headerName: 'Activity', minWidth: 300, flex: 1 },
 ];
 
-const githubRows = (snapshot: QuerySnapshot) => {
-  const data = [];
+interface GitHubRow {
+  id: string;
+  timestamp: number;
+  repositoryName?: string;
+  author?: string;
+  commit?: string;
+}
+
+const gitHubEventSchema = z.object({
+  repository: z.object({ name: z.string() }).optional(),
+  pusher: z.object({ name: z.string(), email: z.string() }).optional(),
+  commits: z.object({ message: z.string() }).array().optional(),
+});
+
+const githubRows = (snapshot: QuerySnapshot): GitHubRow[] => {
+  const data: GitHubRow[] = [];
   snapshot.forEach((doc) => {
     if (!doc.id.startsWith('github:') || !doc.id.includes(':push:')) {
       return [];
     }
     const docData = doc.data();
-    const props = docData.properties;
+    const props = gitHubEventSchema.safeParse(docData.properties);
+    if (!props.success) {
+      throw Error('Failed to parse GitHub events. ' + props.error.message);
+    }
     data.push({
       id: doc.id,
       timestamp: docData.eventTimestamp as number,
-      repositoryName: props.repository?.name as string,
-      author: (props.pusher?.name || props.pusher?.email) as string,
-      commit: props.commits[0]?.message as string,
+      repositoryName: props.data.repository?.name,
+      author: props.data.pusher?.name ?? props.data.pusher?.email,
+      commit: props.data.commits ? props.data.commits[0]?.message : undefined,
     });
   });
   return data;
@@ -71,13 +89,19 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<ServerDat
 // https://remix.run/docs/en/main/file-conventions/routes#basic-routes
 export default function Index() {
   const serverData = useLoaderData<typeof loader>();
-  const [githubData, setGithubData] = React.useState<any[]>([]);
+  const [githubData, setGithubData] = React.useState<GitHubRow[]>([]);
+  const [gitHubError, setGitHubError] = React.useState('');
 
   // Firestore listener
   React.useEffect(() => {
     const q = query(collection(firestoreClient, 'events'));
     const unsuscribe = onSnapshot(q, (querySnapshot) => {
-      setGithubData(githubRows(querySnapshot));
+      try {
+        setGithubData(githubRows(querySnapshot));
+        setGitHubError('');
+      } catch (e: unknown) {
+        setGitHubError(e instanceof Error ? e.message : 'Error pasrsing GitHub events');
+      }
     });
     return () => {
       unsuscribe();
@@ -86,6 +110,7 @@ export default function Index() {
 
   return (
     <React.Fragment>
+      <PrefetchPageLinks page="/link" />
       <Box sx={{ flexGrow: 1 }}>
         <Stack direction="row" spacing={2}>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -129,6 +154,7 @@ export default function Index() {
               }}
             ></DataGrid>
           : <LinearProgress sx={{ mt: 5 }} />}
+          {gitHubError && <Alert severity="error">{gitHubError}</Alert>}
         </Stack>
       )}
       <Typography variant="h6" sx={{ mt: 5, mb: 5 }}>

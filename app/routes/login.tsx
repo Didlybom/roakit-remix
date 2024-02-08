@@ -2,7 +2,7 @@ import { Box, Button, Link, Stack, TextField } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Link as RemixLink, useFetcher } from '@remix-run/react';
+import { Form, Link as RemixLink, useFetcher } from '@remix-run/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import * as React from 'react';
 import { sessionCookie } from '~/cookies.server';
@@ -34,13 +34,13 @@ export default function Login() {
   const fetcher = useFetcher();
   const [errorMessage, setErrorMessage] = React.useState('');
 
-  async function handleSubmit(e: React.SyntheticEvent): Promise<void> {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
+
     const target = e.target as typeof e.target & {
       email: { value: string };
       password: { value: string };
     };
-
     const email = target.email.value;
     const password = target.password.value;
 
@@ -48,11 +48,11 @@ export default function Login() {
       const credential = await signInWithEmailAndPassword(clientAuth, email, password);
       const idToken = await credential.user.getIdToken();
 
-      // trigger a POST request which the action will handle
+      // trigger a POST request which the server action will handle
       fetcher.submit({ idToken }, { method: 'post', action: '/login' });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
-      setErrorMessage(e.message ?? 'Error signing in');
+      setErrorMessage(e instanceof Error ? e.message : 'Error signing in');
     }
   }
 
@@ -64,29 +64,31 @@ export default function Login() {
         </Link>{' '}
         Login
       </Typography>
-      <Box component="form" autoComplete="on" onSubmit={handleSubmit}>
-        <Stack spacing={4}>
-          <TextField label="Email" id="email" type="email" sx={{ width: '50ch' }} />
-          <TextField
-            label="Password"
-            id="password"
-            type="password"
-            sx={{ width: '50ch' }}
-            error={!!errorMessage}
-            helperText={errorMessage}
-            onChange={() => setErrorMessage('')}
-          />
-          <Button variant="contained" type="submit" sx={{ width: '30ch' }}>
-            Login
-          </Button>
-          <Typography variant="caption">
-            Use u@d.com / testing (defined in Firebase here:{' '}
-            <Link href="https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users">
-              https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users
-            </Link>
-            )
-          </Typography>
-        </Stack>
+      <Box display="flex" justifyContent="center">
+        <Form method="post" onSubmit={handleSubmit} autoComplete="on">
+          <Stack spacing={4} sx={{ maxWidth: 300 }}>
+            <TextField label="Email" id="email" type="email" fullWidth />
+            <TextField
+              label="Password"
+              id="password"
+              type="password"
+              fullWidth
+              error={!!errorMessage}
+              helperText={errorMessage}
+              onChange={() => setErrorMessage('')}
+            />
+            <Button variant="contained" type="submit">
+              Login
+            </Button>
+            <Typography variant="caption">
+              Use u@d.com / testing (defined in Firebase here:{' '}
+              <Link href="https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users">
+                https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users
+              </Link>
+              )
+            </Typography>
+          </Stack>
+        </Form>
       </Box>
     </React.Fragment>
   );
