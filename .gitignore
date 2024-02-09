@@ -4,7 +4,9 @@ node_modules
 /build
 /public/build
 /functions/build
-.env*
+.env
+.env.dev
+.env.prod
 .firebase
 .DS_Store
 firebase-debug.log

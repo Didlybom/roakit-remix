@@ -1,5 +1,5 @@
 {
-  "name": "roakit-remix",
+  "name": "@roakit/remix-app",
   "version": "0.0.1",
   "private": true,
   "sideEffects": false,
