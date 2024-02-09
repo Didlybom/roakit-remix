@@ -5,11 +5,14 @@
   "sideEffects": false,
   "scripts": {
     "build": "remix build",
-    "deploy": "firebase deploy --only hosting,functions:remixApp",
+    "build.prod": "cross-env ROAKIT_ENV=production remix build",
     "dev": "remix dev --manual",
-    "lint": "eslint --ext .js,.ts .",
-    "start": "remix-serve ./build/index.js",
-    "typecheck": "tsc"
+    "dev.prod": "cross-env ROAKIT_ENV=production remix dev --manual",
+    "deploy": "npm run build && firebase use default; firebase deploy --only hosting,functions:remixApp",
+    "deploy.prod": "npm run build && firebase use prod; firebase deploy --only hosting,functions:remixApp",
+    "start": "remix-serve ./functions/build/index.js",
+    "typecheck": "tsc",
+    "lint": "eslint --ext .js,.ts ."
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
@@ -25,6 +28,7 @@
     "@remix-run/react": "^2.6.0",
     "@remix-run/serve": "^2.6.0",
     "@remix-run/server-runtime": "^2.6.0",
+    "config": "^3.3.11",
     "firebase": "^10.8.0",
     "firebase-admin": "^12.0.0",
     "google-protobuf": "^3.21.2",
@@ -36,13 +40,16 @@
   "devDependencies": {
     "@remix-run/dev": "^2.6.0",
     "@stylistic/eslint-plugin": "^1.6.0",
+    "@types/config": "^3.3.3",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.2.5",
     "typescript": "^5.3.3"
   },

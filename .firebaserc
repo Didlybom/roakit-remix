@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "eternal-impulse-412418"
+    "default": "eternal-impulse-412418",
+    "prod": "roakit-production"
   }
 }

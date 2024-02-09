@@ -9,6 +9,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-type-checked',
     'plugin:@typescript-eslint/stylistic-type-checked',
     'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -21,7 +22,7 @@ module.exports = {
   ignorePatterns: ['/build/**/*'],
   plugins: ['@typescript-eslint', '@stylistic', 'react'],
   rules: {
-    quotes: ['error', 'single'],
+    // quotes: ['error', 'single'],
     'react/jsx-uses-react': 'error',
     'react/jsx-uses-vars': 'error',
     '@typescript-eslint/no-misused-promises': [

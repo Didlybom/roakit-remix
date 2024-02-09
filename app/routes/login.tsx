@@ -2,7 +2,7 @@ import { Box, Button, Link, Stack, TextField } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, Link as RemixLink, useFetcher } from '@remix-run/react';
+import { Form, Link as RemixLink, useFetcher, useLoaderData } from '@remix-run/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import * as React from 'react';
 import { sessionCookie } from '~/cookies.server';
@@ -30,8 +30,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 };
 
+export const loader = () => {
+  return {
+    isProd: process.env.ROAKIT_ENV === 'production',
+  };
+};
+
 export default function Login() {
   const fetcher = useFetcher();
+  const serverData = useLoaderData<typeof loader>();
+
   const [errorMessage, setErrorMessage] = React.useState('');
 
   async function handleSubmit(e: React.SyntheticEvent) {
@@ -81,11 +89,8 @@ export default function Login() {
               Login
             </Button>
             <Typography variant="caption">
-              Use u@d.com / testing (defined in Firebase here:{' '}
-              <Link href="https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users">
-                https://console.firebase.google.com/project/eternal-impulse-412418/authentication/users
-              </Link>
-              )
+              Use {serverData.isProd ? 'prod@u.com' : 'u@d.com'}/ testing (defined in Firebase
+              Authentication module)
             </Typography>
           </Stack>
         </Form>

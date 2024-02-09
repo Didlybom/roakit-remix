@@ -95,14 +95,18 @@ export default function Index() {
   // Firestore listener
   React.useEffect(() => {
     const q = query(collection(firestoreClient, 'events'));
-    const unsuscribe = onSnapshot(q, (querySnapshot) => {
-      try {
-        setGithubData(githubRows(querySnapshot));
-        setGitHubError('');
-      } catch (e: unknown) {
-        setGitHubError(e instanceof Error ? e.message : 'Error pasrsing GitHub events');
-      }
-    });
+    const unsuscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        try {
+          setGithubData(githubRows(querySnapshot));
+          setGitHubError('');
+        } catch (e: unknown) {
+          setGitHubError(e instanceof Error ? e.message : 'Error parsing GitHub events');
+        }
+      },
+      (error) => setGitHubError(error.message)
+    );
     return () => {
       unsuscribe();
     };
@@ -110,7 +114,7 @@ export default function Index() {
 
   return (
     <React.Fragment>
-      <PrefetchPageLinks page="/link" />
+      <PrefetchPageLinks page="/liaison" />
       <Box sx={{ flexGrow: 1 }}>
         <Stack direction="row" spacing={2}>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>

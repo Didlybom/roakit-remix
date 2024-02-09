@@ -1,4 +1,5 @@
-import * as React from 'react';
+import { withEmotionCache } from '@emotion/react';
+import { unstable_useEnhancedEffect as useEnhancedEffect } from '@mui/material';
 import {
   Links,
   LiveReload,
@@ -6,18 +7,24 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useRouteError,
   isRouteErrorResponse,
+  useLoaderData,
+  useRouteError,
 } from '@remix-run/react';
-import { withEmotionCache } from '@emotion/react';
-import { unstable_useEnhancedEffect as useEnhancedEffect } from '@mui/material';
-import theme from './src/theme';
+import * as React from 'react';
+import clientConfig, { ClientEnv } from './client-env/client-env.server';
 import ClientStyleContext from './src/ClientStyleContext';
 import Layout from './src/Layout';
+import theme from './src/theme';
 
 interface DocumentProps {
   children: React.ReactNode;
   title?: string;
+}
+
+// Set up client config
+export function loader(): ClientEnv {
+  return clientConfig;
 }
 
 const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCache) => {
@@ -31,7 +38,7 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
     const tags = emotionCache.sheet.tags;
     emotionCache.sheet.flush();
     tags.forEach((tag) => {
-      // eslint-disable-next-line no-underscore-dangle
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (emotionCache.sheet as any)._insertTag(tag);
     });
     // reset cache to reapply global styles
@@ -45,7 +52,9 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="theme-color" content={theme.palette.primary.main} />
-        {title ? <title>{title}</title> : null}
+        {title ?
+          <title>{title}</title>
+        : null}
         <Meta />
         <Links />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -69,8 +78,15 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
 // https://remix.run/docs/en/main/route/component
 // https://remix.run/docs/en/main/file-conventions/routes
 export default function App() {
+  const clientEnv = useLoaderData<typeof loader>();
   return (
     <Document>
+      <script
+        // see https://remix.run/docs/en/1.19.3/guides/envvars#browser-environment-variables
+        dangerouslySetInnerHTML={{
+          __html: `window.ROAKIT_ENV = ${JSON.stringify(clientEnv)}`,
+        }}
+      />
       <Layout>
         <Outlet />
       </Layout>
@@ -93,7 +109,7 @@ export function ErrorBoundary() {
         break;
 
       default:
-        throw new Error(error.data || error.statusText);
+        throw new Error((error.data as string) || error.statusText);
     }
 
     return (
@@ -116,8 +132,6 @@ export function ErrorBoundary() {
           <div>
             <h1>There was an error</h1>
             <p>{error.message}</p>
-            <hr />
-            <p>An error occurred.</p>
           </div>
         </Layout>
       </Document>
