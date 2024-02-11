@@ -1,7 +1,7 @@
 # Cloud function to serve the Remix web app
 
-The Remix app in the parent directory builds in this `functions/build` directory. This function is
-an adapter to run the app. See
+The Remix app in the parent directory is [configured](../remix.config.js) to build in this
+`functions/build` directory. This function is an adapter to run the app. See
 [remix-google-cloud-functions](https://remix.run/docs/en/main/other-api/adapter#community-adapters).
 
 ## Environment configuration

@@ -4,12 +4,18 @@ module.exports = {
     es6: true,
     node: true,
   },
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended-type-checked',
     'plugin:@typescript-eslint/stylistic-type-checked',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:react/jsx-runtime',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -20,11 +26,8 @@ module.exports = {
     },
   },
   ignorePatterns: ['/build/**/*'],
-  plugins: ['@typescript-eslint', '@stylistic', 'react'],
+  plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks'],
   rules: {
-    // quotes: ['error', 'single'],
-    'react/jsx-uses-react': 'error',
-    'react/jsx-uses-vars': 'error',
     '@typescript-eslint/no-misused-promises': [
       2,
       {

@@ -18,7 +18,7 @@ import Grid from '@mui/material/Unstable_Grid2';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Link as RemixLink, useLoaderData } from '@remix-run/react';
-import * as React from 'react';
+import { Fragment, ReactNode, SyntheticEvent, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { sessionCookie } from '~/cookies.server';
 import { auth as serverAuth } from '~/firebase.server';
@@ -28,7 +28,7 @@ import jiraImage from '~/images/jira-webhook.png';
 import { createClientId } from '~/utils/client-id.server';
 
 interface TabPanelProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
   index: number;
   value: number;
 }
@@ -60,33 +60,30 @@ function CustomTabPanel(props: TabPanelProps) {
 export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
 
-  const [tabValue, setTabValue] = React.useState(0);
+  const [tabValue, setTabValue] = useState(0);
 
-  const [jiraName] = React.useState('Webhook for ROAKIT');
-  const [jiraURI] = React.useState(`https://liaison.roakit.com/jira/${serverData.clientId}`);
-  const [jiraScope] = React.useState('all issues');
-  const [jiraEvents] = React.useState('all events');
+  const jiraName = 'Webhook for ROAKIT';
+  const jiraURI = `https://liaison.roakit.com/jira/${serverData.clientId}`;
+  const jiraScope = 'all issues';
+  const jiraEvents = 'all events';
 
-  const [githubURI] = React.useState(`https://liaison.roakit.com/github/${serverData.clientId}`);
-  const [githubSecret, setGithubSecret] = React.useState(uuidv4());
+  const githubURI = `https://liaison.roakit.com/github/${serverData.clientId}`;
+  const [githubSecret, setGithubSecret] = useState(uuidv4());
 
-  const [confluenceName] = React.useState('Webhook for ROAKIT');
-  const [confluenceURI] = React.useState(
-    `https://liaison.roakit.com/confluence/${serverData.clientId}`
-  );
-  const [confluenceSecret, setConfluenceSecret] = React.useState(uuidv4());
-  const [confluenceEvents] = React.useState(
-    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed'
-  );
+  const confluenceName = 'Webhook for ROAKIT';
+  const confluenceURI = `https://liaison.roakit.com/confluence/${serverData.clientId}`;
+  const [confluenceSecret, setConfluenceSecret] = useState(uuidv4());
+  const confluenceEvents =
+    'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed';
 
-  const [showCopyConfirmation, setShowCopyConfirmation] = React.useState(false);
+  const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
 
   const handleCopyClick = (content: string) => {
     void navigator.clipboard.writeText(content);
     setShowCopyConfirmation(true);
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -99,17 +96,17 @@ export default function Settings() {
   );
 
   return (
-    <React.Fragment>
+    <Fragment>
       <Snackbar
         open={showCopyConfirmation}
         autoHideDuration={3000}
-        onClose={(event: React.SyntheticEvent | Event, reason?: string) => {
+        onClose={(event: SyntheticEvent | Event, reason?: string) => {
           if (reason === 'clickaway') {
             return;
           }
           setShowCopyConfirmation(false);
         }}
-        message="Copied to clipboard!"
+        message="Copied"
       />
       <Typography variant="h6" sx={{ mb: 2 }}>
         <Link underline="none" to="/" component={RemixLink}>
@@ -365,6 +362,6 @@ export default function Settings() {
           </Typography>
         </Box>
       </CustomTabPanel>
-    </React.Fragment>
+    </Fragment>
   );
 }

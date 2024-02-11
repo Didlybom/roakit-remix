@@ -6,7 +6,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { PrefetchPageLinks, useLoaderData } from '@remix-run/react';
 import { QuerySnapshot, collection, onSnapshot, query } from 'firebase/firestore';
-import * as React from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { z } from 'zod';
 import { sessionCookie } from '~/cookies.server';
 import { firestore as firestoreClient } from '~/firebase.client';
@@ -89,11 +89,11 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<ServerDat
 // https://remix.run/docs/en/main/file-conventions/routes#basic-routes
 export default function Index() {
   const serverData = useLoaderData<typeof loader>();
-  const [githubData, setGithubData] = React.useState<GitHubRow[]>([]);
-  const [gitHubError, setGitHubError] = React.useState('');
+  const [githubData, setGithubData] = useState<GitHubRow[]>([]);
+  const [gitHubError, setGitHubError] = useState('');
 
   // Firestore listener
-  React.useEffect(() => {
+  useEffect(() => {
     const q = query(collection(firestoreClient, 'events'));
     const unsuscribe = onSnapshot(
       q,
@@ -113,7 +113,7 @@ export default function Index() {
   }, []);
 
   return (
-    <React.Fragment>
+    <Fragment>
       <PrefetchPageLinks page="/liaison" />
       <Box sx={{ flexGrow: 1 }}>
         <Stack direction="row" spacing={2}>
@@ -164,6 +164,6 @@ export default function Index() {
       <Typography variant="h6" sx={{ mt: 5, mb: 5 }}>
         Under construction...
       </Typography>
-    </React.Fragment>
+    </Fragment>
   );
 }

@@ -11,14 +11,14 @@ import {
   useLoaderData,
   useRouteError,
 } from '@remix-run/react';
-import * as React from 'react';
+import { ReactNode, useContext } from 'react';
 import clientConfig, { ClientEnv } from './client-env/client-env.server';
 import ClientStyleContext from './src/ClientStyleContext';
 import Layout from './src/Layout';
 import theme from './src/theme';
 
 interface DocumentProps {
-  children: React.ReactNode;
+  children: ReactNode;
   title?: string;
 }
 
@@ -28,7 +28,7 @@ export function loader(): ClientEnv {
 }
 
 const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCache) => {
-  const clientStyleData = React.useContext(ClientStyleContext);
+  const clientStyleData = useContext(ClientStyleContext);
 
   // Only executed on client
   useEnhancedEffect(() => {

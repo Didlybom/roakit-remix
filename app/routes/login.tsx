@@ -4,7 +4,7 @@ import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, Link as RemixLink, useFetcher, useLoaderData } from '@remix-run/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import * as React from 'react';
+import { Fragment, SyntheticEvent, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
 import { auth as serverAuth } from '~/firebase.server';
@@ -40,9 +40,9 @@ export default function Login() {
   const fetcher = useFetcher();
   const serverData = useLoaderData<typeof loader>();
 
-  const [errorMessage, setErrorMessage] = React.useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  async function handleSubmit(e: React.SyntheticEvent) {
+  async function handleSubmit(e: SyntheticEvent) {
     e.preventDefault();
 
     const target = e.target as typeof e.target & {
@@ -65,7 +65,7 @@ export default function Login() {
   }
 
   return (
-    <React.Fragment>
+    <Fragment>
       <Typography variant="h6" component="div" sx={{ mb: 6 }}>
         <Link underline="none" to="/" component={RemixLink}>
           ROAKIT
@@ -95,6 +95,6 @@ export default function Login() {
           </Stack>
         </Form>
       </Box>
-    </React.Fragment>
+    </Fragment>
   );
 }
