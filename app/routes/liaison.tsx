@@ -1,6 +1,7 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
+  Alert,
   Box,
   IconButton,
   Link,
@@ -64,24 +65,24 @@ export default function Settings() {
   const [tabValue, setTabValue] = useState(0);
 
   const jiraName = 'Webhook for ROAKIT';
-  const jiraURI = `https://liaison.roakit.com/jira/${serverData.clientId}`;
+  const jiraURL = `https://liaison.roakit.com/jira/${serverData.clientId}`;
   const jiraScope = 'all issues';
   const jiraEvents = 'all events';
 
-  const githubURI = `https://liaison.roakit.com/github/${serverData.clientId}`;
+  const githubURL = `https://liaison.roakit.com/github/${serverData.clientId}`;
   const [githubSecret, setGithubSecret] = useState(uuidv4());
 
   const confluenceName = 'Webhook for ROAKIT';
-  const confluenceURI = `https://liaison.roakit.com/confluence/${serverData.clientId}`;
+  const confluenceURL = `https://liaison.roakit.com/confluence/${serverData.clientId}`;
   const [confluenceSecret, setConfluenceSecret] = useState(uuidv4());
   const confluenceEvents =
     'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed';
 
-  const [showCopyConfirmation, setShowCopyConfirmation] = useState(false);
+  const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
 
   const handleCopyClick = (content: string) => {
     void navigator.clipboard.writeText(content);
-    setShowCopyConfirmation(true);
+    setShowCopyConfirmation(content);
   };
 
   const handleTabChange = (event: SyntheticEvent, newValue: number) => {
@@ -99,15 +100,15 @@ export default function Settings() {
   return (
     <Fragment>
       <Snackbar
-        open={showCopyConfirmation}
+        open={showCopyConfirmation !== null}
         autoHideDuration={3000}
         onClose={(event: SyntheticEvent | Event, reason?: string) => {
           if (reason === 'clickaway') {
             return;
           }
-          setShowCopyConfirmation(false);
+          setShowCopyConfirmation(null);
         }}
-        message="Copied"
+        message={'Copied ' + (showCopyConfirmation ?? '')}
       />
       <Typography variant="h6" sx={{ mb: 2 }}>
         <Link underline="none" to="/" component={RemixLink}>
@@ -133,9 +134,9 @@ export default function Settings() {
             </Grid>
             <Grid container spacing={1}>
               <Grid xs={11}>
-                <TextField label="JIRA URI" id="jira-uri" value={jiraURI} fullWidth disabled />
+                <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
               </Grid>
-              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraURI))}</Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(jiraURL))}</Grid>
             </Grid>
             <Grid container spacing={1}>
               <Grid xs={11}>
@@ -164,7 +165,7 @@ export default function Settings() {
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
             In your Jira administration console, go to <strong>System WebHooks</strong> in the
-            Advanced section click the [Create a Webhook] button.
+            Advanced section click the <strong>[Create a Webhook]</strong> button.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
                 In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
@@ -200,14 +201,14 @@ export default function Settings() {
             <Grid container spacing={1}>
               <Grid xs={11}>
                 <TextField
-                  label="GitHub URI"
+                  label="GitHub URL"
                   id="github-uri"
-                  value={githubURI}
+                  value={githubURL}
                   fullWidth
                   disabled
                 />
               </Grid>
-              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubURI))}</Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubURL))}</Grid>
             </Grid>
             <Grid container spacing={1}>
               <Grid xs={11}>
@@ -219,20 +220,34 @@ export default function Settings() {
                   fullWidth
                   InputProps={{
                     endAdornment: (
-                      <IconButton onClick={() => setGithubSecret(uuidv4())}>
-                        <RefreshIcon />
-                      </IconButton>
+                      <Tooltip title="Regenerate a secret">
+                        <IconButton onClick={() => setGithubSecret(uuidv4())}>
+                          <RefreshIcon />
+                        </IconButton>
+                      </Tooltip>
                     ),
                   }}
                 />
               </Grid>
-              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubSecret))}</Grid>
+              <Grid xs={1}>
+                {copyIcon(() =>
+                  handleCopyClick('9e536d51-b6e4-4c50-9d64-c29de561346e' /*githubSecret*/)
+                )}
+              </Grid>
             </Grid>
           </Stack>
+          <Stack maxWidth={600}>
+            <Alert
+              severity="warning"
+              action={copyIcon(() => handleCopyClick('9e536d51-b6e4-4c50-9d64-c29de561346e'))}
+            >
+              Please use <strong>9e536d51-b6e4-4c50-9d64-c29de561346e</strong> for now.
+            </Alert>
+          </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
-            In your GitHub website, navigate to the <strong>Webhook</strong> page for your
-            organization. You will need to create a new webhook for <strong>Liaison</strong> by
-            clicking the [Add webhook] button in the upper right corner.
+            In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page
+            for your repository. You will need to create a new webhook for <strong>Liaison</strong>{' '}
+            by clicking the <strong>[Add webhook]</strong> button in the upper right corner.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
                 <strong>Payload URL: </strong> copy the value from the field above
@@ -278,12 +293,12 @@ export default function Settings() {
                 <TextField
                   label="Confluence URL"
                   id="confluence-url"
-                  value={confluenceURI}
+                  value={confluenceURL}
                   fullWidth
                   disabled
                 />
               </Grid>
-              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceURI))}</Grid>
+              <Grid xs={1}>{copyIcon(() => handleCopyClick(confluenceURL))}</Grid>
             </Grid>
             <Grid container spacing={1}>
               <Grid xs={11}>
@@ -295,9 +310,11 @@ export default function Settings() {
                   fullWidth
                   InputProps={{
                     endAdornment: (
-                      <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
-                        <RefreshIcon />
-                      </IconButton>
+                      <Tooltip title="Regenerate a secret">
+                        <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                          <RefreshIcon />
+                        </IconButton>
+                      </Tooltip>
                     ),
                   }}
                 />
@@ -340,7 +357,7 @@ export default function Settings() {
                 Select <strong>Active</strong> to enable the webhook
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                Click <strong>Save</strong>
+                Click <strong>[Save]</strong>
               </ListItem>
             </List>
             More information on configuring and using Confluence webhooks can be found on their{' '}
