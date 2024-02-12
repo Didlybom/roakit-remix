@@ -19,7 +19,7 @@ export function createClientId(customerId: number, feedId: number): string {
   // Generate `Checksum` field and inject it into our `payload`.
 
   payload.checksum = crypto
-    .createHmac(ALGORITHM, process.env.LIAISON_SERVICE_SECRET!)
+    .createHmac(ALGORITHM, Buffer.from(process.env.CLIENT_ID_KEY!, 'base64'))
     .update(buffer)
     .digest(HEX_ENCODING)
     .substring(0, CHECKSUM_LENGTH);

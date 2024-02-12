@@ -36,6 +36,7 @@ interface TabPanelProps {
 // verify jwt
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+
   if (!jwt) {
     return redirect('/login');
   }

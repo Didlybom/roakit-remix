@@ -7,7 +7,7 @@ Based on https://github.com/mui/material-ui/tree/master/examples/material-ui-rem
 To run locally, add the following secrets to your `.env` file in the root directory of this project.
 
     FIREBASE_SERVICE_ACCOUNT={ "type": "service_account", "project_id": "eternal-impulse-412418", "private_key_id": ........... }
-    LIAISON_SERVICE_SECRET=gQrYw8b...........
+    CLIENT_ID_KEY=gQrYw8b...........
 
 - The JSON value of `FIREBASE_SERVICE_ACCOUNT` is generated from the
   [Firebase console](https://console.firebase.google.com/u/4/project/eternal-impulse-412418/settings/serviceaccounts/adminsdk)
