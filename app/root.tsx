@@ -1,6 +1,7 @@
 import { withEmotionCache } from '@emotion/react';
-import { unstable_useEnhancedEffect as useEnhancedEffect } from '@mui/material';
+import { Alert, Typography, unstable_useEnhancedEffect as useEnhancedEffect } from '@mui/material';
 import {
+  Link,
   Links,
   LiveReload,
   Meta,
@@ -96,47 +97,37 @@ export default function App() {
 
 // https://remix.run/docs/en/main/route/error-boundary
 export function ErrorBoundary() {
+  let message;
+
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
-    let message;
     switch (error.status) {
       case 401:
-        message = <p>Oops! Looks like you tried to visit a page that you do not have access to.</p>;
+        message = `Oops! Looks like you tried to visit a page that you do not have access to. [${error.status}: ${error.statusText}]`;
         break;
       case 404:
-        message = <p>Oops! Looks like you tried to visit a page that does not exist.</p>;
+        message = `Oops! Looks like you tried to visit a page that does not exist. [${error.status}: ${error.statusText}]`;
         break;
-
       default:
         throw new Error((error.data as string) || error.statusText);
     }
-
-    return (
-      <Document title={`${error.status} ${error.statusText}`}>
-        <Layout>
-          <h1>
-            {error.status}: {error.statusText}
-          </h1>
+  } else if (error instanceof Error) {
+    message = error.message;
+  } else {
+    message = 'Unknown error';
+  }
+  return (
+    <Document title="ROAKIT Error">
+      <Layout>
+        <Typography variant="h5">An error occured</Typography>
+        <Typography sx={{ mt: 2 }}>
+          You can try to <Link to="/">logout and login</Link> again.
+        </Typography>
+        <Alert severity="error" sx={{ mt: 4 }}>
           {message}
-        </Layout>
-      </Document>
-    );
-  }
-
-  if (error instanceof Error) {
-    console.error(error);
-    return (
-      <Document title="Error">
-        <Layout>
-          <div>
-            <h1>There was an error</h1>
-            <p>{error.message}</p>
-          </div>
-        </Layout>
-      </Document>
-    );
-  }
-
-  return <h1>Unknown Error</h1>;
+        </Alert>
+      </Layout>
+    </Document>
+  );
 }

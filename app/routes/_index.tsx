@@ -1,26 +1,19 @@
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { Alert, Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
+import { Alert, LinearProgress, Stack, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
-import { PrefetchPageLinks, useLoaderData } from '@remix-run/react';
+import { useLoaderData } from '@remix-run/react';
 import { QuerySnapshot, collection, onSnapshot, query } from 'firebase/firestore';
 import { Fragment, useEffect, useState } from 'react';
 import { z } from 'zod';
-import { sessionCookie } from '~/cookies.server';
 import { firestore as firestoreClient } from '~/firebase.client';
-import { auth as serverAuth } from '~/firebase.server';
+import Header from '~/src/Header';
+import { SessionData, getSessionData } from '~/utils/session-cookie.server';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
   { title: 'ROAKIT' },
   { name: 'description', content: 'ROAKIT Prototype' },
 ];
-
-interface ServerData {
-  isLoggedIn: boolean;
-}
 
 const githubColumns: GridColDef[] = [
   { field: 'id', headerName: 'id', width: 250 },
@@ -72,23 +65,14 @@ const githubRows = (snapshot: QuerySnapshot): GitHubRow[] => {
   return data;
 };
 
-// verify jwt
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<ServerData> => {
-  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
-  if (!jwt) {
-    return { isLoggedIn: false };
-  }
-  try {
-    await serverAuth.verifySessionCookie(jwt);
-    return { isLoggedIn: true };
-  } catch (e) {
-    return { isLoggedIn: false };
-  }
+// verify session
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
+  return await getSessionData(request);
 };
 
 // https://remix.run/docs/en/main/file-conventions/routes#basic-routes
 export default function Index() {
-  const serverData = useLoaderData<typeof loader>();
+  const sessionData = useLoaderData<typeof loader>();
   const [githubData, setGithubData] = useState<GitHubRow[]>([]);
   const [gitHubError, setGitHubError] = useState('');
 
@@ -114,33 +98,8 @@ export default function Index() {
 
   return (
     <Fragment>
-      <PrefetchPageLinks page="/liaison" />
-      <Box sx={{ flexGrow: 1 }}>
-        <Stack direction="row" spacing={2}>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            ROAKIT
-          </Typography>
-          <Button
-            href="/liaison"
-            disabled={!serverData.isLoggedIn}
-            variant="contained"
-            startIcon={<SettingsIcon />}
-          >
-            Liaison
-          </Button>
-          {!serverData.isLoggedIn && (
-            <Button href="/login" variant="outlined" startIcon={<LoginIcon />}>
-              Login
-            </Button>
-          )}
-          {serverData.isLoggedIn && (
-            <Button href="/logout" variant="outlined" startIcon={<LogoutIcon />}>
-              logout
-            </Button>
-          )}
-        </Stack>
-      </Box>
-      {serverData.isLoggedIn && (
+      <Header />
+      {sessionData.isLoggedIn && (
         <Stack sx={{ mt: 5 }}>
           <Typography variant="h6" color="GrayText">
             GitHub Activity

@@ -1,7 +1,9 @@
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import HomeIcon from '@mui/icons-material/Home';
+
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
-  Alert,
   Box,
   IconButton,
   Link,
@@ -16,17 +18,23 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
-import type { LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Link as RemixLink, useLoaderData } from '@remix-run/react';
-import { Fragment, ReactNode, SyntheticEvent, useState } from 'react';
+import { Form, Link as RemixLink, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
+import pino from 'pino';
+import { ReactNode, SyntheticEvent, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 import { sessionCookie } from '~/cookies.server';
-import { auth as serverAuth } from '~/firebase.server';
+import { firestore, auth as serverAuth } from '~/firebase.server';
 import confluenceImage from '~/images/confluence-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
 import { createClientId } from '~/utils/client-id.server';
+import * as feedUtils from '~/utils/feed-utils';
+import { getSessionData } from '~/utils/session-cookie.server';
+
+const logger = pino({ name: 'route:liaison' });
 
 interface TabPanelProps {
   children?: ReactNode;
@@ -34,17 +42,92 @@ interface TabPanelProps {
   value: number;
 }
 
-// verify jwt
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+const feedSchema = z.object({
+  type: z.string(),
+  secret: z.string().optional(),
+});
 
+// verify JWT, load client settings
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  let sessionData;
+  try {
+    sessionData = await getSessionData(request);
+    if (!sessionData.isLoggedIn) {
+      return redirect('/login');
+    }
+  } catch (e) {
+    return redirect('/logout');
+  }
+
+  try {
+    const userDocs = (
+      await firestore.collection('users').where('email', '==', sessionData.email).get()
+    ).docs;
+    if (userDocs.length === 0) {
+      throw Error('User not found');
+    }
+    if (userDocs.length > 1) {
+      throw Error('More than one User found');
+    }
+    const user = userDocs[0];
+    // retrieve feeds
+    const feedsCollection = user.ref.collection('feeds');
+    const feedDocs = await feedsCollection.listDocuments();
+    const feeds = await Promise.all(
+      feedDocs.map(async (feed) => {
+        const feedDoc = await feed.get();
+        const feedData = feedSchema.parse(feedDoc.data());
+        return {
+          feedId: feed.id,
+          type: feedData.type,
+          clientId: createClientId(+user.id, +feed.id),
+          ...(feedData.secret && { secret: feedData.secret }),
+        };
+      })
+    );
+    // create feeds not existing yet
+    await Promise.all(
+      feedUtils.FEED_TYPES.map(async (feedType) => {
+        if (!feeds.find((f) => f.feedId === feedType.id && f.type === feedType.type)) {
+          const feedValues = {
+            type: feedType.type,
+            ...(feedType.type !== feedUtils.JIRA_FEED_TYPE && { secret: uuidv4() }),
+          };
+          await feedsCollection.doc(feedType.id).set(feedValues);
+          feeds.push({
+            ...feedValues,
+            feedId: feedType.id,
+            clientId: createClientId(+user.id, +feedType.id),
+          });
+        }
+      })
+    );
+    return { customerId: +user.id, feeds };
+  } catch (e) {
+    logger.error(e);
+    throw e;
+  }
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
   if (!jwt) {
     return redirect('/login');
   }
+
   try {
     await serverAuth.verifySessionCookie(jwt);
-    return { clientId: createClientId(1010, 1010) }; // FIXME client id
+
+    const form = await request.formData();
+    const customerId = form.get('customerId')?.toString() ?? '';
+    const feedId = form.get('feedId')?.toString() ?? '';
+    const secret = form.get('secret')?.toString() ?? '';
+
+    const doc = firestore.doc('users/' + customerId + '/feeds/' + feedId);
+    await doc.update({ secret });
+    return null;
   } catch (e) {
+    logger.error(e);
     return redirect('/logout');
   }
 };
@@ -61,26 +144,37 @@ function CustomTabPanel(props: TabPanelProps) {
 
 export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
+  const submit = useSubmit();
+  const navigation = useNavigation();
 
   const [tabValue, setTabValue] = useState(0);
 
+  const serverJiraFeed = serverData.feeds.filter((f) => f.type === feedUtils.JIRA_FEED_TYPE)[0];
+  const serverGitHubFeed = serverData.feeds.filter((f) => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
+  const serverConfluenceFeed = serverData.feeds.filter(
+    (f) => f.type === feedUtils.CONFLUENCE_FEED_TYPE
+  )[0];
+
   const jiraName = 'Webhook for ROAKIT';
-  const jiraURL = `https://liaison.roakit.com/jira/${serverData.clientId}`;
+  const jiraURL = `https://liaison.roakit.com/jira/${serverJiraFeed.clientId}`;
   const jiraScope = 'all issues';
   const jiraEvents = 'all events';
 
-  const githubURL = `https://liaison.roakit.com/github/${serverData.clientId}`;
-  const [githubSecret, setGithubSecret] = useState(uuidv4());
-
+  const githubURL = `https://liaison.roakit.com/github/${serverGitHubFeed.clientId}`;
+  const githubSecret = navigation.formData?.get('secret')?.toString() ?? serverGitHubFeed.secret;
   const confluenceName = 'Webhook for ROAKIT';
-  const confluenceURL = `https://liaison.roakit.com/confluence/${serverData.clientId}`;
-  const [confluenceSecret, setConfluenceSecret] = useState(uuidv4());
+  const confluenceURL = `https://liaison.roakit.com/confluence/${serverConfluenceFeed.clientId}`;
+  const confluenceSecret =
+    navigation.formData?.get('secret')?.toString() ?? serverConfluenceFeed.secret;
   const confluenceEvents =
     'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed';
 
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
 
-  const handleCopyClick = (content: string) => {
+  const handleCopyClick = (content?: string) => {
+    if (!content) {
+      return;
+    }
     void navigator.clipboard.writeText(content);
     setShowCopyConfirmation(content);
   };
@@ -98,7 +192,7 @@ export default function Settings() {
   );
 
   return (
-    <Fragment>
+    <Form method="post" noValidate autoComplete="off">
       <Snackbar
         open={showCopyConfirmation !== null}
         autoHideDuration={3000}
@@ -110,13 +204,18 @@ export default function Settings() {
         }}
         message={'Copied ' + (showCopyConfirmation ?? '')}
       />
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        <Link underline="none" to="/" component={RemixLink}>
-          ROAKIT
-        </Link>{' '}
-        Liaison
-      </Typography>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+
+      <Stack direction={'row'} sx={{ alignItems: 'center' }}>
+        <Link variant="h6" underline="none" to="/" component={RemixLink}>
+          <Stack direction={'row'} sx={{ alignItems: 'center' }}>
+            <HomeIcon sx={{ mb: '2px', mr: '3px' }} /> ROAKIT
+          </Stack>
+        </Link>
+        <ChevronRightIcon />
+        <Typography variant="h6"> Liaison</Typography>
+      </Stack>
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="Connectors">
           <Tab label="JIRA" id="tab-0" />
           <Tab label="GitHub" id="tab-1" />
@@ -124,7 +223,7 @@ export default function Settings() {
         </Tabs>
       </Box>
       <CustomTabPanel value={tabValue} index={0}>
-        <Box component="form" noValidate autoComplete="off">
+        <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
               <Grid xs={11}>
@@ -165,14 +264,14 @@ export default function Settings() {
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
             In your Jira administration console, go to <strong>System WebHooks</strong> in the
-            Advanced section click the <strong>[Create a Webhook]</strong> button.
+            Advanced section click the <strong>Create a Webhook</strong> button.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
                 In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
                 <strong>Scope</strong> and <strong>Event</strong> settings as indicated above.
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                To register the new webhook, click [Create].
+                To register the new webhook, click Create.
               </ListItem>
             </List>
             More information on configuring and using Jira webhooks can be found on their{' '}
@@ -196,85 +295,82 @@ export default function Settings() {
         </Box>
       </CustomTabPanel>
       <CustomTabPanel value={tabValue} index={1}>
-        <Box component="form" noValidate autoComplete="off">
-          <Stack spacing={3} maxWidth={600}>
-            <Grid container spacing={1}>
-              <Grid xs={11}>
-                <TextField
-                  label="GitHub URL"
-                  id="github-uri"
-                  value={githubURL}
-                  fullWidth
-                  disabled
-                />
-              </Grid>
-              <Grid xs={1}>{copyIcon(() => handleCopyClick(githubURL))}</Grid>
+        <Stack spacing={3} maxWidth={600}>
+          <Grid container spacing={1}>
+            <Grid xs={11}>
+              <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
             </Grid>
-            <Grid container spacing={1}>
-              <Grid xs={11}>
-                <TextField
-                  label="GitHub Secret"
-                  id="github-secret"
-                  value={githubSecret}
-                  onChange={(e) => setGithubSecret(e.target.value)}
-                  fullWidth
-                  InputProps={{
-                    endAdornment: (
-                      <Tooltip title="Regenerate a secret">
-                        <IconButton onClick={() => setGithubSecret(uuidv4())}>
-                          <RefreshIcon />
-                        </IconButton>
-                      </Tooltip>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid xs={1}>
-                {copyIcon(() =>
-                  handleCopyClick('9e536d51-b6e4-4c50-9d64-c29de561346e' /*githubSecret*/)
-                )}
-              </Grid>
+            <Grid xs={1}>{copyIcon(() => handleCopyClick(githubURL))}</Grid>
+          </Grid>
+          <Grid container spacing={1}>
+            <Grid xs={11}>
+              <TextField
+                label="GitHub Secret"
+                value={githubSecret}
+                disabled
+                fullWidth
+                InputProps={{
+                  endAdornment: (
+                    <Tooltip title="Regenerate a secret">
+                      <IconButton
+                        onClick={() =>
+                          submit(
+                            {
+                              customerId: serverData.customerId,
+                              feedId: serverData.feeds.filter(
+                                (f) => f.type === feedUtils.GITHUB_FEED_TYPE
+                              )[0].feedId,
+                              type: feedUtils.GITHUB_FEED_TYPE,
+                              secret: uuidv4(),
+                            },
+                            { method: 'post' }
+                          )
+                        }
+                      >
+                        <RefreshIcon />
+                      </IconButton>
+                    </Tooltip>
+                  ),
+                }}
+              />
             </Grid>
+            <Grid xs={1}>{copyIcon(() => handleCopyClick(githubSecret))}</Grid>
+          </Grid>
+        </Stack>
+        <Typography component="div" sx={{ mt: 5 }}>
+          In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page for
+          your organization (you must be an organization owner). You will need to create a new
+          webhook for <strong>Liaison</strong> by clicking the <strong>Add webhook</strong> button
+          in the upper right corner.
+          <List sx={{ listStyleType: 'disc', pl: 2 }}>
+            <ListItem sx={{ display: 'list-item' }}>
+              <strong>Payload URL: </strong> copy the value from the field above
+            </ListItem>
+            <ListItem sx={{ display: 'list-item' }}>
+              <strong>Content type :</strong> set this option to <code>application/json</code> to
+              deliver to <strong>Liaison</strong> as JSON formatted text
+            </ListItem>
+            <ListItem sx={{ display: 'list-item' }}>
+              <strong>Secret: </strong> a high entropy value shared with <strong>Liaison</strong>{' '}
+              used to validate webhook deliveries; copy the value from the field above
+            </ListItem>
+          </List>
+          More information on configuring and using GitHub webhooks can be found on their{' '}
+          <Link
+            target={'_blank'}
+            href="https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-an-organization-webhook"
+          >
+            website
+          </Link>
+          .
+          <Stack sx={{ mt: 4 }}>
+            <Typography variant={'caption'}>Screenshot: </Typography>
+            <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
           </Stack>
-          <Stack maxWidth={600}>
-            <Alert
-              severity="warning"
-              action={copyIcon(() => handleCopyClick('9e536d51-b6e4-4c50-9d64-c29de561346e'))}
-            >
-              Please use <strong>9e536d51-b6e4-4c50-9d64-c29de561346e</strong> for now.
-            </Alert>
-          </Stack>
-          <Typography component="div" sx={{ mt: 5 }}>
-            In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page
-            for your repository. You will need to create a new webhook for <strong>Liaison</strong>{' '}
-            by clicking the <strong>[Add webhook]</strong> button in the upper right corner.
-            <List sx={{ listStyleType: 'disc', pl: 2 }}>
-              <ListItem sx={{ display: 'list-item' }}>
-                <strong>Payload URL: </strong> copy the value from the field above
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                <strong>Content type :</strong> set this option to <code>application/json</code> to
-                deliver to <strong>Liaison</strong> as JSON formatted text
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                <strong>Secret: </strong> a high entropy value shared with <strong>Liaison</strong>{' '}
-                used to validate webhook deliveries; copy the value from the field above
-              </ListItem>
-            </List>
-            More information on configuring and using GitHub webhooks can be found on their{' '}
-            <Link target={'_blank'} href="https://docs.github.com/en/webhooks/about-webhooks">
-              website
-            </Link>
-            .
-            <Stack sx={{ mt: 4 }}>
-              <Typography variant={'caption'}>Screenshot: </Typography>
-              <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
-            </Stack>
-          </Typography>
-        </Box>
+        </Typography>
       </CustomTabPanel>
       <CustomTabPanel value={tabValue} index={2}>
-        <Box component="form" noValidate autoComplete="off">
+        <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
               <Grid xs={11}>
@@ -304,14 +400,27 @@ export default function Settings() {
               <Grid xs={11}>
                 <TextField
                   label="Confluence Secret"
-                  id="confluence-secret"
                   value={confluenceSecret}
-                  onChange={(e) => setConfluenceSecret(e.target.value)}
+                  disabled
                   fullWidth
                   InputProps={{
                     endAdornment: (
                       <Tooltip title="Regenerate a secret">
-                        <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                        <IconButton
+                          onClick={() =>
+                            submit(
+                              {
+                                customerId: serverData.customerId,
+                                feedId: serverData.feeds.filter(
+                                  (f) => f.type === feedUtils.CONFLUENCE_FEED_TYPE
+                                )[0].feedId,
+                                type: feedUtils.CONFLUENCE_FEED_TYPE,
+                                secret: uuidv4(),
+                              },
+                              { method: 'post' }
+                            )
+                          }
+                        >
                           <RefreshIcon />
                         </IconButton>
                       </Tooltip>
@@ -380,6 +489,6 @@ export default function Settings() {
           </Typography>
         </Box>
       </CustomTabPanel>
-    </Fragment>
+    </Form>
   );
 }
