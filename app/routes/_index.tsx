@@ -2,12 +2,15 @@ import { Alert, LinearProgress, Stack, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { QuerySnapshot, collection, onSnapshot, query } from 'firebase/firestore';
+import { QuerySnapshot, collection, onSnapshot, query, where } from 'firebase/firestore';
+import pino from 'pino';
 import { Fragment, useEffect, useState } from 'react';
 import { z } from 'zod';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
 import { SessionData, getSessionData } from '~/utils/session-cookie.server';
+
+const logger = pino({ name: 'route:index' });
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -46,9 +49,6 @@ const gitHubEventSchema = z.object({
 const githubRows = (snapshot: QuerySnapshot): GitHubRow[] => {
   const data: GitHubRow[] = [];
   snapshot.forEach((doc) => {
-    if (!doc.id.startsWith('github:') || !doc.id.includes(':push:')) {
-      return [];
-    }
     const docData = doc.data();
     const props = gitHubEventSchema.safeParse(docData.properties);
     if (!props.success) {
@@ -65,7 +65,7 @@ const githubRows = (snapshot: QuerySnapshot): GitHubRow[] => {
   return data;
 };
 
-// verify session
+// verify and get session data
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
   return await getSessionData(request);
 };
@@ -78,7 +78,16 @@ export default function Index() {
 
   // Firestore listener
   useEffect(() => {
-    const q = query(collection(firestoreClient, 'events'));
+    if (!sessionData.customerId) {
+      logger.error('Missing session user');
+      throw Error('Missing session user');
+    }
+    const q = query(
+      collection(firestoreClient, 'events'),
+      where('pluginName', '==', 'github'),
+      where('event', '!=', 'ping'),
+      where('customerId', '==', sessionData.customerId)
+    );
     const unsuscribe = onSnapshot(
       q,
       (querySnapshot) => {
@@ -94,7 +103,7 @@ export default function Index() {
     return () => {
       unsuscribe();
     };
-  }, []);
+  }, [sessionData.customerId]);
 
   return (
     <Fragment>

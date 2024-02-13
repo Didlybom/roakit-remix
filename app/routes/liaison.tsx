@@ -32,7 +32,7 @@ import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
 import { createClientId } from '~/utils/client-id.server';
 import * as feedUtils from '~/utils/feed-utils';
-import { getSessionData } from '~/utils/session-cookie.server';
+import { SessionData, getSessionData } from '~/utils/session-cookie.server';
 
 const logger = pino({ name: 'route:liaison' });
 
@@ -49,38 +49,32 @@ const feedSchema = z.object({
 
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  let sessionData;
+  let sessionData: SessionData;
   try {
     sessionData = await getSessionData(request);
-    if (!sessionData.isLoggedIn) {
+    if (!sessionData.isLoggedIn || !sessionData.customerId) {
       return redirect('/login');
     }
   } catch (e) {
+    logger.error(e);
     return redirect('/logout');
   }
 
   try {
-    const userDocs = (
-      await firestore.collection('users').where('email', '==', sessionData.email).get()
-    ).docs;
-    if (userDocs.length === 0) {
-      throw Error('User not found');
-    }
-    if (userDocs.length > 1) {
-      throw Error('More than one User found');
-    }
-    const user = userDocs[0];
     // retrieve feeds
-    const feedsCollection = user.ref.collection('feeds');
+    const feedsCollection = firestore.collection('users/' + sessionData.customerId + '/feeds');
     const feedDocs = await feedsCollection.listDocuments();
     const feeds = await Promise.all(
       feedDocs.map(async (feed) => {
+        if (!sessionData.customerId) {
+          return;
+        }
         const feedDoc = await feed.get();
         const feedData = feedSchema.parse(feedDoc.data());
         return {
           feedId: feed.id,
           type: feedData.type,
-          clientId: createClientId(+user.id, +feed.id),
+          clientId: createClientId(+sessionData.customerId, +feed.id),
           ...(feedData.secret && { secret: feedData.secret }),
         };
       })
@@ -88,7 +82,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // create feeds not existing yet
     await Promise.all(
       feedUtils.FEED_TYPES.map(async (feedType) => {
-        if (!feeds.find((f) => f.feedId === feedType.id && f.type === feedType.type)) {
+        if (!sessionData.customerId) {
+          return;
+        }
+        if (!feeds.find((f) => f && f.feedId === feedType.id && f.type === feedType.type)) {
           const feedValues = {
             type: feedType.type,
             ...(feedType.type !== feedUtils.JIRA_FEED_TYPE && { secret: uuidv4() }),
@@ -97,12 +94,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           feeds.push({
             ...feedValues,
             feedId: feedType.id,
-            clientId: createClientId(+user.id, +feedType.id),
+            clientId: createClientId(+sessionData.customerId, +feedType.id),
           });
         }
       })
     );
-    return { customerId: +user.id, feeds };
+    return { customerId: +sessionData.customerId, feeds };
   } catch (e) {
     logger.error(e);
     throw e;
