@@ -1,6 +1,4 @@
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import HomeIcon from '@mui/icons-material/Home';
 
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
@@ -20,7 +18,7 @@ import {
 import Grid from '@mui/material/Unstable_Grid2';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, Link as RemixLink, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
+import { Form, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import pino from 'pino';
 import { ReactNode, SyntheticEvent, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,6 +28,7 @@ import { firestore, auth as serverAuth } from '~/firebase.server';
 import confluenceImage from '~/images/confluence-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
+import Breadcrumbs from '~/src/Breadcrumbs';
 import { createClientId } from '~/utils/client-id.server';
 import * as feedUtils from '~/utils/feed-utils';
 import { SessionData, getSessionData } from '~/utils/session-cookie.server';
@@ -202,15 +201,7 @@ export default function Settings() {
         message={'Copied ' + (showCopyConfirmation ?? '')}
       />
 
-      <Stack direction={'row'} sx={{ alignItems: 'center' }}>
-        <Link variant="h6" underline="none" to="/" component={RemixLink}>
-          <Stack direction={'row'} sx={{ alignItems: 'center' }}>
-            <HomeIcon sx={{ mb: '2px', mr: '3px' }} /> ROAKIT
-          </Stack>
-        </Link>
-        <ChevronRightIcon />
-        <Typography variant="h6"> Liaison</Typography>
-      </Stack>
+      <Breadcrumbs title="Liaison" />
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="Connectors">

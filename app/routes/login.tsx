@@ -1,13 +1,13 @@
-import { Box, Button, Link, Stack, TextField } from '@mui/material';
-import Typography from '@mui/material/Typography';
+import { Box, Button, Stack, TextField } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, Link as RemixLink, useFetcher, useLoaderData } from '@remix-run/react';
+import { Form, useFetcher } from '@remix-run/react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Fragment, SyntheticEvent, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
 import { auth as serverAuth } from '~/firebase.server';
+import Breadcrumbs from '~/src/Breadcrumbs';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
@@ -30,15 +30,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 };
 
-export const loader = () => {
-  return {
-    isProd: process.env.ROAKIT_ENV === 'production',
-  };
-};
-
 export default function Login() {
   const fetcher = useFetcher();
-  const serverData = useLoaderData<typeof loader>();
 
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -66,15 +59,10 @@ export default function Login() {
 
   return (
     <Fragment>
-      <Typography variant="h6" component="div" sx={{ mb: 6 }}>
-        <Link underline="none" to="/" component={RemixLink}>
-          ROAKIT
-        </Link>{' '}
-        Login
-      </Typography>
+      <Breadcrumbs title="Login" />
       <Box display="flex" justifyContent="center">
         <Form method="post" onSubmit={handleSubmit} autoComplete="on">
-          <Stack spacing={4} sx={{ maxWidth: 300 }}>
+          <Stack spacing={4} sx={{ minWidth: 300 }}>
             <TextField label="Email" id="email" type="email" fullWidth />
             <TextField
               label="Password"
@@ -88,10 +76,6 @@ export default function Login() {
             <Button variant="contained" type="submit">
               Login
             </Button>
-            <Typography variant="caption">
-              Use {serverData.isProd ? 'prod@u.com' : 'u@d.com'}/ testing (defined in Firebase
-              Authentication module)
-            </Typography>
           </Stack>
         </Form>
       </Box>

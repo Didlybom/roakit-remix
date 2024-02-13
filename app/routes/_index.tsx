@@ -79,8 +79,7 @@ export default function Index() {
   // Firestore listener
   useEffect(() => {
     if (!sessionData.customerId) {
-      logger.error('Missing session user');
-      throw Error('Missing session user');
+      return;
     }
     const q = query(
       collection(firestoreClient, 'events'),
