@@ -8,6 +8,7 @@ export interface SessionData {
   isLoggedIn: boolean;
   email?: string;
   customerId?: number;
+  userId?: number;
 }
 
 export const getSessionData = async (request: Request): Promise<SessionData> => {
@@ -35,7 +36,8 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
     if (userDocs.length > 1) {
       throw Error('More than one User found');
     }
-    sessionData.customerId = +userDocs[0].id;
+    sessionData.userId = +userDocs[0].id;
+    sessionData.customerId = +userDocs[0].data().customerId;
   }
   return sessionData;
 };

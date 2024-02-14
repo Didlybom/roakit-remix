@@ -61,7 +61,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   try {
     // retrieve feeds
-    const feedsCollection = firestore.collection('users/' + sessionData.customerId + '/feeds');
+    const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
     const feedDocs = await feedsCollection.listDocuments();
     const feeds = await Promise.all(
       feedDocs.map(async (feed) => {
@@ -119,7 +119,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const feedId = form.get('feedId')?.toString() ?? '';
     const secret = form.get('secret')?.toString() ?? '';
 
-    const doc = firestore.doc('users/' + customerId + '/feeds/' + feedId);
+    const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
     await doc.update({ secret });
     return null;
   } catch (e) {
