@@ -3,14 +3,11 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import { QuerySnapshot, collection, onSnapshot, query, where } from 'firebase/firestore';
-import pino from 'pino';
 import { Fragment, useEffect, useState } from 'react';
 import { z } from 'zod';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
 import { SessionData, getSessionData } from '~/utils/session-cookie.server';
-
-const logger = pino({ name: 'route:index' });
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [

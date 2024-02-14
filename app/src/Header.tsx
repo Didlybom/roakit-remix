@@ -1,7 +1,6 @@
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -35,7 +34,7 @@ export default function Heaader() {
         )}
         {sessionData.isLoggedIn && (
           <Button href="/logout" variant="outlined" startIcon={<LogoutIcon />}>
-            logout
+            Logout
           </Button>
         )}
       </Stack>
