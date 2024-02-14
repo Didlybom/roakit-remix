@@ -1,8 +1,9 @@
-import { Box, Button, Stack, TextField } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
+import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useFetcher } from '@remix-run/react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Form, useSubmit } from '@remix-run/react';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { Fragment, SyntheticEvent, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
@@ -16,7 +17,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await serverAuth.verifyIdToken(idToken);
 
   const jwt = await serverAuth.createSessionCookie(idToken, {
-    // 1 day - can be up to 2 weeks
+    // 1 day - can be up to 2 weeks, see matching cookie expiration below
     expiresIn: 60 * 60 * 24 * 1 * 1000,
   });
 
@@ -31,11 +32,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Login() {
-  const fetcher = useFetcher();
+  const submit = useSubmit();
+  const [loginError, setLoginError] = useState('');
+  const [googleError, setGoogleError] = useState('');
 
-  const [errorMessage, setErrorMessage] = useState('');
+  async function handleSignInWithGoogle(e: SyntheticEvent) {
+    e.preventDefault();
+    setLoginError('');
 
-  async function handleSubmit(e: SyntheticEvent) {
+    try {
+      const googleAuthProvider = new GoogleAuthProvider();
+      const credential = await signInWithPopup(clientAuth, googleAuthProvider);
+      const idToken = await credential.user.getIdToken();
+      submit({ idToken }, { method: 'post' }); // hand over to server action
+    } catch (e) {
+      // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
+      setGoogleError(e instanceof Error ? e.message : 'Error signing in');
+    }
+  }
+
+  async function handleLogin(e: SyntheticEvent) {
     e.preventDefault();
 
     const target = e.target as typeof e.target & {
@@ -44,16 +60,13 @@ export default function Login() {
     };
     const email = target.email.value;
     const password = target.password.value;
-
     try {
       const credential = await signInWithEmailAndPassword(clientAuth, email, password);
       const idToken = await credential.user.getIdToken();
-
-      // trigger a POST request which the server action will handle
-      fetcher.submit({ idToken }, { method: 'post', action: '/login' });
-    } catch (e: unknown) {
+      submit({ idToken }, { method: 'post' }); // hand over to server action
+    } catch (e) {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
-      setErrorMessage(e instanceof Error ? e.message : 'Error signing in');
+      setLoginError(e instanceof Error ? e.message : 'Error signing in');
     }
   }
 
@@ -61,23 +74,30 @@ export default function Login() {
     <Fragment>
       <Breadcrumbs title="Login" />
       <Box display="flex" justifyContent="center">
-        <Form method="post" onSubmit={handleSubmit} autoComplete="on">
-          <Stack spacing={4} sx={{ minWidth: 300 }}>
-            <TextField label="Email" id="email" type="email" fullWidth />
-            <TextField
-              label="Password"
-              id="password"
-              type="password"
-              fullWidth
-              error={!!errorMessage}
-              helperText={errorMessage}
-              onChange={() => setErrorMessage('')}
-            />
-            <Button variant="contained" type="submit">
-              Login
-            </Button>
-          </Stack>
-        </Form>
+        <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
+          <Form method="post" onSubmit={handleLogin} autoComplete="on">
+            <Stack spacing={2}>
+              <TextField label="Email" id="email" type="email" fullWidth />
+              <TextField
+                label="Password"
+                id="password"
+                type="password"
+                fullWidth
+                error={!!loginError}
+                helperText={loginError}
+                onChange={() => setLoginError('')}
+              />
+              <Button variant="contained" type="submit">
+                Login
+              </Button>
+            </Stack>
+          </Form>
+          <Typography textAlign={'center'}>or</Typography>
+          <Button variant="outlined" startIcon={<GoogleIcon />} onClick={handleSignInWithGoogle}>
+            Sign in with Google
+          </Button>
+          {googleError && <Alert severity="error">{googleError}</Alert>}
+        </Stack>
       </Box>
     </Fragment>
   );

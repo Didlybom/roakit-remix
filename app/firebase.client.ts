@@ -5,6 +5,7 @@ import { getFirestore } from 'firebase/firestore';
 const app = initializeApp(window.ROAKIT_ENV.firebase);
 
 const auth = getAuth(app);
+auth.languageCode = 'en'; // auth.useDeviceLanguage();
 
 // Note: we copy the JWT to our cookie for server-side Remix, so this would work with no persistence here but...
 // ...for the rest such as Firestore client-side access, we use this persistence
