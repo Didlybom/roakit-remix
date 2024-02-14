@@ -12,7 +12,7 @@ To run locally, add the following secrets to your `.env` file in the root direct
 - The JSON value of `FIREBASE_SERVICE_ACCOUNT` is generated from the
   [Firebase console](https://console.firebase.google.com/u/4/project/eternal-impulse-412418/settings/serviceaccounts/adminsdk)
   and formatted in one line.
-- The string value of `LIAISON_SERVICE_SECRET` can be found in the `Liaison` project.
+- The string value of `CLIENT_ID_KEY` can be found in the `Liaison` project.
 
 Then, `npm run dev`.
 

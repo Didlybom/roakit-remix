@@ -152,14 +152,14 @@ export default function Settings() {
   )[0];
 
   const jiraName = 'Webhook for ROAKIT';
-  const jiraURL = `https://liaison.roakit.com/jira/${serverJiraFeed.clientId}`;
+  const jiraURL = `https://ingest.roakit.com/jira/${serverJiraFeed.clientId}`;
   const jiraScope = 'all issues';
   const jiraEvents = 'all events';
 
-  const githubURL = `https://liaison.roakit.com/github/${serverGitHubFeed.clientId}`;
+  const githubURL = `https://ingest.roakit.com/github/${serverGitHubFeed.clientId}`;
   const githubSecret = navigation.formData?.get('secret')?.toString() ?? serverGitHubFeed.secret;
   const confluenceName = 'Webhook for ROAKIT';
-  const confluenceURL = `https://liaison.roakit.com/confluence/${serverConfluenceFeed.clientId}`;
+  const confluenceURL = `https://ingest.roakit.com/confluence/${serverConfluenceFeed.clientId}`;
   const confluenceSecret =
     navigation.formData?.get('secret')?.toString() ?? serverConfluenceFeed.secret;
   const confluenceEvents =
@@ -201,7 +201,7 @@ export default function Settings() {
         message={'Copied ' + (showCopyConfirmation ?? '')}
       />
 
-      <Breadcrumbs title="Liaison" />
+      <Breadcrumbs title="Settings" />
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="Connectors">

@@ -21,12 +21,12 @@ export default function Heaader() {
           ROAKIT
         </Typography>
         <Button
-          href="/liaison"
+          href="/settings"
           disabled={!sessionData.isLoggedIn}
           variant="contained"
           startIcon={<SettingsIcon />}
         >
-          Liaison
+          Settings
         </Button>
         {!sessionData.isLoggedIn && (
           <Button href="/login" variant="outlined" startIcon={<LoginIcon />}>

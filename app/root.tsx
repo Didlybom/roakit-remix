@@ -122,7 +122,7 @@ export function ErrorBoundary() {
       <Layout>
         <Typography variant="h5">An error occured</Typography>
         <Typography sx={{ mt: 2 }}>
-          You can try to <Link to="/">logout and login</Link> again.
+          You can try to <Link to="/logout">logout</Link> and login again.
         </Typography>
         <Alert severity="error" sx={{ mt: 4 }}>
           {message}
