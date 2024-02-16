@@ -10,7 +10,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
   return await getSessionData(request);
 };
 
-export default function Heaader(isLoggedIn: { isLoggedIn: boolean }) {
+export default function Heaader({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Stack direction="row" spacing={2}>
