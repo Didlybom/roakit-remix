@@ -1,10 +1,10 @@
 import { Alert, Box, LinearProgress, Link, Stack, Tab, Tabs, Typography } from '@mui/material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
-import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
+import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
@@ -28,9 +28,9 @@ interface GitHubRow {
   id: string;
   timestamp: number;
   repositoryName?: string;
-  author?: { name?: string; url?: string };
+  author: { name?: string; url?: string };
   ref?: { label?: string; url?: string };
-  activity: {
+  activity?: {
     title?: string;
     created?: string;
     changedFiles?: number;
@@ -38,77 +38,6 @@ interface GitHubRow {
     commits?: number;
   };
 }
-
-const gitHubColumns: GridColDef[] = [
-  {
-    field: 'timestamp',
-    headerName: 'Date',
-    type: 'dateTime',
-    valueGetter: (params) => new Date(params.value as number),
-    width: 200,
-  },
-  { field: 'repositoryName', headerName: 'Repository', width: 150 },
-  {
-    field: 'author',
-    headerName: 'Author',
-    width: 150,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    renderCell: (params: GridRenderCellParams<any, GitHubRow['author']>) => {
-      return params.value?.url ?
-          <Link href={params.value.url}>{params.value.name}</Link>
-        : params.value?.name;
-    },
-  },
-  {
-    field: 'ref',
-    headerName: 'Reference',
-    width: 300,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    renderCell: (params: GridRenderCellParams<any, GitHubRow['ref']>) => {
-      return params.value?.url ?
-          <Link href={params.value.url}>{params.value.label}</Link>
-        : params.value?.label;
-    },
-  },
-  {
-    field: 'activity',
-    headerName: 'Activity',
-    minWidth: 300,
-    flex: 1,
-    renderCell: (params) => {
-      const fields = params.value as GitHubRow['activity'];
-      const title = fields.title ?? '';
-      let activity = '';
-      if (fields.created) {
-        activity += `Created ${new Date(fields.created).toLocaleDateString('en-us', {
-          month: 'short',
-          day: 'numeric',
-        })}, `;
-      }
-      if (fields.changedFiles) {
-        activity += `${fields.changedFiles} changed files, `;
-      }
-      if (fields.comments) {
-        activity += `${fields.comments} comments, `;
-      }
-      if (fields.commits) {
-        activity += `${fields.commits} commits, `;
-      }
-      if (activity) {
-        activity = activity.slice(0, -2);
-      }
-      return (
-        <Stack>
-          <Typography variant="body2">{title}</Typography>
-          <Typography variant="caption">{activity}</Typography>
-        </Stack>
-      );
-    },
-  },
-];
-
-const gitHubPushesColumns = [...gitHubColumns];
-gitHubPushesColumns.splice(3, 1); // remove Reference
 
 const gitHubEventSchema = z.object({
   repository: z.object({ name: z.string() }).optional(),
@@ -189,6 +118,87 @@ export default function Index() {
     setTabValue(newValue);
   };
 
+  const gitHubColumns = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: 'timestamp',
+        headerName: 'Date',
+        type: 'dateTime',
+        valueGetter: (params) => new Date(params.value as number),
+        width: 200,
+      },
+      { field: 'repositoryName', headerName: 'Repository', width: 150 },
+      {
+        field: 'author',
+        headerName: 'Author',
+        width: 150,
+        sortComparator: (a: GitHubRow['author'], b: GitHubRow['author']) =>
+          (a?.name ?? '').localeCompare(b?.name ?? ''),
+        renderCell: (params) => {
+          const fields = params.value as GitHubRow['author'];
+          return fields.url ? <Link href={fields.url}>{fields.name}</Link> : fields.name;
+        },
+      },
+      {
+        field: 'ref',
+        headerName: 'Reference',
+        width: 300,
+        sortComparator: (a: GitHubRow['ref'], b: GitHubRow['ref']) =>
+          (a?.label ?? '').localeCompare(b?.label ?? ''),
+        renderCell: (params) => {
+          const fields = params.value as GitHubRow['ref'];
+          return fields?.url ? <Link href={fields.url}>{fields.label}</Link> : fields?.label;
+        },
+      },
+      {
+        field: 'activity',
+        headerName: 'Activity',
+        minWidth: 300,
+        flex: 1,
+        sortComparator: (a: GitHubRow['activity'], b: GitHubRow['activity']) =>
+          (a?.title ?? '').localeCompare(b?.title ?? ''),
+        renderCell: (params) => {
+          const fields = params.value as GitHubRow['activity'];
+          const title = fields?.title ?? '';
+          let activity = '';
+          if (fields) {
+            if (fields.created) {
+              activity += `Created ${new Date(fields.created).toLocaleDateString('en-us', {
+                month: 'short',
+                day: 'numeric',
+              })}, `;
+            }
+            if (fields.changedFiles) {
+              activity += `${fields.changedFiles} changed files, `;
+            }
+            if (fields.comments) {
+              activity += `${fields.comments} comments, `;
+            }
+            if (fields.commits) {
+              activity += `${fields.commits} commits, `;
+            }
+          }
+          if (activity) {
+            activity = activity.slice(0, -2);
+          }
+          return (
+            <Stack>
+              <Typography variant="body2">{title}</Typography>
+              <Typography variant="caption">{activity}</Typography>
+            </Stack>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const gitHubPushesColumns = useMemo<GridColDef[]>(() => {
+    const gitHubPushesColumns = [...gitHubColumns];
+    gitHubPushesColumns.splice(3, 1); // remove Reference
+    return gitHubPushesColumns;
+  }, [gitHubColumns]);
+
   // Firestore listeners
   useEffect(() => {
     const setGitHubRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
@@ -212,11 +222,12 @@ export default function Index() {
       return;
     }
     const unsubscribe: Record<string, () => void> = {};
-    Object.values(EventType).map((type) => {
+    Object.values(EventType).map((type: EventType) => {
       unsubscribe[type] = firestoreClient
         .collection(
           `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
+        .limit(1000) // FIXME limit
         .onSnapshot(
           (snapshot) => setGitHubRows(type, snapshot),
           (error) => setGitHubError(error.message)
@@ -250,6 +261,7 @@ export default function Index() {
                 rowHeight={75}
                 density="compact"
                 disableRowSelectionOnClick={true}
+                disableColumnMenu={true}
                 initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
               ></DataGrid>
             )}
@@ -262,6 +274,7 @@ export default function Index() {
                 rowHeight={75}
                 density="compact"
                 disableRowSelectionOnClick={true}
+                disableColumnMenu={true}
                 initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
               ></DataGrid>
             )}
@@ -274,6 +287,7 @@ export default function Index() {
                 rowHeight={75}
                 density="compact"
                 disableRowSelectionOnClick={true}
+                disableColumnMenu={true}
                 initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
               ></DataGrid>
             )}
