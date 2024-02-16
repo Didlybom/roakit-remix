@@ -1,3 +1,4 @@
+import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
 import pino from 'pino';
 import { sessionCookie } from '~/cookies.server';
 import { auth, firestore } from '~/firebase.server';
@@ -18,8 +19,9 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   }
 
   let sessionData: SessionData;
+  let token: DecodedIdToken;
   try {
-    const token = await auth.verifySessionCookie(jwt);
+    token = await auth.verifySessionCookie(jwt);
     sessionData = { isLoggedIn: true, email: token.email };
   } catch (e) {
     logger.error('Error verifying session', e);
@@ -38,6 +40,9 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
     }
     sessionData.userId = +userDocs[0].id;
     sessionData.customerId = +userDocs[0].data().customerId;
+    if (`${sessionData.customerId}` != token.customerId) {
+      sessionData.isLoggedIn = false; // force user to re-login if customerId is not there or wrong
+    }
   }
   return sessionData;
 };
