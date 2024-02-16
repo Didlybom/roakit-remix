@@ -145,9 +145,6 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
       throw Error('Failed to parse GitHub events. ' + props.error.message);
     }
     const data = props.data;
-
-    console.log(data);
-
     if (data.release && data.action !== 'released') {
       return;
     }
@@ -232,7 +229,7 @@ export default function Index() {
 
   return (
     <Fragment>
-      <Header />
+      <Header isLoggedIn={sessionData.isLoggedIn} />
       {sessionData.isLoggedIn && (
         <Stack sx={{ mt: 5 }}>
           <Typography variant="h6" color="GrayText">

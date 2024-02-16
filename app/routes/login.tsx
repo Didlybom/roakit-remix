@@ -71,7 +71,6 @@ export default function Login() {
       const googleAuthProvider = new GoogleAuthProvider();
       const credential = await signInWithPopup(clientAuth, googleAuthProvider);
       const idToken = await credential.user.getIdToken();
-      console.log('idToken1:' + idToken);
       submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
