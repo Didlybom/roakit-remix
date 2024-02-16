@@ -22,7 +22,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import pino from 'pino';
-import { ReactNode, SyntheticEvent, useEffect, useState } from 'react';
+import { SyntheticEvent, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { sessionCookie } from '~/cookies.server';
@@ -31,17 +31,12 @@ import confluenceImage from '~/images/confluence-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
 import Breadcrumbs from '~/src/Breadcrumbs';
+import TabPanel from '~/src/TabPanel';
 import { createClientId } from '~/utils/client-id.server';
-import * as feedUtils from '~/utils/feed-utils';
-import { SessionData, getSessionData } from '~/utils/session-cookie.server';
+import * as feedUtils from '~/utils/feedUtils';
+import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:settings' });
-
-interface TabPanelProps {
-  children?: ReactNode;
-  index: number;
-  value: number;
-}
 
 const feedSchema = z.object({
   type: z.string(),
@@ -129,16 +124,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
-function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div role="tabpanel" hidden={value !== index} id={`tab-${index}`} {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
 export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
   const submit = useSubmit();
@@ -216,7 +201,7 @@ export default function Settings() {
           <Tab label="Confluence" id="tab-2" />
         </Tabs>
       </Box>
-      <CustomTabPanel value={tabValue} index={0}>
+      <TabPanel value={tabValue} index={0}>
         <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
@@ -275,8 +260,8 @@ export default function Settings() {
             />
           </Stack>
         </Box>
-      </CustomTabPanel>
-      <CustomTabPanel value={tabValue} index={1}>
+      </TabPanel>
+      <TabPanel value={tabValue} index={1}>
         <Stack spacing={3} maxWidth={600}>
           <Grid container spacing={1}>
             <Grid xs={11}>
@@ -290,7 +275,7 @@ export default function Settings() {
             <Grid container spacing={1}>
               <Grid xs={11}>
                 {gitHubSecret === serverGitHubFeed.secret ?
-                  <Tooltip title="If you've lost or forgotten this secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
+                  <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
                     <Button
                       variant="contained"
                       color="secondary"
@@ -349,6 +334,13 @@ export default function Settings() {
                   )}
                 </Stack>
               </Grid>
+              {gitHubSecret !== serverGitHubFeed.secret && (
+                <Typography variant="caption" sx={{ m: 1 }}>
+                  <strong>Copy</strong> this secret (to paste it on the GitHub Webhook configuration
+                  page) and <strong>save</strong> it by using the buttons on the right. For security
+                  reasons, it will be hidden once saved.
+                </Typography>
+              )}
             </Grid>
           )}
         </Stack>
@@ -367,7 +359,7 @@ export default function Settings() {
             </ListItem>
             <ListItem sx={{ display: 'list-item' }}>
               <strong>Secret: </strong> a high entropy value shared with <strong>Roakit</strong>{' '}
-              used to validate webhook deliveries; copy the value from the field above ( don&apos;t
+              used to validate webhook deliveries; copy the value from the field above (don&apos;t
               forget to save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
             </ListItem>
           </List>
@@ -384,8 +376,8 @@ export default function Settings() {
             <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
           </Stack>
         </Typography>
-      </CustomTabPanel>
-      <CustomTabPanel value={tabValue} index={2}>
+      </TabPanel>
+      <TabPanel value={tabValue} index={2}>
         <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
@@ -400,7 +392,7 @@ export default function Settings() {
               <Grid container spacing={1}>
                 <Grid xs={11}>
                   {confluenceSecret === serverConfluenceFeed.secret ?
-                    <Tooltip title="If you've lost or forgotten this secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
+                    <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
                       <Button
                         variant="contained"
                         color="secondary"
@@ -459,6 +451,13 @@ export default function Settings() {
                     )}
                   </Stack>
                 </Grid>
+                {confluenceSecret !== serverConfluenceFeed.secret && (
+                  <Typography variant="caption" sx={{ m: 1 }}>
+                    <strong>Copy</strong> this secret (to paste it on the Confluence Webhook
+                    configuration page) and <strong>save</strong> it by using the buttons on the
+                    right. For security reasons, it will be hidden once saved.
+                  </Typography>
+                )}
               </Grid>
             )}
             <Grid container spacing={1}>
@@ -497,7 +496,7 @@ export default function Settings() {
                 Select <strong>Active</strong> to enable the webhook
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                Click <strong>[Save]</strong>
+                Click <strong>Save</strong>
               </ListItem>
             </List>
             More information on configuring and using Confluence webhooks can be found on their{' '}
@@ -519,7 +518,7 @@ export default function Settings() {
             </Stack>
           </Typography>
         </Box>
-      </CustomTabPanel>
+      </TabPanel>
     </Form>
   );
 }

@@ -4,7 +4,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { SessionData, getSessionData } from '~/utils/session-cookie.server';
+import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
 
 // verify session
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {

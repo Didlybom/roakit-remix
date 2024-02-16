@@ -17,6 +17,7 @@ import clientConfig, { ClientEnv } from './client-env/client-env.server';
 import ClientStyleContext from './src/ClientStyleContext';
 import Layout from './src/Layout';
 import theme from './src/theme';
+import { errMsg } from './utils/errorUtils';
 
 interface DocumentProps {
   children: ReactNode;
@@ -112,10 +113,8 @@ export function ErrorBoundary() {
       default:
         throw new Error((error.data as string) || error.statusText);
     }
-  } else if (error instanceof Error) {
-    message = error.message;
   } else {
-    message = 'Unknown error';
+    message = errMsg(error, 'Unknown error');
   }
   return (
     <Document title="ROAKIT Error">

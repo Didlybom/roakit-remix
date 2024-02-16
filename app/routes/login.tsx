@@ -9,6 +9,7 @@ import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
 import { auth as serverAuth } from '~/firebase.server';
 import Breadcrumbs from '~/src/Breadcrumbs';
+import { errMsg } from '~/utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
@@ -47,7 +48,7 @@ export default function Login() {
       submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
-      setGoogleError(e instanceof Error ? e.message : 'Error signing in');
+      setGoogleError(errMsg(e, 'Error signing in'));
     }
   }
 
@@ -66,7 +67,7 @@ export default function Login() {
       submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
-      setLoginError(e instanceof Error ? e.message : 'Error signing in');
+      setLoginError(errMsg(e, 'Error signing in'));
     }
   }
 
