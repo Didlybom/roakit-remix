@@ -2,21 +2,35 @@ import GoogleIcon from '@mui/icons-material/Google';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useSubmit } from '@remix-run/react';
+import { Form, useActionData, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { Fragment, SyntheticEvent, useState } from 'react';
+import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
-import { auth as serverAuth } from '~/firebase.server';
+import { firestore, auth as serverAuth } from '~/firebase.server';
 import Breadcrumbs from '~/src/Breadcrumbs';
 import { errMsg } from '~/utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
   const idToken = form.get('idToken')?.toString() ?? '';
-
-  await serverAuth.verifyIdToken(idToken);
-
+  if (!form.get('isTokenRefreshed')) {
+    const token = await serverAuth.verifyIdToken(idToken);
+    if (!token.customerId) {
+      // find the customerId
+      const userDocs = (await firestore.collection('users').where('email', '==', token.email).get())
+        .docs;
+      if (userDocs.length === 0) {
+        throw Error('User not found');
+      }
+      if (userDocs.length > 1) {
+        throw Error('More than one User found');
+      }
+      const customerId = userDocs[0].data().customerId as string;
+      await serverAuth.setCustomUserClaims(token.uid, { customerId: `${customerId}` });
+      return { refreshToken: true, idToken }; // hand over to client to refresh the Firebase token
+    }
+  }
   const jwt = await serverAuth.createSessionCookie(idToken, {
     // 1 day - can be up to 2 weeks, see matching cookie expiration below
     expiresIn: 60 * 60 * 24 * 1 * 1000,
@@ -34,8 +48,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Login() {
   const submit = useSubmit();
+  const actionData = useActionData<typeof action>();
+
   const [loginError, setLoginError] = useState('');
   const [googleError, setGoogleError] = useState('');
+
+  useEffect(() => {
+    async function refreshToken() {
+      await clientAuth.currentUser?.getIdToken(true);
+    }
+    if (actionData?.refreshToken) {
+      void refreshToken();
+      submit({ isTokenRefreshed: true, idToken: actionData?.idToken }, { method: 'post' }); // hand over to server action
+    }
+  }, [actionData?.idToken, actionData?.refreshToken, submit]);
 
   async function handleSignInWithGoogle(e: SyntheticEvent) {
     e.preventDefault();
@@ -45,6 +71,7 @@ export default function Login() {
       const googleAuthProvider = new GoogleAuthProvider();
       const credential = await signInWithPopup(clientAuth, googleAuthProvider);
       const idToken = await credential.user.getIdToken();
+      console.log('idToken1:' + idToken);
       submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
