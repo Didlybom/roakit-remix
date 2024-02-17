@@ -16,17 +16,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const idToken = form.get('idToken')?.toString() ?? '';
   if (!form.get('isTokenRefreshed')) {
     const token = await serverAuth.verifyIdToken(idToken);
-    if (!token.customerId) {
-      // find the customerId
-      const userDocs = (await firestore.collection('users').where('email', '==', token.email).get())
-        .docs;
-      if (userDocs.length === 0) {
-        throw Error('User not found');
-      }
-      if (userDocs.length > 1) {
-        throw Error('More than one User found');
-      }
-      const customerId = userDocs[0].data().customerId as string;
+    // find the customerId
+    const userDocs = (await firestore.collection('users').where('email', '==', token.email).get())
+      .docs;
+    if (userDocs.length === 0) {
+      throw Error('User not found');
+    }
+    if (userDocs.length > 1) {
+      throw Error('More than one User found');
+    }
+    const customerId = userDocs[0].data().customerId as string;
+    if (!token.customerId || token.customerId != customerId) {
       await serverAuth.setCustomUserClaims(token.uid, { customerId: `${customerId}` });
       return { refreshToken: true, idToken }; // hand over to client to refresh the Firebase token
     }
@@ -35,7 +35,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // 1 day - can be up to 2 weeks, see matching cookie expiration below
     expiresIn: 60 * 60 * 24 * 1 * 1000,
   });
-
   const now = new Date();
   return redirect('/', {
     headers: {
@@ -53,15 +52,22 @@ export default function Login() {
   const [loginError, setLoginError] = useState('');
   const [googleError, setGoogleError] = useState('');
 
+  const [refreshedToken, setRefreshedToken] = useState<string | undefined>();
+
   useEffect(() => {
     async function refreshToken() {
-      await clientAuth.currentUser?.getIdToken(true);
+      setRefreshedToken(await clientAuth.currentUser?.getIdToken(true));
     }
     if (actionData?.refreshToken) {
       void refreshToken();
-      submit({ isTokenRefreshed: true, idToken: actionData?.idToken }, { method: 'post' }); // hand over to server action
     }
-  }, [actionData?.idToken, actionData?.refreshToken, submit]);
+  }, [actionData?.refreshToken]);
+
+  useEffect(() => {
+    if (refreshedToken) {
+      submit({ isTokenRefreshed: true, idToken: refreshedToken }, { method: 'post' }); // hand over to server action
+    }
+  }, [refreshedToken, submit]);
 
   async function handleSignInWithGoogle(e: SyntheticEvent) {
     e.preventDefault();
