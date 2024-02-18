@@ -7,28 +7,23 @@ import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 
 import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
-import { firestore, auth as serverAuth } from '~/firebase.server';
+import { queryCustomerId, auth as serverAuth } from '~/firebase.server';
 import Breadcrumbs from '~/src/Breadcrumbs';
 import { errMsg } from '~/utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
   const idToken = form.get('idToken')?.toString() ?? '';
+  const token = await serverAuth.verifyIdToken(idToken);
+  if (!token.email) {
+    throw Error('Token missing email');
+  }
+  const customerId = await queryCustomerId(token.email);
   if (!form.get('isTokenRefreshed')) {
-    const token = await serverAuth.verifyIdToken(idToken);
-    // find the customerId
-    const userDocs = (await firestore.collection('users').where('email', '==', token.email).get())
-      .docs;
-    if (userDocs.length === 0) {
-      throw Error('User not found');
-    }
-    if (userDocs.length > 1) {
-      throw Error('More than one User found');
-    }
-    const customerId = userDocs[0].data().customerId as string;
+    // check if we need to add the customerId claim to the token (used by Firebase rules)
     if (!token.customerId || token.customerId != customerId) {
       await serverAuth.setCustomUserClaims(token.uid, { customerId: `${customerId}` });
-      return { refreshToken: true, idToken }; // hand over to client to refresh the Firebase token
+      return { refreshToken: true }; // hand over to client to refresh the Firebase token
     }
   }
   const jwt = await serverAuth.createSessionCookie(idToken, {
@@ -56,10 +51,12 @@ export default function Login() {
 
   useEffect(() => {
     async function refreshToken() {
-      setRefreshedToken(await clientAuth.currentUser?.getIdToken(true));
+      setRefreshedToken(await clientAuth.currentUser?.getIdToken(true /* forceRefresh */));
     }
     if (actionData?.refreshToken) {
+      // refresh the Firebase token (client-side call)
       void refreshToken();
+      // and then the effect using refreshedToekn will be triggered to go back to the server
     }
   }, [actionData?.refreshToken]);
 
@@ -125,7 +122,9 @@ export default function Login() {
               </Button>
             </Stack>
           </Form>
-          <Typography textAlign={'center'}>or</Typography>
+          <Typography textAlign={'center'} sx={{ p: 2 }}>
+            or
+          </Typography>
           <Button variant="outlined" startIcon={<GoogleIcon />} onClick={handleSignInWithGoogle}>
             Sign in with Google
           </Button>

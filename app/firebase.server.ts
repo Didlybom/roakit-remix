@@ -20,4 +20,15 @@ if (getApps().length === 0) {
 const auth = getAuth(app);
 const firestore = getFirestore(app);
 
-export { auth, firestore };
+const queryCustomerId = async (email: string) => {
+  const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
+  if (userDocs.length === 0) {
+    throw Error('User not found');
+  }
+  if (userDocs.length > 1) {
+    throw Error('More than one User found');
+  }
+  return userDocs[0].data().customerId as number;
+};
+
+export { auth, firestore, queryCustomerId };
