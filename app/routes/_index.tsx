@@ -1,8 +1,16 @@
+import GitHubIcon from '@mui/icons-material/GitHub';
+import Timeline from '@mui/lab/Timeline';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
+import TimelineDot from '@mui/lab/TimelineDot';
+import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
 import {
   Alert,
   Box,
   Button,
   Divider,
+  IconButton,
   LinearProgress,
   Link,
   Stack,
@@ -13,16 +21,25 @@ import {
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
+import { startOfToday } from 'date-fns/startOfToday';
+import { subWeeks } from 'date-fns/subWeeks';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { LinkIt } from 'react-linkify-it';
 import { z } from 'zod';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
 import TabPanel from '~/src/TabPanel';
+import { formatDayMonth } from '~/utils/dateUtils';
 import { errMsg } from '~/utils/errorUtils';
 import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
-import { caseInsensitiveSort, findJiraTickets } from '~/utils/stringUtils';
+import {
+  JIRA_REGEXP,
+  caseInsensitiveSort,
+  findJiraTickets,
+  removeSpaces,
+} from '~/utils/stringUtils';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -35,6 +52,33 @@ enum EventType {
   Push = 'push',
   Release = 'release',
 }
+
+enum DateFilter {
+  All = 'All',
+  TwoWeeks = 'TwoWeeks',
+  OneWeek = 'OneWeek',
+  OneDay = 'OneDay',
+}
+
+const dateFilters: Record<DateFilter, string> = {
+  [DateFilter.All]: 'all',
+  [DateFilter.TwoWeeks]: '2 weeks',
+  [DateFilter.OneWeek]: '1 week',
+  [DateFilter.OneDay]: '1 day',
+};
+
+const dateFilterToStartDate = (dateFilter: DateFilter) => {
+  switch (dateFilter) {
+    case DateFilter.TwoWeeks:
+      return subWeeks(startOfToday(), 2).getTime();
+    case DateFilter.OneWeek:
+      return subWeeks(startOfToday(), 1).getTime();
+    case DateFilter.OneDay:
+      return startOfToday().getTime();
+    default:
+      return null;
+  }
+};
 
 interface GitHubRow {
   id: string;
@@ -77,7 +121,7 @@ const gitHubEventSchema = z.object({
   release: z.object({ body: z.string() }).optional(),
 });
 
-let gitHubRowsByAuthor: Record<string, GitHubRow[]> | null; // all the events aggregated by author
+let gitHubRowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> | null; // all the events aggregated by author
 let gitHubRowsByJira: Record<string, GitHubRow[]> | null; // all the events aggregated by JIRA project
 
 const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => {
@@ -115,9 +159,11 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         gitHubRowsByAuthor = {};
       }
       if (!(author.name in gitHubRowsByAuthor)) {
-        gitHubRowsByAuthor[author.name] = [];
+        gitHubRowsByAuthor[author.name] = { url: author.url, rows: [] };
       }
-      gitHubRowsByAuthor[author.name].push(row);
+      if (!gitHubRowsByAuthor[author.name].rows.find((r) => r.id === row.id)) {
+        gitHubRowsByAuthor[author.name].rows.push(row);
+      }
     }
     const jiraTickets = findJiraTickets(row.activity.title + ' ' + row.ref.label);
     if (jiraTickets.length) {
@@ -128,7 +174,9 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         if (!(jiraTicket in gitHubRowsByJira!)) {
           gitHubRowsByJira![jiraTicket] = [];
         }
-        gitHubRowsByJira![jiraTicket].push(row);
+        if (!gitHubRowsByJira![jiraTicket].find((r) => r.id === row.id)) {
+          gitHubRowsByJira![jiraTicket].push(row);
+        }
       });
     }
     rows.push(row);
@@ -145,7 +193,10 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
+  const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.All);
   const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
+  const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
+  const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
 
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
@@ -164,7 +215,8 @@ export default function Index() {
         headerName: 'Date',
         type: 'dateTime',
         valueGetter: (params) => new Date(params.value as number),
-        width: 200,
+        valueFormatter: (params) => formatDayMonth(params.value as Date),
+        width: 100,
       },
       { field: 'repositoryName', headerName: 'Repository', width: 150 },
       {
@@ -175,7 +227,18 @@ export default function Index() {
           (a?.name ?? '').localeCompare(b?.name ?? ''),
         renderCell: (params) => {
           const fields = params.value as GitHubRow['author'];
-          return fields?.url ? <Link href={fields.url}>{fields.name}</Link> : fields?.name;
+          return fields?.url ?
+              <Link
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowBy('author');
+                  setScrollToAuthor(fields.name);
+                }}
+                sx={{ cursor: 'pointer' }}
+              >
+                {fields.name}
+              </Link>
+            : fields?.name;
         },
       },
       {
@@ -202,10 +265,7 @@ export default function Index() {
           let activity = '';
           if (fields) {
             if (fields.created) {
-              activity += `Created ${new Date(fields.created).toLocaleDateString('en-us', {
-                month: 'short',
-                day: 'numeric',
-              })}, `;
+              activity += `Created ${formatDayMonth(new Date(fields.created))}, `;
             }
             if (fields.changedFiles) {
               activity += `${fields.changedFiles} changed files, `;
@@ -221,10 +281,27 @@ export default function Index() {
             activity = activity.slice(0, -2);
           }
           return (
-            <Stack>
-              <Typography variant="body2">{title}</Typography>
-              <Typography variant="caption">{activity}</Typography>
-            </Stack>
+            <LinkIt
+              component={(jira: string) => (
+                <Link
+                  key={jira}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowBy('jira');
+                    setScrollToJira(jira);
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  {jira}
+                </Link>
+              )}
+              regex={JIRA_REGEXP}
+            >
+              <Stack>
+                <Typography variant="body2">{title}</Typography>
+                <Typography variant="caption">{activity}</Typography>{' '}
+              </Stack>
+            </LinkIt>
           );
         },
       },
@@ -243,6 +320,9 @@ export default function Index() {
     gitHubByAuthorColumns.splice(2, 1); // remove Author
     return gitHubByAuthorColumns;
   }, [gitHubPushesColumns]);
+
+  const authorElementId = (author: string) => `AUTHOR-${removeSpaces(author)}`;
+  const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
   // Firestore listeners
   useEffect(() => {
@@ -265,19 +345,67 @@ export default function Index() {
     };
     const unsubscribe: Record<string, () => void> = {};
     Object.values(EventType).map((type: EventType) => {
-      unsubscribe[type] = firestoreClient
+      let query = firestoreClient
         .collection(
           `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
-        .limit(1000) // FIXME limit
-        .onSnapshot(
-          (snapshot) => setGitHubRows(type, snapshot),
-          (error) => setGitHubError(error.message)
-        );
+        .limit(1000); // FIXME limit
+      const startDate = dateFilterToStartDate(dateFilter);
+      if (startDate) {
+        query = query.where('eventTimestamp', '>=', startDate);
+      }
+      unsubscribe[type] = query.onSnapshot(
+        (snapshot) => setGitHubRows(type, snapshot),
+        (error) => setGitHubError(error.message)
+      );
     });
     return () => Object.keys(unsubscribe).forEach((k) => unsubscribe[k]());
-  }, [sessionData.customerId]);
+  }, [dateFilter, sessionData.customerId]);
 
+  useEffect(() => {
+    if (scrollToAuthor) {
+      const element = document.getElementById(authorElementId(scrollToAuthor));
+      setScrollToAuthor(undefined);
+      if (element) {
+        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1);
+      }
+    }
+  }, [scrollToAuthor]);
+
+  useEffect(() => {
+    if (scrollToJira) {
+      const element = document.getElementById(jiraElementId(scrollToJira));
+      setScrollToJira(undefined);
+      if (element) {
+        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1);
+      }
+    }
+  }, [scrollToJira]);
+
+  const filteredGitHubRowsByAuthor = gitHubRowsByAuthor;
+  const filteredGitHubRowsByJira = gitHubRowsByJira;
+  if (dateFilter !== DateFilter.All && filteredGitHubRowsByAuthor) {
+    const startDate = dateFilterToStartDate(dateFilter)!;
+    Object.keys(filteredGitHubRowsByAuthor).forEach((author) => {
+      filteredGitHubRowsByAuthor[author].rows = filteredGitHubRowsByAuthor[author].rows.filter(
+        (row) => row.timestamp >= startDate
+      );
+      if (filteredGitHubRowsByAuthor[author].rows.length === 0) {
+        delete filteredGitHubRowsByAuthor[author];
+      }
+    });
+  }
+  if (dateFilter !== DateFilter.All && filteredGitHubRowsByJira) {
+    const startDate = dateFilterToStartDate(dateFilter)!;
+    Object.keys(filteredGitHubRowsByJira).forEach((jira) => {
+      filteredGitHubRowsByJira[jira] = filteredGitHubRowsByJira[jira].filter(
+        (row) => row.timestamp >= startDate
+      );
+      if (filteredGitHubRowsByJira[jira].length === 0) {
+        delete filteredGitHubRowsByJira[jira];
+      }
+    });
+  }
   return (
     <Fragment>
       <Header isLoggedIn={sessionData.isLoggedIn} />
@@ -296,109 +424,154 @@ export default function Index() {
               By JIRA
             </Button>
           </Stack>
-          {showBy === 'all' && (
-            <Fragment>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
-                  <Tab label="Pull Requests" id="tab-0" />
-                  <Tab label="Pushes" id="tab-1" />
-                  <Tab label="Releases" id="tab-2" />
-                </Tabs>
+          <Stack direction={'row'}>
+            <Timeline
+              sx={{
+                flex: 0,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
+              }}
+            >
+              {Object.keys(dateFilters).map((date) => (
+                <TimelineItem key={date}>
+                  <TimelineSeparator>
+                    <TimelineDot />
+                    {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
+                  </TimelineSeparator>
+                  <TimelineContent sx={{ py: 0 }}>
+                    <Button
+                      disabled={dateFilter === (date as DateFilter)}
+                      onClick={() => setDateFilter(date as DateFilter)}
+                      sx={{ justifyContent: 'left' }}
+                    >
+                      <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
+                    </Button>
+                  </TimelineContent>
+                </TimelineItem>
+              ))}
+            </Timeline>
+            {showBy === 'all' && (
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+                  <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
+                    <Tab label="Pull Requests" id="tab-0" />
+                    <Tab label="Pushes" id="tab-1" />
+                    <Tab label="Releases" id="tab-2" />
+                  </Tabs>
+                </Box>
+                {(!gitHubPRs.length || !gitHubPushes.length) && (
+                  <LinearProgress sx={{ mt: 5, mb: 5 }} />
+                )}
+                <TabPanel value={tabValue} index={0}>
+                  {!!gitHubPRs.length && (
+                    <DataGrid
+                      columns={gitHubColumns}
+                      rows={gitHubPRs}
+                      rowHeight={75}
+                      density="compact"
+                      disableRowSelectionOnClick={true}
+                      disableColumnMenu={true}
+                      initialState={{
+                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                      }}
+                    ></DataGrid>
+                  )}
+                </TabPanel>
+                <TabPanel value={tabValue} index={1}>
+                  {!!gitHubPushes.length && (
+                    <DataGrid
+                      columns={gitHubPushesColumns}
+                      rows={gitHubPushes}
+                      rowHeight={75}
+                      density="compact"
+                      disableRowSelectionOnClick={true}
+                      disableColumnMenu={true}
+                      initialState={{
+                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                      }}
+                    ></DataGrid>
+                  )}
+                </TabPanel>
+                <TabPanel value={tabValue} index={2}>
+                  {!!gitHubPushes.length && (
+                    <DataGrid
+                      columns={gitHubPushesColumns}
+                      rows={gitHubReleases}
+                      rowHeight={75}
+                      density="compact"
+                      disableRowSelectionOnClick={true}
+                      disableColumnMenu={true}
+                      initialState={{
+                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                      }}
+                    ></DataGrid>
+                  )}
+                </TabPanel>
               </Box>
-              {(!gitHubPRs.length || !gitHubPushes.length) && <LinearProgress sx={{ m: 5 }} />}
-              <TabPanel value={tabValue} index={0}>
-                {!!gitHubPRs.length && (
-                  <DataGrid
-                    columns={gitHubColumns}
-                    rows={gitHubPRs}
-                    rowHeight={75}
-                    density="compact"
-                    disableRowSelectionOnClick={true}
-                    disableColumnMenu={true}
-                    initialState={{
-                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                    }}
-                  ></DataGrid>
-                )}
-              </TabPanel>
-              <TabPanel value={tabValue} index={1}>
-                {!!gitHubPushes.length && (
-                  <DataGrid
-                    columns={gitHubPushesColumns}
-                    rows={gitHubPushes}
-                    rowHeight={75}
-                    density="compact"
-                    disableRowSelectionOnClick={true}
-                    disableColumnMenu={true}
-                    initialState={{
-                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                    }}
-                  ></DataGrid>
-                )}
-              </TabPanel>
-              <TabPanel value={tabValue} index={2}>
-                {!!gitHubPushes.length && (
-                  <DataGrid
-                    columns={gitHubPushesColumns}
-                    rows={gitHubReleases}
-                    rowHeight={75}
-                    density="compact"
-                    disableRowSelectionOnClick={true}
-                    disableColumnMenu={true}
-                    initialState={{
-                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                    }}
-                  ></DataGrid>
-                )}
-              </TabPanel>
-            </Fragment>
-          )}
-          {showBy === 'author' && !gitHubRowsByAuthor && <LinearProgress sx={{ m: 5 }} />}
-          {showBy === 'author' &&
-            gitHubRowsByAuthor &&
-            caseInsensitiveSort(Object.keys(gitHubRowsByAuthor)).map((author) => {
-              return (
-                <Box key={author} sx={{ m: 2 }}>
-                  <Typography color="GrayText" variant="h6">
-                    {author}
-                  </Typography>
-                  <DataGrid
-                    columns={gitHubByAuthorColumns}
-                    rows={gitHubRowsByAuthor![author]}
-                    rowHeight={75}
-                    density="compact"
-                    disableRowSelectionOnClick={true}
-                    disableColumnMenu={true}
-                    initialState={{
-                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                    }}
-                  ></DataGrid>
-                </Box>
-              );
-            })}
-          {showBy === 'jira' && !gitHubRowsByJira && <LinearProgress sx={{ m: 5 }} />}
-          {showBy === 'jira' &&
-            gitHubRowsByJira &&
-            caseInsensitiveSort(Object.keys(gitHubRowsByJira)).map((jira) => {
-              return (
-                <Box key={jira} sx={{ m: 2 }}>
-                  <Typography color="GrayText" variant="h6">
-                    {jira}
-                  </Typography>
-                  <DataGrid
-                    columns={gitHubColumns}
-                    rows={gitHubRowsByJira![jira]}
-                    rowHeight={75}
-                    density="compact"
-                    disableRowSelectionOnClick={true}
-                    disableColumnMenu={true}
-                    initialState={{
-                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                    }}
-                  ></DataGrid>
-                </Box>
-              );
-            })}
+            )}
+            {showBy === 'author' && !filteredGitHubRowsByAuthor && (
+              <LinearProgress sx={{ mt: 5, mb: 5 }} />
+            )}
+            {showBy === 'author' && filteredGitHubRowsByAuthor && (
+              <Box sx={{ flex: 1 }}>
+                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => {
+                  return (
+                    <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                      <Stack direction="row" alignItems="center">
+                        <Typography color="GrayText" variant="h6">
+                          {author}
+                        </Typography>
+                        {gitHubRowsByAuthor?.[author]?.url && (
+                          <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
+                            <GitHubIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Stack>
+                      <DataGrid
+                        columns={gitHubByAuthorColumns}
+                        rows={gitHubRowsByAuthor![author].rows}
+                        rowHeight={75}
+                        density="compact"
+                        disableRowSelectionOnClick={true}
+                        disableColumnMenu={true}
+                        initialState={{
+                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                        }}
+                      ></DataGrid>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+            {showBy === 'jira' && !filteredGitHubRowsByJira && (
+              <LinearProgress sx={{ mt: 5, mb: 5 }} />
+            )}
+            {showBy === 'jira' && filteredGitHubRowsByJira && (
+              <Box sx={{ flex: 1 }}>
+                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => {
+                  return (
+                    <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
+                      <Link id={`JIRA:${jira}`} />
+                      <Typography color="GrayText" variant="h6">
+                        {jira}
+                      </Typography>
+                      <DataGrid
+                        columns={gitHubColumns}
+                        rows={gitHubRowsByJira![jira]}
+                        rowHeight={75}
+                        density="compact"
+                        disableRowSelectionOnClick={true}
+                        disableColumnMenu={true}
+                        initialState={{
+                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                        }}
+                      ></DataGrid>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </Stack>
           {gitHubError && <Alert severity="error">{gitHubError}</Alert>}
         </Stack>
       )}
