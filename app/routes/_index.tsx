@@ -18,7 +18,7 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import { startOfToday } from 'date-fns/startOfToday';
@@ -229,8 +229,7 @@ export default function Index() {
           const fields = params.value as GitHubRow['author'];
           return fields?.url ?
               <Link
-                onClick={(e) => {
-                  e.preventDefault();
+                onClick={() => {
                   setShowBy('author');
                   setScrollToAuthor(fields.name);
                 }}
@@ -281,27 +280,28 @@ export default function Index() {
             activity = activity.slice(0, -2);
           }
           return (
-            <LinkIt
-              component={(jira: string) => (
-                <Link
-                  key={jira}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowBy('jira');
-                    setScrollToJira(jira);
-                  }}
-                  sx={{ cursor: 'pointer' }}
+            <Stack>
+              <Typography variant="body2">
+                <LinkIt
+                  component={(jira: string) => (
+                    <Link
+                      key={jira}
+                      onClick={() => {
+                        setShowBy('jira');
+                        setScrollToJira(jira);
+                      }}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      {jira}
+                    </Link>
+                  )}
+                  regex={JIRA_REGEXP}
                 >
-                  {jira}
-                </Link>
-              )}
-              regex={JIRA_REGEXP}
-            >
-              <Stack>
-                <Typography variant="body2">{title}</Typography>
-                <Typography variant="caption">{activity}</Typography>{' '}
-              </Stack>
-            </LinkIt>
+                  {title}
+                </LinkIt>
+              </Typography>
+              <Typography variant="caption">{activity}</Typography>{' '}
+            </Stack>
           );
         },
       },
@@ -349,6 +349,7 @@ export default function Index() {
         .collection(
           `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
+        .orderBy('eventTimestamp', 'desc')
         .limit(1000); // FIXME limit
       const startDate = dateFilterToStartDate(dateFilter);
       if (startDate) {
@@ -362,6 +363,7 @@ export default function Index() {
     return () => Object.keys(unsubscribe).forEach((k) => unsubscribe[k]());
   }, [dateFilter, sessionData.customerId]);
 
+  // Auto scrollers
   useEffect(() => {
     if (scrollToAuthor) {
       const element = document.getElementById(authorElementId(scrollToAuthor));
@@ -406,6 +408,17 @@ export default function Index() {
       }
     });
   }
+
+  const dataGridCommonProps = {
+    rowHeight: 75,
+    density: 'compact' as GridDensity,
+    disableRowSelectionOnClick: true,
+    disableColumnMenu: true,
+    initialState: {
+      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
+    },
+  };
+
   return (
     <Fragment>
       <Header isLoggedIn={sessionData.isLoggedIn} />
@@ -467,13 +480,7 @@ export default function Index() {
                     <DataGrid
                       columns={gitHubColumns}
                       rows={gitHubPRs}
-                      rowHeight={75}
-                      density="compact"
-                      disableRowSelectionOnClick={true}
-                      disableColumnMenu={true}
-                      initialState={{
-                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                      }}
+                      {...dataGridCommonProps}
                     ></DataGrid>
                   )}
                 </TabPanel>
@@ -482,13 +489,7 @@ export default function Index() {
                     <DataGrid
                       columns={gitHubPushesColumns}
                       rows={gitHubPushes}
-                      rowHeight={75}
-                      density="compact"
-                      disableRowSelectionOnClick={true}
-                      disableColumnMenu={true}
-                      initialState={{
-                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                      }}
+                      {...dataGridCommonProps}
                     ></DataGrid>
                   )}
                 </TabPanel>
@@ -514,33 +515,25 @@ export default function Index() {
             )}
             {showBy === 'author' && filteredGitHubRowsByAuthor && (
               <Box sx={{ flex: 1 }}>
-                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => {
-                  return (
-                    <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
-                      <Stack direction="row" alignItems="center">
-                        <Typography color="GrayText" variant="h6">
-                          {author}
-                        </Typography>
-                        {gitHubRowsByAuthor?.[author]?.url && (
-                          <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
-                            <GitHubIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Stack>
-                      <DataGrid
-                        columns={gitHubByAuthorColumns}
-                        rows={gitHubRowsByAuthor![author].rows}
-                        rowHeight={75}
-                        density="compact"
-                        disableRowSelectionOnClick={true}
-                        disableColumnMenu={true}
-                        initialState={{
-                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                        }}
-                      ></DataGrid>
-                    </Box>
-                  );
-                })}
+                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => (
+                  <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                    <Stack direction="row" alignItems="center">
+                      <Typography color="GrayText" variant="h6">
+                        {author}
+                      </Typography>
+                      {gitHubRowsByAuthor?.[author]?.url && (
+                        <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
+                          <GitHubIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Stack>
+                    <DataGrid
+                      columns={gitHubByAuthorColumns}
+                      rows={gitHubRowsByAuthor![author].rows}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  </Box>
+                ))}
               </Box>
             )}
             {showBy === 'jira' && !filteredGitHubRowsByJira && (
@@ -548,27 +541,19 @@ export default function Index() {
             )}
             {showBy === 'jira' && filteredGitHubRowsByJira && (
               <Box sx={{ flex: 1 }}>
-                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => {
-                  return (
-                    <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
-                      <Link id={`JIRA:${jira}`} />
-                      <Typography color="GrayText" variant="h6">
-                        {jira}
-                      </Typography>
-                      <DataGrid
-                        columns={gitHubColumns}
-                        rows={gitHubRowsByJira![jira]}
-                        rowHeight={75}
-                        density="compact"
-                        disableRowSelectionOnClick={true}
-                        disableColumnMenu={true}
-                        initialState={{
-                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                        }}
-                      ></DataGrid>
-                    </Box>
-                  );
-                })}
+                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => (
+                  <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
+                    <Link id={`JIRA:${jira}`} />
+                    <Typography color="GrayText" variant="h6">
+                      {jira}
+                    </Typography>
+                    <DataGrid
+                      columns={gitHubColumns}
+                      rows={gitHubRowsByJira![jira]}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  </Box>
+                ))}
               </Box>
             )}
           </Stack>
