@@ -30,7 +30,7 @@ import { firestore, auth as serverAuth } from '~/firebase.server';
 import confluenceImage from '~/images/confluence-webhook.png';
 import githubImage from '~/images/github-webhook.png';
 import jiraImage from '~/images/jira-webhook.png';
-import Breadcrumbs from '~/src/Breadcrumbs';
+import Breadcrumbs from '~/src/BreadcrumbBar';
 import TabPanel from '~/src/TabPanel';
 import { createClientId } from '~/utils/client-id.server';
 import * as feedUtils from '~/utils/feedUtils';
@@ -205,26 +205,26 @@ export default function Settings() {
         <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(jiraURL))}
               </Grid>
             </Grid>
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 <TextField label="JIRA Scope" value={jiraScope} fullWidth disabled />
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(jiraScope))}
               </Grid>
             </Grid>
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 <TextField label="JIRA Events" value={jiraEvents} fullWidth disabled />
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(jiraEvents))}
               </Grid>
             </Grid>
@@ -264,16 +264,16 @@ export default function Settings() {
       <TabPanel value={tabValue} index={1}>
         <Stack spacing={3} maxWidth={600}>
           <Grid container spacing={1}>
-            <Grid xs={11}>
+            <Grid xs={10}>
               <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
             </Grid>
-            <Grid xs={1} sx={{ alignSelf: 'center' }}>
+            <Grid xs={2} sx={{ alignSelf: 'center' }}>
               {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
             </Grid>
           </Grid>
           {navigation.state !== 'loading' && (
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 {gitHubSecret === serverGitHubFeed.secret ?
                   <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
                     <Button
@@ -304,7 +304,7 @@ export default function Settings() {
                   />
                 }
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 <Stack direction={'row'}>
                   {gitHubSecret !== serverGitHubFeed.secret &&
                     actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
@@ -381,16 +381,16 @@ export default function Settings() {
         <Box>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
               </Grid>
             </Grid>
             {navigation.state !== 'loading' && (
               <Grid container spacing={1}>
-                <Grid xs={11}>
+                <Grid xs={10}>
                   {confluenceSecret === serverConfluenceFeed.secret ?
                     <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
                       <Button
@@ -421,7 +421,7 @@ export default function Settings() {
                     />
                   }
                 </Grid>
-                <Grid xs={1} sx={{ alignSelf: 'center' }}>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
                   <Stack direction={'row'}>
                     {confluenceSecret !== serverConfluenceFeed.secret &&
                       actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
@@ -461,10 +461,10 @@ export default function Settings() {
               </Grid>
             )}
             <Grid container spacing={1}>
-              <Grid xs={11}>
+              <Grid xs={10}>
                 <TextField label="Confluence Events" value={confluenceEvents} fullWidth disabled />
               </Grid>
-              <Grid xs={1} sx={{ alignSelf: 'center' }}>
+              <Grid xs={2} sx={{ alignSelf: 'center' }}>
                 {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
                   handleCopy(confluenceEvents)
                 )}

@@ -8,7 +8,7 @@ import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
 import { sessionCookie } from '~/cookies.server';
 import { auth as clientAuth } from '~/firebase.client';
 import { queryCustomerId, auth as serverAuth } from '~/firebase.server';
-import Breadcrumbs from '~/src/Breadcrumbs';
+import Breadcrumbs from '~/src/BreadcrumbBar';
 import { errMsg } from '~/utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {

@@ -59,6 +59,7 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         : null}
         <Meta />
         <Links />
+        <link rel="icon" href="data:;base64,=" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
