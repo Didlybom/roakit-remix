@@ -1,4 +1,15 @@
-import { Alert, Box, LinearProgress, Link, Stack, Tab, Tabs, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Divider,
+  LinearProgress,
+  Link,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+} from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -11,6 +22,7 @@ import Header from '~/src/Header';
 import TabPanel from '~/src/TabPanel';
 import { errMsg } from '~/utils/errorUtils';
 import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
+import { caseInsensitiveSort, findJiraTickets } from '~/utils/stringUtils';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -28,7 +40,7 @@ interface GitHubRow {
   id: string;
   timestamp: number;
   repositoryName?: string;
-  author: { name?: string; url?: string };
+  author?: { name?: string; url?: string };
   ref?: { label?: string; url?: string };
   activity?: {
     title?: string;
@@ -65,6 +77,9 @@ const gitHubEventSchema = z.object({
   release: z.object({ body: z.string() }).optional(),
 });
 
+let gitHubRowsByAuthor: Record<string, GitHubRow[]> | null; // all the events aggregated by author
+let gitHubRowsByJira: Record<string, GitHubRow[]> | null; // all the events aggregated by JIRA project
+
 const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => {
   const rows: GitHubRow[] = [];
   snapshot.forEach((doc) => {
@@ -77,11 +92,12 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
     if (data.release && data.action !== 'released') {
       return;
     }
-    rows.push({
+    const author = { name: data.sender?.login, url: data.sender?.html_url };
+    const row = {
       id: doc.id,
       timestamp: docData.eventTimestamp as number,
       repositoryName: data.repository?.name,
-      author: { name: data.sender?.login, url: data.sender?.html_url },
+      author,
       ref: { label: data.pull_request?.head.ref, url: data.pull_request?.html_url },
       activity: {
         title:
@@ -93,7 +109,29 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         comments: data.pull_request?.comments,
         commits: data.pull_request?.commits ?? data.commits?.length,
       },
-    });
+    };
+    if (author?.name) {
+      if (!gitHubRowsByAuthor) {
+        gitHubRowsByAuthor = {};
+      }
+      if (!(author.name in gitHubRowsByAuthor)) {
+        gitHubRowsByAuthor[author.name] = [];
+      }
+      gitHubRowsByAuthor[author.name].push(row);
+    }
+    const jiraTickets = findJiraTickets(row.activity.title + ' ' + row.ref.label);
+    if (jiraTickets.length) {
+      if (!gitHubRowsByJira) {
+        gitHubRowsByJira = {};
+      }
+      jiraTickets.forEach((jiraTicket) => {
+        if (!(jiraTicket in gitHubRowsByJira!)) {
+          gitHubRowsByJira![jiraTicket] = [];
+        }
+        gitHubRowsByJira![jiraTicket].push(row);
+      });
+    }
+    rows.push(row);
   });
   return rows;
 };
@@ -107,6 +145,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
+  const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
 
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
@@ -136,7 +175,7 @@ export default function Index() {
           (a?.name ?? '').localeCompare(b?.name ?? ''),
         renderCell: (params) => {
           const fields = params.value as GitHubRow['author'];
-          return fields.url ? <Link href={fields.url}>{fields.name}</Link> : fields.name;
+          return fields?.url ? <Link href={fields.url}>{fields.name}</Link> : fields?.name;
         },
       },
       {
@@ -199,6 +238,12 @@ export default function Index() {
     return gitHubPushesColumns;
   }, [gitHubColumns]);
 
+  const gitHubByAuthorColumns = useMemo<GridColDef[]>(() => {
+    const gitHubByAuthorColumns = [...gitHubPushesColumns];
+    gitHubByAuthorColumns.splice(2, 1); // remove Author
+    return gitHubByAuthorColumns;
+  }, [gitHubPushesColumns]);
+
   // Firestore listeners
   useEffect(() => {
     const setGitHubRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
@@ -218,9 +263,6 @@ export default function Index() {
         setGitHubError(errMsg(e, `Error parsing GitHub ${type} events`));
       }
     };
-    if (!sessionData.customerId) {
-      return;
-    }
     const unsubscribe: Record<string, () => void> = {};
     Object.values(EventType).map((type: EventType) => {
       unsubscribe[type] = firestoreClient
@@ -233,66 +275,130 @@ export default function Index() {
           (error) => setGitHubError(error.message)
         );
     });
-    return () => {
-      Object.keys(unsubscribe).forEach((k) => unsubscribe[k]());
-    };
+    return () => Object.keys(unsubscribe).forEach((k) => unsubscribe[k]());
   }, [sessionData.customerId]);
 
   return (
     <Fragment>
       <Header isLoggedIn={sessionData.isLoggedIn} />
       {sessionData.isLoggedIn && (
-        <Stack sx={{ mt: 5 }}>
-          <Typography variant="h6" color="GrayText">
-            GitHub Activity
-          </Typography>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-            <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
-              <Tab label="Pull Requests" id="tab-0" />
-              <Tab label="Pushes" id="tab-1" />
-              <Tab label="Releases" id="tab-2" />
-            </Tabs>
-          </Box>
-          <TabPanel value={tabValue} index={0}>
-            {!!gitHubPRs.length && (
-              <DataGrid
-                columns={gitHubColumns}
-                rows={gitHubPRs}
-                rowHeight={75}
-                density="compact"
-                disableRowSelectionOnClick={true}
-                disableColumnMenu={true}
-                initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
-              ></DataGrid>
-            )}
-          </TabPanel>
-          <TabPanel value={tabValue} index={1}>
-            {!!gitHubPushes.length && (
-              <DataGrid
-                columns={gitHubPushesColumns}
-                rows={gitHubPushes}
-                rowHeight={75}
-                density="compact"
-                disableRowSelectionOnClick={true}
-                disableColumnMenu={true}
-                initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
-              ></DataGrid>
-            )}
-          </TabPanel>
-          <TabPanel value={tabValue} index={2}>
-            {!!gitHubPushes.length && (
-              <DataGrid
-                columns={gitHubPushesColumns}
-                rows={gitHubReleases}
-                rowHeight={75}
-                density="compact"
-                disableRowSelectionOnClick={true}
-                disableColumnMenu={true}
-                initialState={{ sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] } }}
-              ></DataGrid>
-            )}
-          </TabPanel>
-          {(!gitHubPRs.length || !gitHubPushes.length) && <LinearProgress sx={{ mt: 5 }} />}
+        <Stack sx={{ mt: 3 }}>
+          <Stack direction="row">
+            <Button disabled={showBy === 'all'} onClick={() => setShowBy('all')}>
+              All GitHub Activity
+            </Button>
+            <Divider orientation="vertical" variant="middle" flexItem />
+            <Button disabled={showBy === 'author'} onClick={() => setShowBy('author')}>
+              By Author
+            </Button>
+            <Divider orientation="vertical" variant="middle" flexItem />
+            <Button disabled={showBy === 'jira'} onClick={() => setShowBy('jira')}>
+              By JIRA
+            </Button>
+          </Stack>
+          {showBy === 'all' && (
+            <Fragment>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+                <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
+                  <Tab label="Pull Requests" id="tab-0" />
+                  <Tab label="Pushes" id="tab-1" />
+                  <Tab label="Releases" id="tab-2" />
+                </Tabs>
+              </Box>
+              {(!gitHubPRs.length || !gitHubPushes.length) && <LinearProgress sx={{ m: 5 }} />}
+              <TabPanel value={tabValue} index={0}>
+                {!!gitHubPRs.length && (
+                  <DataGrid
+                    columns={gitHubColumns}
+                    rows={gitHubPRs}
+                    rowHeight={75}
+                    density="compact"
+                    disableRowSelectionOnClick={true}
+                    disableColumnMenu={true}
+                    initialState={{
+                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                  ></DataGrid>
+                )}
+              </TabPanel>
+              <TabPanel value={tabValue} index={1}>
+                {!!gitHubPushes.length && (
+                  <DataGrid
+                    columns={gitHubPushesColumns}
+                    rows={gitHubPushes}
+                    rowHeight={75}
+                    density="compact"
+                    disableRowSelectionOnClick={true}
+                    disableColumnMenu={true}
+                    initialState={{
+                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                  ></DataGrid>
+                )}
+              </TabPanel>
+              <TabPanel value={tabValue} index={2}>
+                {!!gitHubPushes.length && (
+                  <DataGrid
+                    columns={gitHubPushesColumns}
+                    rows={gitHubReleases}
+                    rowHeight={75}
+                    density="compact"
+                    disableRowSelectionOnClick={true}
+                    disableColumnMenu={true}
+                    initialState={{
+                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                  ></DataGrid>
+                )}
+              </TabPanel>
+            </Fragment>
+          )}
+          {showBy === 'author' && !gitHubRowsByAuthor && <LinearProgress sx={{ m: 5 }} />}
+          {showBy === 'author' &&
+            gitHubRowsByAuthor &&
+            caseInsensitiveSort(Object.keys(gitHubRowsByAuthor)).map((author) => {
+              return (
+                <Box key={author} sx={{ m: 2 }}>
+                  <Typography color="GrayText" variant="h6">
+                    {author}
+                  </Typography>
+                  <DataGrid
+                    columns={gitHubByAuthorColumns}
+                    rows={gitHubRowsByAuthor![author]}
+                    rowHeight={75}
+                    density="compact"
+                    disableRowSelectionOnClick={true}
+                    disableColumnMenu={true}
+                    initialState={{
+                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                  ></DataGrid>
+                </Box>
+              );
+            })}
+          {showBy === 'jira' && !gitHubRowsByJira && <LinearProgress sx={{ m: 5 }} />}
+          {showBy === 'jira' &&
+            gitHubRowsByJira &&
+            caseInsensitiveSort(Object.keys(gitHubRowsByJira)).map((jira) => {
+              return (
+                <Box key={jira} sx={{ m: 2 }}>
+                  <Typography color="GrayText" variant="h6">
+                    {jira}
+                  </Typography>
+                  <DataGrid
+                    columns={gitHubColumns}
+                    rows={gitHubRowsByJira![jira]}
+                    rowHeight={75}
+                    density="compact"
+                    disableRowSelectionOnClick={true}
+                    disableColumnMenu={true}
+                    initialState={{
+                      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                    }}
+                  ></DataGrid>
+                </Box>
+              );
+            })}
           {gitHubError && <Alert severity="error">{gitHubError}</Alert>}
         </Stack>
       )}
