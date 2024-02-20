@@ -21,6 +21,7 @@ import {
   Stack,
   Tab,
   Tabs,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
@@ -157,6 +158,7 @@ export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
   const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.All);
+  const prevDateFilter = usePrevious(dateFilter);
   const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -166,8 +168,6 @@ export default function Index() {
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
   const [gitHubReleases, setGithubReleases] = useState<GitHubRow[]>([]);
-
-  const prevDateFilter = usePrevious(dateFilter);
 
   const [gitHubError, setGitHubError] = useState('');
 
@@ -250,7 +250,7 @@ export default function Index() {
             activity = activity.slice(0, -2);
           }
           return (
-            <Stack>
+            <Stack sx={{ overflowY: 'scroll' }}>
               <Typography variant="body2">
                 {linkifyJira(title, jira => {
                   setShowBy('jira');
@@ -467,14 +467,23 @@ export default function Index() {
                       {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
                     </TimelineSeparator>
                     <TimelineContent sx={{ pt: '3px' }}>
-                      <Button
-                        size="small"
-                        disabled={dateFilter === (date as DateFilter)}
-                        onClick={() => setDateFilter(date as DateFilter)}
-                        sx={{ justifyContent: 'left' }}
+                      <Tooltip
+                        title={(date as DateFilter) === DateFilter.All ? 'up to 1,000 events' : ''}
+                        placement="top"
                       >
-                        <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
-                      </Button>
+                        <span>
+                          <Button
+                            size="small"
+                            disabled={dateFilter === (date as DateFilter)}
+                            onClick={() => setDateFilter(date as DateFilter)}
+                            sx={{ justifyContent: 'left' }}
+                          >
+                            <Box sx={{ whiteSpace: 'nowrap' }}>
+                              {dateFilters[date as DateFilter]}
+                            </Box>
+                          </Button>
+                        </span>
+                      </Tooltip>
                     </TimelineContent>
                   </TimelineItem>
                 ))}
