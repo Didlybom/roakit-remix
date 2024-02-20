@@ -133,7 +133,7 @@ let gitHubRowsByJira: Record<string, GitHubRow[]> | null; // all the events aggr
 
 const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => {
   const rows: GitHubRow[] = [];
-  snapshot.forEach((doc) => {
+  snapshot.forEach(doc => {
     const docData = doc.data();
     const props = gitHubEventSchema.safeParse(docData.properties);
     if (!props.success) {
@@ -159,7 +159,7 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         changedFiles: data.pull_request?.changed_files,
         comments: data.pull_request?.comments,
         commits: data.pull_request?.commits ?? data.commits?.length,
-        commitMessages: data.commits?.map((c) => c.message),
+        commitMessages: data.commits?.map(c => c.message),
       },
     };
     if (author?.name) {
@@ -169,7 +169,7 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
       if (!(author.name in gitHubRowsByAuthor)) {
         gitHubRowsByAuthor[author.name] = { url: author.url, rows: [] };
       }
-      if (!gitHubRowsByAuthor[author.name].rows.find((r) => r.id === row.id)) {
+      if (!gitHubRowsByAuthor[author.name].rows.find(r => r.id === row.id)) {
         gitHubRowsByAuthor[author.name].rows.push(row);
       }
     }
@@ -178,11 +178,11 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
       if (!gitHubRowsByJira) {
         gitHubRowsByJira = {};
       }
-      jiraTickets.forEach((jiraTicket) => {
+      jiraTickets.forEach(jiraTicket => {
         if (!(jiraTicket in gitHubRowsByJira!)) {
           gitHubRowsByJira![jiraTicket] = [];
         }
-        if (!gitHubRowsByJira![jiraTicket].find((r) => r.id === row.id)) {
+        if (!gitHubRowsByJira![jiraTicket].find(r => r.id === row.id)) {
           gitHubRowsByJira![jiraTicket].push(row);
         }
       });
@@ -245,8 +245,8 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
-        valueGetter: (params) => new Date(params.value as number),
-        valueFormatter: (params) => formatDayMonth(params.value as Date),
+        valueGetter: params => new Date(params.value as number),
+        valueFormatter: params => formatDayMonth(params.value as Date),
         width: 100,
       },
       { field: 'repositoryName', headerName: 'Repository', width: 150 },
@@ -256,7 +256,7 @@ export default function Index() {
         width: 150,
         sortComparator: (a: GitHubRow['author'], b: GitHubRow['author']) =>
           (a?.name ?? '').localeCompare(b?.name ?? ''),
-        renderCell: (params) => {
+        renderCell: params => {
           const fields = params.value as GitHubRow['author'];
           return fields?.url ?
               <Link
@@ -277,7 +277,7 @@ export default function Index() {
         width: 300,
         sortComparator: (a: GitHubRow['ref'], b: GitHubRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
-        renderCell: (params) => {
+        renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
           return fields?.url ? <Link href={fields.url}>{fields.label}</Link> : fields?.label;
         },
@@ -289,7 +289,7 @@ export default function Index() {
         flex: 1,
         sortComparator: (a: GitHubRow['activity'], b: GitHubRow['activity']) =>
           (a?.title ?? '').localeCompare(b?.title ?? ''),
-        renderCell: (params) => {
+        renderCell: params => {
           const fields = params.value as GitHubRow['activity'];
           const title = fields?.title ?? '';
           let activity = '';
@@ -320,7 +320,7 @@ export default function Index() {
                 <Typography variant="caption">{activity}</Typography>
               : <Link
                   variant="caption"
-                  onClick={(e) => {
+                  onClick={e => {
                     setPopoverContent(
                       <List dense={true}>
                         {linkifyJira(
@@ -394,11 +394,11 @@ export default function Index() {
         query = query.where('eventTimestamp', '>=', startDate);
       }
       unsubscribe[type] = query.onSnapshot(
-        (snapshot) => setGitHubRows(type, snapshot),
-        (error) => setGitHubError(error.message)
+        snapshot => setGitHubRows(type, snapshot),
+        error => setGitHubError(error.message)
       );
     });
-    return () => Object.keys(unsubscribe).forEach((k) => unsubscribe[k]());
+    return () => Object.keys(unsubscribe).forEach(k => unsubscribe[k]());
   }, [dateFilter, sessionData.customerId]);
 
   // Auto scrollers
@@ -426,9 +426,9 @@ export default function Index() {
   const filteredGitHubRowsByJira = gitHubRowsByJira;
   if (dateFilter !== DateFilter.All && filteredGitHubRowsByAuthor) {
     const startDate = dateFilterToStartDate(dateFilter)!;
-    Object.keys(filteredGitHubRowsByAuthor).forEach((author) => {
+    Object.keys(filteredGitHubRowsByAuthor).forEach(author => {
       filteredGitHubRowsByAuthor[author].rows = filteredGitHubRowsByAuthor[author].rows.filter(
-        (row) => row.timestamp >= startDate
+        row => row.timestamp >= startDate
       );
       if (filteredGitHubRowsByAuthor[author].rows.length === 0) {
         delete filteredGitHubRowsByAuthor[author];
@@ -437,9 +437,9 @@ export default function Index() {
   }
   if (dateFilter !== DateFilter.All && filteredGitHubRowsByJira) {
     const startDate = dateFilterToStartDate(dateFilter)!;
-    Object.keys(filteredGitHubRowsByJira).forEach((jira) => {
+    Object.keys(filteredGitHubRowsByJira).forEach(jira => {
       filteredGitHubRowsByJira[jira] = filteredGitHubRowsByJira[jira].filter(
-        (row) => row.timestamp >= startDate
+        row => row.timestamp >= startDate
       );
       if (filteredGitHubRowsByJira[jira].length === 0) {
         delete filteredGitHubRowsByJira[jira];
@@ -498,7 +498,7 @@ export default function Index() {
                   [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
                 }}
               >
-                {Object.keys(dateFilters).map((date) => (
+                {Object.keys(dateFilters).map(date => (
                   <TimelineItem key={date} sx={{ minHeight: 50 }}>
                     <TimelineSeparator>
                       <TimelineDot />
@@ -571,7 +571,7 @@ export default function Index() {
               )}
               {showBy === 'author' && filteredGitHubRowsByAuthor && (
                 <Box>
-                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => (
+                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(author => (
                     <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
                       <Stack direction="row" alignItems="center">
                         <Typography color="GrayText" variant="h6">
@@ -597,7 +597,7 @@ export default function Index() {
               )}
               {showBy === 'jira' && filteredGitHubRowsByJira && (
                 <Box>
-                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => (
+                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map(jira => (
                     <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
                       <Link id={`JIRA:${jira}`} />
                       <Typography color="GrayText" variant="h6">

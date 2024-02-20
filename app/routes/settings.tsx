@@ -61,7 +61,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
     const feedDocs = await feedsCollection.listDocuments();
     const feeds = await Promise.all(
-      feedDocs.map(async (feed) => {
+      feedDocs.map(async feed => {
         if (!sessionData.customerId) {
           return;
         }
@@ -77,11 +77,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
     // create feeds not existing yet
     await Promise.all(
-      feedUtils.FEED_TYPES.map(async (feedType) => {
+      feedUtils.FEED_TYPES.map(async feedType => {
         if (!sessionData.customerId) {
           return;
         }
-        if (!feeds.find((f) => f && f.feedId === feedType.id && f.type === feedType.type)) {
+        if (!feeds.find(f => f && f.feedId === feedType.id && f.type === feedType.type)) {
           const feedValues = {
             type: feedType.type,
           };
@@ -106,7 +106,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!jwt) {
     return redirect('/login');
   }
-  await new Promise((f) => setTimeout(f, 1000));
+  await new Promise(f => setTimeout(f, 1000));
   try {
     await serverAuth.verifySessionCookie(jwt);
 
@@ -131,10 +131,10 @@ export default function Settings() {
 
   const [tabValue, setTabValue] = useState(0);
 
-  const serverJiraFeed = serverData.feeds.filter((f) => f.type === feedUtils.JIRA_FEED_TYPE)[0];
-  const serverGitHubFeed = serverData.feeds.filter((f) => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
+  const serverJiraFeed = serverData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
+  const serverGitHubFeed = serverData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
   const serverConfluenceFeed = serverData.feeds.filter(
-    (f) => f.type === feedUtils.CONFLUENCE_FEED_TYPE
+    f => f.type === feedUtils.CONFLUENCE_FEED_TYPE
   )[0];
 
   const jiraURL = `https://ingest.roakit.com/jira/${serverJiraFeed.clientId}`;
@@ -287,7 +287,7 @@ export default function Settings() {
                 : <TextField
                     label="GitHub Secret"
                     value={gitHubSecret}
-                    onChange={(e) => setGitHubSecret(e.target.value)}
+                    onChange={e => setGitHubSecret(e.target.value)}
                     disabled={navigation.state === 'submitting'}
                     fullWidth
                     InputProps={{
@@ -404,7 +404,7 @@ export default function Settings() {
                   : <TextField
                       label="Confluence Secret"
                       value={confluenceSecret}
-                      onChange={(e) => setConfluenceSecret(e.target.value)}
+                      onChange={e => setConfluenceSecret(e.target.value)}
                       disabled={navigation.state === 'submitting'}
                       fullWidth
                       InputProps={{
