@@ -32,20 +32,15 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
-import { LinkIt } from 'react-linkify-it';
-import { z } from 'zod';
+import { GitHubRow, gitHubEventSchema } from '~/feeds/githubFeed';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
 import TabPanel from '~/src/TabPanel';
-import { formatDayMonth } from '~/utils/dateUtils';
+import { formatDayMonth, formatRelative } from '~/utils/dateUtils';
 import { errMsg } from '~/utils/errorUtils';
+import { linkifyJira } from '~/utils/jsxUtils';
 import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
-import {
-  JIRA_REGEXP,
-  caseInsensitiveSort,
-  findJiraTickets,
-  removeSpaces,
-} from '~/utils/stringUtils';
+import { caseInsensitiveSort, findJiraTickets, removeSpaces } from '~/utils/stringUtils';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -85,48 +80,6 @@ const dateFilterToStartDate = (dateFilter: DateFilter) => {
       return null;
   }
 };
-
-interface GitHubRow {
-  id: string;
-  timestamp: number;
-  repositoryName?: string;
-  author?: { name?: string; url?: string };
-  ref?: { label?: string; url?: string };
-  activity?: {
-    title?: string;
-    created?: string;
-    changedFiles?: number;
-    comments?: number;
-    commits?: number;
-    commitMessages?: string[];
-  };
-}
-
-const gitHubEventSchema = z.object({
-  repository: z.object({ name: z.string() }).optional(),
-  sender: z.object({ login: z.string(), html_url: z.string().optional() }).optional(),
-
-  // pull_request
-  pull_request: z
-    .object({
-      title: z.string(),
-      created_at: z.string(),
-      changed_files: z.number(),
-      deletions: z.number(),
-      comments: z.number(),
-      commits: z.number(),
-      head: z.object({ ref: z.string() }),
-      html_url: z.string().optional(),
-    })
-    .optional(),
-
-  // push
-  commits: z.object({ message: z.string() }).array().optional(),
-
-  // release
-  action: z.string().optional(),
-  release: z.object({ body: z.string() }).optional(),
-});
 
 let gitHubRowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> | null; // all the events aggregated by author
 let gitHubRowsByJira: Record<string, GitHubRow[]> | null; // all the events aggregated by JIRA project
@@ -218,27 +171,6 @@ export default function Index() {
     setTabValue(newValue);
   };
 
-  const linkifyJira = (content: string | JSX.Element | JSX.Element[] | undefined) => (
-    <LinkIt
-      component={(jira: string) => (
-        <Link
-          key={jira} // FIXME we should use key param from the callback but for soem reasons that makes it requiring 2 clicks
-          onClick={() => {
-            setShowBy('jira');
-            setScrollToJira(jira);
-            setPopoverElement(null);
-          }}
-          sx={{ cursor: 'pointer' }}
-        >
-          {jira}
-        </Link>
-      )}
-      regex={JIRA_REGEXP}
-    >
-      {content}
-    </LinkIt>
-  );
-
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
       {
@@ -246,8 +178,8 @@ export default function Index() {
         headerName: 'Date',
         type: 'dateTime',
         valueGetter: params => new Date(params.value as number),
-        valueFormatter: params => formatDayMonth(params.value as Date),
-        width: 100,
+        valueFormatter: params => formatRelative(params.value as Date),
+        width: 120,
       },
       { field: 'repositoryName', headerName: 'Repository', width: 150 },
       {
@@ -315,7 +247,13 @@ export default function Index() {
           }
           return (
             <Stack>
-              <Typography variant="body2">{linkifyJira(title)}</Typography>
+              <Typography variant="body2">
+                {linkifyJira(title, jira => {
+                  setShowBy('jira');
+                  setScrollToJira(jira);
+                  setPopoverElement(null);
+                })}
+              </Typography>
               {!fields?.commitMessages?.length ?
                 <Typography variant="caption">{activity}</Typography>
               : <Link
@@ -328,7 +266,12 @@ export default function Index() {
                             <ListItem key={i}>
                               <ListItemText>{message}</ListItemText>
                             </ListItem>
-                          ))
+                          )),
+                          jira => {
+                            setShowBy('jira');
+                            setScrollToJira(jira);
+                            setPopoverElement(null);
+                          }
                         )}
                       </List>
                     );
