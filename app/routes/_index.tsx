@@ -9,6 +9,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Divider,
   IconButton,
   LinearProgress,
@@ -32,6 +33,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import usePrevious from 'use-previous';
 import { GitHubRow, gitHubEventSchema } from '~/feeds/githubFeed';
 import { firestore as firestoreClient } from '~/firebase.client';
 import Header from '~/src/Header';
@@ -164,6 +166,8 @@ export default function Index() {
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
   const [gitHubReleases, setGithubReleases] = useState<GitHubRow[]>([]);
+
+  const prevDateFilter = usePrevious(dateFilter);
 
   const [gitHubError, setGitHubError] = useState('');
 
@@ -305,25 +309,26 @@ export default function Index() {
   const authorElementId = (author: string) => `AUTHOR-${removeSpaces(author)}`;
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
+  const setGitHubRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
+    try {
+      switch (type) {
+        case EventType.PullRequest:
+          setGithubPRs(githubRows(querySnapshot));
+          return;
+        case EventType.Push:
+          setGithubPushes(githubRows(querySnapshot));
+          return;
+        case EventType.Release:
+          setGithubReleases(githubRows(querySnapshot));
+          return;
+      }
+    } catch (e: unknown) {
+      setGitHubError(errMsg(e, `Error parsing GitHub ${type} events`));
+    }
+  };
+
   // Firestore listeners
   useEffect(() => {
-    const setGitHubRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
-      try {
-        switch (type) {
-          case EventType.PullRequest:
-            setGithubPRs(githubRows(querySnapshot));
-            break;
-          case EventType.Push:
-            setGithubPushes(githubRows(querySnapshot));
-            break;
-          case EventType.Release:
-            setGithubReleases(githubRows(querySnapshot));
-            break;
-        }
-      } catch (e: unknown) {
-        setGitHubError(errMsg(e, `Error parsing GitHub ${type} events`));
-      }
-    };
     const unsubscribe: Record<string, () => void> = {};
     Object.values(EventType).map((type: EventType) => {
       let query = firestoreClient
@@ -444,7 +449,21 @@ export default function Index() {
                 {Object.keys(dateFilters).map(date => (
                   <TimelineItem key={date} sx={{ minHeight: 50 }}>
                     <TimelineSeparator>
-                      <TimelineDot />
+                      <TimelineDot>
+                        {prevDateFilter &&
+                          dateFilter !== prevDateFilter &&
+                          dateFilter === (date as DateFilter) && (
+                            <CircularProgress
+                              size={18}
+                              sx={{
+                                position: 'absolute',
+                                top: 9,
+                                left: -3,
+                                zIndex: 1,
+                              }}
+                            />
+                          )}
+                      </TimelineDot>
                       {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
                     </TimelineSeparator>
                     <TimelineContent sx={{ pt: '3px' }}>
