@@ -39,7 +39,7 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
     // re-inject tags
     const tags = emotionCache.sheet.tags;
     emotionCache.sheet.flush();
-    tags.forEach((tag) => {
+    tags.forEach(tag => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (emotionCache.sheet as any)._insertTag(tag);
     });
