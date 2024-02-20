@@ -13,6 +13,10 @@ import {
   IconButton,
   LinearProgress,
   Link,
+  List,
+  ListItem,
+  ListItemText,
+  Popover,
   Stack,
   Tab,
   Tabs,
@@ -26,6 +30,7 @@ import { startOfToday } from 'date-fns/startOfToday';
 import { subWeeks } from 'date-fns/subWeeks';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
+import pluralize from 'pluralize';
 import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
 import { z } from 'zod';
@@ -93,6 +98,7 @@ interface GitHubRow {
     changedFiles?: number;
     comments?: number;
     commits?: number;
+    commitMessages?: string[];
   };
 }
 
@@ -148,11 +154,12 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         title:
           data.pull_request?.title ??
           (data.commits ? data.commits[0]?.message : undefined) ??
-          data.release?.body, // FIXME commits
+          data.release?.body,
         created: data.pull_request?.created_at,
         changedFiles: data.pull_request?.changed_files,
         comments: data.pull_request?.comments,
         commits: data.pull_request?.commits ?? data.commits?.length,
+        commitMessages: data.commits?.map((c) => c.message),
       },
     };
     if (author?.name) {
@@ -198,6 +205,8 @@ export default function Index() {
   const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
+  const [popoverElement, setPopoverElement] = useState<HTMLElement | null>(null);
+  const [popoverContent, setPopoverContent] = useState<JSX.Element | undefined>(undefined);
 
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
@@ -208,6 +217,27 @@ export default function Index() {
   const handleTabChange = (event: SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  const linkifyJira = (content: string | JSX.Element | JSX.Element[] | undefined) => (
+    <LinkIt
+      component={(jira: string) => (
+        <Link
+          key={jira} // FIXME we should use key param from the callback but for soem reasons that makes it requiring 2 clicks
+          onClick={() => {
+            setShowBy('jira');
+            setScrollToJira(jira);
+            setPopoverElement(null);
+          }}
+          sx={{ cursor: 'pointer' }}
+        >
+          {jira}
+        </Link>
+      )}
+      regex={JIRA_REGEXP}
+    >
+      {content}
+    </LinkIt>
+  );
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
@@ -268,13 +298,16 @@ export default function Index() {
               activity += `Created ${formatDayMonth(new Date(fields.created))}, `;
             }
             if (fields.changedFiles) {
-              activity += `${fields.changedFiles} changed files, `;
+              activity += `${fields.changedFiles} changed ${pluralize('file', fields.changedFiles)}, `;
             }
             if (fields.comments) {
-              activity += `${fields.comments} comments, `;
+              activity += `${fields.comments} ${pluralize('comment', fields.comments)}, `;
             }
-            if (fields.commits) {
-              activity += `${fields.commits} commits, `;
+            if (fields.commits && !fields.commitMessages) {
+              activity += `${fields.commits} ${pluralize('commit', fields.commits)}, `;
+            }
+            if (fields.commitMessages && fields.commitMessages.length > 1) {
+              activity += `and ${fields.commitMessages.length - 1} more ${pluralize('commit', fields.commitMessages.length - 1)}, `;
             }
           }
           if (activity) {
@@ -282,26 +315,30 @@ export default function Index() {
           }
           return (
             <Stack>
-              <Typography variant="body2">
-                <LinkIt
-                  component={(jira: string) => (
-                    <Link
-                      key={jira}
-                      onClick={() => {
-                        setShowBy('jira');
-                        setScrollToJira(jira);
-                      }}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      {jira}
-                    </Link>
-                  )}
-                  regex={JIRA_REGEXP}
+              <Typography variant="body2">{linkifyJira(title)}</Typography>
+              {!fields?.commitMessages?.length ?
+                <Typography variant="caption">{activity}</Typography>
+              : <Link
+                  variant="caption"
+                  onClick={(e) => {
+                    setPopoverContent(
+                      <List dense={true}>
+                        {linkifyJira(
+                          fields.commitMessages?.map((message, i) => (
+                            <ListItem key={i}>
+                              <ListItemText>{message}</ListItemText>
+                            </ListItem>
+                          ))
+                        )}
+                      </List>
+                    );
+                    setPopoverElement(e.currentTarget);
+                  }}
+                  sx={{ cursor: 'pointer' }}
                 >
-                  {title}
-                </LinkIt>
-              </Typography>
-              <Typography variant="caption">{activity}</Typography>{' '}
+                  {activity}
+                </Link>
+              }
             </Stack>
           );
         },
@@ -423,6 +460,18 @@ export default function Index() {
   return (
     <Fragment>
       <Header isLoggedIn={sessionData.isLoggedIn} />
+      <Popover
+        id={popoverElement ? 'popover' : undefined}
+        open={!!popoverElement}
+        anchorEl={popoverElement}
+        onClose={() => setPopoverElement(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
+      </Popover>
       {sessionData.isLoggedIn && (
         <Stack sx={{ mt: 3 }}>
           <Stack direction="row">
