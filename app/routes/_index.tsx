@@ -18,6 +18,7 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -437,126 +438,133 @@ export default function Index() {
               By JIRA
             </Button>
           </Stack>
-          <Stack direction={'row'}>
-            <Timeline
-              sx={{
-                flex: 0,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
-              }}
-            >
-              {Object.keys(dateFilters).map((date) => (
-                <TimelineItem key={date}>
-                  <TimelineSeparator>
-                    <TimelineDot />
-                    {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
-                  </TimelineSeparator>
-                  <TimelineContent sx={{ py: 0 }}>
-                    <Button
-                      disabled={dateFilter === (date as DateFilter)}
-                      onClick={() => setDateFilter(date as DateFilter)}
-                      sx={{ justifyContent: 'left' }}
-                    >
-                      <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
-                    </Button>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
-            {showBy === 'all' && (
-              <Box sx={{ flex: 1 }}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                  <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
-                    <Tab label="Pull Requests" id="tab-0" />
-                    <Tab label="Pushes" id="tab-1" />
-                    <Tab label="Releases" id="tab-2" />
-                  </Tabs>
+          <Grid container direction={{ xs: 'column', md: 'row' }}>
+            <Grid>
+              <Timeline
+                sx={{
+                  rotate: { xs: '-90deg', md: 'none' },
+                  maxHeight: 100,
+                  maxWidth: 120,
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                  [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
+                }}
+              >
+                {Object.keys(dateFilters).map((date) => (
+                  <TimelineItem key={date} sx={{ minHeight: 50 }}>
+                    <TimelineSeparator>
+                      <TimelineDot />
+                      {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
+                    </TimelineSeparator>
+                    <TimelineContent sx={{ pt: '3px' }}>
+                      <Button
+                        size="small"
+                        disabled={dateFilter === (date as DateFilter)}
+                        onClick={() => setDateFilter(date as DateFilter)}
+                        sx={{ justifyContent: 'left' }}
+                      >
+                        <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
+                      </Button>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </Timeline>
+            </Grid>
+            <Grid sx={{ flex: 1 }}>
+              {showBy === 'all' && (
+                <Box>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+                    <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
+                      <Tab label="Pull Requests" id="tab-0" />
+                      <Tab label="Pushes" id="tab-1" />
+                      <Tab label="Releases" id="tab-2" />
+                    </Tabs>
+                  </Box>
+                  {(!gitHubPRs.length || !gitHubPushes.length) && (
+                    <LinearProgress sx={{ mt: 5, mb: 5 }} />
+                  )}
+                  <TabPanel value={tabValue} index={0}>
+                    {!!gitHubPRs.length && (
+                      <DataGrid
+                        columns={gitHubColumns}
+                        rows={gitHubPRs}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                  <TabPanel value={tabValue} index={1}>
+                    {!!gitHubPushes.length && (
+                      <DataGrid
+                        columns={gitHubPushesColumns}
+                        rows={gitHubPushes}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                  <TabPanel value={tabValue} index={2}>
+                    {!!gitHubPushes.length && (
+                      <DataGrid
+                        columns={gitHubPushesColumns}
+                        rows={gitHubReleases}
+                        rowHeight={75}
+                        density="compact"
+                        disableRowSelectionOnClick={true}
+                        disableColumnMenu={true}
+                        initialState={{
+                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                        }}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
                 </Box>
-                {(!gitHubPRs.length || !gitHubPushes.length) && (
-                  <LinearProgress sx={{ mt: 5, mb: 5 }} />
-                )}
-                <TabPanel value={tabValue} index={0}>
-                  {!!gitHubPRs.length && (
-                    <DataGrid
-                      columns={gitHubColumns}
-                      rows={gitHubPRs}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-                <TabPanel value={tabValue} index={1}>
-                  {!!gitHubPushes.length && (
-                    <DataGrid
-                      columns={gitHubPushesColumns}
-                      rows={gitHubPushes}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-                <TabPanel value={tabValue} index={2}>
-                  {!!gitHubPushes.length && (
-                    <DataGrid
-                      columns={gitHubPushesColumns}
-                      rows={gitHubReleases}
-                      rowHeight={75}
-                      density="compact"
-                      disableRowSelectionOnClick={true}
-                      disableColumnMenu={true}
-                      initialState={{
-                        sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                      }}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-              </Box>
-            )}
-            {showBy === 'author' && !filteredGitHubRowsByAuthor && (
-              <LinearProgress sx={{ mt: 5, mb: 5 }} />
-            )}
-            {showBy === 'author' && filteredGitHubRowsByAuthor && (
-              <Box sx={{ flex: 1 }}>
-                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => (
-                  <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
-                    <Stack direction="row" alignItems="center">
+              )}
+              {showBy === 'author' && !filteredGitHubRowsByAuthor && (
+                <LinearProgress sx={{ mt: 5, mb: 5 }} />
+              )}
+              {showBy === 'author' && filteredGitHubRowsByAuthor && (
+                <Box>
+                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map((author) => (
+                    <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                      <Stack direction="row" alignItems="center">
+                        <Typography color="GrayText" variant="h6">
+                          {author}
+                        </Typography>
+                        {gitHubRowsByAuthor?.[author]?.url && (
+                          <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
+                            <GitHubIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Stack>
+                      <DataGrid
+                        columns={gitHubByAuthorColumns}
+                        rows={gitHubRowsByAuthor![author].rows}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              {showBy === 'jira' && !filteredGitHubRowsByJira && (
+                <LinearProgress sx={{ mt: 5, mb: 5 }} />
+              )}
+              {showBy === 'jira' && filteredGitHubRowsByJira && (
+                <Box>
+                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => (
+                    <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
+                      <Link id={`JIRA:${jira}`} />
                       <Typography color="GrayText" variant="h6">
-                        {author}
+                        {jira}
                       </Typography>
-                      {gitHubRowsByAuthor?.[author]?.url && (
-                        <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
-                          <GitHubIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </Stack>
-                    <DataGrid
-                      columns={gitHubByAuthorColumns}
-                      rows={gitHubRowsByAuthor![author].rows}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  </Box>
-                ))}
-              </Box>
-            )}
-            {showBy === 'jira' && !filteredGitHubRowsByJira && (
-              <LinearProgress sx={{ mt: 5, mb: 5 }} />
-            )}
-            {showBy === 'jira' && filteredGitHubRowsByJira && (
-              <Box sx={{ flex: 1 }}>
-                {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira) => (
-                  <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
-                    <Link id={`JIRA:${jira}`} />
-                    <Typography color="GrayText" variant="h6">
-                      {jira}
-                    </Typography>
-                    <DataGrid
-                      columns={gitHubColumns}
-                      rows={gitHubRowsByJira![jira]}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Stack>
+                      <DataGrid
+                        columns={gitHubColumns}
+                        rows={gitHubRowsByJira![jira]}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Grid>
+          </Grid>
           {gitHubError && <Alert severity="error">{gitHubError}</Alert>}
         </Stack>
       )}
