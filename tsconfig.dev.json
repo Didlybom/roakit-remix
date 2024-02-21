@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "include": [".eslintrc.js", "remix.config.js"],
+  "include": [".eslintrc.js", "remix.config.js", "vite.config.js"],
   "sourceMap": true
 }
