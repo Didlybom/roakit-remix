@@ -211,13 +211,13 @@ export default function Index() {
       {
         field: 'ref',
         headerName: 'Reference',
-        width: 300,
+        width: 180,
         sortComparator: (a: GitHubRow['ref'], b: GitHubRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
           return fields?.url ?
-              <Link href={fields.url} sx={{ overflowX: 'scroll' }}>
+              <Link href={fields.url} title={fields.label} sx={{ overflowX: 'scroll' }}>
                 {fields.label}
               </Link>
             : fields?.label ?? '';
@@ -341,8 +341,9 @@ export default function Index() {
         .collection(
           `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
-        .orderBy('eventTimestamp', 'desc')
-        .endAt(startDate)
+        .where('eventTimestamp', '>=', startDate)
+        .orderBy('eventTimestamp')
+        .startAt(startDate)
         .limit(1000); // FIXME limit
       unsubscribe[type] = query.onSnapshot(
         snapshot => setGitHubRows(type, snapshot),
@@ -398,6 +399,11 @@ export default function Index() {
     });
   }
 
+  const sortedAuthors =
+    filteredGitHubRowsByAuthor ?
+      caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor))
+    : null;
+
   const dataGridCommonProps = {
     rowHeight: 75,
     density: 'compact' as GridDensity,
@@ -442,6 +448,8 @@ export default function Index() {
             <Grid>
               <Timeline
                 sx={{
+                  position: { xs: 'static', md: 'sticky' },
+                  top: 0,
                   rotate: { xs: '-90deg', md: 'none' },
                   maxHeight: 100,
                   maxWidth: 130,
@@ -534,25 +542,29 @@ export default function Index() {
               {showBy === 'author' && !filteredGitHubRowsByAuthor && (
                 <LinearProgress sx={{ mt: 5, mb: 5 }} />
               )}
-              {showBy === 'author' && filteredGitHubRowsByAuthor && (
+              {showBy === 'author' && sortedAuthors && (
                 <Stack direction="row">
-                  <Box sx={{ mt: 1, p: 2, textWrap: 'nowrap' }}>
-                    {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(
-                      (author, i) => (
-                        <Box key={i}>
-                          <Link
-                            fontSize="small"
-                            sx={{ cursor: 'pointer' }}
-                            onClick={() => setScrollToAuthor(author)}
-                          >
-                            {author}
-                          </Link>
-                        </Box>
-                      )
-                    )}
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 2,
+                      textWrap: 'nowrap',
+                    }}
+                  >
+                    {sortedAuthors.map((author, i) => (
+                      <Box key={i}>
+                        <Link
+                          fontSize="small"
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => setScrollToAuthor(author)}
+                        >
+                          {author}
+                        </Link>
+                      </Box>
+                    ))}
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(author => (
+                    {sortedAuthors.map(author => (
                       <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
                         <Stack direction="row" alignItems="center">
                           <Typography color="GrayText" variant="h6">
@@ -582,24 +594,29 @@ export default function Index() {
                   {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira, i) => (
                     <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
                       <Stack direction="row">
-                        <Box
-                          sx={{
-                            rotate: '-90deg',
-                            maxHeight: '20px',
-                            mt: '30px',
-                            flex: 0,
-                            textWrap: 'nowrap',
-                          }}
-                        >
-                          <Link id={`JIRA:${jira}`} />
-                          <Typography color="GrayText" variant="h6">
-                            {jira}
-                          </Typography>
+                        <Box sx={{ position: 'relative' }}>
+                          <Box
+                            sx={{
+                              rotate: '-90deg',
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              ml: '-30px',
+                              mt: '25px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <Link id={`JIRA:${jira}`} />
+                            <Typography color="GrayText" variant="h6">
+                              {jira}
+                            </Typography>
+                          </Box>
                         </Box>
                         <DataGrid
                           columns={gitHubColumns}
                           rows={gitHubRowsByJira![jira]}
                           {...dataGridCommonProps}
+                          sx={{ ml: '30px' }}
                         ></DataGrid>
                       </Stack>
                     </Box>
