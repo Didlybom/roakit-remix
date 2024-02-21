@@ -21,7 +21,6 @@ import {
   Stack,
   Tab,
   Tabs,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
@@ -30,6 +29,7 @@ import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import { startOfToday } from 'date-fns/startOfToday';
 import { subWeeks } from 'date-fns/subWeeks';
+import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
@@ -58,14 +58,12 @@ enum EventType {
 }
 
 enum DateFilter {
-  All = 'All',
   TwoWeeks = 'TwoWeeks',
   OneWeek = 'OneWeek',
   OneDay = 'OneDay',
 }
 
 const dateFilters: Record<DateFilter, string> = {
-  [DateFilter.All]: 'all',
   [DateFilter.TwoWeeks]: '2 weeks',
   [DateFilter.OneWeek]: '1 week',
   [DateFilter.OneDay]: '1 day',
@@ -157,8 +155,7 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
-  const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.All);
-  const prevDateFilter = usePrevious(dateFilter);
+  const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.OneDay);
   const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -169,11 +166,15 @@ export default function Index() {
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
   const [gitHubReleases, setGithubReleases] = useState<GitHubRow[]>([]);
 
+  const prevDateFilter = usePrevious(dateFilter);
+
   const [gitHubError, setGitHubError] = useState('');
 
   const handleTabChange = (event: SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  const pluralizeMemo = memoize(pluralize);
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
@@ -215,7 +216,11 @@ export default function Index() {
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
-          return fields?.url ? <Link href={fields.url}>{fields.label}</Link> : fields?.label;
+          return fields?.url ?
+              <Link href={fields.url} sx={{ overflowX: 'scroll' }}>
+                {fields.label}
+              </Link>
+            : fields?.label ?? '';
         },
       },
       {
@@ -234,23 +239,23 @@ export default function Index() {
               activity += `Created ${formatDayMonth(new Date(fields.created))}, `;
             }
             if (fields.changedFiles) {
-              activity += `${fields.changedFiles} changed ${pluralize('file', fields.changedFiles)}, `;
+              activity += `${fields.changedFiles} changed ${pluralizeMemo('file', fields.changedFiles)}, `;
             }
             if (fields.comments) {
-              activity += `${fields.comments} ${pluralize('comment', fields.comments)}, `;
+              activity += `${fields.comments} ${pluralizeMemo('comment', fields.comments)}, `;
             }
             if (fields.commits && !fields.commitMessages) {
-              activity += `${fields.commits} ${pluralize('commit', fields.commits)}, `;
+              activity += `${fields.commits} ${pluralizeMemo('commit', fields.commits)}, `;
             }
             if (fields.commitMessages && fields.commitMessages.length > 1) {
-              activity += `and ${fields.commitMessages.length - 1} more ${pluralize('commit', fields.commitMessages.length - 1)}, `;
+              activity += `and ${fields.commitMessages.length - 1} more ${pluralizeMemo('commit', fields.commitMessages.length - 1)}, `;
             }
           }
           if (activity) {
             activity = activity.slice(0, -2);
           }
           return (
-            <Stack sx={{ overflowY: 'scroll' }}>
+            <Stack sx={{ overflowX: 'scroll' }}>
               <Typography variant="body2">
                 {linkifyJira(title, jira => {
                   setShowBy('jira');
@@ -291,7 +296,7 @@ export default function Index() {
         },
       },
     ],
-    []
+    [pluralizeMemo]
   );
 
   const gitHubPushesColumns = useMemo<GridColDef[]>(() => {
@@ -331,16 +336,14 @@ export default function Index() {
   useEffect(() => {
     const unsubscribe: Record<string, () => void> = {};
     Object.values(EventType).map((type: EventType) => {
-      let query = firestoreClient
+      const startDate = dateFilterToStartDate(dateFilter);
+      const query = firestoreClient
         .collection(
           `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
         .orderBy('eventTimestamp', 'desc')
+        .endAt(startDate)
         .limit(1000); // FIXME limit
-      const startDate = dateFilterToStartDate(dateFilter);
-      if (startDate) {
-        query = query.where('eventTimestamp', '>=', startDate);
-      }
       unsubscribe[type] = query.onSnapshot(
         snapshot => setGitHubRows(type, snapshot),
         error => setGitHubError(error.message)
@@ -372,7 +375,7 @@ export default function Index() {
 
   const filteredGitHubRowsByAuthor = gitHubRowsByAuthor;
   const filteredGitHubRowsByJira = gitHubRowsByJira;
-  if (dateFilter !== DateFilter.All && filteredGitHubRowsByAuthor) {
+  if (filteredGitHubRowsByAuthor) {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByAuthor).forEach(author => {
       filteredGitHubRowsByAuthor[author].rows = filteredGitHubRowsByAuthor[author].rows.filter(
@@ -383,7 +386,7 @@ export default function Index() {
       }
     });
   }
-  if (dateFilter !== DateFilter.All && filteredGitHubRowsByJira) {
+  if (filteredGitHubRowsByJira) {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByJira).forEach(jira => {
       filteredGitHubRowsByJira[jira] = filteredGitHubRowsByJira[jira].filter(
@@ -441,7 +444,7 @@ export default function Index() {
                 sx={{
                   rotate: { xs: '-90deg', md: 'none' },
                   maxHeight: 100,
-                  maxWidth: 120,
+                  maxWidth: 130,
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                   [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
                 }}
@@ -467,23 +470,14 @@ export default function Index() {
                       {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
                     </TimelineSeparator>
                     <TimelineContent sx={{ pt: '3px' }}>
-                      <Tooltip
-                        title={(date as DateFilter) === DateFilter.All ? 'up to 1,000 events' : ''}
-                        placement="top"
+                      <Button
+                        size="small"
+                        disabled={dateFilter === (date as DateFilter)}
+                        onClick={() => setDateFilter(date as DateFilter)}
+                        sx={{ justifyContent: 'left' }}
                       >
-                        <span>
-                          <Button
-                            size="small"
-                            disabled={dateFilter === (date as DateFilter)}
-                            onClick={() => setDateFilter(date as DateFilter)}
-                            sx={{ justifyContent: 'left' }}
-                          >
-                            <Box sx={{ whiteSpace: 'nowrap' }}>
-                              {dateFilters[date as DateFilter]}
-                            </Box>
-                          </Button>
-                        </span>
-                      </Tooltip>
+                        <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
+                      </Button>
                     </TimelineContent>
                   </TimelineItem>
                 ))}
@@ -541,44 +535,73 @@ export default function Index() {
                 <LinearProgress sx={{ mt: 5, mb: 5 }} />
               )}
               {showBy === 'author' && filteredGitHubRowsByAuthor && (
-                <Box>
-                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(author => (
-                    <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
-                      <Stack direction="row" alignItems="center">
-                        <Typography color="GrayText" variant="h6">
-                          {author}
-                        </Typography>
-                        {gitHubRowsByAuthor?.[author]?.url && (
-                          <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
-                            <GitHubIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Stack>
-                      <DataGrid
-                        columns={gitHubByAuthorColumns}
-                        rows={gitHubRowsByAuthor![author].rows}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    </Box>
-                  ))}
-                </Box>
+                <Stack direction="row">
+                  <Box sx={{ mt: 1, p: 2, textWrap: 'nowrap' }}>
+                    {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(
+                      (author, i) => (
+                        <Box key={i}>
+                          <Link
+                            fontSize="small"
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => setScrollToAuthor(author)}
+                          >
+                            {author}
+                          </Link>
+                        </Box>
+                      )
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    {caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor)).map(author => (
+                      <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                        <Stack direction="row" alignItems="center">
+                          <Typography color="GrayText" variant="h6">
+                            {author}
+                          </Typography>
+                          {gitHubRowsByAuthor?.[author]?.url && (
+                            <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
+                              <GitHubIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Stack>
+                        <DataGrid
+                          columns={gitHubByAuthorColumns}
+                          rows={gitHubRowsByAuthor![author].rows}
+                          {...dataGridCommonProps}
+                        ></DataGrid>
+                      </Box>
+                    ))}
+                  </Box>
+                </Stack>
               )}
               {showBy === 'jira' && !filteredGitHubRowsByJira && (
                 <LinearProgress sx={{ mt: 5, mb: 5 }} />
               )}
               {showBy === 'jira' && filteredGitHubRowsByJira && (
                 <Box>
-                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map(jira => (
-                    <Box id={jiraElementId(jira)} key={jira} sx={{ m: 2 }}>
-                      <Link id={`JIRA:${jira}`} />
-                      <Typography color="GrayText" variant="h6">
-                        {jira}
-                      </Typography>
-                      <DataGrid
-                        columns={gitHubColumns}
-                        rows={gitHubRowsByJira![jira]}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
+                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira, i) => (
+                    <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
+                      <Stack direction="row">
+                        <Box
+                          sx={{
+                            rotate: '-90deg',
+                            maxHeight: '20px',
+                            mt: '30px',
+                            flex: 0,
+                            textWrap: 'nowrap',
+                          }}
+                        >
+                          <Link id={`JIRA:${jira}`} />
+                          <Typography color="GrayText" variant="h6">
+                            {jira}
+                          </Typography>
+                        </Box>
+                        <DataGrid
+                          columns={gitHubColumns}
+                          rows={gitHubRowsByJira![jira]}
+                          {...dataGridCommonProps}
+                        ></DataGrid>
+                      </Stack>
                     </Box>
                   ))}
                 </Box>
