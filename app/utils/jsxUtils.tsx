@@ -11,7 +11,7 @@ export const linkifyJira = (
       // FIXME if we don't use jira (which might not be ubnique...) for the Link key, it requires 2 clicks!!
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       component={(jira: string, key: number) => (
-        <Link key={jira} onClick={() => onClick(jira)} sx={{ cursor: 'pointer' }}>
+        <Link key={jira} onClick={() => onClick(jira.split('-')[0])} sx={{ cursor: 'pointer' }}>
           {jira}
         </Link>
       )}

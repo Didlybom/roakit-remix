@@ -43,7 +43,7 @@ import { formatDayMonth, formatRelative } from '~/utils/dateUtils';
 import { errMsg } from '~/utils/errorUtils';
 import { linkifyJira } from '~/utils/jsxUtils';
 import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
-import { caseInsensitiveSort, findJiraTickets, removeSpaces } from '~/utils/stringUtils';
+import { caseInsensitiveSort, findJiraProjects, removeSpaces } from '~/utils/stringUtils';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
@@ -127,17 +127,17 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         gitHubRowsByAuthor[author.name].rows.push(row);
       }
     }
-    const jiraTickets = findJiraTickets(row.activity.title + ' ' + row.ref.label);
-    if (jiraTickets.length) {
+    const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref.label);
+    if (jiraProjects.length) {
       if (!gitHubRowsByJira) {
         gitHubRowsByJira = {};
       }
-      jiraTickets.forEach(jiraTicket => {
-        if (!(jiraTicket in gitHubRowsByJira!)) {
-          gitHubRowsByJira![jiraTicket] = [];
+      jiraProjects.forEach(jiraProject => {
+        if (!(jiraProject in gitHubRowsByJira!)) {
+          gitHubRowsByJira![jiraProject] = [];
         }
-        if (!gitHubRowsByJira![jiraTicket].find(r => r.id === row.id)) {
-          gitHubRowsByJira![jiraTicket].push(row);
+        if (!gitHubRowsByJira![jiraProject].find(r => r.id === row.id)) {
+          gitHubRowsByJira![jiraProject].push(row);
         }
       });
     }
@@ -404,6 +404,9 @@ export default function Index() {
       caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor))
     : null;
 
+  const sortedJiras =
+    filteredGitHubRowsByJira ? caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)) : null;
+
   const dataGridCommonProps = {
     rowHeight: 75,
     density: 'compact' as GridDensity,
@@ -441,7 +444,7 @@ export default function Index() {
             </Button>
             <Divider orientation="vertical" variant="middle" flexItem />
             <Button disabled={showBy === 'jira'} onClick={() => setShowBy('jira')}>
-              By JIRA
+              By Jira project
             </Button>
           </Stack>
           <Grid container direction={{ xs: 'column', md: 'row' }}>
@@ -589,39 +592,54 @@ export default function Index() {
               {showBy === 'jira' && !filteredGitHubRowsByJira && (
                 <LinearProgress sx={{ mt: 5, mb: 5 }} />
               )}
-              {showBy === 'jira' && filteredGitHubRowsByJira && (
-                <Box>
-                  {caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)).map((jira, i) => (
-                    <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
-                      <Stack direction="row">
-                        <Box sx={{ position: 'relative' }}>
-                          <Box
-                            sx={{
-                              rotate: '-90deg',
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              ml: '-30px',
-                              mt: '25px',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            <Link id={`JIRA:${jira}`} />
-                            <Typography color="GrayText" variant="h6">
-                              {jira}
-                            </Typography>
+              {showBy === 'jira' && sortedJiras && (
+                <Stack direction="row">
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 2,
+                      textWrap: 'nowrap',
+                    }}
+                  >
+                    {sortedJiras.map((jira, i) => (
+                      <Box key={i}>
+                        <Link
+                          fontSize="small"
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => setScrollToJira(jira)}
+                        >
+                          {jira}
+                        </Link>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    {sortedJiras.map((jira, i) => (
+                      <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
+                        <Stack direction="row">
+                          <Box sx={{ position: 'relative' }}>
+                            <Box
+                              sx={{
+                                writingMode: 'vertical-rl',
+                              }}
+                            >
+                              <Link id={`JIRA:${jira}`} />
+                              <Typography color="GrayText" variant="h6">
+                                {jira}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                        <DataGrid
-                          columns={gitHubColumns}
-                          rows={gitHubRowsByJira![jira]}
-                          {...dataGridCommonProps}
-                          sx={{ ml: '30px' }}
-                        ></DataGrid>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Box>
+                          <DataGrid
+                            columns={gitHubColumns}
+                            rows={gitHubRowsByJira![jira]}
+                            {...dataGridCommonProps}
+                            sx={{ ml: '10px' }}
+                          ></DataGrid>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Box>
+                </Stack>
               )}
             </Grid>
           </Grid>
