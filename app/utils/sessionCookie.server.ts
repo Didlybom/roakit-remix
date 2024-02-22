@@ -1,7 +1,7 @@
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
 import pino from 'pino';
-import { sessionCookie } from '~/cookies.server';
-import { auth, queryCustomerId } from '~/firebase.server';
+import { sessionCookie } from '../cookies.server';
+import { auth, queryCustomerId } from '../firebase.server';
 
 const logger = pino({ name: 'utils:session-cookie' });
 

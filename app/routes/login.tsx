@@ -5,11 +5,11 @@ import { redirect } from '@remix-run/node';
 import { Form, useActionData, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
-import { sessionCookie } from '~/cookies.server';
-import { auth as clientAuth } from '~/firebase.client';
-import { queryCustomerId, auth as serverAuth } from '~/firebase.server';
-import Breadcrumbs from '~/src/BreadcrumbBar';
-import { errMsg } from '~/utils/errorUtils';
+import { sessionCookie } from '../cookies.server';
+import { auth as clientAuth } from '../firebase.client';
+import { queryCustomerId, auth as serverAuth } from '../firebase.server';
+import Breadcrumbs from '../src/BreadcrumbBar';
+import { errMsg } from '../utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();

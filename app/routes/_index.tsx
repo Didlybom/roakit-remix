@@ -23,7 +23,8 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
+//import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import Grid from '@mui/material/Grid';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -35,15 +36,15 @@ import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
-import { GitHubRow, gitHubEventSchema } from '~/feeds/githubFeed';
-import { firestore as firestoreClient } from '~/firebase.client';
-import Header from '~/src/Header';
-import TabPanel from '~/src/TabPanel';
-import { formatDayMonth, formatRelative } from '~/utils/dateUtils';
-import { errMsg } from '~/utils/errorUtils';
-import { linkifyJira } from '~/utils/jsxUtils';
-import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
-import { caseInsensitiveSort, findJiraProjects, removeSpaces } from '~/utils/stringUtils';
+import { GitHubRow, gitHubEventSchema } from '../feeds/githubFeed';
+import { firestore as firestoreClient } from '../firebase.client';
+import Header from '../src/Header';
+import TabPanel from '../src/TabPanel';
+import { formatDayMonth, formatRelative } from '../utils/dateUtils';
+import { errMsg } from '../utils/errorUtils';
+import { linkifyJira } from '../utils/jsxUtils';
+import { SessionData, getSessionData } from '../utils/sessionCookie.server';
+import { caseInsensitiveSort, findJiraProjects, removeSpaces } from '../utils/stringUtils';
 
 // https://remix.run/docs/en/main/route/meta
 export const meta: MetaFunction = () => [
