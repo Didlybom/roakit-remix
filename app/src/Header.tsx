@@ -2,13 +2,6 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { LoaderFunctionArgs } from '@remix-run/node';
-import { SessionData, getSessionData } from '~/utils/sessionCookie.server';
-
-// verify session
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
-  return await getSessionData(request);
-};
 
 export default function Heaader({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
