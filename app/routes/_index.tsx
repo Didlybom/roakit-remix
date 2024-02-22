@@ -24,8 +24,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-//import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -204,9 +203,7 @@ export default function Index() {
 
   const [gitHubError, setGitHubError] = useState('');
 
-  const handleTabChange = (event: SyntheticEvent, newValue: GitHubView) => {
-    setGitHubView(newValue);
-  };
+  const handleTabChange = (event: SyntheticEvent, newValue: GitHubView) => setGitHubView(newValue);
 
   const pluralizeMemo = memoize(pluralize);
 
@@ -485,10 +482,7 @@ export default function Index() {
         open={!!popoverElement}
         anchorEl={popoverElement}
         onClose={() => setPopoverElement(null)}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
@@ -538,12 +532,7 @@ export default function Index() {
                           dateFilter === (date as DateFilter) && (
                             <CircularProgress
                               size={18}
-                              sx={{
-                                position: 'absolute',
-                                top: 9,
-                                left: -3,
-                                zIndex: 1,
-                              }}
+                              sx={{ position: 'absolute', top: 9, left: -3, zIndex: 1 }}
                             />
                           )}
                       </TimelineDot>
@@ -569,35 +558,35 @@ export default function Index() {
               )}
               {showBy === ActivityView.Jira && sortedJiras && (
                 <Stack direction="row">
-                  <Box
-                    sx={{
-                      mt: 1,
-                      p: 2,
-                      textWrap: 'nowrap',
-                    }}
-                  >
-                    {sortedJiras.map((jira, i) => (
-                      <Box key={i}>
-                        <Link
-                          fontSize="small"
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => setScrollToJira(jira)}
-                        >
-                          {jira}
-                        </Link>
-                      </Box>
-                    ))}
+                  <Box sx={{ position: 'relative', mt: '25px' }}>
+                    <Box
+                      sx={{
+                        textWrap: 'nowrap',
+                        position: 'sticky',
+                        top: 0,
+                        maxHeight: '100vh',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {sortedJiras.map((jira, i) => (
+                        <Box key={i}>
+                          <Link
+                            fontSize="small"
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => setScrollToJira(jira)}
+                          >
+                            {jira}
+                          </Link>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
-                  <Box sx={{ flex: 1 }}>
+                  <Box sx={{ flex: 1, ml: '10px' }}>
                     {sortedJiras.map((jira, i) => (
                       <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
                         <Stack direction="row">
                           <Box sx={{ position: 'relative' }}>
-                            <Box
-                              sx={{
-                                writingMode: 'vertical-rl',
-                              }}
-                            >
+                            <Box sx={{ writingMode: 'vertical-rl' }}>
                               <Link id={`JIRA:${jira}`} />
                               <Typography color="GrayText" variant="h6">
                                 {jira}
@@ -608,7 +597,6 @@ export default function Index() {
                             columns={gitHubColumns}
                             rows={gitHubRowsByJira![jira]}
                             {...dataGridCommonProps}
-                            sx={{ ml: '10px' }}
                           ></DataGrid>
                         </Stack>
                       </Box>
@@ -621,24 +609,28 @@ export default function Index() {
               )}
               {showBy === ActivityView.Author && sortedAuthors && (
                 <Stack direction="row">
-                  <Box
-                    sx={{
-                      mt: 1,
-                      p: 2,
-                      textWrap: 'nowrap',
-                    }}
-                  >
-                    {sortedAuthors.map((author, i) => (
-                      <Box key={i}>
-                        <Link
-                          fontSize="small"
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => setScrollToAuthor(author)}
-                        >
-                          {author}
-                        </Link>
-                      </Box>
-                    ))}
+                  <Box sx={{ position: 'relative', mt: '25px' }}>
+                    <Box
+                      sx={{
+                        textWrap: 'nowrap',
+                        position: 'sticky',
+                        top: 0,
+                        maxHeight: '100vh',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {sortedAuthors.map((author, i) => (
+                        <Box key={i}>
+                          <Link
+                            fontSize="small"
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => setScrollToAuthor(author)}
+                          >
+                            {author}
+                          </Link>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     {sortedAuthors.map(author => (
@@ -711,13 +703,7 @@ export default function Index() {
                       <DataGrid
                         columns={gitHubPushesColumns}
                         rows={gitHubReleases}
-                        rowHeight={75}
-                        density="compact"
-                        disableRowSelectionOnClick={true}
-                        disableColumnMenu={true}
-                        initialState={{
-                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                        }}
+                        {...dataGridCommonProps}
                       ></DataGrid>
                     )}
                   </TabPanel>
@@ -729,7 +715,7 @@ export default function Index() {
         </Stack>
       )}
       <Typography align="center" variant="h6" sx={{ mt: 5, mb: 5 }}>
-        Under construction...
+        Under construction
       </Typography>
     </>
   );
