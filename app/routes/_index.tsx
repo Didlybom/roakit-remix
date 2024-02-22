@@ -21,6 +21,7 @@ import {
   Stack,
   Tab,
   Tabs,
+  Tooltip,
   Typography,
 } from '@mui/material';
 //import Grid from '@mui/material/Unstable_Grid2/Grid2';
@@ -54,6 +55,7 @@ export const meta: MetaFunction = () => [
 
 enum GitHubEventType {
   PullRequest = 'pull_request',
+  PullRequestReviewComment = 'pull_request_review_comment',
   Push = 'push',
   Release = 'release',
 }
@@ -66,8 +68,9 @@ enum ActivityView {
 
 enum GitHubView {
   PullRequest = 0,
-  Push = 1,
-  Release = 2,
+  PullRequestComment = 1,
+  Push = 2,
+  Release = 3,
 }
 
 enum DateFilter {
@@ -110,13 +113,27 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
     if (data.release && data.action !== 'released') {
       return;
     }
-    const author = { name: data.sender?.login, url: data.sender?.html_url };
+    let author;
+    if (docData.name === GitHubEventType.PullRequest && data.pull_request?.assignee) {
+      author = { name: data.pull_request.assignee.login, url: data.pull_request.assignee.html_url };
+    } else if (docData.name === GitHubEventType.PullRequestReviewComment && data.comment?.user) {
+      author = {
+        name: data.comment.user.login,
+        url: data.comment.user.html_url,
+      };
+    }
+    if (!author) {
+      author = data.sender ? { name: data.sender.login, url: data.sender.html_url } : undefined;
+    }
     const row = {
       id: doc.id,
       timestamp: docData.eventTimestamp as number,
       repositoryName: data.repository?.name,
       author,
-      ref: { label: data.pull_request?.head.ref, url: data.pull_request?.html_url },
+      ref:
+        data.pull_request?.head.ref ?
+          { label: data.pull_request.head.ref, url: data.pull_request.html_url }
+        : undefined,
       activity: {
         title:
           data.pull_request?.title ??
@@ -127,20 +144,23 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
         comments: data.pull_request?.comments,
         commits: data.pull_request?.commits ?? data.commits?.length,
         commitMessages: data.commits?.map(c => c.message),
+        ...(data.comment && {
+          pullRequestComment: { comment: data.comment.body, url: data.comment.html_url },
+        }),
       },
     };
-    if (author?.name) {
+    if (row.author?.name) {
       if (!gitHubRowsByAuthor) {
         gitHubRowsByAuthor = {};
       }
-      if (!(author.name in gitHubRowsByAuthor)) {
-        gitHubRowsByAuthor[author.name] = { url: author.url, rows: [] };
+      if (!(row.author.name in gitHubRowsByAuthor)) {
+        gitHubRowsByAuthor[row.author.name] = { url: row.author.url, rows: [] };
       }
-      if (!gitHubRowsByAuthor[author.name].rows.find(r => r.id === row.id)) {
-        gitHubRowsByAuthor[author.name].rows.push(row);
+      if (!gitHubRowsByAuthor[row.author.name].rows.find(r => r.id === row.id)) {
+        gitHubRowsByAuthor[row.author.name].rows.push(row);
       }
     }
-    const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref.label);
+    const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref?.label);
     if (jiraProjects.length) {
       if (!gitHubRowsByJira) {
         gitHubRowsByJira = {};
@@ -176,6 +196,7 @@ export default function Index() {
   const [popoverContent, setPopoverContent] = useState<JSX.Element | undefined>(undefined);
 
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
+  const [gitHubPRComments, setGithubPRComments] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
   const [gitHubReleases, setGithubReleases] = useState<GitHubRow[]>([]);
 
@@ -208,7 +229,7 @@ export default function Index() {
           (a?.name ?? '').localeCompare(b?.name ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['author'];
-          return fields?.url ?
+          return !fields ? '' : (
               <Link
                 onClick={() => {
                   setShowBy(ActivityView.Author);
@@ -218,7 +239,7 @@ export default function Index() {
               >
                 {fields.name}
               </Link>
-            : fields?.name;
+            );
         },
       },
       {
@@ -229,11 +250,11 @@ export default function Index() {
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
-          return fields?.url ?
+          return !fields ? '' : (
               <Link href={fields.url} title={fields.label} sx={{ overflowX: 'scroll' }}>
                 {fields.label}
               </Link>
-            : fields?.label ?? '';
+            );
         },
       },
       {
@@ -248,7 +269,7 @@ export default function Index() {
           const title = fields?.title ?? '';
           let activity = '';
           if (fields) {
-            if (fields.created) {
+            if (fields.created && !fields?.pullRequestComment) {
               activity += `Created ${formatDayMonth(new Date(fields.created))}, `;
             }
             if (fields.changedFiles) {
@@ -267,7 +288,7 @@ export default function Index() {
           if (activity) {
             activity = activity.slice(0, -2);
           }
-          return (
+          const cell = (
             <Stack sx={{ overflowX: 'scroll' }}>
               <Typography variant="body2">
                 {linkifyJira(title, jira => {
@@ -304,8 +325,23 @@ export default function Index() {
                   {activity}
                 </Link>
               }
+              {fields?.pullRequestComment && (
+                <Link href={fields.pullRequestComment.url} sx={{ cursor: 'pointer' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ overflowX: 'clip', textOverflow: 'ellipsis' }}
+                  >
+                    {fields.pullRequestComment.comment}
+                  </Typography>
+                </Link>
+              )}
             </Stack>
           );
+          if (fields?.pullRequestComment) {
+            return <Tooltip title={fields.pullRequestComment?.comment}>{cell}</Tooltip>;
+          } else {
+            return cell;
+          }
         },
       },
     ],
@@ -334,14 +370,13 @@ export default function Index() {
     try {
       switch (type) {
         case GitHubEventType.PullRequest:
-          setGithubPRs(githubRows(querySnapshot));
-          return;
+          return setGithubPRs(githubRows(querySnapshot));
+        case GitHubEventType.PullRequestReviewComment:
+          return setGithubPRComments(githubRows(querySnapshot));
         case GitHubEventType.Push:
-          setGithubPushes(githubRows(querySnapshot));
-          return;
+          return setGithubPushes(githubRows(querySnapshot));
         case GitHubEventType.Release:
-          setGithubReleases(githubRows(querySnapshot));
-          return;
+          return setGithubReleases(githubRows(querySnapshot));
       }
     } catch (e: unknown) {
       setGitHubError(errMsg(e, `Error parsing GitHub ${type} events`));
@@ -625,7 +660,8 @@ export default function Index() {
                 <Box>
                   <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
                     <Tabs value={gitHubView} onChange={handleTabChange} aria-label="Activities">
-                      <Tab label="Pull Requests" id={`tab-${GitHubView.PullRequest}`} />
+                      <Tab label="PR Assignments" id={`tab-${GitHubView.PullRequest}`} />
+                      <Tab label="PR Discussion" id={`tab-${GitHubView.PullRequestComment}`} />
                       <Tab label="Pushes" id={`tab-${GitHubView.Push}`} />
                       <Tab label="Releases" id={`tab-${GitHubView.Release}`} />
                     </Tabs>
@@ -638,6 +674,18 @@ export default function Index() {
                       <DataGrid
                         columns={gitHubColumns}
                         rows={gitHubPRs}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                  {(!gitHubPRComments.length || !gitHubPushes.length) && (
+                    <LinearProgress sx={{ mt: 5, mb: 5 }} />
+                  )}
+                  <TabPanel value={gitHubView} index={GitHubView.PullRequestComment}>
+                    {!!gitHubPRComments.length && (
+                      <DataGrid
+                        columns={gitHubColumns}
+                        rows={gitHubPRComments}
                         {...dataGridCommonProps}
                       ></DataGrid>
                     )}
