@@ -33,7 +33,7 @@ import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
-import { Fragment, SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { SyntheticEvent, useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import { GitHubRow, gitHubEventSchema } from '~/feeds/githubFeed';
 import { firestore as firestoreClient } from '~/firebase.client';
@@ -51,10 +51,22 @@ export const meta: MetaFunction = () => [
   { name: 'description', content: 'ROAKIT Prototype' },
 ];
 
-enum EventType {
+enum GitHubEventType {
   PullRequest = 'pull_request',
   Push = 'push',
   Release = 'release',
+}
+
+enum ActivityView {
+  All,
+  Author,
+  Jira,
+}
+
+enum GitHubView {
+  PullRequest = 0,
+  Push = 1,
+  Release = 2,
 }
 
 enum DateFilter {
@@ -154,9 +166,9 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 // https://remix.run/docs/en/main/file-conventions/routes#basic-routes
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
-  const [tabValue, setTabValue] = useState(0);
+  const [gitHubView, setGitHubView] = useState<GitHubView>(GitHubView.PullRequest);
   const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.OneDay);
-  const [showBy, setShowBy] = useState<'all' | 'author' | 'jira'>('all');
+  const [showBy, setShowBy] = useState<ActivityView>(ActivityView.Jira);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
   const [popoverElement, setPopoverElement] = useState<HTMLElement | null>(null);
@@ -170,8 +182,8 @@ export default function Index() {
 
   const [gitHubError, setGitHubError] = useState('');
 
-  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+  const handleTabChange = (event: SyntheticEvent, newValue: GitHubView) => {
+    setGitHubView(newValue);
   };
 
   const pluralizeMemo = memoize(pluralize);
@@ -198,7 +210,7 @@ export default function Index() {
           return fields?.url ?
               <Link
                 onClick={() => {
-                  setShowBy('author');
+                  setShowBy(ActivityView.Author);
                   setScrollToAuthor(fields.name);
                 }}
                 sx={{ cursor: 'pointer' }}
@@ -258,7 +270,7 @@ export default function Index() {
             <Stack sx={{ overflowX: 'scroll' }}>
               <Typography variant="body2">
                 {linkifyJira(title, jira => {
-                  setShowBy('jira');
+                  setShowBy(ActivityView.Jira);
                   setScrollToJira(jira);
                   setPopoverElement(null);
                 })}
@@ -277,7 +289,7 @@ export default function Index() {
                             </ListItem>
                           )),
                           jira => {
-                            setShowBy('jira');
+                            setShowBy(ActivityView.Jira);
                             setScrollToJira(jira);
                             setPopoverElement(null);
                           }
@@ -314,16 +326,19 @@ export default function Index() {
   const authorElementId = (author: string) => `AUTHOR-${removeSpaces(author)}`;
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
-  const setGitHubRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
+  const setGitHubRows = (
+    type: GitHubEventType,
+    querySnapshot: firebase.firestore.QuerySnapshot
+  ) => {
     try {
       switch (type) {
-        case EventType.PullRequest:
+        case GitHubEventType.PullRequest:
           setGithubPRs(githubRows(querySnapshot));
           return;
-        case EventType.Push:
+        case GitHubEventType.Push:
           setGithubPushes(githubRows(querySnapshot));
           return;
-        case EventType.Release:
+        case GitHubEventType.Release:
           setGithubReleases(githubRows(querySnapshot));
           return;
       }
@@ -335,7 +350,7 @@ export default function Index() {
   // Firestore listeners
   useEffect(() => {
     const unsubscribe: Record<string, () => void> = {};
-    Object.values(EventType).map((type: EventType) => {
+    Object.values(GitHubEventType).map((type: GitHubEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);
       const query = firestoreClient
         .collection(
@@ -412,13 +427,15 @@ export default function Index() {
     density: 'compact' as GridDensity,
     disableRowSelectionOnClick: true,
     disableColumnMenu: true,
+    pageSizeOptions: [25, 50, 100],
     initialState: {
+      pagination: { paginationModel: { pageSize: 25 } },
       sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
     },
   };
 
   return (
-    <Fragment>
+    <>
       <Header isLoggedIn={sessionData.isLoggedIn} />
       <Popover
         id={popoverElement ? 'popover' : undefined}
@@ -435,16 +452,25 @@ export default function Index() {
       {sessionData.isLoggedIn && (
         <Stack sx={{ mt: 3 }}>
           <Stack direction="row">
-            <Button disabled={showBy === 'all'} onClick={() => setShowBy('all')}>
-              All GitHub Activity
+            <Button
+              disabled={showBy === ActivityView.Jira}
+              onClick={() => setShowBy(ActivityView.Jira)}
+            >
+              By Jira project
             </Button>
             <Divider orientation="vertical" variant="middle" flexItem />
-            <Button disabled={showBy === 'author'} onClick={() => setShowBy('author')}>
+            <Button
+              disabled={showBy === ActivityView.Author}
+              onClick={() => setShowBy(ActivityView.Author)}
+            >
               By Author
             </Button>
             <Divider orientation="vertical" variant="middle" flexItem />
-            <Button disabled={showBy === 'jira'} onClick={() => setShowBy('jira')}>
-              By Jira project
+            <Button
+              disabled={showBy === ActivityView.All}
+              onClick={() => setShowBy(ActivityView.All)}
+            >
+              All GitHub Activity
             </Button>
           </Stack>
           <Grid container direction={{ xs: 'column', md: 'row' }}>
@@ -495,104 +521,10 @@ export default function Index() {
               </Timeline>
             </Grid>
             <Grid sx={{ flex: 1 }}>
-              {showBy === 'all' && (
-                <Box>
-                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                    <Tabs value={tabValue} onChange={handleTabChange} aria-label="Activities">
-                      <Tab label="Pull Requests" id="tab-0" />
-                      <Tab label="Pushes" id="tab-1" />
-                      <Tab label="Releases" id="tab-2" />
-                    </Tabs>
-                  </Box>
-                  {(!gitHubPRs.length || !gitHubPushes.length) && (
-                    <LinearProgress sx={{ mt: 5, mb: 5 }} />
-                  )}
-                  <TabPanel value={tabValue} index={0}>
-                    {!!gitHubPRs.length && (
-                      <DataGrid
-                        columns={gitHubColumns}
-                        rows={gitHubPRs}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    )}
-                  </TabPanel>
-                  <TabPanel value={tabValue} index={1}>
-                    {!!gitHubPushes.length && (
-                      <DataGrid
-                        columns={gitHubPushesColumns}
-                        rows={gitHubPushes}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    )}
-                  </TabPanel>
-                  <TabPanel value={tabValue} index={2}>
-                    {!!gitHubPushes.length && (
-                      <DataGrid
-                        columns={gitHubPushesColumns}
-                        rows={gitHubReleases}
-                        rowHeight={75}
-                        density="compact"
-                        disableRowSelectionOnClick={true}
-                        disableColumnMenu={true}
-                        initialState={{
-                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
-                        }}
-                      ></DataGrid>
-                    )}
-                  </TabPanel>
-                </Box>
-              )}
-              {showBy === 'author' && !filteredGitHubRowsByAuthor && (
+              {showBy === ActivityView.Jira && !filteredGitHubRowsByJira && (
                 <LinearProgress sx={{ mt: 5, mb: 5 }} />
               )}
-              {showBy === 'author' && sortedAuthors && (
-                <Stack direction="row">
-                  <Box
-                    sx={{
-                      mt: 1,
-                      p: 2,
-                      textWrap: 'nowrap',
-                    }}
-                  >
-                    {sortedAuthors.map((author, i) => (
-                      <Box key={i}>
-                        <Link
-                          fontSize="small"
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => setScrollToAuthor(author)}
-                        >
-                          {author}
-                        </Link>
-                      </Box>
-                    ))}
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    {sortedAuthors.map(author => (
-                      <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
-                        <Stack direction="row" alignItems="center">
-                          <Typography color="GrayText" variant="h6">
-                            {author}
-                          </Typography>
-                          {gitHubRowsByAuthor?.[author]?.url && (
-                            <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
-                              <GitHubIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                        <DataGrid
-                          columns={gitHubByAuthorColumns}
-                          rows={gitHubRowsByAuthor![author].rows}
-                          {...dataGridCommonProps}
-                        ></DataGrid>
-                      </Box>
-                    ))}
-                  </Box>
-                </Stack>
-              )}
-              {showBy === 'jira' && !filteredGitHubRowsByJira && (
-                <LinearProgress sx={{ mt: 5, mb: 5 }} />
-              )}
-              {showBy === 'jira' && sortedJiras && (
+              {showBy === ActivityView.Jira && sortedJiras && (
                 <Stack direction="row">
                   <Box
                     sx={{
@@ -641,6 +573,100 @@ export default function Index() {
                   </Box>
                 </Stack>
               )}
+              {showBy === ActivityView.Author && !filteredGitHubRowsByAuthor && (
+                <LinearProgress sx={{ mt: 5, mb: 5 }} />
+              )}
+              {showBy === ActivityView.Author && sortedAuthors && (
+                <Stack direction="row">
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 2,
+                      textWrap: 'nowrap',
+                    }}
+                  >
+                    {sortedAuthors.map((author, i) => (
+                      <Box key={i}>
+                        <Link
+                          fontSize="small"
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => setScrollToAuthor(author)}
+                        >
+                          {author}
+                        </Link>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    {sortedAuthors.map(author => (
+                      <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                        <Stack direction="row" alignItems="center">
+                          <Typography color="GrayText" variant="h6">
+                            {author}
+                          </Typography>
+                          {gitHubRowsByAuthor?.[author]?.url && (
+                            <IconButton href={gitHubRowsByAuthor[author].url ?? ''}>
+                              <GitHubIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Stack>
+                        <DataGrid
+                          columns={gitHubByAuthorColumns}
+                          rows={gitHubRowsByAuthor![author].rows}
+                          {...dataGridCommonProps}
+                        ></DataGrid>
+                      </Box>
+                    ))}
+                  </Box>
+                </Stack>
+              )}
+              {showBy === ActivityView.All && (
+                <Box>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+                    <Tabs value={gitHubView} onChange={handleTabChange} aria-label="Activities">
+                      <Tab label="Pull Requests" id={`tab-${GitHubView.PullRequest}`} />
+                      <Tab label="Pushes" id={`tab-${GitHubView.Push}`} />
+                      <Tab label="Releases" id={`tab-${GitHubView.Release}`} />
+                    </Tabs>
+                  </Box>
+                  {(!gitHubPRs.length || !gitHubPushes.length) && (
+                    <LinearProgress sx={{ mt: 5, mb: 5 }} />
+                  )}
+                  <TabPanel value={gitHubView} index={GitHubView.PullRequest}>
+                    {!!gitHubPRs.length && (
+                      <DataGrid
+                        columns={gitHubColumns}
+                        rows={gitHubPRs}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                  <TabPanel value={gitHubView} index={GitHubView.Push}>
+                    {!!gitHubPushes.length && (
+                      <DataGrid
+                        columns={gitHubPushesColumns}
+                        rows={gitHubPushes}
+                        {...dataGridCommonProps}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                  <TabPanel value={gitHubView} index={GitHubView.Release}>
+                    {!!gitHubPushes.length && (
+                      <DataGrid
+                        columns={gitHubPushesColumns}
+                        rows={gitHubReleases}
+                        rowHeight={75}
+                        density="compact"
+                        disableRowSelectionOnClick={true}
+                        disableColumnMenu={true}
+                        initialState={{
+                          sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+                        }}
+                      ></DataGrid>
+                    )}
+                  </TabPanel>
+                </Box>
+              )}
             </Grid>
           </Grid>
           {gitHubError && <Alert severity="error">{gitHubError}</Alert>}
@@ -649,6 +675,6 @@ export default function Index() {
       <Typography align="center" variant="h6" sx={{ mt: 5, mb: 5 }}>
         Under construction...
       </Typography>
-    </Fragment>
+    </>
   );
 }
