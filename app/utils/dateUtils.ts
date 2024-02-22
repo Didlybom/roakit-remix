@@ -1,7 +1,15 @@
 import { formatRelative as formatRelativeFn } from 'date-fns/formatRelative';
 import { FormatRelativeToken, enUS } from 'date-fns/locale';
 
-export const formatDayMonth = (date: Date) =>
+export const formatMonthDayTime = (date: Date) =>
+  date.toLocaleDateString('en-us', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  });
+
+export const formatMonthDay = (date: Date) =>
   date.toLocaleDateString('en-us', {
     month: 'short',
     day: 'numeric',
@@ -21,9 +29,8 @@ const relativeLlocale = {
   formatRelative: (token: FormatRelativeToken) => formatRelativeLocale[token],
 };
 
-export const formatRelative = (date: Date) => {
-  return formatRelativeFn(date, new Date(), {
+export const formatRelative = (date: Date) =>
+  formatRelativeFn(date, new Date(), {
     locale: relativeLlocale,
     weekStartsOn: 1 /* Monday */,
   });
-};

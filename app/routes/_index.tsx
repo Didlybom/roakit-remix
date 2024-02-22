@@ -41,7 +41,7 @@ import { GitHubRow, gitHubEventSchema } from '../feeds/githubFeed';
 import { firestore as firestoreClient } from '../firebase.client';
 import Header from '../src/Header';
 import TabPanel from '../src/TabPanel';
-import { formatDayMonth, formatRelative } from '../utils/dateUtils';
+import { formatMonthDay, formatMonthDayTime, formatRelative } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { linkifyJira } from '../utils/jsxUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
@@ -218,6 +218,13 @@ export default function Index() {
         type: 'dateTime',
         valueGetter: params => new Date(params.value as number),
         valueFormatter: params => formatRelative(params.value as Date),
+        renderCell: params => {
+          return (
+            <Tooltip title={formatMonthDayTime(params.value as Date)}>
+              <Box>{formatRelative(params.value as Date)}</Box>
+            </Tooltip>
+          );
+        },
         width: 120,
       },
       { field: 'repositoryName', headerName: 'Repository', width: 150 },
@@ -270,7 +277,7 @@ export default function Index() {
           let activity = '';
           if (fields) {
             if (fields.created && !fields?.pullRequestComment) {
-              activity += `Created ${formatDayMonth(new Date(fields.created))}, `;
+              activity += `Created ${formatMonthDay(new Date(fields.created))}, `;
             }
             if (fields.changedFiles) {
               activity += `${fields.changedFiles} changed ${pluralizeMemo('file', fields.changedFiles)}, `;
