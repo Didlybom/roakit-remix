@@ -25,18 +25,24 @@ import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import Header from '~/src/Header';
 import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import confluenceImage from '../images/confluence-webhook.png';
 import githubImage from '../images/github-webhook.png';
 import jiraImage from '../images/jira-webhook.png';
-import Breadcrumbs from '../src/BreadcrumbBar';
 import TabPanel from '../src/TabPanel';
 import { createClientId } from '../utils/client-id.server';
 import * as feedUtils from '../utils/feedUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:settings' });
+
+enum FeedTab {
+  Jira = 0,
+  GitHub = 1,
+  Confluence = 2,
+}
 
 const feedSchema = z.object({
   type: z.string(),
@@ -159,10 +165,6 @@ export default function Settings() {
     setShowCopyConfirmation(content);
   };
 
-  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
-
   const actionIcon = (icon: JSX.Element, tooltip: string, action: () => void) => (
     <Tooltip title={tooltip}>
       <IconButton onClick={action}>{icon}</IconButton>
@@ -179,239 +181,131 @@ export default function Settings() {
   }, [serverConfluenceFeed.secret, serverGitHubFeed.secret]);
 
   return (
-    <Form method="post" noValidate autoComplete="off">
-      <Snackbar
-        open={showCopyConfirmation !== null}
-        autoHideDuration={3000}
-        onClose={(event: SyntheticEvent | Event, reason?: string) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setShowCopyConfirmation(null);
-        }}
-        message={'Copied ' + (showCopyConfirmation ?? '')}
-      />
-
-      <Breadcrumbs title="Settings" />
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="Connectors">
-          <Tab label="JIRA" id="tab-0" />
-          <Tab label="GitHub" id="tab-1" />
-          <Tab label="Confluence" id="tab-2" />
-        </Tabs>
-      </Box>
-      <TabPanel value={tabValue} index={0}>
-        <Box>
-          <Stack spacing={3} maxWidth={600}>
-            <Grid container spacing={1}>
-              <Grid xs={10}>
-                <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
-              </Grid>
-              <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(jiraURL))}
-              </Grid>
-            </Grid>
-            <Grid container spacing={1}>
-              <Grid xs={10}>
-                <TextField label="JIRA Scope" value={jiraScope} fullWidth disabled />
-              </Grid>
-              <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(jiraScope))}
-              </Grid>
-            </Grid>
-            <Grid container spacing={1}>
-              <Grid xs={10}>
-                <TextField label="JIRA Events" value={jiraEvents} fullWidth disabled />
-              </Grid>
-              <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(jiraEvents))}
-              </Grid>
-            </Grid>
-          </Stack>
-          <Typography component="div" sx={{ mt: 5 }}>
-            In your Jira administration console, go to <strong>System WebHooks</strong> in the
-            Advanced section click the <strong>Create a Webhook</strong> button.
-            <List sx={{ listStyleType: 'disc', pl: 2 }}>
-              <ListItem sx={{ display: 'list-item' }}>
-                In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
-                <strong>Scope</strong> and <strong>Event</strong> settings as indicated above.
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                To register the new webhook, click Create.
-              </ListItem>
-            </List>
-            More information on configuring and using Jira webhooks can be found on their{' '}
-            <Link
-              target={'_blank'}
-              href="https://developer.atlassian.com/server/jira/platform/webhooks/"
-            >
-              website
-            </Link>
-            .
-          </Typography>
-          <Stack sx={{ mt: 5 }}>
-            <Typography variant={'caption'}>Screenshot: </Typography>
-            <img
-              src={jiraImage}
-              width="870"
-              height="389"
-              style={{ padding: 15, borderStyle: 'dotted' }}
-            />
-          </Stack>
+    <>
+      <Header isLoggedIn={true} view="settings" />
+      <Form method="post" noValidate autoComplete="off">
+        <Snackbar
+          open={showCopyConfirmation !== null}
+          autoHideDuration={3000}
+          onClose={(event: SyntheticEvent | Event, reason?: string) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setShowCopyConfirmation(null);
+          }}
+          message={'Copied ' + (showCopyConfirmation ?? '')}
+        />
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+          <Tabs value={tabValue} onChange={(e, newValue: number) => setTabValue(newValue)}>
+            <Tab label="JIRA" id={`tab-${FeedTab.Jira}`} />
+            <Tab label="GitHub" id={`tab-${FeedTab.GitHub}`} />
+            <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />
+          </Tabs>
         </Box>
-      </TabPanel>
-      <TabPanel value={tabValue} index={1}>
-        <Stack spacing={3} maxWidth={600}>
-          <Grid container spacing={1}>
-            <Grid xs={10}>
-              <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
-            </Grid>
-            <Grid xs={2} sx={{ alignSelf: 'center' }}>
-              {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
-            </Grid>
-          </Grid>
-          {navigation.state !== 'loading' && (
-            <Grid container spacing={1}>
-              <Grid xs={10}>
-                {gitHubSecret === serverGitHubFeed.secret ?
-                  <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={() => setGitHubSecret(uuidv4())}
-                    >
-                      Change GitHub Secret
-                    </Button>
-                  </Tooltip>
-                : <TextField
-                    label="GitHub Secret"
-                    value={gitHubSecret}
-                    onChange={e => setGitHubSecret(e.target.value)}
-                    disabled={navigation.state === 'submitting'}
-                    fullWidth
-                    InputProps={{
-                      ...(navigation.state !== 'submitting' && {
-                        endAdornment: (
-                          <Tooltip title="Regenerate a secret">
-                            <IconButton onClick={() => setGitHubSecret(uuidv4())}>
-                              <RefreshIcon />
-                            </IconButton>
-                          </Tooltip>
-                        ),
-                      }),
-                    }}
-                  />
-                }
+        <TabPanel value={tabValue} index={FeedTab.Jira}>
+          <Box>
+            <Stack spacing={3} maxWidth={600}>
+              <Grid container spacing={1}>
+                <Grid xs={10}>
+                  <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
+                </Grid>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                  {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(jiraURL))}
+                </Grid>
               </Grid>
-              <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                <Stack direction={'row'}>
-                  {gitHubSecret !== serverGitHubFeed.secret &&
-                    actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
-                      handleCopy(gitHubSecret)
-                    )}
-                  {navigation.state !== 'submitting' &&
-                    gitHubSecret?.trim() &&
-                    gitHubSecret !== serverGitHubFeed.secret &&
-                    actionIcon(
-                      <DoneIcon />,
-                      'Save the secret (make sure to copy it first, as it will be hidden once saved)',
-                      () =>
-                        submit(
-                          {
-                            customerId: serverData.customerId,
-                            feedId: serverGitHubFeed.feedId,
-                            type: feedUtils.GITHUB_FEED_TYPE,
-                            secret: gitHubSecret,
-                          },
-                          { method: 'post' }
-                        )
-                    )}
-                  {navigation.state === 'submitting' && (
-                    <Box sx={{ alignSelf: 'center', ml: '8px', mt: '3px' }}>
-                      <CircularProgress size="20px" />
-                    </Box>
+              <Grid container spacing={1}>
+                <Grid xs={10}>
+                  <TextField label="JIRA Scope" value={jiraScope} fullWidth disabled />
+                </Grid>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                  {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () =>
+                    handleCopy(jiraScope)
                   )}
-                </Stack>
+                </Grid>
               </Grid>
-              {gitHubSecret !== serverGitHubFeed.secret && (
-                <Typography variant="caption" sx={{ m: 1 }}>
-                  <strong>Copy</strong> this secret (to paste it on the GitHub Webhook configuration
-                  page) and <strong>save</strong> it by using the buttons on the right. For security
-                  reasons, it will be hidden once saved.
-                </Typography>
-              )}
-            </Grid>
-          )}
-        </Stack>
-        <Typography component="div" sx={{ mt: 5 }}>
-          In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page for
-          your organization (you must be an organization owner). You will need to create a new
-          webhook for <strong>Roakit</strong> by clicking the <strong>Add webhook</strong> button in
-          the upper right corner.
-          <List sx={{ listStyleType: 'disc', pl: 2 }}>
-            <ListItem sx={{ display: 'list-item' }}>
-              <strong>Payload URL: </strong> copy the value from the field above
-            </ListItem>
-            <ListItem sx={{ display: 'list-item' }}>
-              <strong>Content type :</strong> set this option to <code>application/json</code> to
-              deliver to <strong>Roakit</strong> as JSON formatted text
-            </ListItem>
-            <ListItem sx={{ display: 'list-item' }}>
-              <strong>Secret: </strong> a high entropy value shared with <strong>Roakit</strong>{' '}
-              used to validate webhook deliveries; copy the value from the field above (don&apos;t
-              forget to save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
-            </ListItem>
-          </List>
-          More information on configuring and using GitHub webhooks can be found on their{' '}
-          <Link
-            target={'_blank'}
-            href="https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-an-organization-webhook"
-          >
-            website
-          </Link>
-          .
-          <Stack sx={{ mt: 4 }}>
-            <Typography variant={'caption'}>Screenshot: </Typography>
-            <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
-          </Stack>
-        </Typography>
-      </TabPanel>
-      <TabPanel value={tabValue} index={2}>
-        <Box>
+              <Grid container spacing={1}>
+                <Grid xs={10}>
+                  <TextField label="JIRA Events" value={jiraEvents} fullWidth disabled />
+                </Grid>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                  {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
+                    handleCopy(jiraEvents)
+                  )}
+                </Grid>
+              </Grid>
+            </Stack>
+            <Typography component="div" sx={{ mt: 5 }}>
+              In your Jira administration console, go to <strong>System WebHooks</strong> in the
+              Advanced section click the <strong>Create a Webhook</strong> button.
+              <List sx={{ listStyleType: 'disc', pl: 2 }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}
+                  <strong>Scope</strong> and <strong>Event</strong> settings as indicated above.
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  To register the new webhook, click Create.
+                </ListItem>
+              </List>
+              More information on configuring and using Jira webhooks can be found on their{' '}
+              <Link
+                target={'_blank'}
+                href="https://developer.atlassian.com/server/jira/platform/webhooks/"
+              >
+                website
+              </Link>
+              .
+            </Typography>
+            <Stack sx={{ mt: 5 }}>
+              <Typography variant={'caption'}>Screenshot: </Typography>
+              <img
+                src={jiraImage}
+                width="870"
+                height="389"
+                style={{ padding: 15, borderStyle: 'dotted' }}
+              />
+            </Stack>
+          </Box>
+        </TabPanel>
+        <TabPanel value={tabValue} index={FeedTab.GitHub}>
           <Stack spacing={3} maxWidth={600}>
             <Grid container spacing={1}>
               <Grid xs={10}>
-                <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
+                <TextField
+                  label="GitHub URL"
+                  id="github-uri"
+                  value={githubURL}
+                  fullWidth
+                  disabled
+                />
               </Grid>
               <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
+                {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
               </Grid>
             </Grid>
             {navigation.state !== 'loading' && (
               <Grid container spacing={1}>
                 <Grid xs={10}>
-                  {confluenceSecret === serverConfluenceFeed.secret ?
-                    <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
+                  {gitHubSecret === serverGitHubFeed.secret ?
+                    <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
                       <Button
                         variant="contained"
                         color="secondary"
-                        onClick={() => setConfluenceSecret(uuidv4())}
+                        onClick={() => setGitHubSecret(uuidv4())}
                       >
-                        Change Confluence Secret
+                        Change GitHub Secret
                       </Button>
                     </Tooltip>
                   : <TextField
-                      label="Confluence Secret"
-                      value={confluenceSecret}
-                      onChange={e => setConfluenceSecret(e.target.value)}
+                      label="GitHub Secret"
+                      value={gitHubSecret}
+                      onChange={e => setGitHubSecret(e.target.value)}
                       disabled={navigation.state === 'submitting'}
                       fullWidth
                       InputProps={{
                         ...(navigation.state !== 'submitting' && {
                           endAdornment: (
                             <Tooltip title="Regenerate a secret">
-                              <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                              <IconButton onClick={() => setGitHubSecret(uuidv4())}>
                                 <RefreshIcon />
                               </IconButton>
                             </Tooltip>
@@ -423,13 +317,13 @@ export default function Settings() {
                 </Grid>
                 <Grid xs={2} sx={{ alignSelf: 'center' }}>
                   <Stack direction={'row'}>
-                    {confluenceSecret !== serverConfluenceFeed.secret &&
+                    {gitHubSecret !== serverGitHubFeed.secret &&
                       actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
-                        handleCopy(confluenceSecret)
+                        handleCopy(gitHubSecret)
                       )}
                     {navigation.state !== 'submitting' &&
-                      confluenceSecret?.trim() &&
-                      confluenceSecret !== serverConfluenceFeed.secret &&
+                      gitHubSecret?.trim() &&
+                      gitHubSecret !== serverGitHubFeed.secret &&
                       actionIcon(
                         <DoneIcon />,
                         'Save the secret (make sure to copy it first, as it will be hidden once saved)',
@@ -437,9 +331,9 @@ export default function Settings() {
                           submit(
                             {
                               customerId: serverData.customerId,
-                              feedId: serverConfluenceFeed.feedId,
-                              type: feedUtils.CONFLUENCE_FEED_TYPE,
-                              secret: confluenceSecret,
+                              feedId: serverGitHubFeed.feedId,
+                              type: feedUtils.GITHUB_FEED_TYPE,
+                              secret: gitHubSecret,
                             },
                             { method: 'post' }
                           )
@@ -451,74 +345,199 @@ export default function Settings() {
                     )}
                   </Stack>
                 </Grid>
-                {confluenceSecret !== serverConfluenceFeed.secret && (
+                {gitHubSecret !== serverGitHubFeed.secret && (
                   <Typography variant="caption" sx={{ m: 1 }}>
-                    <strong>Copy</strong> this secret (to paste it on the Confluence Webhook
+                    <strong>Copy</strong> this secret (to paste it on the GitHub Webhook
                     configuration page) and <strong>save</strong> it by using the buttons on the
                     right. For security reasons, it will be hidden once saved.
                   </Typography>
                 )}
               </Grid>
             )}
-            <Grid container spacing={1}>
-              <Grid xs={10}>
-                <TextField label="Confluence Events" value={confluenceEvents} fullWidth disabled />
-              </Grid>
-              <Grid xs={2} sx={{ alignSelf: 'center' }}>
-                {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
-                  handleCopy(confluenceEvents)
-                )}
-              </Grid>
-            </Grid>
           </Stack>
           <Typography component="div" sx={{ mt: 5 }}>
-            In your Confluence website, the administrator needs Confluence Administrator or System
-            Administrator permissions to create the webhook using the values indicated above.
+            In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page
+            for your organization (you must be an organization owner). You will need to create a new
+            webhook for <strong>Roakit</strong> by clicking the <strong>Add webhook</strong> button
+            in the upper right corner.
             <List sx={{ listStyleType: 'disc', pl: 2 }}>
               <ListItem sx={{ display: 'list-item' }}>
-                Add a <strong>Name</strong> for the new webhook
+                <strong>Payload URL: </strong> copy the value from the field above
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                Enter the <strong>URL</strong> of the <strong>Roakit</strong> service
+                <strong>Content type :</strong> set this option to <code>application/json</code> to
+                deliver to <strong>Roakit</strong> as JSON formatted text
               </ListItem>
               <ListItem sx={{ display: 'list-item' }}>
-                Enter the <strong>secret</strong> for the <strong>Roakit</strong> service
-                (don&apos;t forget to save it on this page with{' '}
-                <DoneIcon sx={{ verticalAlign: 'middle' }} />)
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                Select <strong>Test connection</strong> to verify your connection
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                Choose the Events that should trigger the webhook
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                Select <strong>Active</strong> to enable the webhook
-              </ListItem>
-              <ListItem sx={{ display: 'list-item' }}>
-                Click <strong>Save</strong>
+                <strong>Secret: </strong> a high entropy value shared with <strong>Roakit</strong>{' '}
+                used to validate webhook deliveries; copy the value from the field above (don&apos;t
+                forget to save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
               </ListItem>
             </List>
-            More information on configuring and using Confluence webhooks can be found on their{' '}
+            More information on configuring and using GitHub webhooks can be found on their{' '}
             <Link
               target={'_blank'}
-              href="https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html"
+              href="https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-an-organization-webhook"
             >
               website
             </Link>
             .
             <Stack sx={{ mt: 4 }}>
               <Typography variant={'caption'}>Screenshot: </Typography>
-              <img
-                src={confluenceImage}
-                width="800"
-                height="604"
-                style={{ borderStyle: 'dotted' }}
-              />
+              <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
             </Stack>
           </Typography>
-        </Box>
-      </TabPanel>
-    </Form>
+        </TabPanel>
+        <TabPanel value={tabValue} index={FeedTab.Confluence}>
+          <Box>
+            <Stack spacing={3} maxWidth={600}>
+              <Grid container spacing={1}>
+                <Grid xs={10}>
+                  <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
+                </Grid>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                  {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () =>
+                    handleCopy(confluenceURL)
+                  )}
+                </Grid>
+              </Grid>
+              {navigation.state !== 'loading' && (
+                <Grid container spacing={1}>
+                  <Grid xs={10}>
+                    {confluenceSecret === serverConfluenceFeed.secret ?
+                      <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          onClick={() => setConfluenceSecret(uuidv4())}
+                        >
+                          Change Confluence Secret
+                        </Button>
+                      </Tooltip>
+                    : <TextField
+                        label="Confluence Secret"
+                        value={confluenceSecret}
+                        onChange={e => setConfluenceSecret(e.target.value)}
+                        disabled={navigation.state === 'submitting'}
+                        fullWidth
+                        InputProps={{
+                          ...(navigation.state !== 'submitting' && {
+                            endAdornment: (
+                              <Tooltip title="Regenerate a secret">
+                                <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                                  <RefreshIcon />
+                                </IconButton>
+                              </Tooltip>
+                            ),
+                          }),
+                        }}
+                      />
+                    }
+                  </Grid>
+                  <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                    <Stack direction={'row'}>
+                      {confluenceSecret !== serverConfluenceFeed.secret &&
+                        actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
+                          handleCopy(confluenceSecret)
+                        )}
+                      {navigation.state !== 'submitting' &&
+                        confluenceSecret?.trim() &&
+                        confluenceSecret !== serverConfluenceFeed.secret &&
+                        actionIcon(
+                          <DoneIcon />,
+                          'Save the secret (make sure to copy it first, as it will be hidden once saved)',
+                          () =>
+                            submit(
+                              {
+                                customerId: serverData.customerId,
+                                feedId: serverConfluenceFeed.feedId,
+                                type: feedUtils.CONFLUENCE_FEED_TYPE,
+                                secret: confluenceSecret,
+                              },
+                              { method: 'post' }
+                            )
+                        )}
+                      {navigation.state === 'submitting' && (
+                        <Box sx={{ alignSelf: 'center', ml: '8px', mt: '3px' }}>
+                          <CircularProgress size="20px" />
+                        </Box>
+                      )}
+                    </Stack>
+                  </Grid>
+                  {confluenceSecret !== serverConfluenceFeed.secret && (
+                    <Typography variant="caption" sx={{ m: 1 }}>
+                      <strong>Copy</strong> this secret (to paste it on the Confluence Webhook
+                      configuration page) and <strong>save</strong> it by using the buttons on the
+                      right. For security reasons, it will be hidden once saved.
+                    </Typography>
+                  )}
+                </Grid>
+              )}
+              <Grid container spacing={1}>
+                <Grid xs={10}>
+                  <TextField
+                    label="Confluence Events"
+                    value={confluenceEvents}
+                    fullWidth
+                    disabled
+                  />
+                </Grid>
+                <Grid xs={2} sx={{ alignSelf: 'center' }}>
+                  {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
+                    handleCopy(confluenceEvents)
+                  )}
+                </Grid>
+              </Grid>
+            </Stack>
+            <Typography component="div" sx={{ mt: 5 }}>
+              In your Confluence website, the administrator needs Confluence Administrator or System
+              Administrator permissions to create the webhook using the values indicated above.
+              <List sx={{ listStyleType: 'disc', pl: 2 }}>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Add a <strong>Name</strong> for the new webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Enter the <strong>URL</strong> of the <strong>Roakit</strong> service
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Enter the <strong>secret</strong> for the <strong>Roakit</strong> service
+                  (don&apos;t forget to save it on this page with{' '}
+                  <DoneIcon sx={{ verticalAlign: 'middle' }} />)
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Select <strong>Test connection</strong> to verify your connection
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Choose the Events that should trigger the webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Select <strong>Active</strong> to enable the webhook
+                </ListItem>
+                <ListItem sx={{ display: 'list-item' }}>
+                  Click <strong>Save</strong>
+                </ListItem>
+              </List>
+              More information on configuring and using Confluence webhooks can be found on their{' '}
+              <Link
+                target={'_blank'}
+                href="https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html"
+              >
+                website
+              </Link>
+              .
+              <Stack sx={{ mt: 4 }}>
+                <Typography variant={'caption'}>Screenshot: </Typography>
+                <img
+                  src={confluenceImage}
+                  width="800"
+                  height="604"
+                  style={{ borderStyle: 'dotted' }}
+                />
+              </Stack>
+            </Typography>
+          </Box>
+        </TabPanel>
+      </Form>
+    </>
   );
 }

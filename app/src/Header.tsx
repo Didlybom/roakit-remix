@@ -1,34 +1,64 @@
+import GitHubIcon from '@mui/icons-material/GitHub';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { AppBar, Box, Button, SvgIcon, Toolbar, Typography } from '@mui/material';
+import JiraIcon from '../icons/Jira';
+import { disabledSelectedSx } from './theme';
 
-export default function Heaader({ isLoggedIn }: { isLoggedIn: boolean }) {
+type View = 'github' | 'jira' | 'settings' | 'login' | 'logout';
+
+export default function Heaader({ isLoggedIn, view }: { isLoggedIn: boolean; view: View }) {
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Stack direction="row" spacing={2}>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+    <AppBar position="static">
+      <Toolbar variant="dense">
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
           ROAKIT
         </Typography>
-        <Button
-          href="/settings"
-          disabled={!isLoggedIn}
-          variant="contained"
-          startIcon={<SettingsIcon />}
-        >
-          Settings
-        </Button>
-        {!isLoggedIn && (
-          <Button href="/login" variant="outlined" startIcon={<LoginIcon />}>
-            Login
-          </Button>
+        {view !== 'login' && view !== 'logout' && (
+          <>
+            <Button
+              href="/github"
+              disabled={!isLoggedIn || view === 'github'}
+              variant="text"
+              color="inherit"
+              sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
+              startIcon={<GitHubIcon />}
+            >
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>GitHub</Box>
+            </Button>
+            <Button
+              href="/jira"
+              disabled={!isLoggedIn || view === 'jira'}
+              variant="text"
+              color="inherit"
+              sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
+              startIcon={<SvgIcon component={JiraIcon} />}
+            >
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>Jira</Box>
+            </Button>
+            <Button
+              href="/settings"
+              disabled={!isLoggedIn || view === 'settings'}
+              color="inherit"
+              startIcon={<SettingsIcon />}
+              sx={{ ml: 2, mr: 2, ...(isLoggedIn && { ...disabledSelectedSx }) }}
+            >
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>Settings</Box>
+            </Button>
+            {!isLoggedIn && (
+              <Button href="/login" color="inherit" startIcon={<LoginIcon />}>
+                Login
+              </Button>
+            )}
+            {isLoggedIn && (
+              <Button href="/logout" color="inherit" startIcon={<LogoutIcon />}>
+                Logout
+              </Button>
+            )}
+          </>
         )}
-        {isLoggedIn && (
-          <Button href="/logout" variant="outlined" startIcon={<LogoutIcon />}>
-            Logout
-          </Button>
-        )}
-      </Stack>
-    </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

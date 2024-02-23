@@ -5,8 +5,8 @@ import Copyright from './Copyright';
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ my: 2 }}>
+    <Container maxWidth="xl" disableGutters>
+      <Box id="222" sx={{ mb: 1 }}>
         {children}
         <Copyright />
       </Box>

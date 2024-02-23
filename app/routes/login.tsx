@@ -4,11 +4,11 @@ import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { Fragment, SyntheticEvent, useEffect, useState } from 'react';
+import { SyntheticEvent, useEffect, useState } from 'react';
+import Header from '~/src/Header';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
-import Breadcrumbs from '../src/BreadcrumbBar';
 import { errMsg } from '../utils/errorUtils';
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -101,8 +101,8 @@ export default function Login() {
   }
 
   return (
-    <Fragment>
-      <Breadcrumbs title="Login" />
+    <>
+      <Header isLoggedIn={false} view="login" />
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin} autoComplete="on">
@@ -131,6 +131,6 @@ export default function Login() {
           {googleError && <Alert severity="error">{googleError}</Alert>}
         </Stack>
       </Box>
-    </Fragment>
+    </>
   );
 }

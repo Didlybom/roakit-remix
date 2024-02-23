@@ -3,6 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { redirect } from '@remix-run/node';
 import { useSubmit } from '@remix-run/react';
 import { useEffect } from 'react';
+import Header from '~/src/Header';
 import { sessionCookie } from '../cookies.server';
 import { auth } from '../firebase.client';
 
@@ -28,20 +29,23 @@ export default function Logout() {
   }, [submit]);
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', m: 10 }}>
-      <Box sx={{ position: 'relative' }}>
-        <Typography>Logging out...</Typography>
-        <CircularProgress
-          size={60}
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            marginTop: '-30px',
-            marginLeft: '-30px',
-          }}
-        />
+    <>
+      <Header isLoggedIn={false} view="login" />
+      <Box sx={{ display: 'flex', justifyContent: 'center', m: 10 }}>
+        <Box sx={{ position: 'relative' }}>
+          <Typography>Logging out...</Typography>
+          <CircularProgress
+            size={60}
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              marginTop: '-30px',
+              marginLeft: '-30px',
+            }}
+          />
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }

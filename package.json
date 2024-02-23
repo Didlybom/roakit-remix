@@ -15,7 +15,8 @@
     "deploy.prod": "npm run build && firebase use prod; firebase deploy --only hosting,functions:remixApp",
     "start": "remix-serve ./functions/build/index.js",
     "typecheck": "tsc",
-    "lint": "eslint --ext .js,.ts ."
+    "lint": "eslint --ext .js,.ts .",
+    "svgr": "npx @svgr/cli --out-dir app/icons -- icons"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
@@ -48,8 +49,12 @@
   "devDependencies": {
     "@remix-run/dev": "^2.7.2",
     "@stylistic/eslint-plugin": "^1.6.2",
+    "@svgr/cli": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-prettier": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
     "@types/pluralize": "^0.0.33",
-    "@types/react": "^18.2.57",
+    "@types/react": "^18.2.58",
     "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
