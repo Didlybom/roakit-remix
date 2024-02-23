@@ -1,5 +1,10 @@
 import { withEmotionCache } from '@emotion/react';
-import { Alert, Typography, unstable_useEnhancedEffect as useEnhancedEffect } from '@mui/material';
+import {
+  Alert,
+  Container,
+  Typography,
+  unstable_useEnhancedEffect as useEnhancedEffect,
+} from '@mui/material';
 import {
   Link,
   Links,
@@ -120,13 +125,15 @@ export function ErrorBoundary() {
   return (
     <Document title="ROAKIT Error">
       <Layout>
-        <Typography variant="h5">An error occured</Typography>
-        <Typography sx={{ mt: 2 }}>
-          You can try to <Link to="/logout">logout</Link> and login again.
-        </Typography>
-        <Alert severity="error" sx={{ mt: 4 }}>
-          {message}
-        </Alert>
+        <Container sx={{ m: 4 }}>
+          <Typography variant="h5">An error occured</Typography>
+          <Typography sx={{ mt: 2 }}>
+            You can try to <Link to="/logout">logout</Link> and login again.
+          </Typography>
+          <Alert severity="error" sx={{ mt: 4 }}>
+            {message}
+          </Alert>
+        </Container>
       </Layout>
     </Document>
   );
