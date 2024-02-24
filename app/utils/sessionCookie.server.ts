@@ -6,6 +6,7 @@ import { auth, queryCustomerId } from '../firebase.server';
 const logger = pino({ name: 'utils:session-cookie' });
 
 export interface SessionData {
+  redirect?: string;
   isLoggedIn: boolean;
   email?: string;
   customerId?: number;

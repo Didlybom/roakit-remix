@@ -26,6 +26,7 @@ import { SyntheticEvent, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import Header from '~/src/Header';
+import { loadSession } from '~/utils/authUtils.server';
 import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import confluenceImage from '../images/confluence-webhook.png';
@@ -34,7 +35,6 @@ import jiraImage from '../images/jira-webhook.png';
 import TabPanel from '../src/TabPanel';
 import { createClientId } from '../utils/client-id.server';
 import * as feedUtils from '../utils/feedUtils';
-import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:settings' });
 
@@ -51,15 +51,9 @@ const feedSchema = z.object({
 
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  let sessionData: SessionData;
-  try {
-    sessionData = await getSessionData(request);
-    if (!sessionData.isLoggedIn || !sessionData.customerId) {
-      return redirect('/login');
-    }
-  } catch (e) {
-    logger.error(e);
-    return redirect('/logout');
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
   }
 
   try {
@@ -68,15 +62,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const feedDocs = await feedsCollection.listDocuments();
     const feeds = await Promise.all(
       feedDocs.map(async feed => {
-        if (!sessionData.customerId) {
-          return;
-        }
         const feedDoc = await feed.get();
         const feedData = feedSchema.parse(feedDoc.data());
         return {
           feedId: feed.id,
           type: feedData.type,
-          clientId: createClientId(+sessionData.customerId, +feed.id),
+          clientId: createClientId(+sessionData.customerId!, +feed.id),
           ...(feedData.secret && { secret: feedData.secret }),
         };
       })
@@ -84,9 +75,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // create feeds not existing yet
     await Promise.all(
       feedUtils.FEED_TYPES.map(async feedType => {
-        if (!sessionData.customerId) {
-          return;
-        }
         if (!feeds.find(f => f && f.feedId === feedType.id && f.type === feedType.type)) {
           const feedValues = {
             type: feedType.type,
@@ -95,12 +83,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           feeds.push({
             ...feedValues,
             feedId: feedType.id,
-            clientId: createClientId(+sessionData.customerId, +feedType.id),
+            clientId: createClientId(+sessionData.customerId!, +feedType.id),
           });
         }
       })
     );
-    return { customerId: +sessionData.customerId, feeds };
+    return { customerId: +sessionData.customerId!, feeds };
   } catch (e) {
     logger.error(e);
     throw e;

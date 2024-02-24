@@ -28,17 +28,20 @@ import {
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
+import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
+import { loadSession } from '~/utils/authUtils.server';
 import { GitHubRow, gitHubEventSchema } from '../feeds/githubFeed';
 import { firestore as firestoreClient } from '../firebase.client';
 import Header from '../src/Header';
 import TabPanel from '../src/TabPanel';
+import LinkifyJira from '../utils/LinkifyJira';
 import {
   DateFilter,
   dateFilterToStartDate,
@@ -48,8 +51,6 @@ import {
   formatRelative,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { linkifyJira } from '../utils/jsxUtils';
-import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 import { caseInsensitiveSort, findJiraProjects, removeSpaces } from '../utils/stringUtils';
 
 enum EventType {
@@ -154,8 +155,12 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
 };
 
 // verify and get session data
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
-  return await getSessionData(request);
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+  return sessionData;
 };
 
 export default function Index() {
@@ -178,6 +183,12 @@ export default function Index() {
   const [error, setError] = useState('');
 
   const pluralizeMemo = memoize(pluralize);
+
+  const handleJiraClick = useCallback((jira: string) => {
+    setShowBy(ActivityView.Jira);
+    setScrollToJira(jira);
+    setPopoverElement(null);
+  }, []);
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
@@ -211,7 +222,7 @@ export default function Index() {
                   setShowBy(ActivityView.Author);
                   setScrollToAuthor(fields.name);
                 }}
-                sx={{ cursor: 'pointer' }}
+                sx={{ cursor: 'pointer', textDecoration: 'none', borderBottom: 'dotted 1px' }}
               >
                 {fields.name}
               </Link>
@@ -267,11 +278,7 @@ export default function Index() {
           const cell = (
             <Stack sx={{ overflowX: 'scroll' }}>
               <Typography variant="body2">
-                {linkifyJira(title, jira => {
-                  setShowBy(ActivityView.Jira);
-                  setScrollToJira(jira);
-                  setPopoverElement(null);
-                })}
+                <LinkifyJira content={title} onClick={jira => handleJiraClick(jira)} />
               </Typography>
               {!fields?.commitMessages?.length ?
                 <Typography variant="caption">{activity}</Typography>
@@ -280,18 +287,14 @@ export default function Index() {
                   onClick={e => {
                     setPopoverContent(
                       <List dense={true}>
-                        {linkifyJira(
-                          fields.commitMessages?.map((message, i) => (
+                        <LinkifyJira
+                          content={fields.commitMessages?.map((message, i) => (
                             <ListItem key={i}>
                               <ListItemText>{message}</ListItemText>
                             </ListItem>
-                          )),
-                          jira => {
-                            setShowBy(ActivityView.Jira);
-                            setScrollToJira(jira);
-                            setPopoverElement(null);
-                          }
-                        )}
+                          ))}
+                          onClick={jira => handleJiraClick(jira)}
+                        />
                       </List>
                     );
                     setPopoverElement(e.currentTarget);
@@ -321,7 +324,7 @@ export default function Index() {
         },
       },
     ],
-    [pluralizeMemo]
+    [handleJiraClick, pluralizeMemo]
   );
 
   const gitHubPushesColumns = useMemo<GridColDef[]>(() => {
@@ -683,9 +686,6 @@ export default function Index() {
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         )}
-        <Typography align="center" variant="h6" sx={{ mt: 5, mb: 5 }}>
-          Under construction
-        </Typography>
       </Container>
     </>
   );

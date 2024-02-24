@@ -21,12 +21,14 @@ import {
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
+import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import { JiraRow, jiraEventSchema } from '~/feeds/jiraFeed';
+import { loadSession } from '~/utils/authUtils.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import Header from '../src/Header';
 import TabPanel from '../src/TabPanel';
@@ -39,7 +41,6 @@ import {
   formatRelative,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 enum JiraEventType {
   IssueCreated = 'jira:issue_created',
@@ -85,8 +86,12 @@ const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] => {
 };
 
 // verify and get session data
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
-  return await getSessionData(request);
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+  return sessionData;
 };
 
 export default function Index() {
@@ -323,9 +328,6 @@ export default function Index() {
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         )}
-        <Typography align="center" variant="h6" sx={{ mt: 5, mb: 5 }}>
-          Under construction
-        </Typography>
       </Container>
     </>
   );
