@@ -6,7 +6,7 @@ import { AppBar, Box, Button, Stack, SvgIcon, Toolbar, Typography } from '@mui/m
 import JiraIcon from '../icons/Jira';
 import { disabledSelectedSx } from './theme';
 
-type View = 'github' | 'jira' | 'settings' | 'login' | 'logout';
+type View = 'github' | 'jira' | 'settings' | 'login' | 'logout' | 'info';
 
 export default function Heaader({ isLoggedIn, view }: { isLoggedIn: boolean; view: View }) {
   return (

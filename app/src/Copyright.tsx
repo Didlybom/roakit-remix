@@ -1,14 +1,18 @@
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import { Box, Button, Stack } from '@mui/material';
 import Typography from '@mui/material/Typography';
 
 export default function Copyright() {
   return (
-    <>
-      <Typography variant="h6" align="center" sx={{ mt: 5 }}>
-        Under construction
-      </Typography>
-      <Typography variant="body2" color="text.secondary" align="center" sx={{ m: 3 }}>
-        {'Copyright © ROAKIT'} {new Date().getFullYear()}.
-      </Typography>
-    </>
+    <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
+      <Stack>
+        <Button disabled size="small" startIcon={<EngineeringIcon />}>
+          under construction
+        </Button>
+        <Typography align="center" variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          {'Copyright © ROAKIT'} {new Date().getFullYear()}.
+        </Typography>
+      </Stack>
+    </Box>
   );
 }
