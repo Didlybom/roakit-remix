@@ -112,8 +112,8 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
-        valueGetter: params => new Date(params.value as number),
-        valueFormatter: params => formatRelative(params.value as Date),
+        valueGetter: value => new Date(value as number),
+        valueFormatter: value => formatRelative(value as Date),
         renderCell: params => {
           return (
             <Tooltip title={formatMonthDayTime(params.value as Date)}>
@@ -140,8 +140,8 @@ export default function Index() {
         width: 160,
         sortComparator: (a: JiraRow['project'], b: JiraRow['project']) =>
           (a?.key ?? '').localeCompare(b?.key ?? ''),
-        valueFormatter: params => {
-          const fields = params.value as JiraRow['project'];
+        valueFormatter: value => {
+          const fields = value as JiraRow['project'];
           return fields?.name ?? '';
         },
       },
@@ -187,7 +187,7 @@ export default function Index() {
             activity = activity.slice(0, -2);
           }
           return (
-            <Stack sx={{ flexGrow: 1, overflowX: 'scroll' }}>
+            <Stack sx={{ overflowX: 'scroll', mt: '5px' }}>
               <Typography variant="body2">{title}</Typography>
               <Tooltip title={activity}>
                 <Typography variant="caption">{activity}</Typography>
@@ -247,87 +247,85 @@ export default function Index() {
 
   return (
     <>
-      <Header isLoggedIn={sessionData.isLoggedIn} view="jira" />{' '}
+      <Header isLoggedIn={sessionData.isLoggedIn} view="jira" />
       <Container disableGutters>
-        {sessionData.isLoggedIn && (
-          <Stack sx={{ mt: 3 }}>
-            <Grid container direction={{ xs: 'column', md: 'row' }}>
-              <Grid>
-                <Timeline
-                  sx={{
-                    position: { xs: 'static', md: 'sticky' },
-                    top: 0,
-                    rotate: { xs: '-90deg', md: 'none' },
-                    maxHeight: 100,
-                    maxWidth: 130,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
-                  }}
-                >
-                  {Object.keys(dateFilters).map(date => (
-                    <TimelineItem key={date} sx={{ minHeight: 50 }}>
-                      <TimelineSeparator>
-                        <TimelineDot>
-                          {prevDateFilter &&
-                            dateFilter !== prevDateFilter &&
-                            dateFilter === (date as DateFilter) && (
-                              <CircularProgress
-                                size={18}
-                                sx={{ position: 'absolute', top: 9, left: -3, zIndex: 1 }}
-                              />
-                            )}
-                        </TimelineDot>
-                        {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
-                      </TimelineSeparator>
-                      <TimelineContent sx={{ pt: '3px' }}>
-                        <Button
-                          size="small"
-                          disabled={dateFilter === (date as DateFilter)}
-                          onClick={() => setDateFilter(date as DateFilter)}
-                          sx={{ justifyContent: 'left' }}
-                        >
-                          <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
-                        </Button>
-                      </TimelineContent>
-                    </TimelineItem>
-                  ))}
-                </Timeline>
-              </Grid>
-              <Grid sx={{ flexGrow: 1 }}>
-                <Box>
-                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                    <Tabs value={view} onChange={(e, newValue: View) => setView(newValue)}>
-                      <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
-                      <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
-                    </Tabs>
-                  </Box>
-                  {!jiraIssuesCreated.length && !jiraCommentsCreated.length && (
-                    <LinearProgress sx={{ mt: 5, mb: 5 }} />
-                  )}
-                  <TabPanel value={view} index={View.IssueCreated}>
-                    {!!jiraIssuesCreated.length && (
-                      <DataGrid
-                        columns={jiraColumns}
-                        rows={jiraIssuesCreated}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    )}
-                  </TabPanel>
-                  <TabPanel value={view} index={View.CommentCreated}>
-                    {!!jiraCommentsCreated.length && (
-                      <DataGrid
-                        columns={jiraColumns}
-                        rows={jiraCommentsCreated}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    )}
-                  </TabPanel>
-                </Box>
-              </Grid>
+        <Stack sx={{ mt: 3 }}>
+          <Grid container direction={{ xs: 'column', md: 'row' }}>
+            <Grid>
+              <Timeline
+                sx={{
+                  position: { xs: 'static', md: 'sticky' },
+                  top: 0,
+                  rotate: { xs: '-90deg', md: 'none' },
+                  maxHeight: 100,
+                  maxWidth: 130,
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                  [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
+                }}
+              >
+                {Object.keys(dateFilters).map(date => (
+                  <TimelineItem key={date} sx={{ minHeight: 50 }}>
+                    <TimelineSeparator>
+                      <TimelineDot>
+                        {prevDateFilter &&
+                          dateFilter !== prevDateFilter &&
+                          dateFilter === (date as DateFilter) && (
+                            <CircularProgress
+                              size={18}
+                              sx={{ position: 'absolute', top: 9, left: -3, zIndex: 1 }}
+                            />
+                          )}
+                      </TimelineDot>
+                      {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
+                    </TimelineSeparator>
+                    <TimelineContent sx={{ pt: '3px' }}>
+                      <Button
+                        size="small"
+                        disabled={dateFilter === (date as DateFilter)}
+                        onClick={() => setDateFilter(date as DateFilter)}
+                        sx={{ justifyContent: 'left' }}
+                      >
+                        <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
+                      </Button>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </Timeline>
             </Grid>
-            {error && <Alert severity="error">{error}</Alert>}
-          </Stack>
-        )}
+            <Grid sx={{ flex: 1 }}>
+              <Box>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+                  <Tabs value={view} onChange={(e, newValue: View) => setView(newValue)}>
+                    <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
+                    <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
+                  </Tabs>
+                </Box>
+                {!jiraIssuesCreated.length && !jiraCommentsCreated.length && (
+                  <LinearProgress sx={{ mt: 5, mb: 5 }} />
+                )}
+                <TabPanel value={view} index={View.IssueCreated}>
+                  {!!jiraIssuesCreated.length && (
+                    <DataGrid
+                      columns={jiraColumns}
+                      rows={jiraIssuesCreated}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  )}
+                </TabPanel>
+                <TabPanel value={view} index={View.CommentCreated}>
+                  {!!jiraCommentsCreated.length && (
+                    <DataGrid
+                      columns={jiraColumns}
+                      rows={jiraCommentsCreated}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  )}
+                </TabPanel>
+              </Box>
+            </Grid>
+          </Grid>
+          {error && <Alert severity="error">{error}</Alert>}
+        </Stack>
       </Container>
     </>
   );

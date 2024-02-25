@@ -2,7 +2,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { AppBar, Box, Button, SvgIcon, Toolbar, Typography } from '@mui/material';
+import { AppBar, Box, Button, Stack, SvgIcon, Toolbar, Typography } from '@mui/material';
 import JiraIcon from '../icons/Jira';
 import { disabledSelectedSx } from './theme';
 
@@ -12,33 +12,41 @@ export default function Heaader({ isLoggedIn, view }: { isLoggedIn: boolean; vie
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" sx={{ display: { xs: 'none', md: 'flex' } }}>
           ROAKIT
+        </Typography>
+        <Typography variant="h6" sx={{ display: { xs: 'flex', md: 'none' } }}>
+          RKT
         </Typography>
         {view !== 'login' && view !== 'logout' && (
           <>
-            <Button
-              href="/github"
-              disabled={!isLoggedIn || view === 'github'}
-              variant="text"
-              color="inherit"
-              sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-              startIcon={<GitHubIcon />}
-            >
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>GitHub</Box>
-            </Button>
-            <Button
-              href="/jira"
-              disabled={!isLoggedIn || view === 'jira'}
-              variant="text"
-              color="inherit"
-              sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-              startIcon={<SvgIcon component={JiraIcon} />}
-            >
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>Jira</Box>
-            </Button>
+            <Stack direction="row" sx={{ flexGrow: 1, ml: 2 }}>
+              <Button
+                href="/github"
+                title="GitHub capture"
+                disabled={!isLoggedIn || view === 'github'}
+                variant="text"
+                color="inherit"
+                sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
+                startIcon={<GitHubIcon />}
+              >
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>GitHub</Box>
+              </Button>
+              <Button
+                href="/jira"
+                title="Jira capture"
+                disabled={!isLoggedIn || view === 'jira'}
+                variant="text"
+                color="inherit"
+                sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
+                startIcon={<SvgIcon component={JiraIcon} />}
+              >
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>Jira</Box>
+              </Button>
+            </Stack>
             <Button
               href="/settings"
+              title="Settings"
               disabled={!isLoggedIn || view === 'settings'}
               color="inherit"
               startIcon={<SettingsIcon />}
@@ -47,13 +55,13 @@ export default function Heaader({ isLoggedIn, view }: { isLoggedIn: boolean; vie
               <Box sx={{ display: { xs: 'none', md: 'block' } }}>Settings</Box>
             </Button>
             {!isLoggedIn && (
-              <Button href="/login" color="inherit" startIcon={<LoginIcon />}>
-                Login
+              <Button href="/login" title=":Login" color="inherit" startIcon={<LoginIcon />}>
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>Login</Box>
               </Button>
             )}
             {isLoggedIn && (
-              <Button href="/logout" color="inherit" startIcon={<LogoutIcon />}>
-                Logout
+              <Button href="/logout" title="Logout" color="inherit" startIcon={<LogoutIcon />}>
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>Logout</Box>
               </Button>
             )}
           </>

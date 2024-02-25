@@ -24,10 +24,9 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@google-cloud/secret-manager": "^5.1.0",
-    "@mui/icons-material": "^5.15.10",
     "@mui/lab": "^5.0.0-alpha.165",
-    "@mui/material": "^5.15.10",
-    "@mui/x-data-grid": "^6.19.5",
+    "@mui/material": "^5.15.11",
+    "@mui/x-data-grid": "^7.0.0-beta.4",
     "@remix-run/css-bundle": "^2.7.2",
     "@remix-run/node": "^2.7.2",
     "@remix-run/react": "^2.7.2",
@@ -47,6 +46,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@mui/icons-material": "^5.15.11",
     "@remix-run/dev": "^2.7.2",
     "@stylistic/eslint-plugin": "^1.6.2",
     "@svgr/cli": "^8.1.0",
