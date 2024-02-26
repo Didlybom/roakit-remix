@@ -1,9 +1,14 @@
 import GoogleIcon from '@mui/icons-material/Google';
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useActionData, useSubmit } from '@remix-run/react';
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { Form, useActionData, useNavigation, useSubmit } from '@remix-run/react';
+import {
+  GoogleAuthProvider,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  signInWithRedirect,
+} from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import Header from '~/components/Header';
 import { sessionCookie } from '../cookies.server';
@@ -42,12 +47,38 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Login() {
   const submit = useSubmit();
+  const navigation = useNavigation();
   const actionData = useActionData<typeof action>();
 
+  const [isProcessingGoogle, setIsProcessingGoogle] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [googleError, setGoogleError] = useState('');
 
   const [refreshedToken, setRefreshedToken] = useState<string | undefined>();
+
+  useEffect(() => {
+    async function getAuthRedirect() {
+      try {
+        setIsProcessingGoogle(true);
+        const redirectResult = await getRedirectResult(clientAuth);
+        if (!redirectResult) {
+          setIsProcessingGoogle(false);
+
+          return;
+        }
+        const idToken = await redirectResult?.user.getIdToken();
+        setIsProcessingGoogle(false);
+
+        if (!idToken) {
+          throw Error('Token not found');
+        }
+        submit({ idToken }, { method: 'post' });
+      } catch (e) {
+        setGoogleError(errMsg(e, 'Login failed'));
+      }
+    }
+    void getAuthRedirect();
+  }, [submit]);
 
   useEffect(() => {
     async function refreshToken() {
@@ -69,12 +100,11 @@ export default function Login() {
   async function handleSignInWithGoogle(e: SyntheticEvent) {
     e.preventDefault();
     setLoginError('');
+    setGoogleError('');
 
     try {
       const googleAuthProvider = new GoogleAuthProvider();
-      const credential = await signInWithPopup(clientAuth, googleAuthProvider);
-      const idToken = await credential.user.getIdToken();
-      submit({ idToken }, { method: 'post' }); // hand over to server action
+      await signInWithRedirect(clientAuth, googleAuthProvider);
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
       setGoogleError(errMsg(e, 'Error signing in'));
@@ -83,6 +113,8 @@ export default function Login() {
 
   async function handleLogin(e: SyntheticEvent) {
     e.preventDefault();
+    setLoginError('');
+    setGoogleError('');
 
     const target = e.target as typeof e.target & {
       email: { value: string };
@@ -117,7 +149,11 @@ export default function Login() {
                 helperText={loginError}
                 onChange={() => setLoginError('')}
               />
-              <Button variant="contained" type="submit">
+              <Button
+                disabled={isProcessingGoogle || navigation.state === 'submitting'}
+                variant="contained"
+                type="submit"
+              >
                 Login
               </Button>
             </Stack>
@@ -125,9 +161,29 @@ export default function Login() {
           <Typography textAlign={'center'} sx={{ p: 2 }}>
             or
           </Typography>
-          <Button variant="outlined" startIcon={<GoogleIcon />} onClick={handleSignInWithGoogle}>
-            Sign in with Google
-          </Button>
+          <Box sx={{ position: 'relative' }}>
+            <Button
+              disabled={isProcessingGoogle || navigation.state === 'submitting'}
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              sx={{ width: '100%' }}
+              onClick={handleSignInWithGoogle}
+            >
+              Sign in with Google
+            </Button>
+            {(isProcessingGoogle || navigation.state === 'submitting') && (
+              <CircularProgress
+                size={60}
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  marginTop: '-30px',
+                  marginLeft: '-30px',
+                }}
+              />
+            )}
+          </Box>
           {googleError && <Alert severity="error">{googleError}</Alert>}
         </Stack>
       </Box>
