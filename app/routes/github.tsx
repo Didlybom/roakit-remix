@@ -106,7 +106,10 @@ const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => 
       author,
       ref:
         data.pull_request?.head.ref ?
-          { label: data.pull_request.head.ref, url: data.pull_request.html_url }
+          {
+            label: data.pull_request.head.ref,
+            url: data.comment?.html_url ?? data.pull_request.html_url,
+          }
         : undefined,
       activity: {
         title:
@@ -307,12 +310,7 @@ export default function Index() {
                 </Link>
               }
               {fields?.pullRequestComment && (
-                <Typography
-                  variant="caption"
-                  component="a"
-                  href={fields.pullRequestComment.url}
-                  sx={{ overflowX: 'clip', textOverflow: 'ellipsis' }}
-                >
+                <Typography variant="caption" sx={{ overflowX: 'clip', textOverflow: 'ellipsis' }}>
                   {fields.pullRequestComment.comment}
                 </Typography>
               )}
