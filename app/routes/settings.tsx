@@ -25,15 +25,15 @@ import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import Header from '~/src/Header';
+import Header from '~/components/Header';
 import { loadSession } from '~/utils/authUtils.server';
+import TabPanel from '../components/TabPanel';
 import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import confluenceImage from '../images/confluence-webhook.png';
 import githubImage from '../images/github-webhook.png';
 import jiraImage from '../images/jira-webhook.png';
-import TabPanel from '../src/TabPanel';
-import { createClientId } from '../utils/client-id.server';
+import { createClientId } from '../utils/createClientId.server';
 import * as feedUtils from '../utils/feedUtils';
 
 const logger = pino({ name: 'route:settings' });

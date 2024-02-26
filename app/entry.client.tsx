@@ -1,12 +1,12 @@
+import { CacheProvider } from '@emotion/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import { RemixBrowser } from '@remix-run/react';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
-import { RemixBrowser } from '@remix-run/react';
-import { CacheProvider } from '@emotion/react';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import ClientStyleContext from './src/ClientStyleContext';
-import createEmotionCache from './src/createEmotionCache';
-import theme from './src/theme';
+import ClientStyleContext from './components/ClientStyleContext';
+import createEmotionCache from './utils/createEmotionCache';
+import theme from './utils/theme';
 
 interface ClientCacheProviderProps {
   children: React.ReactNode;
@@ -20,7 +20,7 @@ function ClientCacheProvider({ children }: ClientCacheProviderProps) {
         setCache(createEmotionCache());
       },
     }),
-    [],
+    []
   );
 
   return (
@@ -40,7 +40,7 @@ const hydrate = () => {
           <CssBaseline />
           <RemixBrowser />
         </ThemeProvider>
-      </ClientCacheProvider>,
+      </ClientCacheProvider>
     );
   });
 };

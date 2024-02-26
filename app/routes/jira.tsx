@@ -28,9 +28,9 @@ import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import { JiraRow, jiraEventSchema } from '~/feeds/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
+import Header from '../components/Header';
+import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
-import Header from '../src/Header';
-import TabPanel from '../src/TabPanel';
 import {
   DateFilter,
   dateFilterToStartDate,

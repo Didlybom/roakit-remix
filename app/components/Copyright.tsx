@@ -10,7 +10,7 @@ export default function Copyright() {
           under construction
         </Button>
         <Typography align="center" variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {'Copyright © ROAKIT'} {new Date().getFullYear()}.
+          {'Copyright © ROAKIT'} {new Date().getFullYear()}
         </Typography>
       </Stack>
     </Box>

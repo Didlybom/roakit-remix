@@ -19,10 +19,10 @@ import {
 } from '@remix-run/react';
 import { ReactNode, useContext } from 'react';
 import clientConfig, { ClientEnv } from './client-env/client-env.server';
-import ClientStyleContext from './src/ClientStyleContext';
-import Layout from './src/Layout';
-import theme from './src/theme';
+import ClientStyleContext from './components/ClientStyleContext';
+import Layout from './components/Layout';
 import { errMsg } from './utils/errorUtils';
+import theme from './utils/theme';
 
 interface DocumentProps {
   children: ReactNode;

@@ -36,11 +36,11 @@ import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
+import Header from '../components/Header';
+import LinkifyJira from '../components/LinkifyJira';
+import TabPanel from '../components/TabPanel';
 import { GitHubRow, gitHubEventSchema } from '../feeds/githubFeed';
 import { firestore as firestoreClient } from '../firebase.client';
-import Header from '../src/Header';
-import TabPanel from '../src/TabPanel';
-import LinkifyJira from '../utils/LinkifyJira';
 import {
   DateFilter,
   dateFilterToStartDate,
@@ -278,7 +278,9 @@ export default function Index() {
           const cell = (
             <Stack sx={{ overflowX: 'scroll', mt: '5px' }}>
               <Typography variant="body2">
-                <LinkifyJira content={title} onClick={jira => handleJiraClick(jira)} />
+                {showBy === ActivityView.Jira ?
+                  title
+                : <LinkifyJira content={title} onClick={jira => handleJiraClick(jira)} />}
               </Typography>
               {!fields?.commitMessages?.length ?
                 <Typography variant="caption">{activity}</Typography>
@@ -324,7 +326,7 @@ export default function Index() {
         },
       },
     ],
-    [handleJiraClick, pluralizeMemo]
+    [handleJiraClick, pluralizeMemo, showBy]
   );
 
   const gitHubPushesColumns = useMemo<GridColDef[]>(() => {
@@ -557,7 +559,13 @@ export default function Index() {
                     <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
                       <Stack direction="row">
                         <Box sx={{ position: 'relative' }}>
-                          <Box sx={{ writingMode: 'vertical-rl' }}>
+                          <Box
+                            sx={{
+                              mt: 1,
+                              inlineSize: 'fit-content',
+                              transform: 'rotate(-90deg)',
+                            }}
+                          >
                             <Link id={`JIRA:${jira}`} />
                             <Typography color="GrayText" variant="h6">
                               {jira}

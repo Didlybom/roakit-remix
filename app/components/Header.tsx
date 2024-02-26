@@ -4,7 +4,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { AppBar, Box, Button, Stack, SvgIcon, Toolbar, Typography } from '@mui/material';
 import JiraIcon from '../icons/Jira';
-import { disabledSelectedSx } from './theme';
+import { disabledSelectedSx } from '../utils/theme';
 
 type View = 'github' | 'jira' | 'settings' | 'login' | 'logout' | 'info';
 

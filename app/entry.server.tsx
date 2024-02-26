@@ -5,8 +5,8 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { EntryContext } from '@remix-run/node';
 import { RemixServer } from '@remix-run/react';
 import * as ReactDOMServer from 'react-dom/server';
-import createEmotionCache from './src/createEmotionCache';
-import theme from './src/theme';
+import createEmotionCache from './utils/createEmotionCache';
+import theme from './utils/theme';
 
 export default function handleRequest(
   request: Request,

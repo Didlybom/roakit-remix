@@ -5,7 +5,7 @@ import { redirect } from '@remix-run/node';
 import { Form, useActionData, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
-import Header from '~/src/Header';
+import Header from '~/components/Header';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
