@@ -39,7 +39,13 @@ import { loadSession } from '~/utils/authUtils.server';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
-import { GitHubRow, gitHubEventSchema } from '../feeds/githubFeed';
+import {
+  GitHubEventType,
+  GitHubRow,
+  gitHubRows,
+  rowsByAuthor,
+  rowsByJira,
+} from '../feeds/githubFeed';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
   DateFilter,
@@ -50,14 +56,7 @@ import {
   formatRelative,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { caseInsensitiveSort, findJiraProjects, removeSpaces } from '../utils/stringUtils';
-
-enum EventType {
-  PullRequest = 'pull_request',
-  PullRequestReviewComment = 'pull_request_review_comment',
-  Push = 'push',
-  Release = 'release',
-}
+import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
 
 enum ActivityView {
   All,
@@ -71,90 +70,6 @@ enum EventTab {
   Push = 2,
   Release = 3,
 }
-
-let rowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> | null; // all the events aggregated by author
-let rowsByJira: Record<string, GitHubRow[]> | null; // all the events aggregated by JIRA project
-
-const githubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => {
-  const rows: GitHubRow[] = [];
-  snapshot.forEach(doc => {
-    const docData = doc.data();
-    const props = gitHubEventSchema.safeParse(docData.properties);
-    if (!props.success) {
-      throw Error('Failed to parse GitHub events. ' + props.error.message);
-    }
-    const data = props.data;
-    if (data.release && data.action !== 'released') {
-      return;
-    }
-    let author;
-    if (docData.name === EventType.PullRequest && data.pull_request?.assignee) {
-      author = { name: data.pull_request.assignee.login, url: data.pull_request.assignee.html_url };
-    } else if (docData.name === EventType.PullRequestReviewComment && data.comment?.user) {
-      author = {
-        name: data.comment.user.login,
-        url: data.comment.user.html_url,
-      };
-    }
-    if (!author) {
-      author = data.sender ? { name: data.sender.login, url: data.sender.html_url } : undefined;
-    }
-    const row = {
-      id: doc.id,
-      timestamp: docData.eventTimestamp as number,
-      repositoryName: data.repository?.name,
-      author,
-      ref:
-        data.pull_request?.head.ref ?
-          {
-            label: data.pull_request.head.ref,
-            url: data.comment?.html_url ?? data.pull_request.html_url,
-          }
-        : undefined,
-      activity: {
-        title:
-          data.pull_request?.title ??
-          (data.commits ? data.commits[0]?.message : undefined) ??
-          data.release?.body,
-        created: data.pull_request?.created_at,
-        changedFiles: data.pull_request?.changed_files,
-        comments: data.pull_request?.comments,
-        commits: data.pull_request?.commits ?? data.commits?.length,
-        commitMessages: data.commits?.map(c => c.message),
-        ...(data.comment && {
-          pullRequestComment: { comment: data.comment.body, url: data.comment.html_url },
-        }),
-      },
-    };
-    if (row.author?.name) {
-      if (!rowsByAuthor) {
-        rowsByAuthor = {};
-      }
-      if (!(row.author.name in rowsByAuthor)) {
-        rowsByAuthor[row.author.name] = { url: row.author.url, rows: [] };
-      }
-      if (!rowsByAuthor[row.author.name].rows.find(r => r.id === row.id)) {
-        rowsByAuthor[row.author.name].rows.push(row);
-      }
-    }
-    const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref?.label);
-    if (jiraProjects.length) {
-      if (!rowsByJira) {
-        rowsByJira = {};
-      }
-      jiraProjects.forEach(jiraProject => {
-        if (!(jiraProject in rowsByJira!)) {
-          rowsByJira![jiraProject] = [];
-        }
-        if (!rowsByJira![jiraProject].find(r => r.id === row.id)) {
-          rowsByJira![jiraProject].push(row);
-        }
-      });
-    }
-    rows.push(row);
-  });
-  return rows;
-};
 
 // verify and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -199,8 +114,8 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
-        valueGetter: value => new Date(value as number),
-        valueFormatter: value => formatRelative(value as Date),
+        valueGetter: params => new Date(params.value as number),
+        valueFormatter: params => formatRelative(params.value as Date),
         renderCell: params => {
           return (
             <Tooltip title={formatMonthDayTime(params.value as Date)}>
@@ -342,18 +257,18 @@ export default function Index() {
   const authorElementId = (author: string) => `AUTHOR-${removeSpaces(author)}`;
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
-  const setRows = (type: EventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
+  const setRows = (type: GitHubEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
     setAreRowsSet(true);
     try {
       switch (type) {
-        case EventType.PullRequest:
-          return setGithubPRs(githubRows(querySnapshot));
-        case EventType.PullRequestReviewComment:
-          return setGithubPRComments(githubRows(querySnapshot));
-        case EventType.Push:
-          return setGithubPushes(githubRows(querySnapshot));
-        case EventType.Release:
-          return setGithubReleases(githubRows(querySnapshot));
+        case GitHubEventType.PullRequest:
+          return setGithubPRs(gitHubRows(querySnapshot));
+        case GitHubEventType.PullRequestReviewComment:
+          return setGithubPRComments(gitHubRows(querySnapshot));
+        case GitHubEventType.Push:
+          return setGithubPushes(gitHubRows(querySnapshot));
+        case GitHubEventType.Release:
+          return setGithubReleases(gitHubRows(querySnapshot));
       }
     } catch (e: unknown) {
       setError(errMsg(e, `Error parsing GitHub ${type} events`));
@@ -363,7 +278,7 @@ export default function Index() {
   // Firestore listeners
   useEffect(() => {
     const unsubscribe: Record<string, () => void> = {};
-    Object.values(EventType).map((type: EventType) => {
+    Object.values(GitHubEventType).map((type: GitHubEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);
       const query = firestoreClient
         .collection(

@@ -1,19 +1,5 @@
+import firebase from 'firebase/compat/app';
 import { z } from 'zod';
-
-export interface JiraRow {
-  id: string;
-  timestamp: number;
-  project?: { key: string; name: string };
-  author?: { name?: string };
-  ref?: { label: string; url: string };
-  priority?: string;
-  activity?: {
-    title?: string;
-    created?: string;
-    description?: string;
-    comment?: string;
-  };
-}
 
 const zuser = z.object({ accountId: z.string(), displayName: z.string() });
 
@@ -46,3 +32,56 @@ export const jiraEventSchema = z.object({
     })
     .optional(),
 });
+
+export enum JiraEventType {
+  IssueCreated = 'jira:issue_created',
+  CommentCreated = 'comment_created',
+}
+
+export interface JiraRow {
+  id: string;
+  timestamp: number;
+  project?: { key: string; name: string };
+  author?: { name?: string };
+  ref?: { label: string; url: string };
+  priority?: string;
+  activity?: {
+    title?: string;
+    created?: string;
+    description?: string;
+    comment?: string;
+  };
+}
+
+export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] => {
+  const rows: JiraRow[] = [];
+  snapshot.forEach(doc => {
+    const docData = doc.data();
+    const props = jiraEventSchema.safeParse(docData.properties);
+    if (!props.success) {
+      throw Error('Failed to parse Jira events. ' + props.error.message);
+    }
+    const data = props.data;
+    let author;
+    if (docData.name === JiraEventType.IssueCreated) {
+      author = { name: data.issue?.fields?.creator?.displayName };
+    } else if (docData.name === JiraEventType.CommentCreated) {
+      author = { name: data.comment?.author.displayName };
+    }
+    const row = {
+      id: doc.id,
+      timestamp: docData.eventTimestamp as number,
+      author,
+      project: { ...data.issue.fields.project },
+      ref: { label: data.issue.key, url: data.issue.self },
+      priority: data.issue.fields.priority.name,
+      activity: {
+        title: data.issue.fields.summary,
+        description: data.issue.fields.description ?? undefined,
+        comment: data.comment?.body,
+      },
+    };
+    rows.push(row);
+  });
+  return rows;
+};

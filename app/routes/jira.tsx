@@ -26,7 +26,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
-import { JiraRow, jiraEventSchema } from '~/feeds/jiraFeed';
+import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
 import Header from '../components/Header';
 import TabPanel from '../components/TabPanel';
@@ -41,48 +41,10 @@ import {
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 
-enum JiraEventType {
-  IssueCreated = 'jira:issue_created',
-  CommentCreated = 'comment_created',
-}
-
 enum View {
   IssueCreated = 0,
   CommentCreated = 1,
 }
-
-const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] => {
-  const rows: JiraRow[] = [];
-  snapshot.forEach(doc => {
-    const docData = doc.data();
-    const props = jiraEventSchema.safeParse(docData.properties);
-    if (!props.success) {
-      throw Error('Failed to parse Jira events. ' + props.error.message);
-    }
-    const data = props.data;
-    let author;
-    if (docData.name === JiraEventType.IssueCreated) {
-      author = { name: data.issue?.fields?.creator?.displayName };
-    } else if (docData.name === JiraEventType.CommentCreated) {
-      author = { name: data.comment?.author.displayName };
-    }
-    const row = {
-      id: doc.id,
-      timestamp: docData.eventTimestamp as number,
-      author,
-      project: { ...data.issue.fields.project },
-      ref: { label: data.issue.key, url: data.issue.self },
-      priority: data.issue.fields.priority.name,
-      activity: {
-        title: data.issue.fields.summary,
-        description: data.issue.fields.description ?? undefined,
-        comment: data.comment?.body,
-      },
-    };
-    rows.push(row);
-  });
-  return rows;
-};
 
 // verify and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -111,8 +73,8 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
-        valueGetter: value => new Date(value as number),
-        valueFormatter: value => formatRelative(value as Date),
+        valueGetter: params => new Date(params.value as number),
+        valueFormatter: params => formatRelative(params.value as Date),
         renderCell: params => {
           return (
             <Tooltip title={formatMonthDayTime(params.value as Date)}>
@@ -139,8 +101,8 @@ export default function Index() {
         width: 160,
         sortComparator: (a: JiraRow['project'], b: JiraRow['project']) =>
           (a?.key ?? '').localeCompare(b?.key ?? ''),
-        valueFormatter: value => {
-          const fields = value as JiraRow['project'];
+        valueFormatter: params => {
+          const fields = params.value as JiraRow['project'];
           return fields?.name ?? '';
         },
       },
