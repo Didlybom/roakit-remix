@@ -1,12 +1,13 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
-import { findJiraProjects } from '~/utils/stringUtils';
+import { capitalizeAndUseSpaces, findJiraProjects } from '~/utils/stringUtils';
 
 const zuser = z.object({ login: z.string(), html_url: z.string() });
 
 export const gitHubEventSchema = z.object({
   repository: z.object({ name: z.string() }).optional(),
   sender: zuser.optional(),
+  action: z.string().optional(),
 
   // pull_request
   pull_request: z
@@ -30,7 +31,6 @@ export const gitHubEventSchema = z.object({
   commits: z.object({ message: z.string() }).array().optional(),
 
   // release
-  action: z.string().optional(),
   release: z.object({ body: z.string() }).optional(),
 });
 
@@ -73,6 +73,24 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     if (data.release && data.action !== 'released') {
       return;
     }
+    if (
+      data.pull_request &&
+      data.action &&
+      ['synchronize', 'auto_merge_enabled'].includes(data.action)
+    ) {
+      return;
+    }
+    let title;
+    if (data.pull_request) {
+      title =
+        data.comment ?
+          data.pull_request.title
+        : capitalizeAndUseSpaces(data.action) + ' ' + data.pull_request.title;
+    } else if (data.commits) {
+      title = data.commits[0]?.message;
+    } else {
+      title = data.release?.body;
+    }
     let author;
     if (docData.name === GitHubEventType.PullRequest && data.pull_request?.assignee) {
       author = { name: data.pull_request.assignee.login, url: data.pull_request.assignee.html_url };
@@ -98,10 +116,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
           }
         : undefined,
       activity: {
-        title:
-          data.pull_request?.title ??
-          (data.commits ? data.commits[0]?.message : undefined) ??
-          data.release?.body,
+        title,
         created: data.pull_request?.created_at,
         changedFiles: data.pull_request?.changed_files,
         comments: data.pull_request?.comments,

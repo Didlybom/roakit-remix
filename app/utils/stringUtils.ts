@@ -16,3 +16,6 @@ export const findJiraProjects = (data?: string): string[] => {
 };
 
 export const removeSpaces = (data: string): string => data.replace(/\s/g, '');
+
+export const capitalizeAndUseSpaces = (data?: string) =>
+  !data ? '' : (data.charAt(0).toUpperCase() + data.slice(1)).replace(/_/g, ' ');
