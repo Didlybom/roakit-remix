@@ -1,8 +1,8 @@
 const defaultConfig = {
   firebase: {
     apiKey: 'AIzaSyBTXYXdUDVIO62ZNM4TYxzDBBjq-9tXiUg',
-    // authDomain: 'eternal-impulse-412418.firebaseapp.com',
-    authDomain: 'eternal-impulse-412418.web.app', // for app running at https://eternal-impulse-412418.web.app
+    authDomain: 'eternal-impulse-412418.firebaseapp.com',
+    // authDomain: 'eternal-impulse-412418.web.app',
     projectId: 'eternal-impulse-412418',
     storageBucket: 'eternal-impulse-412418.appspot.com',
     messagingSenderId: '957020408701',
