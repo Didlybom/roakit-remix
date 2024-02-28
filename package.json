@@ -24,6 +24,7 @@
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@google-cloud/secret-manager": "^5.1.0",
+    "@mui/x-charts": "^6.19.5",
     "@mui/lab": "^5.0.0-alpha.166",
     "@mui/material": "^5.15.11",
     "@mui/x-data-grid": "^6.19.5",
