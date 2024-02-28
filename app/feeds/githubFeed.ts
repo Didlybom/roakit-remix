@@ -34,6 +34,13 @@ export const gitHubEventSchema = z.object({
   release: z.object({ body: z.string() }).optional(),
 });
 
+const pullRequestIgnoreActions = [
+  'synchronize',
+  'auto_merge_enabled',
+  'labeled',
+  'review_requested',
+];
+
 export enum GitHubEventType {
   PullRequest = 'pull_request',
   PullRequestReviewComment = 'pull_request_review_comment',
@@ -73,11 +80,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     if (data.release && data.action !== 'released') {
       return;
     }
-    if (
-      data.pull_request &&
-      data.action &&
-      ['synchronize', 'auto_merge_enabled'].includes(data.action)
-    ) {
+    if (data.pull_request && data.action && pullRequestIgnoreActions.includes(data.action)) {
       return;
     }
     let title;

@@ -551,8 +551,8 @@ export default function Index() {
               <Box>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
                   <Tabs value={view} onChange={(e, newValue: EventTab) => setView(newValue)}>
-                    <Tab label="PR Assignments" id={`tab-${EventTab.PullRequest}`} />
-                    <Tab label="PR Discussions" id={`tab-${EventTab.PullRequestComment}`} />
+                    <Tab label="Pull Requests" id={`tab-${EventTab.PullRequest}`} />
+                    <Tab label="Discussion" id={`tab-${EventTab.PullRequestComment}`} />
                     <Tab label="Pushes" id={`tab-${EventTab.Push}`} />
                     <Tab label="Releases" id={`tab-${EventTab.Release}`} />
                   </Tabs>

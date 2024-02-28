@@ -24,7 +24,7 @@ export const jiraEventSchema = z.object({
     }),
   }),
 
-  //comment_created
+  // comment_created
   comment: z
     .object({
       author: zuser,
@@ -44,7 +44,7 @@ export interface JiraRow {
   project?: { key: string; name: string };
   author?: { name?: string };
   ref?: { label: string; url: string };
-  priority?: string;
+  priority?: { id: number; name: string };
   activity?: {
     title?: string;
     created?: string;
@@ -74,7 +74,7 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
       author,
       project: { ...data.issue.fields.project },
       ref: { label: data.issue.key, url: data.issue.self },
-      priority: data.issue.fields.priority.name,
+      priority: { id: +data.issue.fields.priority.id, name: data.issue.fields.priority.name },
       activity: {
         title: data.issue.fields.summary,
         description: data.issue.fields.description ?? undefined,

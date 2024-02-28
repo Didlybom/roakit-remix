@@ -75,13 +75,11 @@ export default function Index() {
         type: 'dateTime',
         valueGetter: params => new Date(params.value as number),
         valueFormatter: params => formatRelative(params.value as Date),
-        renderCell: params => {
-          return (
-            <Tooltip title={formatMonthDayTime(params.value as Date)}>
-              <Box>{formatRelative(params.value as Date)}</Box>
-            </Tooltip>
-          );
-        },
+        renderCell: params => (
+          <Tooltip title={formatMonthDayTime(params.value as Date)}>
+            <Box>{formatRelative(params.value as Date)}</Box>
+          </Tooltip>
+        ),
         width: 120,
       },
       {
@@ -101,12 +99,16 @@ export default function Index() {
         width: 160,
         sortComparator: (a: JiraRow['project'], b: JiraRow['project']) =>
           (a?.key ?? '').localeCompare(b?.key ?? ''),
-        valueFormatter: params => {
-          const fields = params.value as JiraRow['project'];
-          return fields?.name ?? '';
-        },
+        valueFormatter: params => (params.value as JiraRow['project'])?.name ?? '',
       },
-      { field: 'priority', headerName: 'Priority', width: 100 },
+      {
+        field: 'priority',
+        headerName: 'Priority',
+        width: 100,
+        sortComparator: (a: JiraRow['priority'], b: JiraRow['priority']) =>
+          (b?.id ?? 999) - (a?.id ?? 999),
+        valueFormatter: params => (params.value as JiraRow['priority'])?.name ?? '',
+      },
       {
         field: 'ref',
         headerName: 'Reference',
