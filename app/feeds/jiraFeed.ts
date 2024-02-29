@@ -25,12 +25,7 @@ export const jiraEventSchema = z.object({
   }),
 
   // comment_created
-  comment: z
-    .object({
-      author: zuser,
-      body: z.string(),
-    })
-    .optional(),
+  comment: z.object({ author: zuser, body: z.string() }).optional(),
 });
 
 export enum JiraEventType {
