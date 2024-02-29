@@ -13,14 +13,25 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
 
-  const commonProps = { width: 450, height: 250 };
+  const commonPaperSx = { width: 380, p: 1 };
+  const commonChartProps = {
+    width: 360,
+    height: 200,
+    slotProps: {
+      legend: {
+        labelStyle: {
+          fontSize: 12,
+        },
+      },
+    },
+  };
 
   return (
     <>
       <Header isLoggedIn={sessionData.isLoggedIn} view="info" />
-      <Grid container justifyContent="center" spacing={5} sx={{ m: 5 }}>
+      <Grid container justifyContent="center" spacing={5} sx={{ mt: 5 }}>
         <Grid>
-          <Paper sx={{ p: 1 }}>
+          <Paper sx={{ ...commonPaperSx }}>
             <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
               Effort by Initiative
             </Typography>
@@ -36,12 +47,12 @@ export default function Dashboard() {
                   ],
                 },
               ]}
-              {...commonProps}
+              {...commonChartProps}
             />
           </Paper>
         </Grid>
         <Grid>
-          <Paper sx={{ p: 1 }}>
+          <Paper sx={{ ...commonPaperSx }}>
             <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
               Contributors by Initiative
             </Typography>
@@ -56,12 +67,12 @@ export default function Dashboard() {
                   scaleType: 'band',
                 },
               ]}
-              {...commonProps}
+              {...commonChartProps}
             />
           </Paper>
         </Grid>
         <Grid>
-          <Paper sx={{ p: 1 }}>
+          <Paper sx={{ ...commonPaperSx }}>
             <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
               Initiative A Activity
             </Typography>
@@ -76,12 +87,12 @@ export default function Dashboard() {
                   scaleType: 'band',
                 },
               ]}
-              {...commonProps}
+              {...commonChartProps}
             />
           </Paper>
         </Grid>
         <Grid>
-          <Paper sx={{ p: 1 }}>
+          <Paper sx={{ ...commonPaperSx }}>
             <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
               Activity by Priority
             </Typography>
@@ -98,7 +109,7 @@ export default function Dashboard() {
                   ],
                 },
               ]}
-              {...commonProps}
+              {...commonChartProps}
             />
           </Paper>
         </Grid>
