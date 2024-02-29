@@ -7,7 +7,6 @@
     "artifactregistry:login": "npx google-artifactregistry-auth",
     "build": "remix build",
     "build.vite": "remix vite:build",
-    "build.prod": "cross-env ROAKIT_ENV=production.local remix build",
     "local": "remix dev --manual",
     "local.vite": "remix vite:dev --manual",
     "local.prod": "cross-env ROAKIT_ENV=production.local remix dev --manual",
@@ -28,14 +27,14 @@
     "@mui/material": "^5.15.11",
     "@mui/x-charts": "^6.19.5",
     "@mui/x-data-grid": "^6.19.5",
-    "@remix-run/css-bundle": "^2.7.2",
-    "@remix-run/node": "^2.7.2",
-    "@remix-run/react": "^2.7.2",
-    "@remix-run/serve": "^2.7.2",
-    "@remix-run/server-runtime": "^2.7.2",
+    "@remix-run/css-bundle": "^2.8.0",
+    "@remix-run/node": "^2.8.0",
+    "@remix-run/react": "^2.8.0",
+    "@remix-run/serve": "^2.8.0",
+    "@remix-run/server-runtime": "^2.8.0",
     "date-fns": "^3.3.1",
     "fast-memoize": "^2.5.2",
-    "firebase": "^10.8.0",
+    "firebase": "^10.8.1",
     "firebase-admin": "^12.0.0",
     "google-protobuf": "^3.21.2",
     "pino": "^8.19.0",
@@ -48,7 +47,7 @@
   },
   "devDependencies": {
     "@mui/icons-material": "^5.15.11",
-    "@remix-run/dev": "^2.7.2",
+    "@remix-run/dev": "^2.8.0",
     "@stylistic/eslint-plugin": "^1.6.2",
     "@svgr/cli": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
@@ -68,6 +67,6 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": "18"
+    "node": "20"
   }
 }
