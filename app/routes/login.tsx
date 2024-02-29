@@ -63,17 +63,16 @@ export default function Login() {
         const redirectResult = await getRedirectResult(clientAuth);
         if (!redirectResult) {
           setIsProcessingGoogle(false);
-
           return;
         }
         const idToken = await redirectResult?.user.getIdToken();
         setIsProcessingGoogle(false);
-
         if (!idToken) {
           throw Error('Token not found');
         }
         submit({ idToken }, { method: 'post' });
       } catch (e) {
+        setIsProcessingGoogle(false);
         setGoogleError(errMsg(e, 'Login failed'));
       }
     }
