@@ -16,6 +16,7 @@ import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { useEffect, useMemo, useState } from 'react';
+import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
@@ -50,9 +51,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<View>(View.IssueCreated);
-  const [dateFilter, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
+  const isHydrated = useHydrated();
+  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
     defaultValue: DateRange.OneDay,
   });
+  const dateFilter = isHydrated ? dateFilterLS : undefined;
   const [jiraIssuesCreated, setJiraIssuesCreated] = useState<JiraRow[]>([]);
   const [jiraCommentsCreated, setJiraCommentsCreated] = useState<JiraRow[]>([]);
 

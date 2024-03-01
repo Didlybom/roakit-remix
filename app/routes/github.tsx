@@ -26,6 +26,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
@@ -76,9 +77,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
-  const [dateFilter, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
+  const isHydrated = useHydrated();
+  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
     defaultValue: DateRange.OneDay,
   });
+  const dateFilter = isHydrated ? dateFilterLS : undefined;
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.Jira);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
