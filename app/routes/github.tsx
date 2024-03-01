@@ -402,7 +402,7 @@ export default function Index() {
         )}
         {showBy === ActivityView.Jira && sortedJiras && (
           <Stack direction="row" sx={{ ml: 2 }}>
-            <Box>
+            <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '15px' }}>
                 <Box
                   sx={{
@@ -460,7 +460,7 @@ export default function Index() {
         )}
         {showBy === ActivityView.Author && sortedAuthors && (
           <Stack direction="row" sx={{ ml: 2 }}>
-            <Box>
+            <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '25px' }}>
                 <Box
                   sx={{
