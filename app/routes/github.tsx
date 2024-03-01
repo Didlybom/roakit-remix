@@ -1,15 +1,8 @@
 import GitHubIcon from '@mui/icons-material/GitHub';
-import Timeline from '@mui/lab/Timeline';
-import TimelineConnector from '@mui/lab/TimelineConnector';
-import TimelineContent from '@mui/lab/TimelineContent';
-import TimelineDot from '@mui/lab/TimelineDot';
-import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
-import TimelineSeparator from '@mui/lab/TimelineSeparator';
 import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   Divider,
   IconButton,
   LinearProgress,
@@ -24,7 +17,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
@@ -34,6 +26,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
 import Header from '../components/Header';
@@ -48,9 +41,9 @@ import {
 } from '../feeds/githubFeed';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
-  DateFilter,
+  DATE_RANGE_LOCAL_STORAGE_KEY,
+  DateRange,
   dateFilterToStartDate,
-  dateFilters,
   formatMonthDay,
   formatMonthDayTime,
   formatRelative,
@@ -83,7 +76,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
-  const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.OneDay);
+  const [dateFilter, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
+    defaultValue: DateRange.OneDay,
+  });
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.Jira);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -363,7 +358,13 @@ export default function Index() {
 
   return (
     <>
-      <Header isLoggedIn={sessionData.isLoggedIn} view="github" />
+      <Header
+        isLoggedIn={sessionData.isLoggedIn}
+        view="github"
+        dateRange={dateFilter}
+        onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+      />
       <Popover
         id={popoverElement ? 'popover' : undefined}
         open={!!popoverElement}
@@ -373,7 +374,7 @@ export default function Index() {
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
-      <Stack sx={{ mt: 3 }}>
+      <Stack sx={{ m: 2 }}>
         <Stack direction="row">
           <Button
             disabled={showBy === ActivityView.Jira}
@@ -396,208 +397,170 @@ export default function Index() {
             All GitHub Activity
           </Button>
         </Stack>
-        <Grid container direction={{ xs: 'column', md: 'row' }}>
-          <Grid>
-            <Timeline
-              sx={{
-                position: { xs: 'static', md: 'sticky' },
-                top: { xs: 0, md: undefined },
-                rotate: { xs: '-90deg', md: 'none' },
-                maxHeight: 100,
-                maxWidth: 130,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
-              }}
-            >
-              {Object.keys(dateFilters).map(date => (
-                <TimelineItem key={date} sx={{ minHeight: 50 }}>
-                  <TimelineSeparator>
-                    <TimelineDot>
-                      {prevDateFilter &&
-                        dateFilter !== prevDateFilter &&
-                        dateFilter === (date as DateFilter) && (
-                          <CircularProgress
-                            size={18}
-                            sx={{ position: 'absolute', top: 9, left: -3, zIndex: 1 }}
-                          />
-                        )}
-                    </TimelineDot>
-                    {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
-                  </TimelineSeparator>
-                  <TimelineContent sx={{ pt: '3px' }}>
-                    <Button
-                      size="small"
-                      disabled={dateFilter === (date as DateFilter)}
-                      onClick={() => setDateFilter(date as DateFilter)}
-                      sx={{ justifyContent: 'left' }}
-                    >
-                      <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
-                    </Button>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
-          </Grid>
-          <Grid sx={{ flex: 1 }}>
-            {showBy === ActivityView.Jira && !filteredGitHubRowsByJira && (
-              <LinearProgress sx={{ mt: 5, mb: 5 }} />
-            )}
-            {showBy === ActivityView.Jira && sortedJiras && (
-              <Stack direction="row" sx={{ ml: 2 }}>
-                <Box sx={{ position: 'relative', mt: '25px' }}>
-                  <Box
-                    sx={{
-                      textWrap: 'nowrap',
-                      position: 'sticky',
-                      top: 0,
-                      maxHeight: '100vh',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {sortedJiras.map((jira, i) => (
-                      <Box key={i}>
-                        <Link
-                          fontSize="small"
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => setScrollToJira(jira)}
-                        >
-                          {jira}
-                        </Link>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-                <Box sx={{ flex: 1, ml: '10px' }}>
+        {showBy === ActivityView.Jira && !filteredGitHubRowsByJira && (
+          <LinearProgress sx={{ my: 5 }} />
+        )}
+        {showBy === ActivityView.Jira && sortedJiras && (
+          <Stack direction="row" sx={{ ml: 2 }}>
+            <Box>
+              <Box sx={{ position: 'relative', mt: '15px' }}>
+                <Box
+                  sx={{
+                    textWrap: 'nowrap',
+                    position: 'sticky',
+                    top: 0,
+                    maxHeight: '100vh',
+                    overflowY: 'auto',
+                  }}
+                >
                   {sortedJiras.map((jira, i) => (
-                    <Box id={jiraElementId(jira)} key={i} sx={{ ml: 0, mt: 4 }}>
-                      <Stack direction="row">
-                        <Box sx={{ position: 'relative' }}>
-                          <Box
-                            sx={{
-                              mt: 1,
-                              inlineSize: 'fit-content',
-                              transform: 'rotate(-90deg)',
-                            }}
-                          >
-                            <Link id={`JIRA:${jira}`} />
-                            <Typography color="GrayText" variant="h6">
-                              {jira}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <DataGrid
-                          columns={gitHubColumns}
-                          rows={rowsByJira![jira]}
-                          {...dataGridCommonProps}
-                        ></DataGrid>
-                      </Stack>
+                    <Box key={i}>
+                      <Link
+                        fontSize="small"
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => setScrollToJira(jira)}
+                      >
+                        {jira}
+                      </Link>
                     </Box>
                   ))}
                 </Box>
-              </Stack>
-            )}
-            {showBy === ActivityView.Author && !filteredGitHubRowsByAuthor && (
-              <LinearProgress sx={{ mt: 5, mb: 5 }} />
-            )}
-            {showBy === ActivityView.Author && sortedAuthors && (
-              <Stack direction="row" sx={{ ml: 2 }}>
-                <Box sx={{ position: 'relative', mt: '25px' }}>
-                  <Box
-                    sx={{
-                      textWrap: 'nowrap',
-                      position: 'sticky',
-                      top: 0,
-                      maxHeight: '100vh',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {sortedAuthors.map((author, i) => (
-                      <Box key={i}>
-                        <Link
-                          fontSize="small"
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => setScrollToAuthor(author)}
-                        >
-                          {author}
-                        </Link>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  {sortedAuthors.map(author => (
-                    <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
-                      <Stack direction="row" alignItems="center">
-                        <Typography color="GrayText" variant="h6">
-                          {author}
-                        </Typography>
-                        {rowsByAuthor?.[author]?.url && (
-                          <IconButton href={rowsByAuthor[author].url ?? ''}>
-                            <GitHubIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Stack>
-                      <DataGrid
-                        columns={gitHubByAuthorColumns}
-                        rows={rowsByAuthor![author].rows}
-                        {...dataGridCommonProps}
-                      ></DataGrid>
-                    </Box>
-                  ))}
-                </Box>
-              </Stack>
-            )}
-            {showBy === ActivityView.All && (
-              <Box>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                  <Tabs value={view} onChange={(e, newValue: EventTab) => setView(newValue)}>
-                    <Tab label="Pull Requests" id={`tab-${EventTab.PullRequest}`} />
-                    <Tab label="Discussion" id={`tab-${EventTab.PullRequestComment}`} />
-                    <Tab label="Pushes" id={`tab-${EventTab.Push}`} />
-                    <Tab label="Releases" id={`tab-${EventTab.Release}`} />
-                  </Tabs>
-                </Box>
-                {!areRowsSet && <LinearProgress sx={{ mt: 5, mb: 5 }} />}
-                <TabPanel value={view} index={EventTab.PullRequest}>
-                  {!!gitHubPRs.length && (
-                    <DataGrid
-                      columns={gitHubColumns}
-                      rows={gitHubPRs}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-                <TabPanel value={view} index={EventTab.PullRequestComment}>
-                  {!!gitHubPRComments.length && (
-                    <DataGrid
-                      columns={gitHubColumns}
-                      rows={gitHubPRComments}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-                <TabPanel value={view} index={EventTab.Push}>
-                  {!!gitHubPushes.length && (
-                    <DataGrid
-                      columns={gitHubPushesColumns}
-                      rows={gitHubPushes}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
-                <TabPanel value={view} index={EventTab.Release}>
-                  {!!gitHubReleases.length && (
-                    <DataGrid
-                      columns={gitHubPushesColumns}
-                      rows={gitHubReleases}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  )}
-                </TabPanel>
               </Box>
-            )}
-          </Grid>
-        </Grid>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              {sortedJiras.map((jira, i) => (
+                <Box id={jiraElementId(jira)} key={i} sx={{ m: 2 }}>
+                  <Stack direction="row">
+                    <Box sx={{ position: 'relative' }}>
+                      <Box
+                        sx={{
+                          mt: 1,
+                          inlineSize: 'fit-content',
+                          transform: 'rotate(-90deg)',
+                        }}
+                      >
+                        <Typography color="GrayText" variant="h6">
+                          {jira}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <DataGrid
+                      columns={gitHubColumns}
+                      rows={rowsByJira![jira]}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  </Stack>
+                </Box>
+              ))}
+            </Box>
+          </Stack>
+        )}
+        {showBy === ActivityView.Author && !filteredGitHubRowsByAuthor && (
+          <LinearProgress sx={{ my: 5 }} />
+        )}
+        {showBy === ActivityView.Author && sortedAuthors && (
+          <Stack direction="row" sx={{ ml: 2 }}>
+            <Box>
+              <Box sx={{ position: 'relative', mt: '25px' }}>
+                <Box
+                  sx={{
+                    textWrap: 'nowrap',
+                    position: 'sticky',
+                    top: 0,
+                    maxHeight: '100vh',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {sortedAuthors.map((author, i) => (
+                    <Box key={i}>
+                      <Link
+                        fontSize="small"
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => setScrollToAuthor(author)}
+                      >
+                        {author}
+                      </Link>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              {sortedAuthors.map(author => (
+                <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
+                  <Stack direction="row" alignItems="center">
+                    <Typography color="GrayText" variant="h6">
+                      {author}
+                    </Typography>
+                    {rowsByAuthor?.[author]?.url && (
+                      <IconButton href={rowsByAuthor[author].url ?? ''}>
+                        <GitHubIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Stack>
+                  <DataGrid
+                    columns={gitHubByAuthorColumns}
+                    rows={rowsByAuthor![author].rows}
+                    {...dataGridCommonProps}
+                  ></DataGrid>
+                </Box>
+              ))}
+            </Box>
+          </Stack>
+        )}
+        {showBy === ActivityView.All && (
+          <>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+              <Tabs
+                variant="scrollable"
+                value={view}
+                onChange={(e, newValue: EventTab) => setView(newValue)}
+              >
+                <Tab label="Pull Requests" id={`tab-${EventTab.PullRequest}`} />
+                <Tab label="Discussion" id={`tab-${EventTab.PullRequestComment}`} />
+                <Tab label="Pushes" id={`tab-${EventTab.Push}`} />
+                <Tab label="Releases" id={`tab-${EventTab.Release}`} />
+              </Tabs>
+            </Box>
+            {!areRowsSet && <LinearProgress sx={{ my: 5 }} />}
+            <TabPanel value={view} index={EventTab.PullRequest}>
+              {!!gitHubPRs.length && (
+                <DataGrid
+                  columns={gitHubColumns}
+                  rows={gitHubPRs}
+                  {...dataGridCommonProps}
+                ></DataGrid>
+              )}
+            </TabPanel>
+            <TabPanel value={view} index={EventTab.PullRequestComment}>
+              {!!gitHubPRComments.length && (
+                <DataGrid
+                  columns={gitHubColumns}
+                  rows={gitHubPRComments}
+                  {...dataGridCommonProps}
+                ></DataGrid>
+              )}
+            </TabPanel>
+            <TabPanel value={view} index={EventTab.Push}>
+              {!!gitHubPushes.length && (
+                <DataGrid
+                  columns={gitHubPushesColumns}
+                  rows={gitHubPushes}
+                  {...dataGridCommonProps}
+                ></DataGrid>
+              )}
+            </TabPanel>
+            <TabPanel value={view} index={EventTab.Release}>
+              {!!gitHubReleases.length && (
+                <DataGrid
+                  columns={gitHubPushesColumns}
+                  rows={gitHubReleases}
+                  {...dataGridCommonProps}
+                ></DataGrid>
+              )}
+            </TabPanel>
+          </>
+        )}
         {error && <Alert severity="error">{error}</Alert>}
       </Stack>
     </>

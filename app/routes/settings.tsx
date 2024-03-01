@@ -184,7 +184,11 @@ export default function Settings() {
           message={'Copied ' + (showCopyConfirmation ?? '')}
         />
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-          <Tabs value={tabValue} onChange={(e, newValue: number) => setTabValue(newValue)}>
+          <Tabs
+            variant="scrollable"
+            value={tabValue}
+            onChange={(e, newValue: number) => setTabValue(newValue)}
+          >
             <Tab label="JIRA" id={`tab-${FeedTab.Jira}`} />
             <Tab label="GitHub" id={`tab-${FeedTab.GitHub}`} />
             <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />

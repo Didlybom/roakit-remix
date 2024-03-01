@@ -1,14 +1,6 @@
-import Timeline from '@mui/lab/Timeline';
-import TimelineConnector from '@mui/lab/TimelineConnector';
-import TimelineContent from '@mui/lab/TimelineContent';
-import TimelineDot from '@mui/lab/TimelineDot';
-import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
-import TimelineSeparator from '@mui/lab/TimelineSeparator';
 import {
   Alert,
   Box,
-  Button,
-  CircularProgress,
   LinearProgress,
   Link,
   Stack,
@@ -17,7 +9,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
@@ -25,6 +16,7 @@ import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { useEffect, useMemo, useState } from 'react';
+import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
@@ -32,9 +24,9 @@ import Header from '../components/Header';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
-  DateFilter,
+  DATE_RANGE_LOCAL_STORAGE_KEY,
+  DateRange,
   dateFilterToStartDate,
-  dateFilters,
   formatMonthDay,
   formatMonthDayTime,
   formatRelative,
@@ -58,8 +50,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<View>(View.IssueCreated);
-  const [dateFilter, setDateFilter] = useState<DateFilter>(DateFilter.OneDay);
-
+  const [dateFilter, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
+    defaultValue: DateRange.OneDay,
+  });
   const [jiraIssuesCreated, setJiraIssuesCreated] = useState<JiraRow[]>([]);
   const [jiraCommentsCreated, setJiraCommentsCreated] = useState<JiraRow[]>([]);
 
@@ -118,7 +111,10 @@ export default function Index() {
         renderCell: params => {
           const fields = params.value as JiraRow['ref'];
           return !fields ? '' : (
-              <Link href={fields.url} sx={{ overflowX: 'scroll' }}>
+              <Link
+                href={`${fields.url.split('rest')[0]}browse/${fields.label}`}
+                sx={{ overflowX: 'scroll' }}
+              >
                 {fields.label}
               </Link>
             );
@@ -210,82 +206,47 @@ export default function Index() {
 
   return (
     <>
-      <Header isLoggedIn={sessionData.isLoggedIn} view="jira" />
+      <Header
+        isLoggedIn={sessionData.isLoggedIn}
+        view="jira"
+        dateRange={dateFilter}
+        onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+      />
       <Stack sx={{ m: 2 }}>
-        <Grid container direction={{ xs: 'column', md: 'row' }}>
-          <Grid>
-            <Timeline
-              sx={{
-                position: { xs: 'static', md: 'sticky' },
-                top: 0,
-                rotate: { xs: '-90deg', md: 'none' },
-                maxHeight: 100,
-                maxWidth: 130,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                [`& .${timelineItemClasses.root}:before`]: { flex: 0, padding: 0 },
-              }}
+        <>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+            <Tabs
+              variant="scrollable"
+              value={view}
+              onChange={(e, newValue: View) => setView(newValue)}
             >
-              {Object.keys(dateFilters).map(date => (
-                <TimelineItem key={date} sx={{ minHeight: 50 }}>
-                  <TimelineSeparator>
-                    <TimelineDot>
-                      {prevDateFilter &&
-                        dateFilter !== prevDateFilter &&
-                        dateFilter === (date as DateFilter) && (
-                          <CircularProgress
-                            size={18}
-                            sx={{ position: 'absolute', top: 9, left: -3, zIndex: 1 }}
-                          />
-                        )}
-                    </TimelineDot>
-                    {(date as DateFilter) !== DateFilter.OneDay && <TimelineConnector />}
-                  </TimelineSeparator>
-                  <TimelineContent sx={{ pt: '3px' }}>
-                    <Button
-                      size="small"
-                      disabled={dateFilter === (date as DateFilter)}
-                      onClick={() => setDateFilter(date as DateFilter)}
-                      sx={{ justifyContent: 'left' }}
-                    >
-                      <Box sx={{ whiteSpace: 'nowrap' }}>{dateFilters[date as DateFilter]}</Box>
-                    </Button>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
-          </Grid>
-          <Grid sx={{ flex: 1 }}>
-            <Box>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
-                <Tabs value={view} onChange={(e, newValue: View) => setView(newValue)}>
-                  <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
-                  <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
-                </Tabs>
-              </Box>
-              {!jiraIssuesCreated.length && !jiraCommentsCreated.length && (
-                <LinearProgress sx={{ mt: 5, mb: 5 }} />
-              )}
-              <TabPanel value={view} index={View.IssueCreated}>
-                {!!jiraIssuesCreated.length && (
-                  <DataGrid
-                    columns={jiraColumns}
-                    rows={jiraIssuesCreated}
-                    {...dataGridCommonProps}
-                  ></DataGrid>
-                )}
-              </TabPanel>
-              <TabPanel value={view} index={View.CommentCreated}>
-                {!!jiraCommentsCreated.length && (
-                  <DataGrid
-                    columns={jiraColumns}
-                    rows={jiraCommentsCreated}
-                    {...dataGridCommonProps}
-                  ></DataGrid>
-                )}
-              </TabPanel>
-            </Box>
-          </Grid>
-        </Grid>
+              <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
+              <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
+            </Tabs>
+          </Box>
+          {!jiraIssuesCreated.length && !jiraCommentsCreated.length && (
+            <LinearProgress sx={{ my: 5 }} />
+          )}
+          <TabPanel value={view} index={View.IssueCreated}>
+            {!!jiraIssuesCreated.length && (
+              <DataGrid
+                columns={jiraColumns}
+                rows={jiraIssuesCreated}
+                {...dataGridCommonProps}
+              ></DataGrid>
+            )}
+          </TabPanel>
+          <TabPanel value={view} index={View.CommentCreated}>
+            {!!jiraCommentsCreated.length && (
+              <DataGrid
+                columns={jiraColumns}
+                rows={jiraCommentsCreated}
+                {...dataGridCommonProps}
+              ></DataGrid>
+            )}
+          </TabPanel>
+        </>
         {error && <Alert severity="error">{error}</Alert>}
       </Stack>
     </>

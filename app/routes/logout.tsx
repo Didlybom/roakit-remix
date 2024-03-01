@@ -31,20 +31,18 @@ export default function Logout() {
   return (
     <>
       <Header isLoggedIn={false} view="login" />
-      <Box sx={{ display: 'flex', justifyContent: 'center', m: 10 }}>
-        <Box sx={{ position: 'relative' }}>
-          <Typography>Logging out...</Typography>
-          <CircularProgress
-            size={60}
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              marginTop: '-30px',
-              marginLeft: '-30px',
-            }}
-          />
-        </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', m: 10, position: 'relative' }}>
+        <Typography>Logging out...</Typography>
+        <CircularProgress
+          size={60}
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: '-30px',
+            marginLeft: '-30px',
+          }}
+        />
       </Box>
     </>
   );

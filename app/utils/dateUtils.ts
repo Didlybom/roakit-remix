@@ -37,27 +37,29 @@ export const formatRelative = (date: Date) =>
     weekStartsOn: 1 /* Monday */,
   });
 
-export enum DateFilter {
+export enum DateRange {
   TwoWeeks = 'TwoWeeks',
   OneWeek = 'OneWeek',
   OneDay = 'OneDay',
 }
 
-export const dateFilters: Record<DateFilter, string> = {
-  [DateFilter.TwoWeeks]: '2 weeks',
-  [DateFilter.OneWeek]: '1 week',
-  [DateFilter.OneDay]: '1 day',
+export const dateRanges: Record<DateRange, string> = {
+  [DateRange.TwoWeeks]: '2 weeks',
+  [DateRange.OneWeek]: '1 week',
+  [DateRange.OneDay]: '1 day',
 };
 
-export const dateFilterToStartDate = (dateFilter: DateFilter) => {
+export const dateFilterToStartDate = (dateFilter: DateRange) => {
   switch (dateFilter) {
-    case DateFilter.TwoWeeks:
+    case DateRange.TwoWeeks:
       return subWeeks(startOfToday(), 2).getTime();
-    case DateFilter.OneWeek:
+    case DateRange.OneWeek:
       return subWeeks(startOfToday(), 1).getTime();
-    case DateFilter.OneDay:
+    case DateRange.OneDay:
       return startOfToday().getTime();
     default:
       return null;
   }
 };
+
+export const DATE_RANGE_LOCAL_STORAGE_KEY = 'dateRange';

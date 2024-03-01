@@ -3,7 +3,10 @@ import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
+import { useState } from 'react';
+import usePrevious from 'use-previous';
 import Header from '~/components/Header';
+import { DateRange } from '~/utils/dateUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
@@ -12,6 +15,9 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
+
+  const [dateFilter, setDateFilter] = useState<DateRange>(DateRange.OneDay);
+  const prevDateFilter = usePrevious(dateFilter);
 
   const commonPaperSx = { width: 380, p: 1 };
   const commonChartProps = {
@@ -28,8 +34,13 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header isLoggedIn={sessionData.isLoggedIn} view="info" />
-      <Grid container justifyContent="center" spacing={5} sx={{ mt: 5 }}>
+      <Header
+        isLoggedIn={sessionData.isLoggedIn}
+        view="dashboard"
+        onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
+        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+      />
+      <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
         <Grid>
           <Paper sx={{ ...commonPaperSx }}>
             <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>

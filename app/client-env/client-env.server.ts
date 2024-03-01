@@ -2,9 +2,7 @@
 // See https://remix.run/docs/en/1.19.3/guides/envvars#browser-environment-variables
 
 import defaultConfig from './default-config';
-import defaultConfigLocal from './default-config.local';
 import productionConfig from './production-config';
-import productionConfigLocal from './production-config.local';
 
 export interface ClientEnv {
   firebase: {
@@ -27,10 +25,6 @@ let clientEnv: ClientEnv;
 
 if (process.env.ROAKIT_ENV === 'production') {
   clientEnv = productionConfig;
-} else if (process.env.ROAKIT_ENV === 'production.local') {
-  clientEnv = productionConfigLocal;
-} else if (process.env.ROAKIT_ENV === 'default.local') {
-  clientEnv = defaultConfigLocal;
 } else {
   clientEnv = defaultConfig;
 }
