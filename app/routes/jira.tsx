@@ -21,6 +21,7 @@ import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
+import { ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -69,24 +70,28 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
+        width: 100,
         valueGetter: params => new Date(params.value as number),
         valueFormatter: params => formatRelative(params.value as Date),
         renderCell: params => (
           <Tooltip title={formatMonthDayTime(params.value as Date)}>
-            <Box>{formatRelative(params.value as Date)}</Box>
+            <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
           </Tooltip>
         ),
-        width: 120,
       },
       {
         field: 'author',
         headerName: 'Author',
-        width: 160,
+        width: 120,
         sortComparator: (a: JiraRow['author'], b: JiraRow['author']) =>
           (a?.name ?? '').localeCompare(b?.name ?? ''),
         renderCell: params => {
           const fields = params.value as JiraRow['author'];
-          return !fields ? '' : <Box>{fields.name}</Box>;
+          return !fields ? '' : (
+              <Box sx={{ ...ellipsisAttrs }} title={fields.name}>
+                {fields.name}
+              </Box>
+            );
         },
       },
       {
@@ -107,7 +112,7 @@ export default function Index() {
       },
       {
         field: 'ref',
-        headerName: 'Reference',
+        headerName: 'Ref.',
         width: 90,
         sortComparator: (a: JiraRow['ref'], b: JiraRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
@@ -116,7 +121,7 @@ export default function Index() {
           return !fields ? '' : (
               <Link
                 href={`${fields.url.split('rest')[0]}browse/${fields.label}`}
-                sx={{ overflowX: 'scroll' }}
+                sx={{ ...ellipsisAttrs }}
               >
                 {fields.label}
               </Link>
@@ -177,6 +182,9 @@ export default function Index() {
 
   // Firestore listeners
   useEffect(() => {
+    if (!dateFilter) {
+      return;
+    }
     const unsubscribe: Record<string, () => void> = {};
     Object.values(JiraEventType).map((type: JiraEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);

@@ -30,6 +30,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
+import { ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
@@ -112,33 +113,39 @@ export default function Index() {
         field: 'timestamp',
         headerName: 'Date',
         type: 'dateTime',
+        width: 100,
         valueGetter: params => new Date(params.value as number),
         valueFormatter: params => formatRelative(params.value as Date),
         renderCell: params => {
           return (
             <Tooltip title={formatMonthDayTime(params.value as Date)}>
-              <Box>{formatRelative(params.value as Date)}</Box>
+              <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
             </Tooltip>
           );
         },
-        width: 120,
       },
-      { field: 'repositoryName', headerName: 'Repository', width: 150 },
+      { field: 'repositoryName', headerName: 'Repo.', width: 120 },
       {
         field: 'author',
         headerName: 'Author',
-        width: 150,
+        width: 120,
         sortComparator: (a: GitHubRow['author'], b: GitHubRow['author']) =>
           (a?.name ?? '').localeCompare(b?.name ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['author'];
           return !fields ? '' : (
               <Link
+                title={fields.name}
                 onClick={() => {
                   setShowBy(ActivityView.Author);
                   setScrollToAuthor(fields.name);
                 }}
-                sx={{ cursor: 'pointer', textDecoration: 'none', borderBottom: 'dotted 1px' }}
+                sx={{
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  borderBottom: 'dotted 1px',
+                  ...ellipsisAttrs,
+                }}
               >
                 {fields.name}
               </Link>
@@ -147,14 +154,14 @@ export default function Index() {
       },
       {
         field: 'ref',
-        headerName: 'Reference',
-        width: 180,
+        headerName: 'Ref.',
+        width: 90,
         sortComparator: (a: GitHubRow['ref'], b: GitHubRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
           return !fields ? '' : (
-              <Link href={fields.url} title={fields.label} sx={{ overflowX: 'scroll' }}>
+              <Link href={fields.url} title={fields.label} sx={{ ...ellipsisAttrs }}>
                 {fields.label}
               </Link>
             );
@@ -223,7 +230,7 @@ export default function Index() {
                 </Link>
               }
               {fields?.pullRequestComment && (
-                <Typography variant="caption" sx={{ overflowX: 'clip', textOverflow: 'ellipsis' }}>
+                <Typography variant="caption" sx={{ ...ellipsisAttrs }}>
                   {fields.pullRequestComment.comment}
                 </Typography>
               )}
@@ -275,6 +282,9 @@ export default function Index() {
 
   // Firestore listeners
   useEffect(() => {
+    if (!dateFilter) {
+      return;
+    }
     const unsubscribe: Record<string, () => void> = {};
     Object.values(GitHubEventType).map((type: GitHubEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);
@@ -316,7 +326,7 @@ export default function Index() {
 
   const filteredGitHubRowsByAuthor = rowsByAuthor;
   const filteredGitHubRowsByJira = rowsByJira;
-  if (filteredGitHubRowsByAuthor) {
+  if (filteredGitHubRowsByAuthor && dateFilter) {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByAuthor).forEach(author => {
       filteredGitHubRowsByAuthor[author].rows = filteredGitHubRowsByAuthor[author].rows.filter(
@@ -327,7 +337,7 @@ export default function Index() {
       }
     });
   }
-  if (filteredGitHubRowsByJira) {
+  if (filteredGitHubRowsByJira && dateFilter) {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByJira).forEach(jira => {
       filteredGitHubRowsByJira[jira] = filteredGitHubRowsByJira[jira].filter(
@@ -383,7 +393,7 @@ export default function Index() {
             disabled={showBy === ActivityView.Jira}
             onClick={() => setShowBy(ActivityView.Jira)}
           >
-            By Jira project
+            By Jira
           </Button>
           <Divider orientation="vertical" variant="middle" flexItem />
           <Button
@@ -430,18 +440,12 @@ export default function Index() {
                 </Box>
               </Box>
             </Box>
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               {sortedJiras.map((jira, i) => (
                 <Box id={jiraElementId(jira)} key={i} sx={{ m: 2 }}>
                   <Stack direction="row">
                     <Box sx={{ position: 'relative' }}>
-                      <Box
-                        sx={{
-                          mt: 1,
-                          inlineSize: 'fit-content',
-                          transform: 'rotate(-90deg)',
-                        }}
-                      >
+                      <Box sx={{ mt: 1, inlineSize: 'fit-content', transform: 'rotate(-90deg)' }}>
                         <Typography color="GrayText" variant="h6">
                           {jira}
                         </Typography>
@@ -488,7 +492,7 @@ export default function Index() {
                 </Box>
               </Box>
             </Box>
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               {sortedAuthors.map(author => (
                 <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
                   <Stack direction="row" alignItems="center">
@@ -501,11 +505,13 @@ export default function Index() {
                       </IconButton>
                     )}
                   </Stack>
-                  <DataGrid
-                    columns={gitHubByAuthorColumns}
-                    rows={rowsByAuthor![author].rows}
-                    {...dataGridCommonProps}
-                  ></DataGrid>
+                  <div>
+                    <DataGrid
+                      columns={gitHubByAuthorColumns}
+                      rows={rowsByAuthor![author].rows}
+                      {...dataGridCommonProps}
+                    ></DataGrid>
+                  </div>
                 </Box>
               ))}
             </Box>
