@@ -1,5 +1,5 @@
 import GoogleIcon from '@mui/icons-material/Google';
-import { Alert, Box, Button, CircularProgress, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useNavigation, useSubmit } from '@remix-run/react';
@@ -133,7 +133,11 @@ export default function Login() {
 
   return (
     <>
-      <Header isLoggedIn={false} view="login" />
+      <Header
+        isLoggedIn={false}
+        view="login"
+        showProgress={isProcessingGoogle || navigation.state === 'submitting'}
+      />
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin} autoComplete="on">
@@ -157,7 +161,7 @@ export default function Login() {
               </Button>
             </Stack>
           </Form>
-          <Typography textAlign={'center'} sx={{ p: 2 }}>
+          <Typography textAlign="center" sx={{ p: 2 }}>
             or
           </Typography>
           <Box sx={{ position: 'relative' }}>
@@ -170,18 +174,6 @@ export default function Login() {
             >
               Sign in with Google
             </Button>
-            {(isProcessingGoogle || navigation.state === 'submitting') && (
-              <CircularProgress
-                size={60}
-                sx={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  marginTop: '-30px',
-                  marginLeft: '-30px',
-                }}
-              />
-            )}
           </Box>
           {googleError && <Alert severity="error">{googleError}</Alert>}
         </Stack>

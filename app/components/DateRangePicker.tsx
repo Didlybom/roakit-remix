@@ -13,6 +13,7 @@ export default function DateRangePicker({
   return (
     <FormControl sx={{ mx: 2, minWidth: 80 }} variant="standard">
       <Select
+        id="date-range"
         value={dateRange}
         onChange={e => onDateRangeSelect?.(e.target.value as DateRange)}
         disableUnderline={true}

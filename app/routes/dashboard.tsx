@@ -3,10 +3,11 @@ import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { useState } from 'react';
+import { useHydrated } from 'remix-utils/use-hydrated';
+import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import Header from '~/components/Header';
-import { DateRange } from '~/utils/dateUtils';
+import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange } from '~/utils/dateUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
@@ -15,8 +16,11 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
-
-  const [dateFilter, setDateFilter] = useState<DateRange>(DateRange.OneDay);
+  const isHydrated = useHydrated();
+  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
+    defaultValue: DateRange.OneDay,
+  });
+  const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
 
   const commonPaperSx = { width: 380, p: 1 };
@@ -37,8 +41,9 @@ export default function Dashboard() {
       <Header
         isLoggedIn={sessionData.isLoggedIn}
         view="dashboard"
+        dateRange={dateFilter}
         onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
-        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+        showProgress={false && prevDateFilter && dateFilter !== prevDateFilter}
       />
       <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
         <Grid>

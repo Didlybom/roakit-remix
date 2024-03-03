@@ -197,6 +197,7 @@ export default function Index() {
   }, [dateFilter, sessionData.customerId]);
 
   const dataGridCommonProps = {
+    autoHeight: true, // otherwise empty state looks ugly
     rowHeight: 75,
     density: 'compact' as GridDensity,
     disableRowSelectionOnClick: true,
