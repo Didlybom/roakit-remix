@@ -47,6 +47,8 @@ export default function Index() {
     defaultValue: DateRange.OneDay,
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
+
+  const [gotSnapshot, setGotSnapshot] = useState(false);
   const [jiraIssuesCreated, setJiraIssuesCreated] = useState<JiraRow[]>([]);
   const [jiraCommentsCreated, setJiraCommentsCreated] = useState<JiraRow[]>([]);
 
@@ -158,6 +160,7 @@ export default function Index() {
   );
 
   const setRows = (type: JiraEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
+    setGotSnapshot(true);
     try {
       switch (type) {
         case JiraEventType.IssueCreated:
@@ -212,14 +215,11 @@ export default function Index() {
         view="jira"
         dateRange={dateFilter}
         onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={
-          (!!prevDateFilter && dateFilter !== prevDateFilter) ||
-          (!jiraIssuesCreated.length && !jiraCommentsCreated.length)
-        }
+        showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
       />
       <Stack>
         <>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 1 }}>
             <Tabs
               variant="scrollable"
               value={view}
@@ -230,25 +230,25 @@ export default function Index() {
             </Tabs>
           </Box>
           <TabPanel value={view} index={View.IssueCreated}>
-            {!!jiraIssuesCreated.length && (
-              <DataGrid
-                columns={jiraColumns}
-                rows={jiraIssuesCreated}
-                {...dataGridCommonProps}
-              ></DataGrid>
-            )}
+            <DataGrid
+              columns={jiraColumns}
+              rows={jiraIssuesCreated}
+              {...dataGridCommonProps}
+            ></DataGrid>
           </TabPanel>
           <TabPanel value={view} index={View.CommentCreated}>
-            {!!jiraCommentsCreated.length && (
-              <DataGrid
-                columns={jiraColumns}
-                rows={jiraCommentsCreated}
-                {...dataGridCommonProps}
-              ></DataGrid>
-            )}
+            <DataGrid
+              columns={jiraColumns}
+              rows={jiraCommentsCreated}
+              {...dataGridCommonProps}
+            ></DataGrid>
           </TabPanel>
         </>
-        {error && <Alert severity="error">{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </Stack>
     </>
   );

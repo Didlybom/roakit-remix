@@ -88,6 +88,7 @@ export default function Index() {
   const [popoverElement, setPopoverElement] = useState<HTMLElement | null>(null);
   const [popoverContent, setPopoverContent] = useState<JSX.Element | undefined>(undefined);
 
+  const [gotSnapshot, setGotSnapshot] = useState(false);
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPRComments, setGithubPRComments] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
@@ -261,6 +262,7 @@ export default function Index() {
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
   const setRows = (type: GitHubEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
+    setGotSnapshot(true);
     try {
       switch (type) {
         case GitHubEventType.PullRequest:
@@ -355,6 +357,7 @@ export default function Index() {
     filteredGitHubRowsByJira ? caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)) : null;
 
   const dataGridCommonProps = {
+    autoHeight: true, // otherwise empty state looks ugly
     rowHeight: 75,
     density: 'compact' as GridDensity,
     disableRowSelectionOnClick: true,
@@ -373,7 +376,7 @@ export default function Index() {
         view="github"
         dateRange={dateFilter}
         onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={(!!prevDateFilter && dateFilter !== prevDateFilter) || gitHubPRs.length === 0}
+        showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
       />
       <Popover
         id={popoverElement ? 'popover' : undefined}
@@ -407,6 +410,11 @@ export default function Index() {
             All GitHub Activity
           </Button>
         </Stack>
+        {showBy === ActivityView.Jira && !sortedJiras && (
+          <Typography textAlign="center" sx={{ m: 4 }}>
+            No rows
+          </Typography>
+        )}
         {showBy === ActivityView.Jira && sortedJiras && (
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
@@ -455,6 +463,11 @@ export default function Index() {
               ))}
             </Box>
           </Stack>
+        )}
+        {showBy === ActivityView.Author && !sortedAuthors && (
+          <Typography textAlign="center" sx={{ m: 4 }}>
+            No rows
+          </Typography>
         )}
         {showBy === ActivityView.Author && sortedAuthors && (
           <Stack direction="row" sx={{ ml: 2 }}>
@@ -510,7 +523,7 @@ export default function Index() {
         )}
         {showBy === ActivityView.All && (
           <>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1, mb: 2 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', my: 1 }}>
               <Tabs
                 variant="scrollable"
                 value={view}
@@ -523,44 +536,42 @@ export default function Index() {
               </Tabs>
             </Box>
             <TabPanel value={view} index={EventTab.PullRequest}>
-              {!!gitHubPRs.length && (
+              {
                 <DataGrid
                   columns={gitHubColumns}
                   rows={gitHubPRs}
                   {...dataGridCommonProps}
                 ></DataGrid>
-              )}
+              }
             </TabPanel>
             <TabPanel value={view} index={EventTab.PullRequestComment}>
-              {!!gitHubPRComments.length && (
-                <DataGrid
-                  columns={gitHubColumns}
-                  rows={gitHubPRComments}
-                  {...dataGridCommonProps}
-                ></DataGrid>
-              )}
+              <DataGrid
+                columns={gitHubColumns}
+                rows={gitHubPRComments}
+                {...dataGridCommonProps}
+              ></DataGrid>
             </TabPanel>
             <TabPanel value={view} index={EventTab.Push}>
-              {!!gitHubPushes.length && (
-                <DataGrid
-                  columns={gitHubPushesColumns}
-                  rows={gitHubPushes}
-                  {...dataGridCommonProps}
-                ></DataGrid>
-              )}
+              <DataGrid
+                columns={gitHubPushesColumns}
+                rows={gitHubPushes}
+                {...dataGridCommonProps}
+              ></DataGrid>
             </TabPanel>
             <TabPanel value={view} index={EventTab.Release}>
-              {!!gitHubReleases.length && (
-                <DataGrid
-                  columns={gitHubPushesColumns}
-                  rows={gitHubReleases}
-                  {...dataGridCommonProps}
-                ></DataGrid>
-              )}
+              <DataGrid
+                columns={gitHubPushesColumns}
+                rows={gitHubReleases}
+                {...dataGridCommonProps}
+              ></DataGrid>
             </TabPanel>
           </>
         )}
-        {error && <Alert severity="error">{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </Stack>
     </>
   );
