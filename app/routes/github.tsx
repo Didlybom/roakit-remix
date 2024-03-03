@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -29,7 +29,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
-import { ellipsisAttrs } from '~/utils/jsxUtils';
+import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
@@ -356,19 +356,6 @@ export default function Index() {
   const sortedJiras =
     filteredGitHubRowsByJira ? caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)) : null;
 
-  const dataGridCommonProps = {
-    autoHeight: true, // otherwise empty state looks ugly
-    rowHeight: 75,
-    density: 'compact' as GridDensity,
-    disableRowSelectionOnClick: true,
-    disableColumnMenu: true,
-    pageSizeOptions: [25, 50, 100],
-    initialState: {
-      pagination: { paginationModel: { pageSize: 25 } },
-      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
-    },
-  };
-
   return (
     <>
       <Header
@@ -410,9 +397,9 @@ export default function Index() {
             All GitHub Activity
           </Button>
         </Stack>
-        {showBy === ActivityView.Jira && !sortedJiras && (
+        {showBy === ActivityView.Jira && !sortedJiras && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>
-            No rows
+            Nothing to show for these dates
           </Typography>
         )}
         {showBy === ActivityView.Jira && sortedJiras && (
@@ -464,9 +451,9 @@ export default function Index() {
             </Box>
           </Stack>
         )}
-        {showBy === ActivityView.Author && !sortedAuthors && (
+        {showBy === ActivityView.Author && !sortedAuthors && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>
-            No rows
+            Nothing to show for these dates
           </Typography>
         )}
         {showBy === ActivityView.Author && sortedAuthors && (
@@ -521,7 +508,7 @@ export default function Index() {
             </Box>
           </Stack>
         )}
-        {showBy === ActivityView.All && (
+        {showBy === ActivityView.All && gotSnapshot && (
           <>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', my: 1 }}>
               <Tabs
@@ -536,13 +523,11 @@ export default function Index() {
               </Tabs>
             </Box>
             <TabPanel value={view} index={EventTab.PullRequest}>
-              {
-                <DataGrid
-                  columns={gitHubColumns}
-                  rows={gitHubPRs}
-                  {...dataGridCommonProps}
-                ></DataGrid>
-              }
+              <DataGrid
+                columns={gitHubColumns}
+                rows={gitHubPRs}
+                {...dataGridCommonProps}
+              ></DataGrid>
             </TabPanel>
             <TabPanel value={view} index={EventTab.PullRequestComment}>
               <DataGrid

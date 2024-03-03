@@ -1,5 +1,5 @@
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
-import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -11,7 +11,7 @@ import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
-import { ellipsisAttrs } from '~/utils/jsxUtils';
+import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -196,19 +196,6 @@ export default function Index() {
     return () => Object.keys(unsubscribe).forEach(k => unsubscribe[k]());
   }, [dateFilter, sessionData.customerId]);
 
-  const dataGridCommonProps = {
-    autoHeight: true, // otherwise empty state looks ugly
-    rowHeight: 75,
-    density: 'compact' as GridDensity,
-    disableRowSelectionOnClick: true,
-    disableColumnMenu: true,
-    pageSizeOptions: [25, 50, 100],
-    initialState: {
-      pagination: { paginationModel: { pageSize: 25 } },
-      sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
-    },
-  };
-
   return (
     <>
       <Header
@@ -219,32 +206,34 @@ export default function Index() {
         showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
       />
       <Stack>
-        <>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 1 }}>
-            <Tabs
-              variant="scrollable"
-              value={view}
-              onChange={(e, newValue: View) => setView(newValue)}
-            >
-              <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
-              <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
-            </Tabs>
-          </Box>
-          <TabPanel value={view} index={View.IssueCreated}>
-            <DataGrid
-              columns={jiraColumns}
-              rows={jiraIssuesCreated}
-              {...dataGridCommonProps}
-            ></DataGrid>
-          </TabPanel>
-          <TabPanel value={view} index={View.CommentCreated}>
-            <DataGrid
-              columns={jiraColumns}
-              rows={jiraCommentsCreated}
-              {...dataGridCommonProps}
-            ></DataGrid>
-          </TabPanel>
-        </>
+        {gotSnapshot && (
+          <>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 1 }}>
+              <Tabs
+                variant="scrollable"
+                value={view}
+                onChange={(e, newValue: View) => setView(newValue)}
+              >
+                <Tab label="Tickets Created" id={`tab-${View.IssueCreated}`} />
+                <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
+              </Tabs>
+            </Box>
+            <TabPanel value={view} index={View.IssueCreated}>
+              <DataGrid
+                columns={jiraColumns}
+                rows={jiraIssuesCreated}
+                {...dataGridCommonProps}
+              ></DataGrid>
+            </TabPanel>
+            <TabPanel value={view} index={View.CommentCreated}>
+              <DataGrid
+                columns={jiraColumns}
+                rows={jiraCommentsCreated}
+                {...dataGridCommonProps}
+              ></DataGrid>
+            </TabPanel>
+          </>
+        )}
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}
