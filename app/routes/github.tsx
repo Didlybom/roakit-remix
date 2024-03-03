@@ -284,6 +284,7 @@ export default function Index() {
     if (!dateFilter) {
       return;
     }
+    setGotSnapshot(false);
     const unsubscribe: Record<string, () => void> = {};
     Object.values(GitHubEventType).map((type: GitHubEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);
@@ -348,13 +349,8 @@ export default function Index() {
     });
   }
 
-  const sortedAuthors =
-    filteredGitHubRowsByAuthor ?
-      caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor))
-    : null;
-
-  const sortedJiras =
-    filteredGitHubRowsByJira ? caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira)) : null;
+  const sortedAuthors = caseInsensitiveSort(Object.keys(filteredGitHubRowsByAuthor));
+  const sortedJiras = caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira));
 
   return (
     <>
@@ -397,7 +393,7 @@ export default function Index() {
             All GitHub Activity
           </Button>
         </Stack>
-        {showBy === ActivityView.Jira && !sortedJiras && gotSnapshot && (
+        {showBy === ActivityView.Jira && !sortedJiras.length && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>
             Nothing to show for these dates
           </Typography>
@@ -442,7 +438,7 @@ export default function Index() {
                     </Box>
                     <DataGrid
                       columns={gitHubColumns}
-                      rows={rowsByJira![jira]}
+                      rows={rowsByJira[jira]}
                       {...dataGridCommonProps}
                     ></DataGrid>
                   </Stack>
@@ -451,7 +447,7 @@ export default function Index() {
             </Box>
           </Stack>
         )}
-        {showBy === ActivityView.Author && !sortedAuthors && gotSnapshot && (
+        {showBy === ActivityView.Author && !sortedAuthors.length && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>
             Nothing to show for these dates
           </Typography>
@@ -499,7 +495,7 @@ export default function Index() {
                   <div>
                     <DataGrid
                       columns={gitHubByAuthorColumns}
-                      rows={rowsByAuthor![author].rows}
+                      rows={rowsByAuthor[author].rows}
                       {...dataGridCommonProps}
                     ></DataGrid>
                   </div>

@@ -178,6 +178,7 @@ export default function Index() {
     if (!dateFilter) {
       return;
     }
+    setGotSnapshot(false);
     const unsubscribe: Record<string, () => void> = {};
     Object.values(JiraEventType).map((type: JiraEventType) => {
       const startDate = dateFilterToStartDate(dateFilter);

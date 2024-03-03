@@ -65,8 +65,8 @@ export interface GitHubRow {
   };
 }
 
-export let rowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> | null; // all the events aggregated by author
-export let rowsByJira: Record<string, GitHubRow[]> | null; // all the events aggregated by JIRA project
+export const rowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> = {}; // all the events aggregated by author
+export const rowsByJira: Record<string, GitHubRow[]> = {}; // all the events aggregated by JIRA project
 
 export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRow[] => {
   const rows: GitHubRow[] = [];
@@ -131,9 +131,6 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
       },
     };
     if (row.author?.name) {
-      if (!rowsByAuthor) {
-        rowsByAuthor = {};
-      }
       if (!(row.author.name in rowsByAuthor)) {
         rowsByAuthor[row.author.name] = { url: row.author.url, rows: [] };
       }
@@ -143,15 +140,12 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     }
     const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref?.label);
     if (jiraProjects.length) {
-      if (!rowsByJira) {
-        rowsByJira = {};
-      }
       jiraProjects.forEach(jiraProject => {
-        if (!(jiraProject in rowsByJira!)) {
-          rowsByJira![jiraProject] = [];
+        if (!(jiraProject in rowsByJira)) {
+          rowsByJira[jiraProject] = [];
         }
-        if (!rowsByJira![jiraProject].find(r => r.id === row.id)) {
-          rowsByJira![jiraProject].push(row);
+        if (!rowsByJira[jiraProject].find(r => r.id === row.id)) {
+          rowsByJira[jiraProject].push(row);
         }
       });
     }
