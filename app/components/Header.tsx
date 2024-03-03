@@ -2,7 +2,16 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { AppBar, Box, Button, Stack, SvgIcon, Toolbar, Typography } from '@mui/material';
+import {
+  AppBar,
+  Box,
+  Button,
+  LinearProgress,
+  Stack,
+  SvgIcon,
+  Toolbar,
+  Typography,
+} from '@mui/material';
 import { DateRange } from '~/utils/dateUtils';
 import JiraIcon from '../icons/Jira';
 import { disabledSelectedSx } from '../utils/theme';
@@ -58,11 +67,7 @@ export default function App({
                 <Box sx={{ display: { xs: 'none', md: 'block' } }}>Jira</Box>
               </Button>
               {dateRange && onDateRangeSelect && (
-                <DateRangePicker
-                  dateRange={dateRange}
-                  onDateRangeSelect={onDateRangeSelect}
-                  showProgress={showProgress}
-                />
+                <DateRangePicker dateRange={dateRange} onDateRangeSelect={onDateRangeSelect} />
               )}
             </Stack>
             <Button
@@ -88,6 +93,7 @@ export default function App({
           </>
         )}
       </Toolbar>
+      {showProgress && <LinearProgress sx={{ mt: '-4px' }} />}
     </AppBar>
   );
 }

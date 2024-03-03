@@ -5,7 +5,6 @@ import {
   Button,
   Divider,
   IconButton,
-  LinearProgress,
   Link,
   List,
   ListItem,
@@ -89,7 +88,6 @@ export default function Index() {
   const [popoverElement, setPopoverElement] = useState<HTMLElement | null>(null);
   const [popoverContent, setPopoverContent] = useState<JSX.Element | undefined>(undefined);
 
-  const [areRowsSet, setAreRowsSet] = useState(false);
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
   const [gitHubPRComments, setGithubPRComments] = useState<GitHubRow[]>([]);
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
@@ -263,7 +261,6 @@ export default function Index() {
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
   const setRows = (type: GitHubEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
-    setAreRowsSet(true);
     try {
       switch (type) {
         case GitHubEventType.PullRequest:
@@ -376,7 +373,7 @@ export default function Index() {
         view="github"
         dateRange={dateFilter}
         onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+        showProgress={(!!prevDateFilter && dateFilter !== prevDateFilter) || gitHubPRs.length === 0}
       />
       <Popover
         id={popoverElement ? 'popover' : undefined}
@@ -387,8 +384,8 @@ export default function Index() {
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
-      <Stack sx={{ m: 2 }}>
-        <Stack direction="row">
+      <Stack sx={{ mt: 2 }}>
+        <Stack direction="row" sx={{ ml: 2 }}>
           <Button
             disabled={showBy === ActivityView.Jira}
             onClick={() => setShowBy(ActivityView.Jira)}
@@ -410,9 +407,6 @@ export default function Index() {
             All GitHub Activity
           </Button>
         </Stack>
-        {showBy === ActivityView.Jira && !filteredGitHubRowsByJira && (
-          <LinearProgress sx={{ my: 5 }} />
-        )}
         {showBy === ActivityView.Jira && sortedJiras && (
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
@@ -461,9 +455,6 @@ export default function Index() {
               ))}
             </Box>
           </Stack>
-        )}
-        {showBy === ActivityView.Author && !filteredGitHubRowsByAuthor && (
-          <LinearProgress sx={{ my: 5 }} />
         )}
         {showBy === ActivityView.Author && sortedAuthors && (
           <Stack direction="row" sx={{ ml: 2 }}>
@@ -519,7 +510,7 @@ export default function Index() {
         )}
         {showBy === ActivityView.All && (
           <>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1, mb: 2 }}>
               <Tabs
                 variant="scrollable"
                 value={view}
@@ -531,7 +522,6 @@ export default function Index() {
                 <Tab label="Releases" id={`tab-${EventTab.Release}`} />
               </Tabs>
             </Box>
-            {!areRowsSet && <LinearProgress sx={{ my: 5 }} />}
             <TabPanel value={view} index={EventTab.PullRequest}>
               {!!gitHubPRs.length && (
                 <DataGrid

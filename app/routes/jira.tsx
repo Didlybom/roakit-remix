@@ -1,14 +1,4 @@
-import {
-  Alert,
-  Box,
-  LinearProgress,
-  Link,
-  Stack,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
@@ -222,9 +212,12 @@ export default function Index() {
         view="jira"
         dateRange={dateFilter}
         onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={prevDateFilter && dateFilter !== prevDateFilter}
+        showProgress={
+          (!!prevDateFilter && dateFilter !== prevDateFilter) ||
+          (!jiraIssuesCreated.length && !jiraCommentsCreated.length)
+        }
       />
-      <Stack sx={{ m: 2 }}>
+      <Stack>
         <>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
             <Tabs
@@ -236,9 +229,6 @@ export default function Index() {
               <Tab label="Comments" id={`tab-${View.CommentCreated}`} />
             </Tabs>
           </Box>
-          {!jiraIssuesCreated.length && !jiraCommentsCreated.length && (
-            <LinearProgress sx={{ my: 5 }} />
-          )}
           <TabPanel value={view} index={View.IssueCreated}>
             {!!jiraIssuesCreated.length && (
               <DataGrid
