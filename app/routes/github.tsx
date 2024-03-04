@@ -371,7 +371,7 @@ export default function Index() {
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
       <Stack sx={{ mt: 2 }}>
-        <Stack direction="row" sx={{ ml: 2 }}>
+        <Stack direction="row" sx={{ ml: 1 }}>
           <Button
             disabled={showBy === ActivityView.Jira}
             onClick={() => setShowBy(ActivityView.Jira)}
