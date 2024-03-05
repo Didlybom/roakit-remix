@@ -1,8 +1,9 @@
 import CopyIcon from '@mui/icons-material/ContentCopy';
 import { Grid, Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
+import { SettingsData } from '~/schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import jiraImage from './images/jira-webhook.png';
-import { SettingsData, actionIcon } from './route';
+import { actionIcon } from './route';
 
 export default function JiraSettings({
   settingsData,

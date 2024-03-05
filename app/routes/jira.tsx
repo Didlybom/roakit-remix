@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
-import { JiraEventType, JiraRow, jiraRows } from '~/feeds/jiraFeed';
+import { JiraEventType, JiraRow, jiraRows } from '~/schemas/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
 import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';

@@ -33,14 +33,14 @@ import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
+import { firestore as firestoreClient } from '../firebase.client';
 import {
   GitHubEventType,
   GitHubRow,
   gitHubRows,
   rowsByAuthor,
   rowsByJira,
-} from '../feeds/githubFeed';
-import { firestore as firestoreClient } from '../firebase.client';
+} from '../schemas/githubFeed';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
   DateRange,

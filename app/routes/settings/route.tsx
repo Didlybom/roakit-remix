@@ -4,9 +4,10 @@ import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { SyntheticEvent, useState } from 'react';
-import { z } from 'zod';
 import Header from '~/components/Header';
+import { feedSchema } from '~/schemas/schemas';
 import { loadSession } from '~/utils/authUtils.server';
+import { fetchInitiatives } from '~/utils/firestoreUtils.server';
 import TabPanel from '../../components/TabPanel';
 import { sessionCookie } from '../../cookies.server';
 import { firestore, auth as serverAuth } from '../../firebase.server';
@@ -26,38 +27,12 @@ enum FeedTab {
   Confluence,
 }
 
-const feedSchema = z.object({
-  type: z.string(),
-  secret: z.string().optional(),
-});
-
-const initiativeSchema = z.object({
-  label: z.string().optional(),
-});
-
-export interface InitiativeData {
-  id: string;
-  label?: string;
-}
-
-export interface SettingsData {
-  customerId: number;
-  feeds: {
-    secret?: string | undefined;
-    feedId: string;
-    type: string;
-    clientId: string;
-  }[];
-  initiatives: InitiativeData[];
-}
-
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
@@ -92,20 +67,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
 
     // retrieve initiatives
-    const initiativesCollection = firestore.collection(
-      'customers/' + sessionData.customerId + '/initiatives'
-    );
-    const initiativeDocs = await initiativesCollection.listDocuments();
-    const initiatives = await Promise.all(
-      initiativeDocs.map(async initiative => {
-        const initiativeDoc = await initiative.get();
-        const initiativeData = initiativeSchema.parse(initiativeDoc.data());
-        return {
-          id: initiative.id,
-          label: initiativeData.label,
-        };
-      })
-    );
+    const initiatives = await fetchInitiatives(sessionData.customerId);
 
     return { customerId: +sessionData.customerId!, feeds, initiatives };
   } catch (e) {
@@ -121,10 +83,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    await serverAuth.verifySessionCookie(jwt);
+    const token = await serverAuth.verifySessionCookie(jwt);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const customerId = token.customerId;
 
     const form = await request.formData();
-    const customerId = form.get('customerId')?.toString() ?? '';
 
     const feedId = form.get('feedId')?.toString() ?? '';
     if (feedId) {

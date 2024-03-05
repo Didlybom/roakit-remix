@@ -1,6 +1,7 @@
 import GitHubIcon from '@mui/icons-material/GitHub';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   AppBar,
@@ -17,7 +18,15 @@ import JiraIcon from '../icons/Jira';
 import { disabledSelectedSx } from '../utils/theme';
 import DateRangePicker from './DateRangePicker';
 
-type View = 'dashboard' | 'github' | 'jira' | 'settings' | 'login' | 'logout' | 'info';
+type View =
+  | 'dashboard'
+  | 'activity.review'
+  | 'github'
+  | 'jira'
+  | 'settings'
+  | 'login'
+  | 'logout'
+  | 'info';
 
 export default function App({
   isLoggedIn,
@@ -76,7 +85,7 @@ export default function App({
                 disabled={!isLoggedIn || view === 'jira'}
                 color="inherit"
                 sx={{
-                  display: { xs: 'flex', md: 'none' },
+                  display: { xs: 'flex', sm: 'none' },
                   ...(isLoggedIn && { ...disabledSelectedSx }),
                 }}
               >
@@ -89,7 +98,7 @@ export default function App({
                 variant="text"
                 color="inherit"
                 sx={{
-                  display: { xs: 'none', md: 'flex' },
+                  display: { xs: 'none', sm: 'flex' },
                   ...(isLoggedIn && { ...disabledSelectedSx }),
                 }}
                 startIcon={<SvgIcon component={JiraIcon} />}
@@ -102,12 +111,39 @@ export default function App({
             </Stack>
 
             <IconButton
+              href="/activity.review"
+              title="Review Activity"
+              disabled={!isLoggedIn || view === 'activity.review'}
+              color="inherit"
+              sx={{
+                display: { xs: 'flex', sm: 'none' },
+                ...(isLoggedIn && { ...disabledSelectedSx }),
+              }}
+            >
+              <NotificationImportantIcon />
+            </IconButton>
+            <Button
+              href="/activity/review"
+              title="Review Activity"
+              disabled={!isLoggedIn || view === 'activity.review'}
+              color="inherit"
+              startIcon={<NotificationImportantIcon />}
+              sx={{
+                mx: 2,
+                display: { xs: 'none', sm: 'flex' },
+                ...(isLoggedIn && { ...disabledSelectedSx }),
+              }}
+            >
+              Review
+            </Button>
+
+            <IconButton
               href="/settings"
               title="Settings"
               disabled={!isLoggedIn || view === 'settings'}
               color="inherit"
               sx={{
-                display: { xs: 'flex', md: 'none' },
+                display: { xs: 'flex', sm: 'none' },
                 ...(isLoggedIn && { ...disabledSelectedSx }),
               }}
             >
@@ -121,7 +157,7 @@ export default function App({
               startIcon={<SettingsIcon />}
               sx={{
                 mx: 2,
-                display: { xs: 'none', md: 'flex' },
+                display: { xs: 'none', sm: 'flex' },
                 ...(isLoggedIn && { ...disabledSelectedSx }),
               }}
             >

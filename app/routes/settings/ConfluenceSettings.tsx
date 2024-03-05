@@ -18,9 +18,10 @@ import {
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { SettingsData } from '~/schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import confluenceImage from './images/confluence-webhook.png';
-import { SettingsData, actionIcon } from './route';
+import { actionIcon } from './route';
 
 export default function ConfluenceSettings({
   settingsData,
@@ -106,7 +107,6 @@ export default function ConfluenceSettings({
                     () =>
                       submit(
                         {
-                          customerId: settingsData.customerId,
                           feedId: serverConfluenceFeed.feedId,
                           type: feedUtils.CONFLUENCE_FEED_TYPE,
                           secret: confluenceSecret,

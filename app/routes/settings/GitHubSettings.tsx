@@ -18,9 +18,10 @@ import {
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { SettingsData } from '~/schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import githubImage from './images/github-webhook.png';
-import { SettingsData, actionIcon } from './route';
+import { actionIcon } from './route';
 
 export default function GitHubSettings({
   settingsData,
@@ -102,7 +103,6 @@ export default function GitHubSettings({
                     () =>
                       submit(
                         {
-                          customerId: settingsData.customerId,
                           feedId: serverGitHubFeed.feedId,
                           type: feedUtils.GITHUB_FEED_TYPE,
                           secret: gitHubSecret,

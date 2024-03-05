@@ -9,8 +9,9 @@ import {
 } from '@mui/x-data-grid';
 import { useSubmit } from '@remix-run/react';
 import { useMemo, useState } from 'react';
+import { InitiativeData, SettingsData } from '~/schemas/schemas';
 import { errMsg } from '~/utils/errorUtils';
-import { InitiativeData, SettingsData } from './route';
+import {} from './route';
 
 export default function Initiatives({ settingsData }: { settingsData: SettingsData }) {
   const submit = useSubmit();
@@ -26,7 +27,7 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
     autoHeight: true, // otherwise empty state looks ugly
     slots: {
       noRowsOverlay: () => (
-        <Box height="100px" display="flex" alignItems="center" justifyContent="center">
+        <Box height="75px" display="flex" alignItems="center" justifyContent="center">
           Nothing to show
         </Box>
       ),
@@ -43,18 +44,8 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      {
-        field: 'id',
-        headerName: 'Key',
-        width: 100,
-      },
-      {
-        field: 'label',
-        headerName: 'Label',
-        minWidth: 300,
-        flex: 1,
-        editable: true,
-      },
+      { field: 'id', headerName: 'Key', width: 100 },
+      { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
     ],
     []
   );
@@ -69,7 +60,6 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
         processRowUpdate={(updatedRow: InitiativeData) => {
           submit(
             {
-              customerId: settingsData.customerId,
               initiativeId: updatedRow.id,
               label: updatedRow.label ?? '',
             },
@@ -81,11 +71,7 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
       ></DataGrid>
       <Box
         component="form"
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          mt: 4,
-        }}
+        sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}
         noValidate
         autoComplete="off"
       >
@@ -94,27 +80,20 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
           required
           label="Key"
           size="small"
-          sx={{ m: 1, width: '10ch' }}
+          sx={{ m: 1, width: '15ch' }}
           onChange={e => setNewKey(e.target.value)}
         />
         <TextField
           id="label"
           label="Label"
           size="small"
-          sx={{ m: 1, width: '40ch' }}
+          sx={{ m: 1, width: 'ch' }}
           onChange={e => setNewLabel(e.target.value)}
         />
         <Button
           onClick={() => {
             if (!newKey) return;
-            submit(
-              {
-                customerId: settingsData.customerId,
-                initiativeId: newKey,
-                label: newLabel,
-              },
-              { method: 'post' }
-            );
+            submit({ initiativeId: newKey, label: newLabel }, { method: 'post' });
           }}
           disabled={!newKey || !!initiatives.find(i => i.id === newKey)}
           startIcon={<AddIcon />}
@@ -123,11 +102,12 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
           color="secondary"
           sx={{ m: 1, textWrap: 'nowrap' }}
         >
-          New initiative
+          Add
         </Button>
       </Box>
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
+          {' '}
           {error}
         </Alert>
       )}
