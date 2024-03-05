@@ -1,15 +1,10 @@
 import { Alert, Box, Stack, Tooltip } from '@mui/material';
-import {
-  DataGrid,
-  GridColDef,
-  GridDensity,
-  GridSortDirection,
-  useGridApiRef,
-} from '@mui/x-data-grid';
+import { GridColDef, GridDensity, GridSortDirection, useGridApiRef } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
 import { useMemo, useState } from 'react';
+import DataGridWithSingleClickEditing from '~/components/DataGridWithSingleClickEditing';
 import Header from '~/components/Header';
 import { sessionCookie } from '~/cookies.server';
 import { firestore, auth as serverAuth } from '~/firebase.server';
@@ -162,7 +157,7 @@ export default function Info() {
     <>
       <Header isLoggedIn={true} view="activity.review" />
       <Stack sx={{ m: 3 }}>
-        <DataGrid
+        <DataGridWithSingleClickEditing
           columns={columns}
           rows={sessionData.activities}
           {...dataGridProps}
@@ -175,7 +170,7 @@ export default function Info() {
             return updatedRow;
           }}
           onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save initiative'))}
-        ></DataGrid>
+        ></DataGridWithSingleClickEditing>
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}

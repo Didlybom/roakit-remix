@@ -1,27 +1,39 @@
 import AddIcon from '@mui/icons-material/Add';
-import { Alert, Box, Button, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, Stack } from '@mui/material';
 import {
   DataGrid,
   GridColDef,
   GridDensity,
+  GridRowModes,
+  GridRowModesModel,
+  GridRowsProp,
   GridSortDirection,
+  GridToolbarContainer,
   useGridApiRef,
 } from '@mui/x-data-grid';
 import { useSubmit } from '@remix-run/react';
 import { useMemo, useState } from 'react';
-import { InitiativeData, SettingsData } from '~/schemas/schemas';
+import { SettingsData } from '~/schemas/schemas';
 import { errMsg } from '~/utils/errorUtils';
-import {} from './route';
+
+interface Initiative {
+  id: number;
+  key: string;
+  label?: string;
+}
 
 export default function Initiatives({ settingsData }: { settingsData: SettingsData }) {
   const submit = useSubmit();
   const gridApi = useGridApiRef();
 
-  const initiatives = settingsData.initiatives;
-  const [error, setError] = useState('');
+  const [rows, setRows] = useState<Initiative[]>(
+    settingsData.initiatives.map((initiative, i) => {
+      return { id: i, key: initiative.id, label: initiative.label };
+    })
+  );
+  const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
 
-  const [newKey, setNewKey] = useState('');
-  const [newLabel, setNewLabel] = useState('');
+  const [error, setError] = useState('');
 
   const dataGridProps = {
     autoHeight: true, // otherwise empty state looks ugly
@@ -44,23 +56,63 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      { field: 'id', headerName: 'Key', width: 100 },
+      { field: 'key', headerName: 'Key', width: 100, editable: true },
       { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
     ],
     []
   );
 
+  interface EditToolbarProps {
+    setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
+    setRowModesModel: (newModel: (oldModel: GridRowModesModel) => GridRowModesModel) => void;
+  }
+
+  function EditToolbar(props: EditToolbarProps) {
+    const { setRows, setRowModesModel } = props;
+
+    const handleClick = () => {
+      const id = rows.length + 1;
+      setRows(oldRows => [...oldRows, { id, label: '' }]);
+      setRowModesModel(oldModel => ({
+        ...oldModel,
+        [id]: { mode: GridRowModes.Edit, fieldToFocus: 'key' },
+      }));
+    };
+
+    return (
+      <GridToolbarContainer>
+        <Button color="primary" startIcon={<AddIcon />} onClick={handleClick}>
+          Add initiative
+        </Button>
+      </GridToolbarContainer>
+    );
+  }
+
+  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
+    setRowModesModel(newRowModesModel);
+  };
+
   return (
     <Stack>
       <DataGrid
         columns={columns}
-        rows={initiatives}
+        rows={rows}
         {...dataGridProps}
+        editMode="row"
+        rowModesModel={rowModesModel}
+        onRowModesModelChange={handleRowModesModelChange}
+        slots={{ toolbar: EditToolbar }}
+        slotProps={{ toolbar: { setRows, setRowModesModel } }}
         apiRef={gridApi}
-        processRowUpdate={(updatedRow: InitiativeData) => {
+        processRowUpdate={(updatedRow: Initiative) => {
+          console.log(updatedRow);
+          setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
+          if (!updatedRow.key) {
+            return updatedRow;
+          }
           submit(
             {
-              initiativeId: updatedRow.id,
+              initiativeId: updatedRow.key,
               label: updatedRow.label ?? '',
             },
             { method: 'post' }
@@ -68,46 +120,9 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
           return updatedRow;
         }}
         onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save initiative'))}
-      ></DataGrid>
-      <Box
-        component="form"
-        sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}
-        noValidate
-        autoComplete="off"
-      >
-        <TextField
-          id="key"
-          required
-          label="Key"
-          size="small"
-          sx={{ m: 1, width: '15ch' }}
-          onChange={e => setNewKey(e.target.value)}
-        />
-        <TextField
-          id="label"
-          label="Label"
-          size="small"
-          sx={{ m: 1, width: 'ch' }}
-          onChange={e => setNewLabel(e.target.value)}
-        />
-        <Button
-          onClick={() => {
-            if (!newKey) return;
-            submit({ initiativeId: newKey, label: newLabel }, { method: 'post' });
-          }}
-          disabled={!newKey || !!initiatives.find(i => i.id === newKey)}
-          startIcon={<AddIcon />}
-          variant="contained"
-          size="small"
-          color="secondary"
-          sx={{ m: 1, textWrap: 'nowrap' }}
-        >
-          Add
-        </Button>
-      </Box>
+      />
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
-          {' '}
           {error}
         </Alert>
       )}
