@@ -14,6 +14,7 @@ import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
+import Initiatives from './Initiatives';
 import JiraSettings from './JiraSettings';
 
 const logger = pino({ name: 'route:settings' });
@@ -30,6 +31,15 @@ const feedSchema = z.object({
   secret: z.string().optional(),
 });
 
+const initiativeSchema = z.object({
+  label: z.string().optional(),
+});
+
+export interface InitiativeData {
+  id: string;
+  label?: string;
+}
+
 export interface SettingsData {
   customerId: number;
   feeds: {
@@ -38,6 +48,7 @@ export interface SettingsData {
     type: string;
     clientId: string;
   }[];
+  initiatives: InitiativeData[];
 }
 
 // verify JWT, load client settings
@@ -79,7 +90,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       })
     );
-    return { customerId: +sessionData.customerId!, feeds };
+
+    // retrieve initiatives
+    const initiativesCollection = firestore.collection(
+      'customers/' + sessionData.customerId + '/initiatives'
+    );
+    const initiativeDocs = await initiativesCollection.listDocuments();
+    const initiatives = await Promise.all(
+      initiativeDocs.map(async initiative => {
+        const initiativeDoc = await initiative.get();
+        const initiativeData = initiativeSchema.parse(initiativeDoc.data());
+        return {
+          id: initiative.id,
+          label: initiativeData.label,
+        };
+      })
+    );
+
+    return { customerId: +sessionData.customerId!, feeds, initiatives };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -91,17 +119,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!jwt) {
     return redirect('/login');
   }
-  await new Promise(f => setTimeout(f, 1000));
+
   try {
     await serverAuth.verifySessionCookie(jwt);
 
     const form = await request.formData();
     const customerId = form.get('customerId')?.toString() ?? '';
-    const feedId = form.get('feedId')?.toString() ?? '';
-    const secret = form.get('secret')?.toString() ?? '';
 
-    const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
-    await doc.update({ secret });
+    const feedId = form.get('feedId')?.toString() ?? '';
+    if (feedId) {
+      const secret = form.get('secret')?.toString() ?? '';
+      const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+      await doc.update({ secret });
+    }
+
+    const initiativeId = form.get('initiativeId')?.toString() ?? '';
+    if (initiativeId) {
+      const label = form.get('label')?.toString() ?? '';
+      const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
+      await doc.set({ label }, { merge: true });
+    }
+
     return null;
   } catch (e) {
     logger.error(e);
@@ -155,7 +193,9 @@ export default function Settings() {
             <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />
           </Tabs>
         </Box>
-        <TabPanel value={tabValue} index={FeedTab.Initiatives}></TabPanel>
+        <TabPanel value={tabValue} index={FeedTab.Initiatives}>
+          <Initiatives settingsData={serverData} />
+        </TabPanel>
         <TabPanel value={tabValue} index={FeedTab.Jira}>
           <JiraSettings settingsData={serverData} handleCopy={handleCopy} />
         </TabPanel>
