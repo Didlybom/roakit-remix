@@ -11,8 +11,6 @@ import {
   SvgIcon,
   Toolbar,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { DateRange } from '~/utils/dateUtils';
 import JiraIcon from '../icons/Jira';
@@ -34,109 +32,144 @@ export default function App({
   onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
 }) {
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
-
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
-        <Typography variant="h6">{isSmallScreen ? 'RKT' : 'ROAKIT'}</Typography>
+        <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+          ROAKIT
+        </Typography>
+        <Typography variant="h6" sx={{ display: { xs: 'flex', sm: 'none' } }}>
+          RKT
+        </Typography>
         {view !== 'login' && view !== 'logout' && (
           <>
             <Stack direction="row" alignItems="center" sx={{ flexGrow: 1, ml: 2 }}>
-              {isSmallScreen ?
-                <IconButton
-                  href="/github"
-                  title="GitHub capture"
-                  disabled={!isLoggedIn || view === 'github'}
-                  color="inherit"
-                  sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-                >
-                  <GitHubIcon />
-                </IconButton>
-              : <Button
-                  href="/github"
-                  title="GitHub capture"
-                  disabled={!isLoggedIn || view === 'github'}
-                  variant="text"
-                  color="inherit"
-                  sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-                  startIcon={<GitHubIcon />}
-                >
-                  GitHub
-                </Button>
-              }
-              {isSmallScreen ?
-                <IconButton
-                  href="/jira"
-                  title="Jira capture"
-                  disabled={!isLoggedIn || view === 'jira'}
-                  color="inherit"
-                  sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-                >
-                  <SvgIcon component={JiraIcon} />
-                </IconButton>
-              : <Button
-                  href="/jira"
-                  title="Jira capture"
-                  disabled={!isLoggedIn || view === 'jira'}
-                  variant="text"
-                  color="inherit"
-                  sx={isLoggedIn ? { ...disabledSelectedSx } : undefined}
-                  startIcon={<SvgIcon component={JiraIcon} />}
-                >
-                  Jira
-                </Button>
-              }
+              <IconButton
+                href="/github"
+                title="GitHub capture"
+                disabled={!isLoggedIn || view === 'github'}
+                color="inherit"
+                sx={{
+                  display: { xs: 'flex', sm: 'none' },
+                  ...(isLoggedIn && { ...disabledSelectedSx }),
+                }}
+              >
+                <GitHubIcon />
+              </IconButton>
+              <Button
+                href="/github"
+                title="GitHub capture"
+                disabled={!isLoggedIn || view === 'github'}
+                variant="text"
+                color="inherit"
+                sx={{
+                  display: { xs: 'none', sm: 'flex' },
+                  ...(isLoggedIn && { ...disabledSelectedSx }),
+                }}
+                startIcon={<GitHubIcon />}
+              >
+                GitHub
+              </Button>
+              <IconButton
+                href="/jira"
+                title="Jira capture"
+                disabled={!isLoggedIn || view === 'jira'}
+                color="inherit"
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  ...(isLoggedIn && { ...disabledSelectedSx }),
+                }}
+              >
+                <SvgIcon component={JiraIcon} />
+              </IconButton>
+              <Button
+                href="/jira"
+                title="Jira capture"
+                disabled={!isLoggedIn || view === 'jira'}
+                variant="text"
+                color="inherit"
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  ...(isLoggedIn && { ...disabledSelectedSx }),
+                }}
+                startIcon={<SvgIcon component={JiraIcon} />}
+              >
+                Jira
+              </Button>
               {dateRange && onDateRangeSelect && (
                 <DateRangePicker dateRange={dateRange} onDateRangeSelect={onDateRangeSelect} />
               )}
             </Stack>
-            {isSmallScreen ?
-              <IconButton
-                href="/settings"
-                title="Settings"
-                disabled={!isLoggedIn || view === 'settings'}
-                color="inherit"
-                sx={{
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
-            : <Button
-                href="/settings"
-                title="Settings"
-                disabled={!isLoggedIn || view === 'settings'}
-                color="inherit"
-                startIcon={<SettingsIcon />}
-                sx={{
-                  mx: 2,
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-              >
-                Settings
-              </Button>
-            }
-            {!isLoggedIn && isSmallScreen && (
-              <IconButton href="/login" title="Login" color="inherit">
-                <LoginIcon />
-              </IconButton>
+
+            <IconButton
+              href="/settings"
+              title="Settings"
+              disabled={!isLoggedIn || view === 'settings'}
+              color="inherit"
+              sx={{
+                display: { xs: 'flex', md: 'none' },
+                ...(isLoggedIn && { ...disabledSelectedSx }),
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+            <Button
+              href="/settings"
+              title="Settings"
+              disabled={!isLoggedIn || view === 'settings'}
+              color="inherit"
+              startIcon={<SettingsIcon />}
+              sx={{
+                mx: 2,
+                display: { xs: 'none', md: 'flex' },
+                ...(isLoggedIn && { ...disabledSelectedSx }),
+              }}
+            >
+              Settings
+            </Button>
+
+            {!isLoggedIn && (
+              <>
+                <IconButton
+                  href="/login"
+                  title="Login"
+                  color="inherit"
+                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                >
+                  <LoginIcon />
+                </IconButton>{' '}
+                <Button
+                  href="/login"
+                  title="Login"
+                  color="inherit"
+                  startIcon={<LoginIcon />}
+                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                >
+                  Login
+                </Button>
+              </>
             )}
-            {!isLoggedIn && !isSmallScreen && (
-              <Button href="/login" title="Login" color="inherit" startIcon={<LoginIcon />}>
-                Login
-              </Button>
-            )}
-            {isLoggedIn && isSmallScreen && (
-              <IconButton href="/logout" title="Logout" color="inherit">
-                <LogoutIcon />
-              </IconButton>
-            )}
-            {isLoggedIn && !isSmallScreen && (
-              <Button href="/logout" title="Logout" color="inherit" startIcon={<LogoutIcon />}>
-                Logout
-              </Button>
+
+            {isLoggedIn && (
+              <>
+                <IconButton
+                  href="/logout"
+                  title="Logout"
+                  color="inherit"
+                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                >
+                  <LogoutIcon />
+                </IconButton>{' '}
+                <Button
+                  href="/logout"
+                  title="Logout"
+                  color="inherit"
+                  startIcon={<LogoutIcon />}
+                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                >
+                  Logout
+                </Button>
+              </>
             )}
           </>
         )}
