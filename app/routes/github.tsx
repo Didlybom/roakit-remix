@@ -430,7 +430,7 @@ export default function Index() {
                 <Box id={jiraElementId(jira)} key={i} sx={{ m: 2 }}>
                   <Stack direction="row">
                     <Box sx={{ position: 'relative' }}>
-                      <Box sx={{ mt: 1, writingMode: 'vertical-rl' }}>
+                      <Box width="50px" sx={{ mt: 1, writingMode: 'vertical-rl' }}>
                         <Typography color="GrayText" variant="h6">
                           {jira}
                         </Typography>
