@@ -51,16 +51,16 @@ export default function ConfluenceSettings({
     <>
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
-          <Grid xs={10}>
+          <Grid item xs={10}>
             <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
           </Grid>
-          <Grid xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
-            <Grid xs={10}>
+            <Grid item xs={10}>
               {confluenceSecret === serverConfluenceFeed.secret ?
                 <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
                   <Button
@@ -91,7 +91,7 @@ export default function ConfluenceSettings({
                 />
               }
             </Grid>
-            <Grid xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid item xs={2} sx={{ alignSelf: 'center' }}>
               <Stack direction={'row'}>
                 {confluenceSecret !== serverConfluenceFeed.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
@@ -131,10 +131,10 @@ export default function ConfluenceSettings({
           </Grid>
         )}
         <Grid container spacing={1}>
-          <Grid xs={10}>
+          <Grid item xs={10}>
             <TextField label="Confluence Events" value={confluenceEvents} fullWidth disabled />
           </Grid>
-          <Grid xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
               handleCopy(confluenceEvents)
             )}

@@ -47,16 +47,16 @@ export default function GitHubSettings({
     <>
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
-          <Grid xs={10}>
+          <Grid item xs={10}>
             <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
           </Grid>
-          <Grid xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
-            <Grid xs={10}>
+            <Grid item xs={10}>
               {gitHubSecret === serverGitHubFeed.secret ?
                 <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
                   <Button
@@ -87,7 +87,7 @@ export default function GitHubSettings({
                 />
               }
             </Grid>
-            <Grid xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid item xs={2} sx={{ alignSelf: 'center' }}>
               <Stack direction={'row'}>
                 {gitHubSecret !== serverGitHubFeed.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
