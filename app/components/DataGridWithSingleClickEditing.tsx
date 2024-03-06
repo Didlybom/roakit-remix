@@ -60,6 +60,6 @@ export default function DataGridWithSingleClickEditing(props: DataGridProps) {
       cellModesModel={cellModesModel}
       onCellModesModelChange={handleCellModesModelChange}
       onCellClick={handleCellClick}
-    ></DataGrid>
+    />
   );
 }

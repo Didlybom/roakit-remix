@@ -29,7 +29,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
-import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
+import { dataGridCommonProps, ellipsisAttrs, stickyAttrs } from '~/utils/jsxUtils';
 import { disabledSelectedSx } from '~/utils/theme';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
@@ -374,30 +374,21 @@ export default function Index() {
       </Popover>
       <Stack sx={{ mt: 2 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, my: 1 }}>
-          <Chip
-            disabled={showBy === ActivityView.Jira}
-            color={showBy === ActivityView.Jira ? 'primary' : 'default'}
-            onClick={() => setShowBy(ActivityView.Jira)}
-            label="By Jira"
-            icon={<JiraIcon />}
-            sx={{ ...(showBy === ActivityView.Jira && { ...disabledSelectedSx }) }}
-          />
-          <Chip
-            disabled={showBy === ActivityView.Author}
-            color={showBy === ActivityView.Author ? 'primary' : 'default'}
-            onClick={() => setShowBy(ActivityView.Author)}
-            label="By Author"
-            icon={<SupervisorAccountIcon />}
-            sx={{ ...(showBy === ActivityView.Author && { ...disabledSelectedSx }) }}
-          />
-          <Chip
-            disabled={showBy === ActivityView.All}
-            color={showBy === ActivityView.All ? 'primary' : 'default'}
-            onClick={() => setShowBy(ActivityView.All)}
-            label="By GitHub Actions"
-            icon={<GitHubIcon />}
-            sx={{ ...(showBy === ActivityView.All && { ...disabledSelectedSx }) }}
-          />
+          {[
+            { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon /> },
+            { viewBy: ActivityView.Author, label: 'By Author', icon: <SupervisorAccountIcon /> },
+            { viewBy: ActivityView.All, label: 'By GitHub Action', icon: <GitHubIcon /> },
+          ].map((p, i) => (
+            <Chip
+              key={i}
+              disabled={showBy === p.viewBy}
+              color={showBy === p.viewBy ? 'primary' : 'default'}
+              onClick={() => setShowBy(p.viewBy)}
+              label={p.label}
+              icon={p.icon}
+              sx={{ ...(showBy === p.viewBy && { ...disabledSelectedSx }) }}
+            />
+          ))}
         </Stack>
         {showBy === ActivityView.Jira && !sortedJiras.length && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>
@@ -408,15 +399,7 @@ export default function Index() {
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '15px' }}>
-                <Box
-                  sx={{
-                    textWrap: 'nowrap',
-                    position: 'sticky',
-                    top: 0,
-                    maxHeight: '100vh',
-                    overflowY: 'auto',
-                  }}
-                >
+                <Box sx={{ ...stickyAttrs }}>
                   {sortedJiras.map((jira, i) => (
                     <Box key={i}>
                       <Link
@@ -446,7 +429,7 @@ export default function Index() {
                       columns={gitHubColumns}
                       rows={rowsByJira[jira]}
                       {...dataGridCommonProps}
-                    ></DataGrid>
+                    />
                   </Stack>
                 </Box>
               ))}
@@ -462,15 +445,7 @@ export default function Index() {
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '25px' }}>
-                <Box
-                  sx={{
-                    textWrap: 'nowrap',
-                    position: 'sticky',
-                    top: 0,
-                    maxHeight: '100vh',
-                    overflowY: 'auto',
-                  }}
-                >
+                <Box sx={{ ...stickyAttrs }}>
                   {sortedAuthors.map((author, i) => (
                     <Box key={i}>
                       <Link
@@ -498,13 +473,11 @@ export default function Index() {
                       </IconButton>
                     )}
                   </Stack>
-                  <div>
-                    <DataGrid
-                      columns={gitHubByAuthorColumns}
-                      rows={rowsByAuthor[author].rows}
-                      {...dataGridCommonProps}
-                    ></DataGrid>
-                  </div>
+                  <DataGrid
+                    columns={gitHubByAuthorColumns}
+                    rows={rowsByAuthor[author].rows}
+                    {...dataGridCommonProps}
+                  />
                 </Box>
               ))}
             </Box>
@@ -525,32 +498,24 @@ export default function Index() {
               </Tabs>
             </Box>
             <TabPanel value={view} index={EventTab.PullRequest}>
-              <DataGrid
-                columns={gitHubColumns}
-                rows={gitHubPRs}
-                {...dataGridCommonProps}
-              ></DataGrid>
+              <DataGrid columns={gitHubColumns} rows={gitHubPRs} {...dataGridCommonProps} />
             </TabPanel>
             <TabPanel value={view} index={EventTab.PullRequestComment}>
-              <DataGrid
-                columns={gitHubColumns}
-                rows={gitHubPRComments}
-                {...dataGridCommonProps}
-              ></DataGrid>
+              <DataGrid columns={gitHubColumns} rows={gitHubPRComments} {...dataGridCommonProps} />
             </TabPanel>
             <TabPanel value={view} index={EventTab.Push}>
               <DataGrid
                 columns={gitHubPushesColumns}
                 rows={gitHubPushes}
                 {...dataGridCommonProps}
-              ></DataGrid>
+              />
             </TabPanel>
             <TabPanel value={view} index={EventTab.Release}>
               <DataGrid
                 columns={gitHubPushesColumns}
                 rows={gitHubReleases}
                 {...dataGridCommonProps}
-              ></DataGrid>
+              />
             </TabPanel>
           </>
         )}

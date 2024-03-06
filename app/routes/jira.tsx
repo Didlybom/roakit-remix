@@ -220,18 +220,10 @@ export default function Index() {
               </Tabs>
             </Box>
             <TabPanel value={view} index={View.IssueCreated}>
-              <DataGrid
-                columns={jiraColumns}
-                rows={jiraIssuesCreated}
-                {...dataGridCommonProps}
-              ></DataGrid>
+              <DataGrid columns={jiraColumns} rows={jiraIssuesCreated} {...dataGridCommonProps} />
             </TabPanel>
             <TabPanel value={view} index={View.CommentCreated}>
-              <DataGrid
-                columns={jiraColumns}
-                rows={jiraCommentsCreated}
-                {...dataGridCommonProps}
-              ></DataGrid>
+              <DataGrid columns={jiraColumns} rows={jiraCommentsCreated} {...dataGridCommonProps} />
             </TabPanel>
           </>
         )}

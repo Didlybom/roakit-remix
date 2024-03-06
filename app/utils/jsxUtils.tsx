@@ -3,6 +3,14 @@ import { GridDensity, GridSortDirection } from '@mui/x-data-grid';
 
 export const ellipsisAttrs = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
+export const stickyAttrs = {
+  textWrap: 'nowrap',
+  position: 'sticky',
+  top: 0,
+  maxHeight: '100vh',
+  overflowY: 'auto',
+};
+
 export const dataGridCommonProps = {
   autoHeight: true, // otherwise empty state looks ugly
   slots: {
