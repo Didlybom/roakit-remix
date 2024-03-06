@@ -1,8 +1,9 @@
 import { Paper, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { BarChart, PieChart } from '@mui/x-charts';
+import { BarChart, BarItemIdentifier, PieChart, PieItemIdentifier } from '@mui/x-charts';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
+import { useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
@@ -22,6 +23,8 @@ export default function Dashboard() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
+
+  const [clickedOn, setClickedOn] = useState<BarItemIdentifier | PieItemIdentifier | null>(null);
 
   const commonPaperSx = { width: 380, p: 1 };
   const commonChartProps = {
@@ -54,6 +57,7 @@ export default function Dashboard() {
             <PieChart
               series={[
                 {
+                  id: 'effort-by-initiative',
                   valueFormatter: item => `${item.value}%`,
                   data: [
                     { id: 1, value: 70, label: 'Initiative B' },
@@ -64,6 +68,7 @@ export default function Dashboard() {
                 },
               ]}
               {...commonChartProps}
+              onItemClick={(_, item: PieItemIdentifier) => setClickedOn(item)}
             />
           </Paper>
         </Grid>
@@ -74,8 +79,8 @@ export default function Dashboard() {
             </Typography>
             <BarChart
               series={[
-                { data: [20, 15, 5, 30], label: 'Total', stack: 'total' },
-                { data: [3, 2, 0, 5], label: 'New', stack: 'total' },
+                { id: 'actors total', data: [20, 15, 5, 30], label: 'Total', stack: 'total' },
+                { id: 'actors new', data: [3, 2, 0, 5], label: 'New', stack: 'total' },
               ]}
               xAxis={[
                 {
@@ -84,6 +89,7 @@ export default function Dashboard() {
                 },
               ]}
               {...commonChartProps}
+              onItemClick={(_, item: BarItemIdentifier) => setClickedOn(item)}
             />
           </Paper>
         </Grid>
@@ -94,8 +100,8 @@ export default function Dashboard() {
             </Typography>
             <BarChart
               series={[
-                { data: [20, 35, 10, 5], label: 'Total', stack: 'total' },
-                { data: [3, 4, 0, 1], label: 'New', stack: 'total' },
+                { id: 'init A total', data: [20, 35, 10, 5], label: 'Total', stack: 'total' },
+                { id: 'init A new', data: [3, 4, 0, 1], label: 'New', stack: 'total' },
               ]}
               xAxis={[
                 {
@@ -104,6 +110,7 @@ export default function Dashboard() {
                 },
               ]}
               {...commonChartProps}
+              onItemClick={(_, item: BarItemIdentifier) => setClickedOn(item)}
             />
           </Paper>
         </Grid>
@@ -115,6 +122,7 @@ export default function Dashboard() {
             <PieChart
               series={[
                 {
+                  id: 'activity-by-priority',
                   valueFormatter: item => `${item.value}%`,
                   data: [
                     { id: 1, value: 5, label: 'Highest', color: '#f26d50' },
@@ -126,10 +134,12 @@ export default function Dashboard() {
                 },
               ]}
               {...commonChartProps}
+              onItemClick={(_, item: PieItemIdentifier) => setClickedOn(item)}
             />
           </Paper>
         </Grid>
       </Grid>
+      <Typography textAlign="center">{!!clickedOn && JSON.stringify(clickedOn)}</Typography>
     </>
   );
 }
