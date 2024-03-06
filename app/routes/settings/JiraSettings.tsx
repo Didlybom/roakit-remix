@@ -1,5 +1,7 @@
 import CopyIcon from '@mui/icons-material/ContentCopy';
-import { Grid, Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
+import { Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
+
 import { SettingsData } from '~/schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import jiraImage from './images/jira-webhook.png';
@@ -22,26 +24,26 @@ export default function JiraSettings({
     <>
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(jiraURL))}
           </Grid>
         </Grid>
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="JIRA Scope" value={jiraScope} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(jiraScope))}
           </Grid>
         </Grid>
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="JIRA Events" value={jiraEvents} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(jiraEvents))}
           </Grid>
         </Grid>

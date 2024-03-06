@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Grid,
   IconButton,
   Link,
   List,
@@ -15,6 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,16 +52,16 @@ export default function ConfluenceSettings({
     <>
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
-            <Grid item xs={10}>
+            <Grid xs={10}>
               {confluenceSecret === serverConfluenceFeed.secret ?
                 <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
                   <Button
@@ -92,7 +92,7 @@ export default function ConfluenceSettings({
                 />
               }
             </Grid>
-            <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid xs={2} sx={{ alignSelf: 'center' }}>
               <Stack direction={'row'}>
                 {confluenceSecret !== serverConfluenceFeed.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
@@ -131,10 +131,10 @@ export default function ConfluenceSettings({
           </Grid>
         )}
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="Confluence Events" value={confluenceEvents} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
               handleCopy(confluenceEvents)
             )}

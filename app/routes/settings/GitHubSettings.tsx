@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Grid,
   IconButton,
   Link,
   List,
@@ -15,6 +14,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
+
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,16 +49,16 @@ export default function GitHubSettings({
     <>
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
-          <Grid item xs={10}>
+          <Grid xs={10}>
             <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
           </Grid>
-          <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+          <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
-            <Grid item xs={10}>
+            <Grid xs={10}>
               {gitHubSecret === serverGitHubFeed.secret ?
                 <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
                   <Button
@@ -88,7 +89,7 @@ export default function GitHubSettings({
                 />
               }
             </Grid>
-            <Grid item xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid xs={2} sx={{ alignSelf: 'center' }}>
               <Stack direction={'row'}>
                 {gitHubSecret !== serverGitHubFeed.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
