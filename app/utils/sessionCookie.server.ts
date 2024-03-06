@@ -1,4 +1,4 @@
-import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
+import { DecodedIdToken } from 'firebase-admin/auth';
 import pino from 'pino';
 import { sessionCookie } from '../cookies.server';
 import { auth, queryCustomerId } from '../firebase.server';
