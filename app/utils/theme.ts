@@ -15,6 +15,6 @@ const theme = createTheme({
   },
 });
 
-export const disabledSelectedSx = { ['&.Mui-disabled']: { color: 'bisque' } };
+export const disabledSelectedSx = { ['&.Mui-disabled']: { color: 'bisque', opacity: 'initial' } };
 
 export default theme;

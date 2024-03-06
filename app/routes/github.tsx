@@ -1,9 +1,9 @@
 import GitHubIcon from '@mui/icons-material/GitHub';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import {
   Alert,
   Box,
-  Button,
-  Divider,
+  Chip,
   IconButton,
   Link,
   List,
@@ -30,10 +30,12 @@ import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { loadSession } from '~/utils/authUtils.server';
 import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
+import { disabledSelectedSx } from '~/utils/theme';
 import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
+import JiraIcon from '../icons/Jira';
 import {
   GitHubEventType,
   GitHubRow,
@@ -371,27 +373,31 @@ export default function Index() {
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
       <Stack sx={{ mt: 2 }}>
-        <Stack direction="row" sx={{ ml: 1 }}>
-          <Button
+        <Stack direction="row" spacing={2} sx={{ ml: 2, my: 1 }}>
+          <Chip
             disabled={showBy === ActivityView.Jira}
+            color={showBy === ActivityView.Jira ? 'primary' : 'default'}
             onClick={() => setShowBy(ActivityView.Jira)}
-          >
-            By Jira
-          </Button>
-          <Divider orientation="vertical" variant="middle" flexItem />
-          <Button
+            label="By Jira"
+            icon={<JiraIcon />}
+            sx={{ ...(showBy === ActivityView.Jira && { ...disabledSelectedSx }) }}
+          />
+          <Chip
             disabled={showBy === ActivityView.Author}
+            color={showBy === ActivityView.Author ? 'primary' : 'default'}
             onClick={() => setShowBy(ActivityView.Author)}
-          >
-            By Author
-          </Button>
-          <Divider orientation="vertical" variant="middle" flexItem />
-          <Button
+            label="By Author"
+            icon={<SupervisorAccountIcon />}
+            sx={{ ...(showBy === ActivityView.Author && { ...disabledSelectedSx }) }}
+          />
+          <Chip
             disabled={showBy === ActivityView.All}
+            color={showBy === ActivityView.All ? 'primary' : 'default'}
             onClick={() => setShowBy(ActivityView.All)}
-          >
-            All GitHub Activity
-          </Button>
+            label="By GitHub Actions"
+            icon={<GitHubIcon />}
+            sx={{ ...(showBy === ActivityView.All && { ...disabledSelectedSx }) }}
+          />
         </Stack>
         {showBy === ActivityView.Jira && !sortedJiras.length && gotSnapshot && (
           <Typography textAlign="center" sx={{ m: 4 }}>

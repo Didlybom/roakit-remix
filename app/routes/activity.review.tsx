@@ -17,6 +17,7 @@ import { GridColDef, GridDensity, GridSortDirection, GridToolbarContainer } from
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
+import pluralize from 'pluralize';
 import { useMemo, useState } from 'react';
 import DataGridWithSingleClickEditing from '~/components/DataGridWithSingleClickEditing';
 import Header from '~/components/Header';
@@ -191,7 +192,8 @@ export default function Info() {
                 )
               }
             >
-              Bulk assign selected activities
+              Bulk assign {selectedRows.length} selected{' '}
+              {pluralize('activity', selectedRows.length)}
             </Button>
           </Grid>
           <Grid>
