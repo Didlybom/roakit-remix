@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 
-import { GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
+import { GridColDef, GridDensity, GridSortDirection, GridToolbarContainer } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
@@ -169,66 +169,69 @@ export default function Info() {
         minWidth: 200,
         flex: 1,
         editable: true,
-        renderCell: () => <EditIcon color="secondary" fontSize="small" />,
+        renderCell: () => <EditIcon color="primary" fontSize="small" />,
       },
     ],
     [sessionData.initiatives]
   );
 
+  function BulkToolbar() {
+    return (
+      <GridToolbarContainer>
+        <Grid container spacing={2} sx={{ m: 1 }}>
+          <Grid sx={{ display: 'flex' }}>
+            <Button
+              disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
+              variant="text"
+              startIcon={<DoneAllIcon />}
+              onClick={() =>
+                submit(
+                  { initiativeId: bulkInitiative, activityIds: selectedRows },
+                  { method: 'post' }
+                )
+              }
+            >
+              Bulk assign selected activities
+            </Button>
+          </Grid>
+          <Grid>
+            <FormControl size="small" sx={{ width: '100%' }}>
+              <InputLabel id="initiative">Select an initiative</InputLabel>
+              <Select
+                labelId="initiative-label"
+                id="initiative-select"
+                value={bulkInitiative}
+                label="Select an initiative"
+                onChange={e => setBulkInitiative(e.target.value)}
+                sx={{ minWidth: '300px' }}
+              >
+                {sessionData.initiatives.map((initiative, i) => (
+                  <MenuItem key={i} value={initiative.id}>
+                    {initiative.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+        {selectedRows.length > MAX_BATCH && (
+          <Alert severity="warning" sx={{ display: 'flex', bgcolor: 'inherit' }}>
+            Please select no more than {MAX_BATCH} activities.
+          </Alert>
+        )}
+      </GridToolbarContainer>
+    );
+  }
+
   return (
     <>
       <Header isLoggedIn={true} view="activity.review" />
-      {!!selectedRows.length && (
-        <>
-          <Grid container spacing={2} sx={{ m: 2 }}>
-            <Grid>
-              <FormControl size="small" sx={{ width: '100%' }}>
-                <InputLabel id="Initiative">Initiative</InputLabel>
-                <Select
-                  labelId="initiative-label"
-                  id="initiative-select"
-                  value={bulkInitiative}
-                  label="Initiative"
-                  onChange={e => setBulkInitiative(e.target.value)}
-                  sx={{ minWidth: '200px' }}
-                >
-                  {sessionData.initiatives.map((initiative, i) => (
-                    <MenuItem key={i} value={initiative.id}>
-                      {initiative.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid>
-              <Button
-                disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
-                color="secondary"
-                variant="contained"
-                startIcon={<DoneAllIcon />}
-                onClick={() =>
-                  submit(
-                    { initiativeId: bulkInitiative, activityIds: selectedRows },
-                    { method: 'post' }
-                  )
-                }
-              >
-                Bulk assign selected activities
-              </Button>
-            </Grid>
-          </Grid>
-          {selectedRows.length > MAX_BATCH && (
-            <Alert severity="warning" sx={{ mx: 3 }}>
-              Please select no more than {MAX_BATCH} activities.
-            </Alert>
-          )}
-        </>
-      )}
       <Stack sx={{ m: 3 }}>
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={sessionData.activities}
           {...dataGridProps}
+          slots={{ toolbar: selectedRows.length ? BulkToolbar : undefined }}
           checkboxSelection
           processRowUpdate={(updatedRow: ActivityData) => {
             submit(
@@ -239,11 +242,14 @@ export default function Info() {
           }}
           onRowSelectionModelChange={rowSelectionModel => {
             setSelectedRows(rowSelectionModel as string[]);
+            if (!rowSelectionModel.length) {
+              setBulkInitiative('');
+            }
           }}
-          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update initiative'))}
-        ></DataGridWithSingleClickEditing>
+          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update'))}
+        />
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" variant="standard" sx={{ mt: 2 }}>
             {error}
           </Alert>
         )}

@@ -111,7 +111,7 @@ export default function App({
             </Stack>
 
             <IconButton
-              href="/activity.review"
+              href="/activity/review"
               title="Review Activity"
               disabled={!isLoggedIn || view === 'activity.review'}
               color="inherit"
