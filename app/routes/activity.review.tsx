@@ -1,5 +1,19 @@
-import { Alert, Box, Stack, Tooltip } from '@mui/material';
-import { GridColDef, GridDensity, GridSortDirection, useGridApiRef } from '@mui/x-data-grid';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import EditIcon from '@mui/icons-material/Edit';
+import {
+  Alert,
+  Box,
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  Tooltip,
+} from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
+
+import { GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
@@ -16,6 +30,8 @@ import { fetchInitiatives } from '~/utils/firestoreUtils.server';
 import { ellipsisAttrs } from '~/utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
+
+const MAX_BATCH = 500;
 
 // verify JWT, load activities needing review
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -73,12 +89,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const customerId = token.customerId;
 
     const form = await request.formData();
-
-    const activityId = form.get('activityId')?.toString() ?? '';
-    if (activityId) {
+    const activityIds = form.get('activityIds')?.toString() ?? '';
+    if (activityIds) {
       const initiative = form.get('initiativeId')?.toString() ?? '';
-      const doc = firestore.doc('customers/' + customerId + '/activities/' + activityId);
-      await doc.update({ initiative });
+      const batch = firestore.batch();
+      activityIds.split(',').forEach(activityId => {
+        const doc = firestore.doc('customers/' + customerId + '/activities/' + activityId);
+        batch.update(doc, { initiative });
+      });
+      await batch.commit(); // up to 500 operations
     }
 
     return null;
@@ -90,9 +109,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Info() {
   const submit = useSubmit();
-  const gridApi = useGridApiRef();
 
   const sessionData = useLoaderData<typeof loader>();
+
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [bulkInitiative, setBulkInitiative] = useState('');
 
   const [error, setError] = useState('');
 
@@ -148,6 +169,7 @@ export default function Info() {
         minWidth: 200,
         flex: 1,
         editable: true,
+        renderCell: () => <EditIcon color="secondary" fontSize="small" />,
       },
     ],
     [sessionData.initiatives]
@@ -156,20 +178,69 @@ export default function Info() {
   return (
     <>
       <Header isLoggedIn={true} view="activity.review" />
+      {!!selectedRows.length && (
+        <>
+          <Grid container spacing={2} sx={{ m: 2 }}>
+            <Grid>
+              <FormControl size="small" sx={{ width: '100%' }}>
+                <InputLabel id="Initiative">Initiative</InputLabel>
+                <Select
+                  labelId="initiative-label"
+                  id="initiative-select"
+                  value={bulkInitiative}
+                  label="Initiative"
+                  onChange={e => setBulkInitiative(e.target.value)}
+                  sx={{ minWidth: '200px' }}
+                >
+                  {sessionData.initiatives.map((initiative, i) => (
+                    <MenuItem key={i} value={initiative.id}>
+                      {initiative.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid>
+              <Button
+                disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
+                color="secondary"
+                variant="contained"
+                startIcon={<DoneAllIcon />}
+                onClick={() =>
+                  submit(
+                    { initiativeId: bulkInitiative, activityIds: selectedRows },
+                    { method: 'post' }
+                  )
+                }
+              >
+                Bulk assign selected activities
+              </Button>
+            </Grid>
+          </Grid>
+          {selectedRows.length > MAX_BATCH && (
+            <Alert severity="warning" sx={{ mx: 3 }}>
+              Please select no more than {MAX_BATCH} activities.
+            </Alert>
+          )}
+        </>
+      )}
       <Stack sx={{ m: 3 }}>
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={sessionData.activities}
           {...dataGridProps}
-          apiRef={gridApi}
+          checkboxSelection
           processRowUpdate={(updatedRow: ActivityData) => {
             submit(
-              { activityId: updatedRow.id, initiativeId: updatedRow.initiative },
+              { initiativeId: updatedRow.initiative, activityIds: [updatedRow.id] },
               { method: 'post' }
             );
             return updatedRow;
           }}
-          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save initiative'))}
+          onRowSelectionModelChange={rowSelectionModel => {
+            setSelectedRows(rowSelectionModel as string[]);
+          }}
+          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update initiative'))}
         ></DataGridWithSingleClickEditing>
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
