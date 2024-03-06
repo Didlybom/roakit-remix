@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { Alert, Box, Button, Stack } from '@mui/material';
 import {
   DataGrid,
@@ -9,24 +10,23 @@ import {
   GridRowsProp,
   GridSortDirection,
   GridToolbarContainer,
-  useGridApiRef,
 } from '@mui/x-data-grid';
 import { useSubmit } from '@remix-run/react';
 import { useMemo, useState } from 'react';
 import { SettingsData } from '~/schemas/schemas';
 import { errMsg } from '~/utils/errorUtils';
 
-interface Initiative {
+interface InitiativeRow {
   id: number;
   key: string;
   label?: string;
+  isNew?: boolean;
 }
 
 export default function Initiatives({ settingsData }: { settingsData: SettingsData }) {
   const submit = useSubmit();
-  const gridApi = useGridApiRef();
 
-  const [rows, setRows] = useState<Initiative[]>(
+  const [rows, setRows] = useState<InitiativeRow[]>(
     settingsData.initiatives.map((initiative, i) => {
       return { id: i, key: initiative.id, label: initiative.label };
     })
@@ -56,7 +56,16 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      { field: 'key', headerName: 'Key', width: 100, editable: true },
+      {
+        field: 'key',
+        headerName: 'Key',
+        width: 120,
+        editable: true,
+        renderCell: params => {
+          const key = params.value as string;
+          return key ? key : <ReportProblemIcon fontSize="small" />;
+        },
+      },
       { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
     ],
     []
@@ -72,7 +81,7 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
 
     const handleClick = () => {
       const id = rows.length + 1;
-      setRows(oldRows => [...oldRows, { id, label: '' }]);
+      setRows(oldRows => [...oldRows, { id, label: '', isNew: true }]);
       setRowModesModel(oldModel => ({
         ...oldModel,
         [id]: { mode: GridRowModes.Edit, fieldToFocus: 'key' },
@@ -100,21 +109,24 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
         {...dataGridProps}
         editMode="row"
         rowModesModel={rowModesModel}
+        isCellEditable={params => {
+          return (
+            !!params.colDef.editable &&
+            (params.colDef.field !== 'key' || !!(params.row as InitiativeRow).isNew)
+          );
+        }}
         onRowModesModelChange={handleRowModesModelChange}
         slots={{ toolbar: EditToolbar }}
         slotProps={{ toolbar: { setRows, setRowModesModel } }}
-        apiRef={gridApi}
-        processRowUpdate={(updatedRow: Initiative) => {
-          console.log(updatedRow);
-          setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
-          if (!updatedRow.key) {
-            return updatedRow;
+        processRowUpdate={(newRow: InitiativeRow) => {
+          if (!newRow.key) {
+            setRows(rows.filter(row => row.id !== newRow.id));
+            return newRow;
           }
+          const updatedRow = { ...newRow, isNew: false };
+          setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
           submit(
-            {
-              initiativeId: updatedRow.key,
-              label: updatedRow.label ?? '',
-            },
+            { initiativeId: updatedRow.key, label: updatedRow.label ?? '' },
             { method: 'post' }
           );
           return updatedRow;
