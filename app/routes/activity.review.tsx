@@ -1,4 +1,3 @@
-import DoneAllIcon from '@mui/icons-material/DoneAll';
 import EditIcon from '@mui/icons-material/Edit';
 import {
   Alert,
@@ -143,7 +142,7 @@ export default function Info() {
         field: 'date',
         headerName: 'Date',
         type: 'dateTime',
-        width: 100,
+        width: 120,
         valueGetter: params => new Date(params.value as number),
         valueFormatter: params => formatRelative(params.value as Date),
         renderCell: params => {
@@ -179,33 +178,20 @@ export default function Info() {
   function BulkToolbar() {
     return (
       <GridToolbarContainer>
-        <Grid container spacing={2} sx={{ m: 1 }}>
-          <Grid sx={{ display: 'flex' }}>
-            <Button
-              disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
-              variant="text"
-              startIcon={<DoneAllIcon />}
-              onClick={() =>
-                submit(
-                  { initiativeId: bulkInitiative, activityIds: selectedRows },
-                  { method: 'post' }
-                )
-              }
-            >
-              Bulk assign {selectedRows.length} selected{' '}
-              {pluralize('activity', selectedRows.length)}
-            </Button>
+        <Grid container spacing={1} sx={{ m: 1 }}>
+          <Grid sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+            {selectedRows.length} {pluralize('activity', selectedRows.length)} selected
           </Grid>
           <Grid>
             <FormControl size="small" sx={{ width: '100%' }}>
-              <InputLabel id="initiative">Select an initiative</InputLabel>
+              <InputLabel id="initiative">Add to initiative</InputLabel>
               <Select
                 labelId="initiative-label"
                 id="initiative-select"
                 value={bulkInitiative}
                 label="Select an initiative"
                 onChange={e => setBulkInitiative(e.target.value)}
-                sx={{ minWidth: '300px' }}
+                sx={{ minWidth: '250px' }}
               >
                 {sessionData.initiatives.map((initiative, i) => (
                   <MenuItem key={i} value={initiative.id}>
@@ -214,6 +200,19 @@ export default function Info() {
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+          <Grid sx={{ display: 'flex' }}>
+            <Button
+              disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
+              onClick={() =>
+                submit(
+                  { initiativeId: bulkInitiative, activityIds: selectedRows },
+                  { method: 'post' }
+                )
+              }
+            >
+              Save
+            </Button>
           </Grid>
         </Grid>
         {selectedRows.length > MAX_BATCH && (
