@@ -1,7 +1,7 @@
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import Header from '~/components/Header';
+import App from '~/components/App';
 import packageJson from '../../package.json';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
@@ -13,9 +13,8 @@ export default function Info() {
   const sessionData = useLoaderData<typeof loader>();
 
   return (
-    <>
-      <Header isLoggedIn={sessionData.isLoggedIn} view="info" />
-      <Grid container spacing={2} sx={{ m: 4 }}>
+    <App isLoggedIn={sessionData.isLoggedIn} view="info">
+      <Grid container spacing={2} sx={{ display: 'flex', flex: 1, minWidth: 0, m: 4 }}>
         <Grid>
           <Grid>
             <strong>Version</strong>
@@ -33,6 +32,6 @@ export default function Info() {
           <Grid>{sessionData.customerId}</Grid>
         </Grid>
       </Grid>
-    </>
+    </App>
   );
 }

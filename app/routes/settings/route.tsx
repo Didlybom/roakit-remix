@@ -3,8 +3,8 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
-import { SyntheticEvent, useState } from 'react';
-import Header from '~/components/Header';
+import { useState } from 'react';
+import App from '~/components/App';
 import { feedSchema } from '~/schemas/schemas';
 import { loadSession } from '~/utils/authUtils.server';
 import { fetchInitiatives } from '~/utils/firestoreUtils.server';
@@ -140,13 +140,12 @@ export default function Settings() {
   };
 
   return (
-    <>
-      <Header isLoggedIn={true} view="settings" />
+    <App isLoggedIn={true} view="settings">
       <Form method="post" noValidate autoComplete="off">
         <Snackbar
           open={showCopyConfirmation !== null}
           autoHideDuration={3000}
-          onClose={(event: SyntheticEvent | Event, reason?: string) => {
+          onClose={(_, reason?: string) => {
             if (reason === 'clickaway') {
               return;
             }
@@ -179,6 +178,6 @@ export default function Settings() {
           <ConfluenceSettings settingsData={serverData} handleCopy={handleCopy} />
         </TabPanel>
       </Form>
-    </>
+    </App>
   );
 }

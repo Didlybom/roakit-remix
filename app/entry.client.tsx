@@ -3,8 +3,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { RemixBrowser } from '@remix-run/react';
 import { ConfirmProvider } from 'material-ui-confirm';
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
+import { startTransition, useMemo, useState } from 'react';
+import { hydrateRoot } from 'react-dom/client';
 import ClientStyleContext from './components/ClientStyleContext';
 import createEmotionCache from './utils/createEmotionCache';
 import theme from './utils/theme';
@@ -13,9 +13,9 @@ interface ClientCacheProviderProps {
   children: React.ReactNode;
 }
 function ClientCacheProvider({ children }: ClientCacheProviderProps) {
-  const [cache, setCache] = React.useState(createEmotionCache());
+  const [cache, setCache] = useState(createEmotionCache());
 
-  const clientStyleContextValue = React.useMemo(
+  const clientStyleContextValue = useMemo(
     () => ({
       reset() {
         setCache(createEmotionCache());
@@ -32,8 +32,8 @@ function ClientCacheProvider({ children }: ClientCacheProviderProps) {
 }
 
 const hydrate = () => {
-  React.startTransition(() => {
-    ReactDOM.hydrateRoot(
+  startTransition(() => {
+    hydrateRoot(
       document,
       <ClientCacheProvider>
         <ThemeProvider theme={theme}>

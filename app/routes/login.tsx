@@ -10,7 +10,7 @@ import {
   signInWithRedirect,
 } from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
-import Header from '~/components/Header';
+import App from '~/components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
@@ -132,12 +132,11 @@ export default function Login() {
   }
 
   return (
-    <>
-      <Header
-        isLoggedIn={false}
-        view="login"
-        showProgress={isProcessingGoogle || navigation.state === 'submitting'}
-      />
+    <App
+      isLoggedIn={false}
+      view="login"
+      showProgress={isProcessingGoogle || navigation.state === 'submitting'}
+    >
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin} autoComplete="on">
@@ -178,6 +177,6 @@ export default function Login() {
           {googleError && <Alert severity="error">{googleError}</Alert>}
         </Stack>
       </Box>
-    </>
+    </App>
   );
 }

@@ -9,10 +9,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
+import App from '~/components/App';
 import { JiraEventType, JiraRow, jiraRows } from '~/schemas/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
 import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
-import Header from '../components/Header';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
@@ -198,15 +198,15 @@ export default function Index() {
   }, [dateFilter, sessionData.customerId]);
 
   return (
-    <>
-      <Header
-        isLoggedIn={sessionData.isLoggedIn}
-        view="jira"
-        dateRange={dateFilter}
-        onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
-      />
-      <Stack>
+    <App
+      isLoggedIn={sessionData.isLoggedIn}
+      view="jira"
+      dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+      showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
+      isNavOpen={true}
+    >
+      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0 }}>
         {gotSnapshot && (
           <>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 1 }}>
@@ -233,6 +233,6 @@ export default function Index() {
           </Alert>
         )}
       </Stack>
-    </>
+    </App>
   );
 }

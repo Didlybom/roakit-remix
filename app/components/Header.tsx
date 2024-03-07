@@ -1,32 +1,44 @@
-import GitHubIcon from '@mui/icons-material/GitHub';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
 import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
-  AppBar,
+  Box,
   Button,
   IconButton,
   LinearProgress,
-  Stack,
-  SvgIcon,
   Toolbar,
   Typography,
+  styled,
 } from '@mui/material';
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import { DateRange } from '~/utils/dateUtils';
-import JiraIcon from '../icons/Jira';
 import { disabledSelectedSx } from '../utils/theme';
+import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 
-type View =
-  | 'dashboard'
-  | 'activity.review'
-  | 'github'
-  | 'jira'
-  | 'settings'
-  | 'login'
-  | 'logout'
-  | 'info';
+interface AppBarProps extends MuiAppBarProps {
+  navbarWidth: number;
+  navbarOpen?: boolean;
+}
+
+const AppBar = styled(MuiAppBar, {
+  shouldForwardProp: prop => prop !== 'navbarWidth' && prop !== 'navbarOpen',
+})<AppBarProps>(({ theme, navbarWidth, navbarOpen }) => ({
+  transition: theme.transitions.create(['margin', 'width'], {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+  }),
+  ...(navbarOpen && {
+    width: `calc(100% - ${navbarWidth}px)`,
+    marginLeft: `${navbarWidth}px`,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  }),
+}));
 
 export default function App({
   isLoggedIn,
@@ -34,16 +46,30 @@ export default function App({
   dateRange,
   onDateRangeSelect,
   showProgress,
+  navbarWidth,
+  open: isNavBarOpen,
+  onNavBarOpen,
 }: {
   isLoggedIn: boolean;
   view: View;
   dateRange?: DateRange;
   onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
+  navbarWidth: number;
+  open?: boolean;
+  onNavBarOpen: () => void;
 }) {
   return (
-    <AppBar position="static">
+    <AppBar position="fixed" navbarWidth={navbarWidth} navbarOpen={isNavBarOpen}>
       <Toolbar variant="dense">
+        <IconButton
+          color="inherit"
+          onClick={onNavBarOpen}
+          edge="start"
+          sx={{ mr: 2, ...(isNavBarOpen && { display: 'none' }) }}
+        >
+          <MenuIcon />
+        </IconButton>
         <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'flex' } }}>
           ROAKIT
         </Typography>
@@ -52,64 +78,11 @@ export default function App({
         </Typography>
         {view !== 'login' && view !== 'logout' && (
           <>
-            <Stack direction="row" alignItems="center" sx={{ flexGrow: 1, ml: 2 }}>
-              <IconButton
-                href="/github"
-                title="GitHub capture"
-                disabled={!isLoggedIn || view === 'github'}
-                color="inherit"
-                sx={{
-                  display: { xs: 'flex', sm: 'none' },
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-              >
-                <GitHubIcon />
-              </IconButton>
-              <Button
-                href="/github"
-                title="GitHub capture"
-                disabled={!isLoggedIn || view === 'github'}
-                variant="text"
-                color="inherit"
-                sx={{
-                  display: { xs: 'none', sm: 'flex' },
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-                startIcon={<GitHubIcon />}
-              >
-                GitHub
-              </Button>
-              <IconButton
-                href="/jira"
-                title="Jira capture"
-                disabled={!isLoggedIn || view === 'jira'}
-                color="inherit"
-                sx={{
-                  display: { xs: 'flex', sm: 'none' },
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-              >
-                <SvgIcon component={JiraIcon} />
-              </IconButton>
-              <Button
-                href="/jira"
-                title="Jira capture"
-                disabled={!isLoggedIn || view === 'jira'}
-                variant="text"
-                color="inherit"
-                sx={{
-                  display: { xs: 'none', sm: 'flex' },
-                  ...(isLoggedIn && { ...disabledSelectedSx }),
-                }}
-                startIcon={<SvgIcon component={JiraIcon} />}
-              >
-                Jira
-              </Button>
+            <Box sx={{ flex: 1, ml: 2 }}>
               {dateRange && onDateRangeSelect && (
                 <DateRangePicker dateRange={dateRange} onDateRangeSelect={onDateRangeSelect} />
               )}
-            </Stack>
-
+            </Box>
             <IconButton
               href="/activity/review"
               title="Review Activity"

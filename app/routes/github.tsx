@@ -28,10 +28,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
+import App from '~/components/App';
 import { loadSession } from '~/utils/authUtils.server';
 import { dataGridCommonProps, ellipsisAttrs, stickyAttrs } from '~/utils/jsxUtils';
 import { disabledSelectedSx } from '~/utils/theme';
-import Header from '../components/Header';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -355,14 +355,14 @@ export default function Index() {
   const sortedJiras = caseInsensitiveSort(Object.keys(filteredGitHubRowsByJira));
 
   return (
-    <>
-      <Header
-        isLoggedIn={sessionData.isLoggedIn}
-        view="github"
-        dateRange={dateFilter}
-        onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-        showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
-      />
+    <App
+      isLoggedIn={sessionData.isLoggedIn}
+      view="github"
+      dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+      showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
+      isNavOpen={true}
+    >
       <Popover
         id={popoverElement ? 'popover' : undefined}
         open={!!popoverElement}
@@ -372,8 +372,8 @@ export default function Index() {
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
-      <Stack sx={{ mt: 2 }}>
-        <Stack direction="row" spacing={2} sx={{ ml: 2, my: 1 }}>
+      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, mt: 1 }}>
+        <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
           {[
             { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon /> },
             { viewBy: ActivityView.Author, label: 'By Author', icon: <SupervisorAccountIcon /> },
@@ -525,6 +525,6 @@ export default function Index() {
           </Alert>
         )}
       </Stack>
-    </>
+    </App>
   );
 }

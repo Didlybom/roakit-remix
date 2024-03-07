@@ -18,8 +18,8 @@ import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useMemo, useState } from 'react';
+import App from '~/components/App';
 import DataGridWithSingleClickEditing from '~/components/DataGridWithSingleClickEditing';
-import Header from '~/components/Header';
 import { sessionCookie } from '~/cookies.server';
 import { firestore, auth as serverAuth } from '~/firebase.server';
 import { ActivityData, activitySchema } from '~/schemas/schemas';
@@ -225,9 +225,8 @@ export default function Info() {
   }
 
   return (
-    <>
-      <Header isLoggedIn={true} view="activity.review" />
-      <Stack sx={{ m: 3 }}>
+    <App isLoggedIn={true} view="activity.review">
+      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, m: 3 }}>
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={sessionData.activities}
@@ -255,6 +254,6 @@ export default function Info() {
           </Alert>
         )}
       </Stack>
-    </>
+    </App>
   );
 }

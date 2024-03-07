@@ -6,7 +6,7 @@ export const ellipsisAttrs = { overflow: 'hidden', textOverflow: 'ellipsis' };
 export const stickyAttrs = {
   textWrap: 'nowrap',
   position: 'sticky',
-  top: 0,
+  top: 60, // depends on header height
   maxHeight: '100vh',
   overflowY: 'auto',
 };

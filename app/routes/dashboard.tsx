@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
-import Header from '~/components/Header';
+import App from '~/components/App';
 import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange } from '~/utils/dateUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
@@ -40,14 +40,14 @@ export default function Dashboard() {
   };
 
   return (
-    <>
-      <Header
-        isLoggedIn={sessionData.isLoggedIn}
-        view="dashboard"
-        dateRange={dateFilter}
-        onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
-        showProgress={false && prevDateFilter && dateFilter !== prevDateFilter}
-      />
+    <App
+      isLoggedIn={sessionData.isLoggedIn}
+      view="dashboard"
+      dateRange={dateFilter}
+      onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
+      showProgress={false && prevDateFilter && dateFilter !== prevDateFilter}
+      isNavOpen={true}
+    >
       <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
         <Grid>
           <Paper sx={{ ...commonPaperSx }}>
@@ -140,6 +140,6 @@ export default function Dashboard() {
         </Grid>
       </Grid>
       <Typography textAlign="center">{!!clickedOn && JSON.stringify(clickedOn)}</Typography>
-    </>
+    </App>
   );
 }

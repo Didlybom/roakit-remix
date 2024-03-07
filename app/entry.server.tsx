@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { EntryContext } from '@remix-run/node';
 import { RemixServer } from '@remix-run/react';
 import { ConfirmProvider } from 'material-ui-confirm';
-import * as ReactDOMServer from 'react-dom/server';
+import { renderToString } from 'react-dom/server';
 import createEmotionCache from './utils/createEmotionCache';
 import theme from './utils/theme';
 
@@ -33,7 +33,7 @@ export default function handleRequest(
   }
 
   // Render the component to a string.
-  const html = ReactDOMServer.renderToString(<MuiRemixServer />);
+  const html = renderToString(<MuiRemixServer />);
 
   // Grab the CSS from emotion
   const { styles } = extractCriticalToChunks(html);
