@@ -2,6 +2,7 @@ import { CacheProvider } from '@emotion/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { RemixBrowser } from '@remix-run/react';
+import { ConfirmProvider } from 'material-ui-confirm';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import ClientStyleContext from './components/ClientStyleContext';
@@ -36,9 +37,10 @@ const hydrate = () => {
       document,
       <ClientCacheProvider>
         <ThemeProvider theme={theme}>
-          {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
-          <CssBaseline />
-          <RemixBrowser />
+          <ConfirmProvider>
+            <CssBaseline />
+            <RemixBrowser />
+          </ConfirmProvider>
         </ThemeProvider>
       </ClientCacheProvider>
     );

@@ -4,6 +4,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { EntryContext } from '@remix-run/node';
 import { RemixServer } from '@remix-run/react';
+import { ConfirmProvider } from 'material-ui-confirm';
 import * as ReactDOMServer from 'react-dom/server';
 import createEmotionCache from './utils/createEmotionCache';
 import theme from './utils/theme';
@@ -22,9 +23,10 @@ export default function handleRequest(
     return (
       <CacheProvider value={cache}>
         <ThemeProvider theme={theme}>
-          {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
-          <CssBaseline />
-          <RemixServer context={remixContext} url={request.url} />
+          <ConfirmProvider>
+            <CssBaseline />
+            <RemixServer context={remixContext} url={request.url} />
+          </ConfirmProvider>
         </ThemeProvider>
       </CacheProvider>
     );

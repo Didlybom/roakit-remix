@@ -89,18 +89,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const form = await request.formData();
 
-    const feedId = form.get('feedId')?.toString() ?? '';
-    if (feedId) {
-      const secret = form.get('secret')?.toString() ?? '';
-      const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
-      await doc.update({ secret });
-    }
+    const isDelete = !!form.get('delete');
 
-    const initiativeId = form.get('initiativeId')?.toString() ?? '';
-    if (initiativeId) {
-      const label = form.get('label')?.toString() ?? '';
-      const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
-      await doc.set({ label }, { merge: true });
+    if (!isDelete) {
+      const feedId = form.get('feedId')?.toString() ?? '';
+      if (feedId) {
+        const secret = form.get('secret')?.toString() ?? '';
+        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        await doc.update({ secret });
+      }
+
+      const initiativeId = form.get('initiativeId')?.toString() ?? '';
+      if (initiativeId) {
+        const label = form.get('label')?.toString() ?? '';
+        const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
+        await doc.set({ label }, { merge: true });
+      }
+    } else {
+      const initiativeId = form.get('initiativeId')?.toString() ?? '';
+      if (initiativeId) {
+        const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
+        await doc.delete();
+      }
     }
 
     return null;

@@ -1,10 +1,13 @@
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { Alert, Box, Button, Stack } from '@mui/material';
 import {
   DataGrid,
+  GridActionsCellItem,
   GridColDef,
   GridDensity,
+  GridRowId,
   GridRowModes,
   GridRowModesModel,
   GridRowsProp,
@@ -12,12 +15,14 @@ import {
   GridToolbarContainer,
 } from '@mui/x-data-grid';
 import { useSubmit } from '@remix-run/react';
-import { useMemo, useState } from 'react';
+import { useConfirm } from 'material-ui-confirm';
+import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { SettingsData } from '~/schemas/schemas';
 import { errMsg } from '~/utils/errorUtils';
 
 interface InitiativeRow {
-  id: number;
+  id: string;
   key: string;
   label?: string;
   isNew?: boolean;
@@ -25,10 +30,11 @@ interface InitiativeRow {
 
 export default function Initiatives({ settingsData }: { settingsData: SettingsData }) {
   const submit = useSubmit();
+  const confirm = useConfirm();
 
   const [rows, setRows] = useState<InitiativeRow[]>(
-    settingsData.initiatives.map((initiative, i) => {
-      return { id: i, key: initiative.id, label: initiative.label };
+    settingsData.initiatives.map(initiative => {
+      return { id: uuidv4(), key: initiative.id, label: initiative.label };
     })
   );
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
@@ -54,23 +60,6 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
     },
   };
 
-  const columns = useMemo<GridColDef[]>(
-    () => [
-      {
-        field: 'key',
-        headerName: 'Key',
-        width: 120,
-        editable: true,
-        renderCell: params => {
-          const key = params.value as string;
-          return key ? key : <ReportProblemIcon fontSize="small" />;
-        },
-      },
-      { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
-    ],
-    []
-  );
-
   interface EditToolbarProps {
     setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
     setRowModesModel: (newModel: (oldModel: GridRowModesModel) => GridRowModesModel) => void;
@@ -80,7 +69,7 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
     const { setRows, setRowModesModel } = props;
 
     const handleClick = () => {
-      const id = rows.length + 1;
+      const id = uuidv4();
       setRows(oldRows => [...oldRows, { id, label: '', isNew: true }]);
       setRowModesModel(oldModel => ({
         ...oldModel,
@@ -101,6 +90,55 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
     setRowModesModel(newRowModesModel);
   };
 
+  const handleDeleteClick = (id: GridRowId, iniativeKey: string) => {
+    setRows(rows.filter(row => row.id !== id));
+    submit({ delete: true, initiativeId: iniativeKey }, { method: 'post' });
+  };
+
+  const columns: GridColDef[] = [
+    {
+      field: 'key',
+      headerName: 'Key',
+      width: 120,
+      editable: true,
+      renderCell: params => {
+        const key = params.value as string;
+        return key ? key : <ReportProblemIcon fontSize="small" />;
+      },
+    },
+    { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 100,
+      cellClassName: 'actions',
+      getActions: params => {
+        const initiative = params.row as InitiativeRow;
+        if (rowModesModel[params.id]?.mode === GridRowModes.Edit || !initiative.key) {
+          return [];
+        }
+        return [
+          <GridActionsCellItem
+            key={1}
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={async () => {
+              try {
+                await confirm({
+                  description: `Please confirm the deletion of initiative ${initiative.label}.`,
+                });
+                handleDeleteClick(params.id, initiative.key);
+              } catch {
+                /* user cancelled */
+              }
+            }}
+            color="inherit"
+          />,
+        ];
+      },
+    },
+  ];
+
   return (
     <Stack>
       <DataGrid
@@ -120,8 +158,10 @@ export default function Initiatives({ settingsData }: { settingsData: SettingsDa
         slotProps={{ toolbar: { setRows, setRowModesModel } }}
         processRowUpdate={(newRow: InitiativeRow) => {
           if (!newRow.key) {
-            setRows(rows.filter(row => row.id !== newRow.id));
             return newRow;
+          }
+          if (rows.find(r => r.key === newRow.key && r.id !== newRow.id)) {
+            return { ...newRow, key: '' };
           }
           const updatedRow = { ...newRow, isNew: false };
           setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
