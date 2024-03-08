@@ -1,5 +1,13 @@
-import { Box } from '@mui/material';
-import { GridDensity, GridSortDirection } from '@mui/x-data-grid';
+import { Box, Tooltip } from '@mui/material';
+import {
+  GridColDef,
+  GridDensity,
+  GridRenderCellParams,
+  GridSortDirection,
+  GridValueFormatterParams,
+} from '@mui/x-data-grid';
+import { ActorData } from '~/schemas/schemas';
+import { formatMonthDayTime, formatRelative } from './dateUtils';
 
 export const ellipsisAttrs = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
@@ -29,4 +37,39 @@ export const dataGridCommonProps = {
     pagination: { paginationModel: { pageSize: 25 } },
     sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
   },
+};
+
+export const dateColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
+  return {
+    field: 'date',
+    headerName: 'Date',
+    type: 'dateTime',
+    width: 120,
+    valueFormatter: (params: GridValueFormatterParams) => formatRelative(params.value as Date),
+    renderCell: (params: GridRenderCellParams) => (
+      <Tooltip title={formatMonthDayTime(params.value as Date)}>
+        <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
+      </Tooltip>
+    ),
+    ...colDef,
+  };
+};
+
+export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
+  return {
+    field: 'actor',
+    headerName: 'Author',
+    width: 120,
+    sortComparator: (a: ActorData, b: ActorData) =>
+      (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
+    renderCell: (params: GridRenderCellParams) => {
+      const fields = params.value as ActorData;
+      return !fields ? '' : (
+          <Box sx={{ ...ellipsisAttrs }} title={fields.name ?? fields.id}>
+            {fields.name}
+          </Box>
+        );
+    },
+    ...colDef,
+  };
 };

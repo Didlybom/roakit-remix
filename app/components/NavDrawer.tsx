@@ -1,6 +1,7 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -48,6 +49,14 @@ export default function NavDrawer({
               <DashboardIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary={'Dashboard'} />
+          </ListItemButton>
+        </ListItem>
+        <ListItem key="review" disablePadding>
+          <ListItemButton href="/activity/review" selected={view === 'activity.review'}>
+            <ListItemIcon sx={{ minWidth: '30px' }}>
+              <NotificationImportantIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={'Review'} />
           </ListItemButton>
         </ListItem>
       </List>

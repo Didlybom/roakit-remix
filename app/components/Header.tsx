@@ -1,7 +1,6 @@
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
-import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
@@ -14,7 +13,6 @@ import {
 } from '@mui/material';
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import { DateRange } from '~/utils/dateUtils';
-import { disabledSelectedSx } from '../utils/theme';
 import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 
@@ -87,55 +85,19 @@ export default function App({
               )}
             </Box>
             <IconButton
-              href="/activity/review"
-              title="Review Activity"
-              disabled={!isLoggedIn || view === 'activity.review'}
-              color="inherit"
-              sx={{
-                display: { xs: 'flex', sm: 'none' },
-                ...(isLoggedIn && { ...disabledSelectedSx }),
-              }}
-            >
-              <NotificationImportantIcon />
-            </IconButton>
-            <Button
-              href="/activity/review"
-              title="Review Activity"
-              disabled={!isLoggedIn || view === 'activity.review'}
-              color="inherit"
-              startIcon={<NotificationImportantIcon />}
-              sx={{
-                mx: 2,
-                display: { xs: 'none', sm: 'flex' },
-                ...(isLoggedIn && { ...disabledSelectedSx }),
-              }}
-            >
-              Review
-            </Button>
-
-            <IconButton
               href="/settings"
               title="Settings"
-              disabled={!isLoggedIn || view === 'settings'}
               color="inherit"
-              sx={{
-                display: { xs: 'flex', sm: 'none' },
-                ...(isLoggedIn && { ...disabledSelectedSx }),
-              }}
+              sx={{ display: { xs: 'flex', sm: 'none' } }}
             >
               <SettingsIcon />
             </IconButton>
             <Button
               href="/settings"
               title="Settings"
-              disabled={!isLoggedIn || view === 'settings'}
               color="inherit"
               startIcon={<SettingsIcon />}
-              sx={{
-                mx: 2,
-                display: { xs: 'none', sm: 'flex' },
-                ...(isLoggedIn && { ...disabledSelectedSx }),
-              }}
+              sx={{ mx: 2, display: { xs: 'none', sm: 'flex' } }}
             >
               Settings
             </Button>
