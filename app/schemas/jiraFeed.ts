@@ -1,5 +1,6 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
+import { ActorData } from './schemas';
 
 const zuser = z.object({ accountId: z.string(), displayName: z.string() });
 
@@ -35,9 +36,9 @@ export enum JiraEventType {
 
 export interface JiraRow {
   id: string;
-  timestamp: number;
+  date: Date;
   project?: { key: string; name: string };
-  author?: { name?: string };
+  actor?: ActorData;
   ref?: { label: string; url: string };
   priority?: { id: number; name: string };
   activity?: {
@@ -57,16 +58,16 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
       throw Error('Failed to parse Jira events. ' + props.error.message);
     }
     const data = props.data;
-    let author;
+    let actor: ActorData | undefined;
     if (docData.name === JiraEventType.IssueCreated) {
-      author = { name: data.issue?.fields?.creator?.displayName };
+      actor = { id: '', name: data.issue?.fields?.creator?.displayName };
     } else if (docData.name === JiraEventType.CommentCreated) {
-      author = { name: data.comment?.author.displayName };
+      actor = { id: '', name: data.comment?.author.displayName };
     }
     const row = {
       id: doc.id,
-      timestamp: docData.eventTimestamp as number,
-      author,
+      date: new Date(docData.eventTimestamp as number),
+      actor,
       project: { ...data.issue.fields.project },
       ref: { label: data.issue.key, url: data.issue.self },
       priority: { id: +data.issue.fields.priority.id, name: data.issue.fields.priority.name },

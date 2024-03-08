@@ -5,6 +5,10 @@ export const feedSchema = z.object({
   secret: z.string().optional(),
 });
 
+export const actorSchema = z.object({
+  name: z.string().optional(),
+});
+
 export const initiativeSchema = z.object({
   label: z.string().optional(),
 });
@@ -21,10 +25,16 @@ export interface InitiativeData {
   label?: string;
 }
 
+export interface ActorData {
+  id: string;
+  name?: string;
+  url?: string;
+}
+
 export interface ActivityData {
   id: string;
   action: string;
-  actorId: string;
+  actor: ActorData;
   type: string;
   date: number;
   initiative: string;

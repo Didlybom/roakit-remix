@@ -1,6 +1,7 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
 import { capitalizeAndUseSpaces, findJiraProjects } from '~/utils/stringUtils';
+import { ActorData } from './schemas';
 
 const zuser = z.object({ login: z.string(), html_url: z.string() });
 
@@ -50,9 +51,9 @@ export enum GitHubEventType {
 
 export interface GitHubRow {
   id: string;
-  timestamp: number;
+  date: Date;
   repositoryName?: string;
-  author?: { name: string; url: string };
+  actor?: ActorData;
   ref?: { label: string; url: string };
   activity?: {
     title?: string;
@@ -94,23 +95,31 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     } else {
       title = data.release?.body;
     }
-    let author;
+    let actor: ActorData | undefined;
     if (docData.name === GitHubEventType.PullRequest && data.pull_request?.assignee) {
-      author = { name: data.pull_request.assignee.login, url: data.pull_request.assignee.html_url };
+      actor = {
+        id: '',
+        name: data.pull_request.assignee.login,
+        url: data.pull_request.assignee.html_url,
+      };
     } else if (docData.name === GitHubEventType.PullRequestReviewComment && data.comment?.user) {
-      author = {
+      actor = {
+        id: '',
         name: data.comment.user.login,
         url: data.comment.user.html_url,
       };
     }
-    if (!author) {
-      author = data.sender ? { name: data.sender.login, url: data.sender.html_url } : undefined;
+    if (!actor) {
+      actor =
+        data.sender ?
+          { id: '', name: data.sender.login, url: data.sender.html_url }
+        : { id: '', name: 'unknown' };
     }
     const row = {
       id: doc.id,
-      timestamp: docData.eventTimestamp as number,
+      date: new Date(docData.eventTimestamp as number),
       repositoryName: data.repository?.name,
-      author,
+      actor,
       ref:
         data.pull_request?.head.ref ?
           {
@@ -130,12 +139,12 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
         }),
       },
     };
-    if (row.author?.name) {
-      if (!(row.author.name in rowsByAuthor)) {
-        rowsByAuthor[row.author.name] = { url: row.author.url, rows: [] };
+    if (row.actor?.name) {
+      if (!(row.actor.name in rowsByAuthor)) {
+        rowsByAuthor[row.actor.name] = { url: row.actor.url, rows: [] };
       }
-      if (!rowsByAuthor[row.author.name].rows.find(r => r.id === row.id)) {
-        rowsByAuthor[row.author.name].rows.push(row);
+      if (!rowsByAuthor[row.actor.name].rows.find(r => r.id === row.id)) {
+        rowsByAuthor[row.actor.name].rows.push(row);
       }
     }
     const jiraProjects = findJiraProjects(row.activity.title + ' ' + row.ref?.label);

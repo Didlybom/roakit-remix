@@ -16,13 +16,12 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
@@ -30,7 +29,13 @@ import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '~/components/App';
 import { loadSession } from '~/utils/authUtils.server';
-import { dataGridCommonProps, ellipsisAttrs, stickyAttrs } from '~/utils/jsxUtils';
+import {
+  actorColdDef,
+  dataGridCommonProps,
+  dateColdDef,
+  ellipsisAttrs,
+  stickyAttrs,
+} from '~/utils/jsxUtils';
 import { disabledSelectedSx } from '~/utils/theme';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
@@ -48,8 +53,6 @@ import {
   DateRange,
   dateFilterToStartDate,
   formatMonthDay,
-  formatMonthDayTime,
-  formatRelative,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
@@ -110,30 +113,13 @@ export default function Index() {
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
-      {
-        field: 'timestamp',
-        headerName: 'Date',
-        type: 'dateTime',
-        width: 100,
-        valueGetter: params => new Date(params.value as number),
-        valueFormatter: params => formatRelative(params.value as Date),
-        renderCell: params => {
-          return (
-            <Tooltip title={formatMonthDayTime(params.value as Date)}>
-              <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
-            </Tooltip>
-          );
-        },
-      },
+      dateColdDef({ width: 100 }),
       { field: 'repositoryName', headerName: 'Repo.', width: 120 },
-      {
-        field: 'author',
+      actorColdDef({
         headerName: 'Author',
         width: 120,
-        sortComparator: (a: GitHubRow['author'], b: GitHubRow['author']) =>
-          (a?.name ?? '').localeCompare(b?.name ?? ''),
-        renderCell: params => {
-          const fields = params.value as GitHubRow['author'];
+        renderCell: (params: GridRenderCellParams) => {
+          const fields = params.value as GitHubRow['actor'];
           return !fields ? '' : (
               <Link
                 title={fields.name}
@@ -152,7 +138,7 @@ export default function Index() {
               </Link>
             );
         },
-      },
+      }),
       {
         field: 'ref',
         headerName: 'Ref.',
@@ -332,7 +318,7 @@ export default function Index() {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByAuthor).forEach(author => {
       filteredGitHubRowsByAuthor[author].rows = filteredGitHubRowsByAuthor[author].rows.filter(
-        row => row.timestamp >= startDate
+        row => row.date.getTime() >= startDate
       );
       if (filteredGitHubRowsByAuthor[author].rows.length === 0) {
         delete filteredGitHubRowsByAuthor[author];
@@ -343,7 +329,7 @@ export default function Index() {
     const startDate = dateFilterToStartDate(dateFilter)!;
     Object.keys(filteredGitHubRowsByJira).forEach(jira => {
       filteredGitHubRowsByJira[jira] = filteredGitHubRowsByJira[jira].filter(
-        row => row.timestamp >= startDate
+        row => row.date.getTime() >= startDate
       );
       if (filteredGitHubRowsByJira[jira].length === 0) {
         delete filteredGitHubRowsByJira[jira];

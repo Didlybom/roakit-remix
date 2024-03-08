@@ -4,7 +4,6 @@ import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
@@ -12,7 +11,7 @@ import usePrevious from 'use-previous';
 import App from '~/components/App';
 import { JiraEventType, JiraRow, jiraRows } from '~/schemas/jiraFeed';
 import { loadSession } from '~/utils/authUtils.server';
-import { dataGridCommonProps, ellipsisAttrs } from '~/utils/jsxUtils';
+import { actorColdDef, dataGridCommonProps, dateColdDef, ellipsisAttrs } from '~/utils/jsxUtils';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
@@ -20,8 +19,6 @@ import {
   DateRange,
   dateFilterToStartDate,
   formatMonthDay,
-  formatMonthDayTime,
-  formatRelative,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 
@@ -58,34 +55,8 @@ export default function Index() {
 
   const jiraColumns = useMemo<GridColDef[]>(
     () => [
-      {
-        field: 'timestamp',
-        headerName: 'Date',
-        type: 'dateTime',
-        width: 100,
-        valueGetter: params => new Date(params.value as number),
-        valueFormatter: params => formatRelative(params.value as Date),
-        renderCell: params => (
-          <Tooltip title={formatMonthDayTime(params.value as Date)}>
-            <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
-          </Tooltip>
-        ),
-      },
-      {
-        field: 'author',
-        headerName: 'Author',
-        width: 120,
-        sortComparator: (a: JiraRow['author'], b: JiraRow['author']) =>
-          (a?.name ?? '').localeCompare(b?.name ?? ''),
-        renderCell: params => {
-          const fields = params.value as JiraRow['author'];
-          return !fields ? '' : (
-              <Box sx={{ ...ellipsisAttrs }} title={fields.name}>
-                {fields.name}
-              </Box>
-            );
-        },
-      },
+      dateColdDef({ width: 100 }),
+      actorColdDef({ headerName: 'Author', width: 120 }),
       {
         field: 'project',
         headerName: 'Project',

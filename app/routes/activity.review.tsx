@@ -8,11 +8,16 @@ import {
   MenuItem,
   Select,
   Stack,
-  Tooltip,
+  Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-
-import { GridColDef, GridDensity, GridSortDirection, GridToolbarContainer } from '@mui/x-data-grid';
+import {
+  GridColDef,
+  GridDensity,
+  GridSortDirection,
+  GridToolbarContainer,
+  GridValueGetterParams,
+} from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData, useSubmit } from '@remix-run/react';
 import pino from 'pino';
@@ -24,10 +29,9 @@ import { sessionCookie } from '~/cookies.server';
 import { firestore, auth as serverAuth } from '~/firebase.server';
 import { ActivityData, activitySchema } from '~/schemas/schemas';
 import { loadSession } from '~/utils/authUtils.server';
-import { formatMonthDayTime, formatRelative } from '~/utils/dateUtils';
 import { errMsg } from '~/utils/errorUtils';
-import { fetchInitiatives } from '~/utils/firestoreUtils.server';
-import { ellipsisAttrs } from '~/utils/jsxUtils';
+import { fetchActorMap, fetchInitiatives } from '~/utils/firestoreUtils.server';
+import { actorColdDef, dateColdDef } from '~/utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -41,6 +45,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
+    // retrieve initiatives
+    const initiatives = await fetchInitiatives(sessionData.customerId);
+
+    // retrieve users
+    const actors = await fetchActorMap(sessionData.customerId);
+
     // retrieve activities
     const activitiesCollection = firestore
       .collection('customers/' + sessionData.customerId + '/activities')
@@ -52,13 +62,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           if (!props.success) {
             throw Error('Failed to parse activities. ' + props.error.message);
           }
-          const data = props.data;
           return {
             id: snapshot.id,
-            action: data.action,
-            actorId: data.actorId,
-            type: data.type,
-            date: data.date,
+            action: props.data.action,
+            actor: {
+              id: props.data.actorId,
+              name: actors[props.data.actorId]?.name ?? 'unknown',
+            },
+            type: props.data.type,
+            date: props.data.date,
             initiative: '',
           };
         },
@@ -66,12 +78,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       });
     const activityDocs = await activitiesCollection.get();
     const activities: ActivityData[] = [];
-    activityDocs.forEach(activity => activities.push(activity.data()));
-
-    // retrieve initiatives
-    const initiatives = await fetchInitiatives(sessionData.customerId);
-
-    return { activities, initiatives };
+    activityDocs.forEach(activity => {
+      activities.push(activity.data());
+    });
+    return { activities, initiatives, actors };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -107,7 +117,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
-export default function Info() {
+export default function ActivityReview() {
   const submit = useSubmit();
 
   const sessionData = useLoaderData<typeof loader>();
@@ -138,22 +148,10 @@ export default function Info() {
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      {
-        field: 'date',
-        headerName: 'Date',
-        type: 'dateTime',
-        width: 120,
-        valueGetter: params => new Date(params.value as number),
-        valueFormatter: params => formatRelative(params.value as Date),
-        renderCell: params => {
-          return (
-            <Tooltip title={formatMonthDayTime(params.value as Date)}>
-              <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
-            </Tooltip>
-          );
-        },
-      },
-      { field: 'actorId', headerName: 'Actor', width: 100 },
+      dateColdDef({
+        valueGetter: (params: GridValueGetterParams) => new Date(params.value as number),
+      }),
+      actorColdDef({ headerName: 'Actor', width: 120 }),
       { field: 'action', headerName: 'Action', width: 100 },
       { field: 'type', headerName: 'Type', width: 100 },
       {
@@ -225,8 +223,11 @@ export default function Info() {
   }
 
   return (
-    <App isLoggedIn={true} view="activity.review">
-      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, m: 3 }}>
+    <App isLoggedIn={true} view="activity.review" isNavOpen={true}>
+      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, m: 2 }}>
+        {sessionData.activities.length && (
+          <Typography sx={{ mb: 2 }}>Please assign initiatives to these activities.</Typography>
+        )}
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={sessionData.activities}
