@@ -94,6 +94,11 @@ export default function Header({
             </IconButton>
             <Button
               href="/settings"
+              onClick={e => {
+                if (view === 'settings') {
+                  e.preventDefault();
+                }
+              }}
               title="Settings"
               color="inherit"
               startIcon={<SettingsIcon />}

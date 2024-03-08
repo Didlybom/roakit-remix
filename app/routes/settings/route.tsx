@@ -1,4 +1,4 @@
-import { Box, IconButton, Snackbar, Tab, Tabs, Tooltip } from '@mui/material';
+import { Box, IconButton, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
@@ -122,6 +122,9 @@ export default function Settings() {
 
   return (
     <App isLoggedIn={true} view="settings">
+      <Typography variant="h6" sx={{ ml: 3, mt: 2, mb: 1 }}>
+        Settings
+      </Typography>
       <Form method="post" noValidate autoComplete="off">
         <Snackbar
           open={showCopyConfirmation !== null}
@@ -134,7 +137,7 @@ export default function Settings() {
           }}
           message={'Copied ' + (showCopyConfirmation ?? '')}
         />
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 2 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs
             variant="scrollable"
             value={tabValue}
