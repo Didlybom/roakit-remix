@@ -1,9 +1,9 @@
 import { Box, styled } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import { DateRange } from '~/utils/dateUtils';
-import DrawerHeader from './DrawerHeader';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
+import DrawerHeader from './NavDrawerHeader';
 
 const navbarWidth = 180;
 
@@ -12,6 +12,7 @@ export type View =
   | 'activity.review'
   | 'github'
   | 'jira'
+  | 'initiatives'
   | 'settings'
   | 'login'
   | 'logout'

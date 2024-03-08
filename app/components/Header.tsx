@@ -39,7 +39,7 @@ const AppBar = styled(MuiAppBar, {
   }),
 }));
 
-export default function App({
+export default function Header({
   isLoggedIn,
   view,
   dateRange,
@@ -122,7 +122,6 @@ export default function App({
                 </Button>
               </>
             )}
-
             {isLoggedIn && (
               <>
                 <IconButton

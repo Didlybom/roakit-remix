@@ -1,3 +1,4 @@
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -12,7 +13,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
-import DrawerHeader from './DrawerHeader';
+import DrawerHeader from './NavDrawerHeader';
 
 export default function NavDrawer({
   view,
@@ -57,6 +58,17 @@ export default function NavDrawer({
               <NotificationImportantIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary={'Review'} />
+          </ListItemButton>
+        </ListItem>
+      </List>
+      <Divider />
+      <List>
+        <ListItem key="initiatives" disablePadding>
+          <ListItemButton href="/initiatives" selected={view === 'initiatives'}>
+            <ListItemIcon sx={{ minWidth: '30px' }}>
+              <BusinessCenterIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={'Initiatives'} />
           </ListItemButton>
         </ListItem>
       </List>

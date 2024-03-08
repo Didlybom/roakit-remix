@@ -41,7 +41,6 @@ export interface ActivityData {
 }
 
 export interface SettingsData {
-  customerId: number;
   feeds: {
     secret?: string | undefined;
     feedId: string;

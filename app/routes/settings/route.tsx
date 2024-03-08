@@ -15,13 +15,11 @@ import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
-import Initiatives from './Initiatives';
 import JiraSettings from './JiraSettings';
 
 const logger = pino({ name: 'route:settings' });
 
 enum FeedTab {
-  Initiatives,
   Jira,
   GitHub,
   Confluence,
@@ -69,7 +67,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // retrieve initiatives
     const initiatives = await fetchInitiatives(sessionData.customerId);
 
-    return { customerId: +sessionData.customerId!, feeds, initiatives };
+    return { feeds, initiatives };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -89,28 +87,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const form = await request.formData();
 
-    const isDelete = !!form.get('delete');
-
-    if (!isDelete) {
-      const feedId = form.get('feedId')?.toString() ?? '';
-      if (feedId) {
-        const secret = form.get('secret')?.toString() ?? '';
-        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
-        await doc.update({ secret });
-      }
-
-      const initiativeId = form.get('initiativeId')?.toString() ?? '';
-      if (initiativeId) {
-        const label = form.get('label')?.toString() ?? '';
-        const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
-        await doc.set({ label }, { merge: true });
-      }
-    } else {
-      const initiativeId = form.get('initiativeId')?.toString() ?? '';
-      if (initiativeId) {
-        const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
-        await doc.delete();
-      }
+    const feedId = form.get('feedId')?.toString() ?? '';
+    if (feedId) {
+      const secret = form.get('secret')?.toString() ?? '';
+      const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+      await doc.update({ secret });
     }
 
     return null;
@@ -157,17 +138,13 @@ export default function Settings() {
           <Tabs
             variant="scrollable"
             value={tabValue}
-            onChange={(e, newValue: number) => setTabValue(newValue)}
+            onChange={(_, newValue: number) => setTabValue(newValue)}
           >
-            <Tab label="Initiatives" id={`tab-${FeedTab.Initiatives}`} />
             <Tab label="JIRA" id={`tab-${FeedTab.Jira}`} />
             <Tab label="GitHub" id={`tab-${FeedTab.GitHub}`} />
             <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />
           </Tabs>
         </Box>
-        <TabPanel value={tabValue} index={FeedTab.Initiatives}>
-          <Initiatives settingsData={serverData} />
-        </TabPanel>
         <TabPanel value={tabValue} index={FeedTab.Jira}>
           <JiraSettings settingsData={serverData} handleCopy={handleCopy} />
         </TabPanel>

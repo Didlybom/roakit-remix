@@ -1,7 +1,6 @@
 import CopyIcon from '@mui/icons-material/ContentCopy';
 import { Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-
 import { SettingsData } from '~/schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import jiraImage from './images/jira-webhook.png';

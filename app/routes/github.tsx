@@ -358,7 +358,7 @@ export default function Index() {
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
-      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, mt: 1 }}>
+      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, mt: 3 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
           {[
             { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon /> },
