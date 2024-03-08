@@ -1,8 +1,8 @@
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -55,7 +55,7 @@ export default function NavDrawer({
         <ListItem key="review" disablePadding>
           <ListItemButton href="/activity/review" selected={view === 'activity.review'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
-              <NotificationImportantIcon fontSize="small" />
+              <EditNoteIcon />
             </ListItemIcon>
             <ListItemText primary={'Review'} />
           </ListItemButton>
