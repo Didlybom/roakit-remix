@@ -297,7 +297,10 @@ export default function Index() {
       const element = document.getElementById(authorElementId(scrollToAuthor));
       setScrollToAuthor(undefined);
       if (element) {
-        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1);
+        window.scrollTo({
+          top: element.getBoundingClientRect().top + window.scrollY - 54,
+          behavior: 'smooth',
+        });
       }
     }
   }, [scrollToAuthor]);
@@ -307,7 +310,10 @@ export default function Index() {
       const element = document.getElementById(jiraElementId(scrollToJira));
       setScrollToJira(undefined);
       if (element) {
-        setTimeout(() => element.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1);
+        window.scrollTo({
+          top: element.getBoundingClientRect().top + window.scrollY - 58,
+          behavior: 'smooth',
+        });
       }
     }
   }, [scrollToJira]);
