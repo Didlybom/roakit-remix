@@ -1,5 +1,4 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import Divider from '@mui/material/Divider';
@@ -10,7 +9,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { useTheme } from '@mui/material/styles';
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './DrawerHeader';
@@ -26,8 +24,6 @@ export default function NavDrawer({
   open: boolean;
   onClose: () => void;
 }) {
-  const theme = useTheme();
-
   return (
     <Drawer
       sx={{
@@ -41,9 +37,7 @@ export default function NavDrawer({
     >
       <DrawerHeader>
         <IconButton onClick={onClose}>
-          {theme.direction === 'ltr' ?
-            <ChevronLeftIcon />
-          : <ChevronRightIcon />}
+          <ChevronLeftIcon />
         </IconButton>
       </DrawerHeader>
       <Divider />

@@ -23,6 +23,7 @@ interface AppBarProps extends MuiAppBarProps {
   navbarOpen?: boolean;
 }
 
+// see https://mui.com/material-ui/react-drawer/#persistent-drawer
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: prop => prop !== 'navbarWidth' && prop !== 'navbarOpen',
 })<AppBarProps>(({ theme, navbarWidth, navbarOpen }) => ({
@@ -62,14 +63,16 @@ export default function App({
   return (
     <AppBar position="fixed" navbarWidth={navbarWidth} navbarOpen={isNavBarOpen}>
       <Toolbar variant="dense">
-        <IconButton
-          color="inherit"
-          onClick={onNavBarOpen}
-          edge="start"
-          sx={{ mr: 2, ...(isNavBarOpen && { display: 'none' }) }}
-        >
-          <MenuIcon />
-        </IconButton>
+        {isLoggedIn && (
+          <IconButton
+            color="inherit"
+            onClick={onNavBarOpen}
+            edge="start"
+            sx={{ mr: 2, ...(isNavBarOpen && { display: 'none' }) }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'flex' } }}>
           ROAKIT
         </Typography>
@@ -136,7 +139,6 @@ export default function App({
             >
               Settings
             </Button>
-
             {!isLoggedIn && (
               <>
                 <IconButton

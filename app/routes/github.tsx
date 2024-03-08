@@ -383,6 +383,7 @@ export default function Index() {
               key={i}
               disabled={showBy === p.viewBy}
               color={showBy === p.viewBy ? 'primary' : 'default'}
+              variant={showBy === p.viewBy ? 'filled' : 'outlined'}
               onClick={() => setShowBy(p.viewBy)}
               label={p.label}
               icon={p.icon}

@@ -5,7 +5,7 @@ import DrawerHeader from './DrawerHeader';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
 
-const navbarWidth = 200;
+const navbarWidth = 180;
 
 export type View =
   | 'dashboard'
@@ -54,7 +54,7 @@ export default function App({
   isNavOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(isNavOpen);
+  const [open, setOpen] = useState(!!isNavOpen);
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -65,7 +65,7 @@ export default function App({
         onDateRangeSelect={onDateRangeSelect}
         showProgress={showProgress}
         navbarWidth={navbarWidth}
-        open={open}
+        open={isLoggedIn ? open : false}
         onNavBarOpen={() => setOpen(true)}
       />
       <NavDrawer view={view} width={navbarWidth} open={open} onClose={() => setOpen(false)} />

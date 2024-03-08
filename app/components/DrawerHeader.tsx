@@ -1,7 +1,6 @@
-//see v
-
 import { styled } from '@mui/material';
 
+// see https://mui.com/material-ui/react-drawer/#persistent-drawer
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
