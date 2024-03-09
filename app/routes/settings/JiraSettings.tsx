@@ -9,9 +9,11 @@ import { actionIcon } from './route';
 export default function JiraSettings({
   settingsData,
   handleCopy,
+  setPopover,
 }: {
   settingsData: SettingsData;
   handleCopy: (content?: string) => void;
+  setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const serverJiraFeed = settingsData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
 
@@ -69,12 +71,18 @@ export default function JiraSettings({
         .
       </Typography>
       <Stack sx={{ mt: 5 }}>
-        <Typography variant={'caption'}>Screenshot: </Typography>
+        <Typography variant={'caption'}>Screenshot</Typography>
         <img
           src={jiraImage}
-          width="870"
-          height="389"
-          style={{ padding: 15, borderStyle: 'dotted' }}
+          width="174"
+          height="78"
+          style={{ borderStyle: 'dotted', cursor: 'pointer' }}
+          onClick={e =>
+            setPopover({
+              element: e.currentTarget,
+              content: <img src={jiraImage} width="870" height="389" />,
+            })
+          }
         />
       </Stack>
     </>

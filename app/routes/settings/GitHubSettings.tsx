@@ -27,16 +27,17 @@ import { actionIcon } from './route';
 export default function GitHubSettings({
   settingsData,
   handleCopy,
+  setPopover,
 }: {
   settingsData: SettingsData;
   handleCopy: (content?: string) => void;
+  setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const navigation = useNavigation();
   const submit = useSubmit();
 
   const serverGitHubFeed = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
-
-  const githubURL = `https://ingest.roakit.com/github/${serverGitHubFeed.clientId}`;
+  const gitHubURL = `https://ingest.roakit.com/github/${serverGitHubFeed.clientId}`;
   const [gitHubSecret, setGitHubSecret] = useState(serverGitHubFeed.secret);
 
   useEffect(() => {
@@ -50,10 +51,10 @@ export default function GitHubSettings({
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="GitHub URL" id="github-uri" value={githubURL} fullWidth disabled />
+            <TextField label="GitHub URL" id="github-uri" value={gitHubURL} fullWidth disabled />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
-            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(githubURL))}
+            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(gitHubURL))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
@@ -156,8 +157,19 @@ export default function GitHubSettings({
         </Link>
         .
         <Stack sx={{ mt: 4 }}>
-          <Typography variant={'caption'}>Screenshot: </Typography>
-          <img src={githubImage} width="768" height="794" style={{ borderStyle: 'dotted' }} />
+          <Typography variant={'caption'}>Screenshot</Typography>
+          <img
+            src={githubImage}
+            width="154"
+            height="159"
+            style={{ borderStyle: 'dotted', cursor: 'pointer' }}
+            onClick={e =>
+              setPopover({
+                element: e.currentTarget,
+                content: <img src={githubImage} width="768" height="794" />,
+              })
+            }
+          />
         </Stack>
       </Typography>
     </>

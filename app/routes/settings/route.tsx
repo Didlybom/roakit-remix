@@ -1,4 +1,4 @@
-import { Box, IconButton, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Popover, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
@@ -111,6 +111,9 @@ export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
+  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
+    null
+  );
 
   const handleCopy = (content?: string) => {
     if (!content) {
@@ -122,6 +125,15 @@ export default function Settings() {
 
   return (
     <App isLoggedIn={true} view="settings">
+      <Popover
+        id={popover?.element ? 'popover' : undefined}
+        open={!!popover?.element}
+        anchorEl={popover?.element}
+        onClose={() => setPopover(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
+      </Popover>
       <Typography variant="h6" sx={{ ml: 3, mt: 2, mb: 1 }}>
         Settings
       </Typography>
@@ -149,13 +161,21 @@ export default function Settings() {
           </Tabs>
         </Box>
         <TabPanel value={tabValue} index={FeedTab.Jira}>
-          <JiraSettings settingsData={serverData} handleCopy={handleCopy} />
+          <JiraSettings settingsData={serverData} handleCopy={handleCopy} setPopover={setPopover} />
         </TabPanel>
         <TabPanel value={tabValue} index={FeedTab.GitHub}>
-          <GitHubSettings settingsData={serverData} handleCopy={handleCopy} />
+          <GitHubSettings
+            settingsData={serverData}
+            handleCopy={handleCopy}
+            setPopover={setPopover}
+          />
         </TabPanel>
         <TabPanel value={tabValue} index={FeedTab.Confluence}>
-          <ConfluenceSettings settingsData={serverData} handleCopy={handleCopy} />
+          <ConfluenceSettings
+            settingsData={serverData}
+            handleCopy={handleCopy}
+            setPopover={setPopover}
+          />
         </TabPanel>
       </Form>
     </App>

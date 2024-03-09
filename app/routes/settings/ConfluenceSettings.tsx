@@ -26,9 +26,11 @@ import { actionIcon } from './route';
 export default function ConfluenceSettings({
   settingsData,
   handleCopy,
+  setPopover,
 }: {
   settingsData: SettingsData;
   handleCopy: (content?: string) => void;
+  setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -177,8 +179,19 @@ export default function ConfluenceSettings({
         </Link>
         .
         <Stack sx={{ mt: 4 }}>
-          <Typography variant={'caption'}>Screenshot: </Typography>
-          <img src={confluenceImage} width="800" height="604" style={{ borderStyle: 'dotted' }} />
+          <Typography variant={'caption'}>Screenshot</Typography>
+          <img
+            src={confluenceImage}
+            width="160"
+            height="121"
+            style={{ borderStyle: 'dotted' }}
+            onClick={e =>
+              setPopover({
+                element: e.currentTarget,
+                content: <img src={confluenceImage} width="800" height="604" />,
+              })
+            }
+          />
         </Stack>
       </Typography>
     </>
