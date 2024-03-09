@@ -29,7 +29,7 @@ export default function Logout() {
   }, [submit]);
 
   return (
-    <App isLoggedIn={false} view="login">
+    <App view="login" isLoggedIn={false}>
       <Box sx={{ display: 'flex', justifyContent: 'center', m: 10, position: 'relative' }}>
         <Typography>Logging out...</Typography>
         <CircularProgress

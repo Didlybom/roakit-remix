@@ -223,8 +223,8 @@ export default function ActivityReview() {
   }
 
   return (
-    <App isLoggedIn={true} view="activity.review" isNavOpen={true}>
-      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, m: 3 }}>
+    <App view="activity.review" isLoggedIn={true} isNavOpen={true}>
+      <Stack sx={{ m: 3 }}>
         {sessionData.activities.length && (
           <Typography sx={{ mb: 2 }}>Please assign initiatives to these activities.</Typography>
         )}

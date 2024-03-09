@@ -172,14 +172,14 @@ export default function Index() {
 
   return (
     <App
-      isLoggedIn={sessionData.isLoggedIn}
       view="jira"
+      isLoggedIn={sessionData.isLoggedIn}
+      isNavOpen={true}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
-      isNavOpen={true}
     >
-      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0 }}>
+      <Stack>
         {gotSnapshot && (
           <>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2, mb: 1 }}>

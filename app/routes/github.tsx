@@ -352,12 +352,12 @@ export default function Index() {
 
   return (
     <App
-      isLoggedIn={sessionData.isLoggedIn}
       view="github"
+      isLoggedIn={sessionData.isLoggedIn}
+      isNavOpen={true}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
-      isNavOpen={true}
     >
       <Popover
         id={popoverElement ? 'popover' : undefined}
@@ -368,7 +368,7 @@ export default function Index() {
       >
         <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
       </Popover>
-      <Stack sx={{ display: 'flex', flex: 1, minWidth: 0, mt: 3 }}>
+      <Stack sx={{ mt: 3 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
           {[
             { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon /> },

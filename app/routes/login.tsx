@@ -129,7 +129,7 @@ export default function Login() {
   }
 
   return (
-    <App isLoggedIn={false} view="login" showProgress={navigation.state === 'submitting'}>
+    <App view="login" isLoggedIn={false} showProgress={navigation.state === 'submitting'}>
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin} autoComplete="on">

@@ -1,4 +1,14 @@
-import { Box, IconButton, Popover, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Paper,
+  Popover,
+  Snackbar,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
@@ -124,7 +134,7 @@ export default function Settings() {
   };
 
   return (
-    <App isLoggedIn={true} view="settings">
+    <App view="settings" isLoggedIn={true}>
       <Popover
         id={popover?.element ? 'popover' : undefined}
         open={!!popover?.element}
@@ -134,50 +144,56 @@ export default function Settings() {
       >
         <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
       </Popover>
-      <Typography variant="h6" sx={{ ml: 3, mt: 2, mb: 1 }}>
-        Settings
-      </Typography>
-      <Form method="post" noValidate autoComplete="off">
-        <Snackbar
-          open={showCopyConfirmation !== null}
-          autoHideDuration={3000}
-          onClose={(_, reason?: string) => {
-            if (reason === 'clickaway') {
-              return;
-            }
-            setShowCopyConfirmation(null);
-          }}
-          message={'Copied ' + (showCopyConfirmation ?? '')}
-        />
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs
-            variant="scrollable"
-            value={tabValue}
-            onChange={(_, newValue: number) => setTabValue(newValue)}
-          >
-            <Tab label="JIRA" id={`tab-${FeedTab.Jira}`} />
-            <Tab label="GitHub" id={`tab-${FeedTab.GitHub}`} />
-            <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />
-          </Tabs>
-        </Box>
-        <TabPanel value={tabValue} index={FeedTab.Jira}>
-          <JiraSettings settingsData={serverData} handleCopy={handleCopy} setPopover={setPopover} />
-        </TabPanel>
-        <TabPanel value={tabValue} index={FeedTab.GitHub}>
-          <GitHubSettings
-            settingsData={serverData}
-            handleCopy={handleCopy}
-            setPopover={setPopover}
+      <Paper elevation={2} sx={{ m: 3 }}>
+        <Typography variant="h6" sx={{ pl: 2, pt: 2, pb: 1 }}>
+          Settings
+        </Typography>
+        <Form method="post" noValidate autoComplete="off">
+          <Snackbar
+            open={showCopyConfirmation !== null}
+            autoHideDuration={3000}
+            onClose={(_, reason?: string) => {
+              if (reason === 'clickaway') {
+                return;
+              }
+              setShowCopyConfirmation(null);
+            }}
+            message={'Copied ' + (showCopyConfirmation ?? '')}
           />
-        </TabPanel>
-        <TabPanel value={tabValue} index={FeedTab.Confluence}>
-          <ConfluenceSettings
-            settingsData={serverData}
-            handleCopy={handleCopy}
-            setPopover={setPopover}
-          />
-        </TabPanel>
-      </Form>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs
+              variant="scrollable"
+              value={tabValue}
+              onChange={(_, newValue: number) => setTabValue(newValue)}
+            >
+              <Tab label="JIRA" id={`tab-${FeedTab.Jira}`} />
+              <Tab label="GitHub" id={`tab-${FeedTab.GitHub}`} />
+              <Tab label="Confluence" id={`tab-${FeedTab.Confluence}`} />
+            </Tabs>
+          </Box>
+          <TabPanel value={tabValue} index={FeedTab.Jira}>
+            <JiraSettings
+              settingsData={serverData}
+              handleCopy={handleCopy}
+              setPopover={setPopover}
+            />
+          </TabPanel>
+          <TabPanel value={tabValue} index={FeedTab.GitHub}>
+            <GitHubSettings
+              settingsData={serverData}
+              handleCopy={handleCopy}
+              setPopover={setPopover}
+            />
+          </TabPanel>
+          <TabPanel value={tabValue} index={FeedTab.Confluence}>
+            <ConfluenceSettings
+              settingsData={serverData}
+              handleCopy={handleCopy}
+              setPopover={setPopover}
+            />
+          </TabPanel>
+        </Form>
+      </Paper>
     </App>
   );
 }

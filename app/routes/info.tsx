@@ -13,7 +13,7 @@ export default function Info() {
   const sessionData = useLoaderData<typeof loader>();
 
   return (
-    <App isLoggedIn={sessionData.isLoggedIn} view="info">
+    <App view="info" isLoggedIn={sessionData.isLoggedIn}>
       <Grid container spacing={2} sx={{ display: 'flex', flex: 1, minWidth: 0, m: 4 }}>
         <Grid>
           <Grid>

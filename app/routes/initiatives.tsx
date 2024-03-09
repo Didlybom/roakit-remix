@@ -202,7 +202,7 @@ export default function Initiatives() {
 
   return (
     <App isLoggedIn={true} view="initiatives" isNavOpen={true}>
-      <Stack sx={{ m: 4 }}>
+      <Stack sx={{ m: 3 }}>
         <DataGrid
           columns={columns}
           rows={rows}

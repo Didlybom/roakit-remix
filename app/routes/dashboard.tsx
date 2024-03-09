@@ -41,12 +41,12 @@ export default function Dashboard() {
 
   return (
     <App
-      isLoggedIn={sessionData.isLoggedIn}
       view="dashboard"
+      isLoggedIn={sessionData.isLoggedIn}
+      isNavOpen={true}
       dateRange={dateFilter}
       onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
       showProgress={false && prevDateFilter && dateFilter !== prevDateFilter}
-      isNavOpen={true}
     >
       <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
         <Grid>
