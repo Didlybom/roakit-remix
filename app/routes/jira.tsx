@@ -131,14 +131,16 @@ export default function Index() {
   );
 
   const setRows = (type: JiraEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
-    setGotSnapshot(true);
     try {
       switch (type) {
         case JiraEventType.IssueCreated:
-          return setJiraIssuesCreated(jiraRows(querySnapshot));
+          setJiraIssuesCreated(jiraRows(querySnapshot));
+          break;
         case JiraEventType.CommentCreated:
-          return setJiraCommentsCreated(jiraRows(querySnapshot));
+          setJiraCommentsCreated(jiraRows(querySnapshot));
+          break;
       }
+      setGotSnapshot(true);
     } catch (e: unknown) {
       setError(errMsg(e, `Error parsing Jira ${type} events`));
     }
@@ -199,7 +201,7 @@ export default function Index() {
           </>
         )}
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>
         )}

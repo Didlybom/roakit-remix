@@ -250,18 +250,22 @@ export default function Index() {
   const jiraElementId = (jira: string) => `JIRA-${removeSpaces(jira)}`;
 
   const setRows = (type: GitHubEventType, querySnapshot: firebase.firestore.QuerySnapshot) => {
-    setGotSnapshot(true);
     try {
       switch (type) {
         case GitHubEventType.PullRequest:
-          return setGithubPRs(gitHubRows(querySnapshot));
+          setGithubPRs(gitHubRows(querySnapshot));
+          break;
         case GitHubEventType.PullRequestReviewComment:
-          return setGithubPRComments(gitHubRows(querySnapshot));
+          setGithubPRComments(gitHubRows(querySnapshot));
+          break;
         case GitHubEventType.Push:
-          return setGithubPushes(gitHubRows(querySnapshot));
+          setGithubPushes(gitHubRows(querySnapshot));
+          break;
         case GitHubEventType.Release:
-          return setGithubReleases(gitHubRows(querySnapshot));
+          setGithubReleases(gitHubRows(querySnapshot));
+          break;
       }
+      setGotSnapshot(true);
     } catch (e: unknown) {
       setError(errMsg(e, `Error parsing GitHub ${type} events`));
     }
@@ -513,7 +517,7 @@ export default function Index() {
           </>
         )}
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>
         )}
