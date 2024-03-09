@@ -3,12 +3,7 @@ import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useNavigation, useSubmit } from '@remix-run/react';
-import {
-  GoogleAuthProvider,
-  getRedirectResult,
-  signInWithEmailAndPassword,
-  signInWithRedirect,
-} from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '~/components/App';
 import { sessionCookie } from '../cookies.server';
@@ -50,34 +45,33 @@ export default function Login() {
   const navigation = useNavigation();
   const actionData = useActionData<typeof action>();
 
-  const [isProcessingGoogle, setIsProcessingGoogle] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [googleError, setGoogleError] = useState('');
 
   const [refreshedToken, setRefreshedToken] = useState<string | undefined>();
 
-  useEffect(() => {
-    async function getAuthRedirect() {
-      try {
-        setIsProcessingGoogle(true);
-        const redirectResult = await getRedirectResult(clientAuth);
-        if (!redirectResult) {
-          setIsProcessingGoogle(false);
-          return;
-        }
-        const idToken = await redirectResult?.user.getIdToken();
-        setIsProcessingGoogle(false);
-        if (!idToken) {
-          throw Error('Token not found');
-        }
-        submit({ idToken }, { method: 'post' });
-      } catch (e) {
-        setIsProcessingGoogle(false);
-        setGoogleError(errMsg(e, 'Login failed'));
-      }
-    }
-    void getAuthRedirect();
-  }, [submit]);
+  // useEffect(() => {
+  //   async function getAuthRedirect() {
+  //     try {
+  //       setIsProcessingGoogle(true);
+  //       const redirectResult = await getRedirectResult(clientAuth);
+  //       if (!redirectResult) {
+  //         setIsProcessingGoogle(false);
+  //         return;
+  //       }
+  //       const idToken = await redirectResult?.user.getIdToken();
+  //       setIsProcessingGoogle(false);
+  //       if (!idToken) {
+  //         throw Error('Token not found');
+  //       }
+  //       submit({ idToken }, { method: 'post' });
+  //     } catch (e) {
+  //       setIsProcessingGoogle(false);
+  //       setGoogleError(errMsg(e, 'Login failed'));
+  //     }
+  //   }
+  //   void getAuthRedirect();
+  // }, [submit]);
 
   useEffect(() => {
     async function refreshToken() {
@@ -103,7 +97,10 @@ export default function Login() {
 
     try {
       const googleAuthProvider = new GoogleAuthProvider();
-      await signInWithRedirect(clientAuth, googleAuthProvider);
+      // await signInWithRedirect(clientAuth, googleAuthProvider);
+      const credential = await signInWithPopup(clientAuth, googleAuthProvider);
+      const idToken = await credential.user.getIdToken();
+      submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
       setGoogleError(errMsg(e, 'Error signing in'));
@@ -132,11 +129,7 @@ export default function Login() {
   }
 
   return (
-    <App
-      isLoggedIn={false}
-      view="login"
-      showProgress={isProcessingGoogle || navigation.state === 'submitting'}
-    >
+    <App isLoggedIn={false} view="login" showProgress={navigation.state === 'submitting'}>
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin} autoComplete="on">
@@ -152,7 +145,7 @@ export default function Login() {
                 onChange={() => setLoginError('')}
               />
               <Button
-                disabled={isProcessingGoogle || navigation.state === 'submitting'}
+                disabled={navigation.state === 'submitting'}
                 variant="contained"
                 type="submit"
               >
@@ -165,7 +158,7 @@ export default function Login() {
           </Typography>
           <Box sx={{ position: 'relative' }}>
             <Button
-              disabled={isProcessingGoogle || navigation.state === 'submitting'}
+              disabled={navigation.state === 'submitting'}
               variant="outlined"
               startIcon={<GoogleIcon />}
               sx={{ width: '100%' }}
