@@ -12,7 +12,7 @@ import {
   styled,
 } from '@mui/material';
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
-import { DateRange } from '~/utils/dateUtils';
+import { DateRange } from '../utils/dateUtils';
 import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 

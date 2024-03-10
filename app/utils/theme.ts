@@ -9,8 +9,4 @@ const theme = createTheme({
   },
 });
 
-export const disabledNotOpaqueSx = {
-  ['&.Mui-disabled']: { opacity: 'initial' },
-};
-
 export default theme;

@@ -14,18 +14,18 @@ import {
   GridSortDirection,
   GridToolbarContainer,
 } from '@mui/x-data-grid';
-import { redirect, useLoaderData, useSubmit } from '@remix-run/react';
+import { redirect, useFetcher, useLoaderData } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import App from '~/components/App';
-import { sessionCookie } from '~/cookies.server';
-import { loadSession } from '~/utils/authUtils.server';
-import { errMsg } from '~/utils/errorUtils';
-import { fetchInitiatives } from '~/utils/firestoreUtils.server';
+import App from '../components/App';
+import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
+import { loadSession } from '../utils/authUtils.server';
+import { errMsg } from '../utils/errorUtils';
+import { fetchInitiatives } from '../utils/firestoreUtils.server';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -69,9 +69,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!initiativeId) {
       return null;
     }
-    const isDelete = !!form.get('delete');
 
-    if (!isDelete) {
+    if (request.method !== 'DELETE') {
       const label = form.get('label')?.toString() ?? '';
       const doc = firestore.doc('customers/' + customerId + '/initiatives/' + initiativeId);
       await doc.set({ label }, { merge: true });
@@ -88,7 +87,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Initiatives() {
-  const submit = useSubmit();
+  const fetcher = useFetcher();
   const confirm = useConfirm();
 
   const serverData = useLoaderData<typeof loader>();
@@ -153,7 +152,7 @@ export default function Initiatives() {
 
   const handleDeleteClick = (id: GridRowId, iniativeKey: string) => {
     setRows(rows.filter(row => row.id !== id));
-    submit({ delete: true, initiativeId: iniativeKey }, { method: 'post' });
+    fetcher.submit({ initiativeId: iniativeKey }, { method: 'DELETE' });
   };
 
   const columns: GridColDef[] = [
@@ -227,7 +226,7 @@ export default function Initiatives() {
             }
             const updatedRow = { ...newRow, isNew: false };
             setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
-            submit(
+            fetcher.submit(
               { initiativeId: updatedRow.key, label: updatedRow.label ?? '' },
               { method: 'post' }
             );

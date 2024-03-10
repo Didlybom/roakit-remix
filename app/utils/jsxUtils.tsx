@@ -1,4 +1,4 @@
-import { Box, Tooltip } from '@mui/material';
+import { Box, SxProps, Tooltip } from '@mui/material';
 import {
   GridColDef,
   GridDensity,
@@ -6,12 +6,12 @@ import {
   GridSortDirection,
   GridValueFormatterParams,
 } from '@mui/x-data-grid';
-import { ActorData } from '~/schemas/schemas';
+import { ActorData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 
-export const ellipsisAttrs = { overflow: 'hidden', textOverflow: 'ellipsis' };
+export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
-export const stickyAttrs = {
+export const stickySx: SxProps = {
   textWrap: 'nowrap',
   position: 'sticky',
   top: 60, // depends on header height
@@ -48,7 +48,7 @@ export const dateColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
     valueFormatter: (params: GridValueFormatterParams) => formatRelative(params.value as Date),
     renderCell: (params: GridRenderCellParams) => (
       <Tooltip title={formatMonthDayTime(params.value as Date)}>
-        <Box sx={{ ...ellipsisAttrs }}>{formatRelative(params.value as Date)}</Box>
+        <Box sx={{ ...ellipsisSx }}>{formatRelative(params.value as Date)}</Box>
       </Tooltip>
     ),
     ...colDef,
@@ -65,11 +65,15 @@ export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
     renderCell: (params: GridRenderCellParams) => {
       const fields = params.value as ActorData;
       return !fields ? '' : (
-          <Box sx={{ ...ellipsisAttrs }} title={fields.name ?? fields.id}>
+          <Box sx={{ ...ellipsisSx }} title={fields.name ?? fields.id}>
             {fields.name}
           </Box>
         );
     },
     ...colDef,
   };
+};
+
+export const disabledNotOpaqueSx: SxProps = {
+  ['&.Mui-disabled']: { opacity: 'initial' },
 };

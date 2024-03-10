@@ -1,6 +1,6 @@
 import { Box, styled } from '@mui/material';
 import { ReactNode, useState } from 'react';
-import { DateRange } from '~/utils/dateUtils';
+import { DateRange } from '../utils/dateUtils';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
 import DrawerHeader from './NavDrawerHeader';

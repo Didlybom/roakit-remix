@@ -1,5 +1,5 @@
-import { ActorData, InitiativeData, actorSchema, initiativeSchema } from '~/schemas/schemas';
 import { firestore } from '../firebase.server';
+import { ActorData, InitiativeData, actorSchema, initiativeSchema } from '../schemas/schemas';
 
 export const fetchInitiatives = async (customerId: number | undefined) => {
   const coll = firestore.collection(`customers/${customerId}/initiatives`);

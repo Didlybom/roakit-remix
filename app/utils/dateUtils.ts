@@ -12,10 +12,7 @@ export const formatMonthDayTime = (date: Date) =>
   });
 
 export const formatMonthDay = (date: Date) =>
-  date.toLocaleDateString('en-us', {
-    month: 'short',
-    day: 'numeric',
-  });
+  date.toLocaleDateString('en-us', { month: 'short', day: 'numeric' });
 
 const formatRelativeLocale = {
   lastWeek: "'Last' eeee",
@@ -32,10 +29,7 @@ const relativeLlocale = {
 };
 
 export const formatRelative = (date: Date) =>
-  formatRelativeFn(date, new Date(), {
-    locale: relativeLlocale,
-    weekStartsOn: 1 /* Monday */,
-  });
+  formatRelativeFn(date, new Date(), { locale: relativeLlocale, weekStartsOn: 1 /* Monday */ });
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',

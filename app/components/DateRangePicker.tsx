@@ -1,4 +1,6 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DateRangeIcon from '@mui/icons-material/DateRange';
 import TodayIcon from '@mui/icons-material/Today';
@@ -12,7 +14,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { useState } from 'react';
-import { DateRange, dateRanges } from '~/utils/dateUtils';
+import { DateRange, dateRanges } from '../utils/dateUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
   [DateRange.TwoWeeks]: <CalendarMonthIcon fontSize="small" />,
@@ -29,41 +31,38 @@ export default function DateRangePicker({
   onDateRangeSelect: (dateRange: DateRange) => void;
   showProgress?: boolean;
 }) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const handleClickListItem = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
 
   return (
     <Box sx={{ mx: 2 }}>
       <Button
         color="inherit"
         startIcon={icons[dateRange]}
-        endIcon={<ArrowDropDownIcon />}
-        onClick={handleClickListItem}
+        endIcon={menuEl ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
+        onClick={e => setMenuEl(e.currentTarget)}
         sx={{ textWrap: 'nowrap' }}
       >
         {dateRanges[dateRange]}
       </Button>
       <Menu
         id="date-range"
-        open={!!anchorEl}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
+        open={!!menuEl}
+        anchorEl={menuEl}
+        onClose={() => setMenuEl(null)}
         sx={{ color: 'inherit' }}
       >
-        {Object.keys(dateRanges).map((date, i) => (
+        {(Object.keys(dateRanges) as DateRange[]).map((date, i) => (
           <MenuItem
             key={i}
             value={date}
-            selected={(date as DateRange) === dateRange}
+            selected={date === dateRange}
             onClick={() => {
-              setAnchorEl(null);
-              onDateRangeSelect(date as DateRange);
+              setMenuEl(null);
+              onDateRangeSelect(date);
             }}
           >
-            <ListItemIcon>{icons[date as DateRange]}</ListItemIcon>
-            <ListItemText>{dateRanges[date as DateRange]}</ListItemText>
+            <ListItemIcon>{icons[date]}</ListItemIcon>
+            <ListItemText>{dateRanges[date]}</ListItemText>
           </MenuItem>
         ))}
       </Menu>

@@ -8,12 +8,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
-import App from '~/components/App';
-import { JiraEventType, JiraRow, jiraRows } from '~/schemas/jiraFeed';
-import { loadSession } from '~/utils/authUtils.server';
-import { actorColdDef, dataGridCommonProps, dateColdDef, ellipsisAttrs } from '~/utils/jsxUtils';
+import App from '../components/App';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
+import { JiraEventType, JiraRow, jiraRows } from '../schemas/jiraFeed';
+import { loadSession } from '../utils/authUtils.server';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
   DateRange,
@@ -21,6 +20,7 @@ import {
   formatMonthDay,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { actorColdDef, dataGridCommonProps, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
 
 enum View {
   IssueCreated = 0,
@@ -55,7 +55,7 @@ export default function Index() {
 
   const jiraColumns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef({ width: 100 }),
+      dateColdDef(),
       actorColdDef({ headerName: 'Author', width: 120 }),
       {
         field: 'project',
@@ -84,7 +84,7 @@ export default function Index() {
           return !fields ? '' : (
               <Link
                 href={`${fields.url.split('rest')[0]}browse/${fields.label}`}
-                sx={{ ...ellipsisAttrs }}
+                sx={{ ...ellipsisSx }}
               >
                 {fields.label}
               </Link>

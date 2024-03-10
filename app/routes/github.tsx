@@ -27,16 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
-import App from '~/components/App';
-import { loadSession } from '~/utils/authUtils.server';
-import {
-  actorColdDef,
-  dataGridCommonProps,
-  dateColdDef,
-  ellipsisAttrs,
-  stickyAttrs,
-} from '~/utils/jsxUtils';
-import { disabledNotOpaqueSx } from '~/utils/theme';
+import App from '../components/App';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -48,6 +39,7 @@ import {
   rowsByAuthor,
   rowsByJira,
 } from '../schemas/githubFeed';
+import { loadSession } from '../utils/authUtils.server';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
   DateRange,
@@ -55,6 +47,14 @@ import {
   formatMonthDay,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import {
+  actorColdDef,
+  dataGridCommonProps,
+  dateColdDef,
+  disabledNotOpaqueSx,
+  ellipsisSx,
+  stickySx,
+} from '../utils/jsxUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
 
 enum ActivityView {
@@ -113,7 +113,7 @@ export default function Index() {
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef({ width: 100 }),
+      dateColdDef(),
       { field: 'repositoryName', headerName: 'Repo.', width: 120 },
       actorColdDef({
         headerName: 'Author',
@@ -131,7 +131,7 @@ export default function Index() {
                   cursor: 'pointer',
                   textDecoration: 'none',
                   borderBottom: 'dotted 1px',
-                  ...ellipsisAttrs,
+                  ...ellipsisSx,
                 }}
               >
                 {fields.name}
@@ -148,7 +148,7 @@ export default function Index() {
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
           return !fields ? '' : (
-              <Link href={fields.url} title={fields.label} sx={{ ...ellipsisAttrs }}>
+              <Link href={fields.url} title={fields.label} sx={{ ...ellipsisSx }}>
                 {fields.label}
               </Link>
             );
@@ -217,7 +217,7 @@ export default function Index() {
                 </Link>
               }
               {fields?.pullRequestComment && (
-                <Typography variant="caption" sx={{ ...ellipsisAttrs }}>
+                <Typography variant="caption" sx={{ ...ellipsisSx }}>
                   {fields.pullRequestComment.comment}
                 </Typography>
               )}
@@ -396,7 +396,7 @@ export default function Index() {
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '15px' }}>
-                <Box sx={{ ...stickyAttrs }}>
+                <Box sx={{ ...stickySx }}>
                   {sortedJiras.map((jira, i) => (
                     <Box key={i}>
                       <Link
@@ -442,7 +442,7 @@ export default function Index() {
           <Stack direction="row" sx={{ ml: 2 }}>
             <Box sx={{ display: 'flex' }}>
               <Box sx={{ position: 'relative', mt: '25px' }}>
-                <Box sx={{ ...stickyAttrs }}>
+                <Box sx={{ ...stickySx }}>
                   {sortedAuthors.map((author, i) => (
                     <Box key={i}>
                       <Link

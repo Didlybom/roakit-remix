@@ -59,9 +59,7 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="theme-color" content={theme.palette.primary.main} />
-        {title ?
-          <title>{title}</title>
-        : null}
+        {!!title && <title>{title}</title>}
         <Meta />
         <Links />
         <link rel="icon" href="data:;base64,=" />
@@ -70,6 +68,10 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap"
         />
         <meta name="emotion-insertion-point" content="emotion-insertion-point" />
       </head>

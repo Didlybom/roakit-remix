@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
-import App from '~/components/App';
-import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange } from '~/utils/dateUtils';
+import App from '../components/App';
+import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange } from '../utils/dateUtils';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
@@ -48,6 +48,9 @@ export default function Dashboard() {
       onDateRangeSelect={dateFilter => setDateFilter(dateFilter)}
       showProgress={false && prevDateFilter && dateFilter !== prevDateFilter}
     >
+      <Typography textAlign="center" variant="h6" sx={{ m: 3 }}>
+        Under construction
+      </Typography>
       <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
         <Grid>
           <Paper sx={{ ...commonPaperSx }}>

@@ -2,10 +2,10 @@ import GoogleIcon from '@mui/icons-material/Google';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useActionData, useNavigation, useSubmit } from '@remix-run/react';
+import { Form, useActionData, useFetcher, useNavigation } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
-import App from '~/components/App';
+import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
@@ -41,7 +41,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Login() {
-  const submit = useSubmit();
+  const fetcher = useFetcher();
   const navigation = useNavigation();
   const actionData = useActionData<typeof action>();
 
@@ -86,9 +86,9 @@ export default function Login() {
 
   useEffect(() => {
     if (refreshedToken) {
-      submit({ isTokenRefreshed: true, idToken: refreshedToken }, { method: 'post' }); // hand over to server action
+      fetcher.submit({ isTokenRefreshed: true, idToken: refreshedToken }, { method: 'post' }); // hand over to server action
     }
-  }, [refreshedToken, submit]);
+  }, [refreshedToken, fetcher]);
 
   async function handleSignInWithGoogle(e: SyntheticEvent) {
     e.preventDefault();
@@ -100,7 +100,7 @@ export default function Login() {
       // await signInWithRedirect(clientAuth, googleAuthProvider);
       const credential = await signInWithPopup(clientAuth, googleAuthProvider);
       const idToken = await credential.user.getIdToken();
-      submit({ idToken }, { method: 'post' }); // hand over to server action
+      fetcher.submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
       setGoogleError(errMsg(e, 'Error signing in'));
@@ -121,7 +121,7 @@ export default function Login() {
     try {
       const credential = await signInWithEmailAndPassword(clientAuth, email, password);
       const idToken = await credential.user.getIdToken();
-      submit({ idToken }, { method: 'post' }); // hand over to server action
+      fetcher.submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
       setLoginError(errMsg(e, 'Error signing in'));

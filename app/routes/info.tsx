@@ -1,8 +1,8 @@
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import App from '~/components/App';
 import packageJson from '../../package.json';
+import App from '../components/App';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {

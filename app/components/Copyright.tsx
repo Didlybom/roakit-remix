@@ -1,6 +1,7 @@
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { grey, indigo } from '@mui/material/colors';
+import theme from '../utils/theme';
 
 export default function Copyright() {
   return (
@@ -10,7 +11,7 @@ export default function Copyright() {
         px: 2,
         py: 1,
         textWrap: 'nowrap',
-        zIndex: 9999,
+        zIndex: theme.zIndex.drawer + 1,
         backgroundColor: indigo[50],
         borderTop: 'solid 1px',
         borderColor: grey[200],

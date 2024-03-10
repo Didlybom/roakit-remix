@@ -3,7 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { redirect } from '@remix-run/node';
 import { useSubmit } from '@remix-run/react';
 import { useEffect } from 'react';
-import App from '~/components/App';
+import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth } from '../firebase.client';
 

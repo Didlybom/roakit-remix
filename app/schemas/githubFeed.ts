@@ -1,6 +1,6 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
-import { capitalizeAndUseSpaces, findJiraProjects } from '~/utils/stringUtils';
+import { capitalizeAndUseSpaces, findJiraProjects } from '../utils/stringUtils';
 import { ActorData } from './schemas';
 
 const zuser = z.object({ login: z.string(), html_url: z.string() });

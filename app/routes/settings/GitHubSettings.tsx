@@ -16,13 +16,13 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 
-import { useNavigation, useSubmit } from '@remix-run/react';
+import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { SettingsData } from '~/schemas/schemas';
+import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import githubImage from './images/github-webhook.png';
-import { actionIcon } from './route';
+import { actionIcon, screenshotThumbSx } from './route';
 
 export default function GitHubSettings({
   settingsData,
@@ -34,17 +34,17 @@ export default function GitHubSettings({
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const navigation = useNavigation();
-  const submit = useSubmit();
+  const fetcher = useFetcher();
 
-  const serverGitHubFeed = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
-  const gitHubURL = `https://ingest.roakit.com/github/${serverGitHubFeed.clientId}`;
-  const [gitHubSecret, setGitHubSecret] = useState(serverGitHubFeed.secret);
+  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
+  const url = `https://ingest.roakit.com/github/${serverData.clientId}`;
+  const [secret, setSecret] = useState(serverData.secret);
 
   useEffect(() => {
-    if (!serverGitHubFeed.secret) {
-      setGitHubSecret(uuidv4());
+    if (!serverData.secret) {
+      setSecret(uuidv4());
     }
-  }, [serverGitHubFeed.secret]);
+  }, [serverData.secret]);
 
   return (
     <>
@@ -52,34 +52,30 @@ export default function GitHubSettings({
         <Grid container spacing={1}>
           <Grid xs={10}>
             <TextField
-              label="GitHub URL"
-              value={gitHubURL}
+              label="URL"
+              value={url}
               fullWidth
               size="small"
               InputProps={{ readOnly: true }}
             />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
-            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(gitHubURL))}
+            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
             <Grid xs={10}>
-              {gitHubSecret === serverGitHubFeed.secret ?
+              {secret === serverData.secret ?
                 <Tooltip title="If you've lost or forgotten the GitHub webhook secret, you can change it, but be aware that the webhook configuration on GitHub will need to be updated.">
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => setGitHubSecret(uuidv4())}
-                  >
+                  <Button variant="contained" color="secondary" onClick={() => setSecret(uuidv4())}>
                     Change GitHub Secret
                   </Button>
                 </Tooltip>
               : <TextField
-                  label="GitHub Secret"
-                  value={gitHubSecret}
-                  onChange={e => setGitHubSecret(e.target.value)}
+                  label="Secret"
+                  value={secret}
+                  onChange={e => setSecret(e.target.value)}
                   disabled={navigation.state === 'submitting'}
                   fullWidth
                   size="small"
@@ -87,7 +83,7 @@ export default function GitHubSettings({
                     ...(navigation.state !== 'submitting' && {
                       endAdornment: (
                         <Tooltip title="Regenerate a secret">
-                          <IconButton onClick={() => setGitHubSecret(uuidv4())}>
+                          <IconButton onClick={() => setSecret(uuidv4())}>
                             <RefreshIcon />
                           </IconButton>
                         </Tooltip>
@@ -97,24 +93,22 @@ export default function GitHubSettings({
                 />
               }
             </Grid>
-            <Grid xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid xs={2}>
               <Stack direction={'row'}>
-                {gitHubSecret !== serverGitHubFeed.secret &&
-                  actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
-                    handleCopy(gitHubSecret)
-                  )}
+                {secret !== serverData.secret &&
+                  actionIcon(<CopyIcon />, 'Copy secret to clipboard', () => handleCopy(secret))}
                 {navigation.state !== 'submitting' &&
-                  gitHubSecret?.trim() &&
-                  gitHubSecret !== serverGitHubFeed.secret &&
+                  secret?.trim() &&
+                  secret !== serverData.secret &&
                   actionIcon(
                     <DoneIcon />,
                     'Save the secret (make sure to copy it first, as it will be hidden once saved)',
                     () =>
-                      submit(
+                      fetcher.submit(
                         {
-                          feedId: serverGitHubFeed.feedId,
+                          feedId: serverData.feedId,
                           type: feedUtils.GITHUB_FEED_TYPE,
-                          secret: gitHubSecret,
+                          secret: secret,
                         },
                         { method: 'post' }
                       )
@@ -126,7 +120,7 @@ export default function GitHubSettings({
                 )}
               </Stack>
             </Grid>
-            {gitHubSecret !== serverGitHubFeed.secret && (
+            {secret !== serverData.secret && (
               <Typography variant="caption" sx={{ m: 1 }}>
                 <strong>Copy</strong> this secret (to paste it on the GitHub Webhook configuration
                 page) and <strong>save</strong> it by using the buttons on the right. For security
@@ -136,23 +130,34 @@ export default function GitHubSettings({
           </Grid>
         )}
       </Stack>
+      <Box
+        component="img"
+        src={githubImage}
+        sx={{ width: '154px', height: '159px', ...screenshotThumbSx }}
+        onClick={e =>
+          setPopover({
+            element: e.currentTarget,
+            content: <img src={githubImage} width="768" height="794" />,
+          })
+        }
+      />
       <Typography component="div" sx={{ mt: 5 }}>
-        In your GitHub website, navigate to the <strong>Settings {'>'} Webhooks</strong> page for
-        your organization (you must be an organization owner). You will need to create a new webhook
-        for <strong>Roakit</strong> by clicking the <strong>Add webhook</strong> button in the upper
-        right corner.
+        In your GitHub website, navigate to the <code>Settings {'>'} Webhooks</code> page for your
+        organization (you must be an organization owner). You will need to create a new webhook for{' '}
+        <strong>Roakit</strong> by clicking the <code>Add webhook</code> button in the upper right
+        corner.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
-          <ListItem sx={{ display: 'list-item' }}>
-            <strong>Payload URL: </strong> copy the value from the field above
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            <code>Payload URL</code> — copy the value from the field above
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            <strong>Content type :</strong> set this option to <code>application/json</code> to
-            deliver to <strong>Roakit</strong> as JSON formatted text
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            <code>Content type</code> — set this option to <code>application/json</code> to deliver
+            to <strong>Roakit</strong> as JSON formatted text
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            <strong>Secret: </strong> a high entropy value shared with <strong>Roakit</strong> used
-            to validate webhook deliveries; copy the value from the field above (don&apos;t forget
-            to save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            <code>Secret</code> — a high entropy value shared with <strong>Roakit</strong> used to
+            validate webhook deliveries; copy the value from the field above (don&apos;t forget to
+            save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
           </ListItem>
         </List>
         More information on configuring and using GitHub webhooks can be found on their{' '}
@@ -163,21 +168,6 @@ export default function GitHubSettings({
           website
         </Link>
         .
-        <Stack sx={{ mt: 4 }}>
-          <Typography variant={'caption'}>Screenshot</Typography>
-          <img
-            src={githubImage}
-            width="154"
-            height="159"
-            style={{ borderStyle: 'dotted', cursor: 'pointer' }}
-            onClick={e =>
-              setPopover({
-                element: e.currentTarget,
-                content: <img src={githubImage} width="768" height="794" />,
-              })
-            }
-          />
-        </Stack>
       </Typography>
     </>
   );

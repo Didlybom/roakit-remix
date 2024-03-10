@@ -15,13 +15,13 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { useNavigation, useSubmit } from '@remix-run/react';
+import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { SettingsData } from '~/schemas/schemas';
+import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import confluenceImage from './images/confluence-webhook.png';
-import { actionIcon } from './route';
+import { actionIcon, screenshotThumbSx } from './route';
 
 export default function ConfluenceSettings({
   settingsData,
@@ -33,22 +33,20 @@ export default function ConfluenceSettings({
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const navigation = useNavigation();
-  const submit = useSubmit();
+  const fetcher = useFetcher();
 
-  const serverConfluenceFeed = settingsData.feeds.filter(
-    f => f.type === feedUtils.CONFLUENCE_FEED_TYPE
-  )[0];
+  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.CONFLUENCE_FEED_TYPE)[0];
 
-  const confluenceURL = `https://ingest.roakit.com/confluence/${serverConfluenceFeed.clientId}`;
-  const [confluenceSecret, setConfluenceSecret] = useState(serverConfluenceFeed.secret);
-  const confluenceEvents =
+  const url = `https://ingest.roakit.com/confluence/${serverData.clientId}`;
+  const [secret, setSecret] = useState(serverData.secret);
+  const events =
     'attachment_created,attachment_removed,attachment_restored,attachment_trashed,attachment_updated,blog_created,blog_removed,blog_restored,blog_trashed,blog_updated,blueprint_page_created,comment_created,comment_removed,comment_updated,content_created,content_restored,content_trashed,content_updated,content_permissions_updated,group_created,group_removed,label_added,label_created,label_deleted,label_removed,page_children_reordered,page_created,page_moved,page_removed,page_restored,page_trashed,page_updated,space_created,space_logo_updated,space_permissions_updated,space_removed,space_updated,theme_enabled,user_created,user_deactivated,user_followed,user_reactivated,user_removed';
 
   useEffect(() => {
-    if (!serverConfluenceFeed.secret) {
-      setConfluenceSecret(uuidv4());
+    if (!serverData.secret) {
+      setSecret(uuidv4());
     }
-  }, [serverConfluenceFeed.secret]);
+  }, [serverData.secret]);
 
   return (
     <>
@@ -56,34 +54,30 @@ export default function ConfluenceSettings({
         <Grid container spacing={1}>
           <Grid xs={10}>
             <TextField
-              label="Confluence URL"
-              value={confluenceURL}
+              label="URL"
+              value={url}
               fullWidth
               size="small"
               InputProps={{ readOnly: true }}
             />
           </Grid>
-          <Grid xs={2} sx={{ alignSelf: 'center' }}>
-            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
+          <Grid xs={2}>
+            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
           </Grid>
         </Grid>
         {navigation.state !== 'loading' && (
           <Grid container spacing={1}>
             <Grid xs={10}>
-              {confluenceSecret === serverConfluenceFeed.secret ?
+              {secret === serverData.secret ?
                 <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => setConfluenceSecret(uuidv4())}
-                  >
+                  <Button variant="contained" color="secondary" onClick={() => setSecret(uuidv4())}>
                     Change Confluence Secret
                   </Button>
                 </Tooltip>
               : <TextField
-                  label="Confluence Secret"
-                  value={confluenceSecret}
-                  onChange={e => setConfluenceSecret(e.target.value)}
+                  label="Secret"
+                  value={secret}
+                  onChange={e => setSecret(e.target.value)}
                   disabled={navigation.state === 'submitting'}
                   fullWidth
                   size="small"
@@ -91,7 +85,7 @@ export default function ConfluenceSettings({
                     ...(navigation.state !== 'submitting' && {
                       endAdornment: (
                         <Tooltip title="Regenerate a secret">
-                          <IconButton onClick={() => setConfluenceSecret(uuidv4())}>
+                          <IconButton onClick={() => setSecret(uuidv4())}>
                             <RefreshIcon />
                           </IconButton>
                         </Tooltip>
@@ -101,36 +95,34 @@ export default function ConfluenceSettings({
                 />
               }
             </Grid>
-            <Grid xs={2} sx={{ alignSelf: 'center' }}>
+            <Grid xs={2}>
               <Stack direction={'row'}>
-                {confluenceSecret !== serverConfluenceFeed.secret &&
-                  actionIcon(<CopyIcon />, 'Copy secret to clipboard', () =>
-                    handleCopy(confluenceSecret)
-                  )}
+                {secret !== serverData.secret &&
+                  actionIcon(<CopyIcon />, 'Copy secret to clipboard', () => handleCopy(secret))}
                 {navigation.state !== 'submitting' &&
-                  confluenceSecret?.trim() &&
-                  confluenceSecret !== serverConfluenceFeed.secret &&
+                  secret?.trim() &&
+                  secret !== serverData.secret &&
                   actionIcon(
                     <DoneIcon />,
                     'Save the secret (make sure to copy it first, as it will be hidden once saved)',
                     () =>
-                      submit(
+                      fetcher.submit(
                         {
-                          feedId: serverConfluenceFeed.feedId,
+                          feedId: serverData.feedId,
                           type: feedUtils.CONFLUENCE_FEED_TYPE,
-                          secret: confluenceSecret,
+                          secret: secret,
                         },
                         { method: 'post' }
                       )
                   )}
                 {navigation.state === 'submitting' && (
-                  <Box sx={{ alignSelf: 'center', ml: '8px', mt: '3px' }}>
+                  <Box sx={{ ml: '8px', mt: '3px' }}>
                     <CircularProgress size="20px" />
                   </Box>
                 )}
               </Stack>
             </Grid>
-            {confluenceSecret !== serverConfluenceFeed.secret && (
+            {secret !== serverData.secret && (
               <Typography variant="caption" sx={{ m: 1 }}>
                 <strong>Copy</strong> this secret (to paste it on the Confluence Webhook
                 configuration page) and <strong>save</strong> it by using the buttons on the right.
@@ -142,45 +134,54 @@ export default function ConfluenceSettings({
         <Grid container spacing={1}>
           <Grid xs={10}>
             <TextField
-              label="Confluence Events"
-              value={confluenceEvents}
+              label="Events"
+              value={events}
               fullWidth
               size="small"
               InputProps={{ readOnly: true }}
             />
           </Grid>
-          <Grid xs={2} sx={{ alignSelf: 'center' }}>
-            {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>
-              handleCopy(confluenceEvents)
-            )}
+          <Grid xs={2}>
+            {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
           </Grid>
         </Grid>
       </Stack>
+      <Box
+        component="img"
+        src={confluenceImage}
+        sx={{ width: '160px', height: '121px', ...screenshotThumbSx }}
+        onClick={e =>
+          setPopover({
+            element: e.currentTarget,
+            content: <img src={confluenceImage} width="800" height="604" />,
+          })
+        }
+      />
       <Typography component="div" sx={{ mt: 5 }}>
         In your Confluence website, the administrator needs Confluence Administrator or System
         Administrator permissions to create the webhook using the values indicated above.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
-          <ListItem sx={{ display: 'list-item' }}>
-            Add a <strong>Name</strong> for the new webhook
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Add a <code>Name</code> for the new webhook
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            Enter the <strong>URL</strong> of the <strong>Roakit</strong> service
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Enter the <code>URL</code> of the <strong>Roakit</strong> service
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            Enter the <strong>secret</strong> for the <strong>Roakit</strong> service (don&apos;t
-            forget to save it on this page with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Enter the <code>secret</code> for the <strong>Roakit</strong> service (don&apos;t forget
+            to save it on this page with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            Select <strong>Test connection</strong> to verify your connection
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Select <code>Test connection</code> to verify your connection
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
             Choose the Events that should trigger the webhook
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            Select <strong>Active</strong> to enable the webhook
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Select <code>Active</code> to enable the webhook
           </ListItem>
-          <ListItem sx={{ display: 'list-item' }}>
-            Click <strong>Save</strong>
+          <ListItem disablePadding sx={{ display: 'list-item' }}>
+            Click <code>Save</code>
           </ListItem>
         </List>
         More information on configuring and using Confluence webhooks can be found on their{' '}
@@ -191,21 +192,6 @@ export default function ConfluenceSettings({
           website
         </Link>
         .
-        <Stack sx={{ mt: 4 }}>
-          <Typography variant={'caption'}>Screenshot</Typography>
-          <img
-            src={confluenceImage}
-            width="160"
-            height="121"
-            style={{ borderStyle: 'dotted' }}
-            onClick={e =>
-              setPopover({
-                element: e.currentTarget,
-                content: <img src={confluenceImage} width="800" height="604" />,
-              })
-            }
-          />
-        </Stack>
       </Typography>
     </>
   );

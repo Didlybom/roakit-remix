@@ -3,14 +3,17 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
+import {
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  ListSubheader,
+} from '@mui/material';
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
@@ -74,12 +77,13 @@ export default function NavDrawer({
       </List>
       <Divider />
       <List>
+        <ListSubheader color="primary">Atomic data</ListSubheader>
         <ListItem key="github" disablePadding>
           <ListItemButton href="/github" selected={view === 'github'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
               <GitHubIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary={'GitHub Feed'} />
+            <ListItemText primary={'GitHub feed'} />
           </ListItemButton>
         </ListItem>
         <ListItem key="jira" disablePadding>
@@ -87,7 +91,7 @@ export default function NavDrawer({
             <ListItemIcon sx={{ minWidth: '30px' }}>
               <JiraIcon />
             </ListItemIcon>
-            <ListItemText primary={'Jira Feed'} />
+            <ListItemText primary={'Jira feed'} />
           </ListItemButton>
         </ListItem>
       </List>

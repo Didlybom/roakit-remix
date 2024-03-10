@@ -1,9 +1,11 @@
 import {
   Box,
+  GlobalStyles,
   IconButton,
   Paper,
   Popover,
   Snackbar,
+  SxProps,
   Tab,
   Tabs,
   Tooltip,
@@ -15,15 +17,15 @@ import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useState } from 'react';
-import App from '~/components/App';
-import { feedSchema } from '~/schemas/schemas';
-import { loadSession } from '~/utils/authUtils.server';
-import { fetchInitiatives } from '~/utils/firestoreUtils.server';
+import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
 import { sessionCookie } from '../../cookies.server';
 import { firestore, auth as serverAuth } from '../../firebase.server';
+import { feedSchema } from '../../schemas/schemas';
+import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
+import { fetchInitiatives } from '../../utils/firestoreUtils.server';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
@@ -118,6 +120,15 @@ export const actionIcon = (icon: JSX.Element, tooltip: string, action: () => voi
   </Tooltip>
 );
 
+export const screenshotThumbSx: SxProps = {
+  position: 'relative',
+  zIndex: 2,
+  float: 'right',
+  margin: '40px 0 10px 10px',
+  borderStyle: 'dotted',
+  cursor: 'pointer',
+};
+
 export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
   const [tabValue, setTabValue] = useState(0);
@@ -136,18 +147,34 @@ export default function Settings() {
 
   return (
     <App view="settings" isLoggedIn={true}>
+      <GlobalStyles
+        styles={{
+          code: {
+            fontFamily: 'Roboto Mono, monospace',
+            fontSize: '.8125rem',
+            lineHeight: 1.5,
+            whiteSpace: 'nowrap',
+            backgroundColor: grey[200],
+            border: '1px solid',
+            borderColor: grey[400],
+            borderRadius: '6px',
+            padding: '1px 4px',
+          },
+        }}
+      />
       <Popover
         id={popover?.element ? 'popover' : undefined}
         open={!!popover?.element}
         anchorEl={popover?.element}
         onClose={() => setPopover(null)}
+        onClick={() => setPopover(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
+        <Box sx={{ p: 2, overflow: 'scroll' }}>{popover?.content}</Box>
       </Popover>
-      <Paper square={false} sx={{ backgroundColor: grey[50], m: 3 }}>
+      <Paper square={false} sx={{ backgroundColor: grey[50], m: 2 }}>
         <Typography variant="h6" sx={{ pl: 2, pt: 2, pb: 1 }}>
-          Settings
+          Webhook Settings
         </Typography>
         <Form method="post" noValidate autoComplete="off">
           <Snackbar

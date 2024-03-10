@@ -19,19 +19,19 @@ import {
   GridValueGetterParams,
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { useLoaderData, useSubmit } from '@remix-run/react';
+import { useFetcher, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useMemo, useState } from 'react';
-import App from '~/components/App';
-import DataGridWithSingleClickEditing from '~/components/DataGridWithSingleClickEditing';
-import { sessionCookie } from '~/cookies.server';
-import { firestore, auth as serverAuth } from '~/firebase.server';
-import { ActivityData, activitySchema } from '~/schemas/schemas';
-import { loadSession } from '~/utils/authUtils.server';
-import { errMsg } from '~/utils/errorUtils';
-import { fetchActorMap, fetchInitiatives } from '~/utils/firestoreUtils.server';
-import { actorColdDef, dateColdDef } from '~/utils/jsxUtils';
+import App from '../components/App';
+import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
+import { sessionCookie } from '../cookies.server';
+import { firestore, auth as serverAuth } from '../firebase.server';
+import { ActivityData, activitySchema } from '../schemas/schemas';
+import { loadSession } from '../utils/authUtils.server';
+import { errMsg } from '../utils/errorUtils';
+import { fetchActorMap, fetchInitiatives } from '../utils/firestoreUtils.server';
+import { actorColdDef, dateColdDef } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -118,7 +118,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function ActivityReview() {
-  const submit = useSubmit();
+  const fetcher = useFetcher();
 
   const sessionData = useLoaderData<typeof loader>();
 
@@ -159,7 +159,6 @@ export default function ActivityReview() {
         headerName: 'Initiative',
         type: 'singleSelect',
         valueOptions: [
-          { value: '', label: 'n/a' },
           ...sessionData.initiatives.map(i => {
             return { value: i.id, label: i.label };
           }),
@@ -203,7 +202,7 @@ export default function ActivityReview() {
             <Button
               disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
               onClick={() =>
-                submit(
+                fetcher.submit(
                   { initiativeId: bulkInitiative, activityIds: selectedRows },
                   { method: 'post' }
                 )
@@ -226,7 +225,7 @@ export default function ActivityReview() {
     <App view="activity.review" isLoggedIn={true} isNavOpen={true}>
       <Stack sx={{ m: 3 }}>
         {sessionData.activities.length && (
-          <Typography sx={{ mb: 2 }}>Please assign initiatives to these activities.</Typography>
+          <Typography sx={{ mb: 2 }}>Please set initiatives for these activities.</Typography>
         )}
         <DataGridWithSingleClickEditing
           columns={columns}
@@ -235,7 +234,7 @@ export default function ActivityReview() {
           slots={{ toolbar: selectedRows.length ? BulkToolbar : undefined }}
           checkboxSelection
           processRowUpdate={(updatedRow: ActivityData) => {
-            submit(
+            fetcher.submit(
               { initiativeId: updatedRow.initiative, activityIds: [updatedRow.id] },
               { method: 'post' }
             );
