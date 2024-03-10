@@ -36,7 +36,7 @@ import {
   ellipsisAttrs,
   stickyAttrs,
 } from '~/utils/jsxUtils';
-import { disabledSelectedSx } from '~/utils/theme';
+import { disabledNotOpaqueSx } from '~/utils/theme';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -383,7 +383,7 @@ export default function Index() {
               onClick={() => setShowBy(p.viewBy)}
               label={p.label}
               icon={p.icon}
-              sx={{ ...(showBy === p.viewBy && { ...disabledSelectedSx }) }}
+              sx={{ ...(showBy === p.viewBy && { ...disabledNotOpaqueSx }) }}
             />
           ))}
         </Stack>

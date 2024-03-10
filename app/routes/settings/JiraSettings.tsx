@@ -26,7 +26,13 @@ export default function JiraSettings({
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="JIRA URI" id="jira-uri" value={jiraURL} fullWidth disabled />
+            <TextField
+              label="JIRA URI"
+              value={jiraURL}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(jiraURL))}
@@ -34,7 +40,13 @@ export default function JiraSettings({
         </Grid>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="JIRA Scope" value={jiraScope} fullWidth disabled />
+            <TextField
+              label="JIRA Scope"
+              value={jiraScope}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(jiraScope))}
@@ -42,7 +54,13 @@ export default function JiraSettings({
         </Grid>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="JIRA Events" value={jiraEvents} fullWidth disabled />
+            <TextField
+              label="JIRA Events"
+              value={jiraEvents}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(jiraEvents))}
@@ -51,7 +69,7 @@ export default function JiraSettings({
       </Stack>
       <Typography component="div" sx={{ mt: 5 }}>
         In your Jira administration console, go to <strong>System WebHooks</strong> in the Advanced
-        section click the <strong>Create a Webhook</strong> button.
+        section and click the <strong>Create a Webhook</strong> button.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
           <ListItem sx={{ display: 'list-item' }}>
             In the form that is shown, enter the <strong>Name</strong>, <strong>URL</strong>,{' '}

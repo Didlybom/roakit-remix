@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useLoaderData } from '@remix-run/react';
@@ -144,7 +145,7 @@ export default function Settings() {
       >
         <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
       </Popover>
-      <Paper elevation={2} sx={{ m: 3 }}>
+      <Paper square={false} sx={{ backgroundColor: grey[50], m: 3 }}>
         <Typography variant="h6" sx={{ pl: 2, pt: 2, pb: 1 }}>
           Settings
         </Typography>
@@ -160,7 +161,7 @@ export default function Settings() {
             }}
             message={'Copied ' + (showCopyConfirmation ?? '')}
           />
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
             <Tabs
               variant="scrollable"
               value={tabValue}

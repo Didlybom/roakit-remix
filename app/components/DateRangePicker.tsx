@@ -1,6 +1,6 @@
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DateRangeIcon from '@mui/icons-material/DateRange';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TodayIcon from '@mui/icons-material/Today';
 import {
   Box,
@@ -35,11 +35,11 @@ export default function DateRangePicker({
   };
 
   return (
-    <Box sx={{ mx: 2, minWidth: 80 }}>
+    <Box sx={{ mx: 2 }}>
       <Button
         color="inherit"
         startIcon={icons[dateRange]}
-        endIcon={<KeyboardArrowDownIcon />}
+        endIcon={<ArrowDropDownIcon />}
         onClick={handleClickListItem}
         sx={{ textWrap: 'nowrap' }}
       >

@@ -51,7 +51,13 @@ export default function GitHubSettings({
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="GitHub URL" id="github-uri" value={gitHubURL} fullWidth disabled />
+            <TextField
+              label="GitHub URL"
+              value={gitHubURL}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(gitHubURL))}
@@ -76,6 +82,7 @@ export default function GitHubSettings({
                   onChange={e => setGitHubSecret(e.target.value)}
                   disabled={navigation.state === 'submitting'}
                   fullWidth
+                  size="small"
                   InputProps={{
                     ...(navigation.state !== 'submitting' && {
                       endAdornment: (

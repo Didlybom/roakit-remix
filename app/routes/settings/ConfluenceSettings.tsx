@@ -55,7 +55,13 @@ export default function ConfluenceSettings({
       <Stack spacing={3} maxWidth={600}>
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="Confluence URL" value={confluenceURL} fullWidth disabled />
+            <TextField
+              label="Confluence URL"
+              value={confluenceURL}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(confluenceURL))}
@@ -80,6 +86,7 @@ export default function ConfluenceSettings({
                   onChange={e => setConfluenceSecret(e.target.value)}
                   disabled={navigation.state === 'submitting'}
                   fullWidth
+                  size="small"
                   InputProps={{
                     ...(navigation.state !== 'submitting' && {
                       endAdornment: (
@@ -134,7 +141,13 @@ export default function ConfluenceSettings({
         )}
         <Grid container spacing={1}>
           <Grid xs={10}>
-            <TextField label="Confluence Events" value={confluenceEvents} fullWidth disabled />
+            <TextField
+              label="Confluence Events"
+              value={confluenceEvents}
+              fullWidth
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
           <Grid xs={2} sx={{ alignSelf: 'center' }}>
             {actionIcon(<CopyIcon />, 'Copy events to clipboard', () =>

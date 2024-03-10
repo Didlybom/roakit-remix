@@ -1,18 +1,31 @@
-import EngineeringIcon from '@mui/icons-material/Engineering';
-import { Box, Button, Stack } from '@mui/material';
 import Typography from '@mui/material/Typography';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import { grey, indigo } from '@mui/material/colors';
 
 export default function Copyright() {
   return (
-    <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
-      <Stack>
-        <Button disabled size="small" startIcon={<EngineeringIcon />}>
-          under construction
-        </Button>
-        <Typography align="center" variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {'Copyright © ROAKIT'} {new Date().getFullYear()}
+    <Grid
+      container
+      sx={{
+        px: 2,
+        py: 1,
+        textWrap: 'nowrap',
+        zIndex: 9999,
+        backgroundColor: indigo[50],
+        borderTop: 'solid 1px',
+        borderColor: grey[200],
+      }}
+    >
+      <Grid>
+        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+          {'Copyright © ROAKIT'} {new Date().getFullYear()}.
         </Typography>
-      </Stack>
-    </Box>
+      </Grid>
+      <Grid>
+        <Typography variant="body2" color="text.disabled" sx={{ pl: 1 }}>
+          Work in progress. Please pardon our dust.
+        </Typography>
+      </Grid>
+    </Grid>
   );
 }
