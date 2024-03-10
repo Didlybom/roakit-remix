@@ -2,7 +2,7 @@ import GoogleIcon from '@mui/icons-material/Google';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useActionData, useFetcher, useNavigation } from '@remix-run/react';
+import { Form, useActionData, useFetcher, useNavigation, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
@@ -41,6 +41,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Login() {
+  const submit = useSubmit();
   const fetcher = useFetcher();
   const navigation = useNavigation();
   const actionData = useActionData<typeof action>();
@@ -86,9 +87,9 @@ export default function Login() {
 
   useEffect(() => {
     if (refreshedToken) {
-      fetcher.submit({ isTokenRefreshed: true, idToken: refreshedToken }, { method: 'post' }); // hand over to server action
+      submit({ isTokenRefreshed: true, idToken: refreshedToken }, { method: 'post' }); // hand over to server action
     }
-  }, [refreshedToken, fetcher]);
+  }, [refreshedToken, submit]);
 
   async function handleSignInWithGoogle(e: SyntheticEvent) {
     e.preventDefault();
@@ -100,7 +101,7 @@ export default function Login() {
       // await signInWithRedirect(clientAuth, googleAuthProvider);
       const credential = await signInWithPopup(clientAuth, googleAuthProvider);
       const idToken = await credential.user.getIdToken();
-      fetcher.submit({ idToken }, { method: 'post' }); // hand over to server action
+      submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
       setGoogleError(errMsg(e, 'Error signing in'));
@@ -144,11 +145,7 @@ export default function Login() {
                 helperText={loginError}
                 onChange={() => setLoginError('')}
               />
-              <Button
-                disabled={navigation.state === 'submitting'}
-                variant="contained"
-                type="submit"
-              >
+              <Button variant="contained" type="submit">
                 Login
               </Button>
             </Stack>
@@ -158,7 +155,6 @@ export default function Login() {
           </Typography>
           <Box sx={{ position: 'relative' }}>
             <Button
-              disabled={navigation.state === 'submitting'}
               variant="outlined"
               startIcon={<GoogleIcon />}
               sx={{ width: '100%' }}
