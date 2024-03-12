@@ -87,11 +87,15 @@ export default function Index() {
     defaultValue: DateRange.OneDay,
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
+  const prevDateFilter = usePrevious(dateFilter);
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.Jira);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
-  const [popoverElement, setPopoverElement] = useState<HTMLElement | null>(null);
-  const [popoverContent, setPopoverContent] = useState<JSX.Element | undefined>(undefined);
+  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
+    null
+  );
+  const [error, setError] = useState('');
+  const pluralizeMemo = memoize(pluralize);
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
   const [gitHubPRs, setGithubPRs] = useState<GitHubRow[]>([]);
@@ -99,16 +103,10 @@ export default function Index() {
   const [gitHubPushes, setGithubPushes] = useState<GitHubRow[]>([]);
   const [gitHubReleases, setGithubReleases] = useState<GitHubRow[]>([]);
 
-  const prevDateFilter = usePrevious(dateFilter);
-
-  const [error, setError] = useState('');
-
-  const pluralizeMemo = memoize(pluralize);
-
   const handleJiraClick = useCallback((jira: string) => {
     setShowBy(ActivityView.Jira);
     setScrollToJira(jira);
-    setPopoverElement(null);
+    setPopover(null);
   }, []);
 
   const gitHubColumns = useMemo<GridColDef[]>(
@@ -197,19 +195,21 @@ export default function Index() {
               : <Link
                   variant="caption"
                   onClick={e => {
-                    setPopoverContent(
-                      <List dense={true}>
-                        <LinkifyJira
-                          content={fields.commitMessages?.map((message, i) => (
-                            <ListItem key={i}>
-                              <ListItemText>{message}</ListItemText>
-                            </ListItem>
-                          ))}
-                          onClick={jira => handleJiraClick(jira)}
-                        />
-                      </List>
-                    );
-                    setPopoverElement(e.currentTarget);
+                    setPopover({
+                      element: e.currentTarget,
+                      content: (
+                        <List dense={true}>
+                          <LinkifyJira
+                            content={fields.commitMessages?.map((message, i) => (
+                              <ListItem key={i}>
+                                <ListItemText>{message}</ListItemText>
+                              </ListItem>
+                            ))}
+                            onClick={jira => handleJiraClick(jira)}
+                          />
+                        </List>
+                      ),
+                    });
                   }}
                   sx={{ cursor: 'pointer' }}
                 >
@@ -301,10 +301,14 @@ export default function Index() {
       const element = document.getElementById(authorElementId(scrollToAuthor));
       setScrollToAuthor(undefined);
       if (element) {
-        window.scrollTo({
-          top: element.getBoundingClientRect().top + window.scrollY - 54,
-          behavior: 'smooth',
-        });
+        setTimeout(
+          () =>
+            window.scrollTo({
+              top: element.getBoundingClientRect().top + window.scrollY - 54,
+              behavior: 'smooth',
+            }),
+          0
+        );
       }
     }
   }, [scrollToAuthor]);
@@ -314,10 +318,14 @@ export default function Index() {
       const element = document.getElementById(jiraElementId(scrollToJira));
       setScrollToJira(undefined);
       if (element) {
-        window.scrollTo({
-          top: element.getBoundingClientRect().top + window.scrollY - 58,
-          behavior: 'smooth',
-        });
+        setTimeout(
+          () =>
+            window.scrollTo({
+              top: element.getBoundingClientRect().top + window.scrollY - 58,
+              behavior: 'smooth',
+            }),
+          0
+        );
       }
     }
   }, [scrollToJira]);
@@ -360,13 +368,14 @@ export default function Index() {
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
       <Popover
-        id={popoverElement ? 'popover' : undefined}
-        open={!!popoverElement}
-        anchorEl={popoverElement}
-        onClose={() => setPopoverElement(null)}
+        id={popover?.element ? 'popover' : undefined}
+        open={!!popover?.element}
+        anchorEl={popover?.element}
+        onClose={() => setPopover(null)}
+        onClick={() => setPopover(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Typography sx={{ p: 2 }}>{popoverContent}</Typography>
+        <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
       </Popover>
       <Stack sx={{ mt: 3 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
