@@ -7,7 +7,15 @@ export const fetchInitiatives = async (customerId: number | undefined) => {
   const initiatives: InitiativeData[] = [];
   docs.forEach(initiative => {
     const data = initiativeSchema.parse(initiative.data());
-    initiatives.push({ id: initiative.id, label: data.label });
+    initiatives.push({
+      id: initiative.id,
+      label: data.label,
+      counters:
+        data.counters ?
+          { activities: data.counters.activities }
+        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+      countersLastUpdated: data.countersLastUpdated ?? 0,
+    });
   });
   return initiatives;
 };
