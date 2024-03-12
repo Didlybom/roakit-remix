@@ -40,9 +40,9 @@ export enum DateRange {
 }
 
 export const dateRanges: Record<DateRange, string> = {
-  [DateRange.TwoWeeks]: '2 weeks',
-  [DateRange.OneWeek]: '1 week',
-  [DateRange.OneDay]: '1 day',
+  [DateRange.TwoWeeks]: 'Last 14 days',
+  [DateRange.OneWeek]: 'Last 7 days',
+  [DateRange.OneDay]: 'Last 24 hours',
 };
 
 export const dateFilterToStartDate = (dateFilter: DateRange) => {

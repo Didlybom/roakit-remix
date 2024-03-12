@@ -40,7 +40,7 @@ export default function DateRangePicker({
         startIcon={icons[dateRange]}
         endIcon={menuEl ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
         onClick={e => setMenuEl(e.currentTarget)}
-        sx={{ textWrap: 'nowrap' }}
+        sx={{ textWrap: 'nowrap', textTransform: 'none' }}
       >
         {dateRanges[dateRange]}
       </Button>
