@@ -128,9 +128,10 @@ export function ErrorBoundary() {
     <Document title="ROAKIT Error">
       <Layout>
         <Box sx={{ m: 4 }}>
-          <Typography variant="h5">An error occured!</Typography>
+          <Typography variant="h5">An error occurred!</Typography>
           <Typography sx={{ mt: 2 }}>
-            You can try to <Link to="/logout">logout</Link> and login again.
+            You can try to <Link to=".">refresh</Link>, or <Link to="/logout">logout</Link> and
+            login again.
           </Typography>
           <Alert severity="error" sx={{ mt: 4 }}>
             {message}

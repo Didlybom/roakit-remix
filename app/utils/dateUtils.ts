@@ -3,6 +3,8 @@ import { FormatRelativeToken, enUS } from 'date-fns/locale';
 import { startOfToday } from 'date-fns/startOfToday';
 import { subWeeks } from 'date-fns/subWeeks';
 
+export const ONE_HOUR = 60 * 60 * 1000;
+
 export const formatMonthDayTime = (date: Date) =>
   date.toLocaleDateString('en-us', {
     month: 'short',
@@ -23,13 +25,13 @@ const formatRelativeLocale = {
   other: 'P',
 };
 
-const relativeLlocale = {
+const relativeLocale = {
   ...enUS,
   formatRelative: (token: FormatRelativeToken) => formatRelativeLocale[token],
 };
 
 export const formatRelative = (date: Date) =>
-  formatRelativeFn(date, new Date(), { locale: relativeLlocale, weekStartsOn: 1 /* Monday */ });
+  formatRelativeFn(date, new Date(), { locale: relativeLocale, weekStartsOn: 1 /* Monday */ });
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',

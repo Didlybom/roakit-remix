@@ -151,13 +151,13 @@ export default function Settings() {
         styles={{
           code: {
             fontFamily: 'Roboto Mono, monospace',
-            fontSize: '.8125rem',
+            fontSize: '.8rem',
             lineHeight: 1.5,
             whiteSpace: 'nowrap',
             backgroundColor: grey[200],
             border: '1px solid',
             borderColor: grey[400],
-            borderRadius: '6px',
+            borderRadius: '5px',
             padding: '1px 4px',
           },
         }}

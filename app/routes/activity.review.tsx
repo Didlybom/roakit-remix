@@ -29,7 +29,7 @@ import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import { ActivityData, activitySchema } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
-import { errMsg } from '../utils/errorUtils';
+import { ParseError, errMsg } from '../utils/errorUtils';
 import { fetchActorMap, fetchInitiatives } from '../utils/firestoreUtils.server';
 import { actorColdDef, dateColdDef } from '../utils/jsxUtils';
 
@@ -45,42 +45,40 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
-    // retrieve initiatives
-    const initiatives = await fetchInitiatives(sessionData.customerId);
-
-    // retrieve users
-    const actors = await fetchActorMap(sessionData.customerId);
-
-    // retrieve activities
-    const activitiesCollection = firestore
-      .collection('customers/' + sessionData.customerId + '/activities')
-      .where('initiative', '==', '')
-      .limit(1000) // FIXME limit
-      .withConverter({
-        fromFirestore: snapshot => {
-          const props = activitySchema.safeParse(snapshot.data());
-          if (!props.success) {
-            throw Error('Failed to parse activities. ' + props.error.message);
-          }
-          return {
-            id: snapshot.id,
-            action: props.data.action,
-            actor: {
-              id: props.data.actorId,
-              name: actors[props.data.actorId]?.name ?? 'unknown',
+    // retrieve initiatives, users, and activities
+    const [initiatives, actors, activities] = await Promise.all([
+      fetchInitiatives(sessionData.customerId),
+      fetchActorMap(sessionData.customerId),
+      (async () => {
+        const activitiesCollection = firestore
+          .collection('customers/' + sessionData.customerId + '/activities')
+          .where('initiativeId', '==', '')
+          .limit(1000) // FIXME limit
+          .withConverter({
+            fromFirestore: snapshot => {
+              const props = activitySchema.safeParse(snapshot.data());
+              if (!props.success) {
+                throw new ParseError('Failed to parse activities. ' + props.error.message);
+              }
+              return {
+                id: snapshot.id,
+                action: props.data.action,
+                actorId: props.data.actorId,
+                type: props.data.type,
+                date: props.data.date,
+                initiativeId: '',
+              };
             },
-            type: props.data.type,
-            date: props.data.date,
-            initiative: '',
-          };
-        },
-        toFirestore: activity => activity,
-      });
-    const activityDocs = await activitiesCollection.get();
-    const activities: ActivityData[] = [];
-    activityDocs.forEach(activity => {
-      activities.push(activity.data());
-    });
+            toFirestore: activity => activity,
+          });
+        const activityDocs = await activitiesCollection.get();
+        const activities: ActivityData[] = [];
+        activityDocs.forEach(activity => {
+          activities.push(activity.data());
+        });
+        return activities;
+      })(),
+    ]);
     return { activities, initiatives, actors };
   } catch (e) {
     logger.error(e);
@@ -113,7 +111,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return null;
   } catch (e) {
     logger.error(e);
-    return redirect('/logout');
+    throw e;
   }
 };
 
@@ -151,11 +149,21 @@ export default function ActivityReview() {
       dateColdDef({
         valueGetter: (params: GridValueGetterParams) => new Date(params.value as number),
       }),
-      actorColdDef({ headerName: 'Actor', width: 120 }),
+      actorColdDef({
+        valueGetter: (params: GridValueGetterParams) => {
+          const fields = params.row as ActivityData;
+          return {
+            id: fields.actorId,
+            name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
+          };
+        },
+        headerName: 'Actor',
+        width: 120,
+      }),
       { field: 'action', headerName: 'Action', width: 100 },
       { field: 'type', headerName: 'Type', width: 100 },
       {
-        field: 'initiative',
+        field: 'initiativeId',
         headerName: 'Initiative',
         type: 'singleSelect',
         valueOptions: [
@@ -169,7 +177,7 @@ export default function ActivityReview() {
         renderCell: () => <EditIcon color="primary" fontSize="small" />,
       },
     ],
-    [sessionData.initiatives]
+    [sessionData.actors, sessionData.initiatives]
   );
 
   function BulkToolbar() {
@@ -235,7 +243,7 @@ export default function ActivityReview() {
           checkboxSelection
           processRowUpdate={(updatedRow: ActivityData) => {
             fetcher.submit(
-              { initiativeId: updatedRow.initiative, activityIds: [updatedRow.id] },
+              { initiativeId: updatedRow.initiativeId, activityIds: [updatedRow.id] },
               { method: 'post' }
             );
             return updatedRow;

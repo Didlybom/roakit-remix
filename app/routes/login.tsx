@@ -81,7 +81,7 @@ export default function Login() {
     if (actionData?.refreshToken) {
       // refresh the Firebase token (client-side call)
       void refreshToken();
-      // and then the effect using refreshedToekn will be triggered to go back to the server
+      // and then the effect using refreshedToken will be triggered to go back to the server
     }
   }, [actionData?.refreshToken]);
 
@@ -133,13 +133,22 @@ export default function Login() {
     <App view="login" isLoggedIn={false} showProgress={navigation.state === 'submitting'}>
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
-          <Form method="post" onSubmit={handleLogin} autoComplete="on">
+          <Form method="post" onSubmit={handleLogin}>
             <Stack spacing={2}>
-              <TextField label="Email" id="email" type="email" fullWidth />
               <TextField
-                label="Password"
+                id="email"
+                label="Email"
+                type="email"
+                size="small"
+                autoComplete="on"
+                fullWidth
+              />
+              <TextField
                 id="password"
+                label="Password"
                 type="password"
+                size="small"
+                autoComplete="off"
                 fullWidth
                 error={!!loginError}
                 helperText={loginError}
