@@ -1,5 +1,6 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
+import { ParseError } from '../utils/errorUtils';
 import { ActorData } from './schemas';
 
 const zuser = z.object({ accountId: z.string(), displayName: z.string() });
@@ -55,7 +56,7 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
     const docData = doc.data();
     const props = jiraEventSchema.safeParse(docData.properties);
     if (!props.success) {
-      throw Error('Failed to parse Jira events. ' + props.error.message);
+      throw new ParseError('Failed to parse Jira events. ' + props.error.message);
     }
     const data = props.data;
     let actor: ActorData | undefined;

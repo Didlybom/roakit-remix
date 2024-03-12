@@ -1,5 +1,6 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
+import { ParseError } from '../utils/errorUtils';
 import { capitalizeAndUseSpaces, findJiraProjects } from '../utils/stringUtils';
 import { ActorData } from './schemas';
 
@@ -75,7 +76,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     const docData = doc.data();
     const props = gitHubEventSchema.safeParse(docData.properties);
     if (!props.success) {
-      throw Error('Failed to parse GitHub events. ' + props.error.message);
+      throw new ParseError('Failed to parse GitHub events. ' + props.error.message);
     }
     const data = props.data;
     if (data.release && data.action !== 'released') {
