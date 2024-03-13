@@ -135,19 +135,11 @@ export default function Login() {
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin}>
             <Stack spacing={2}>
-              <TextField
-                id="email"
-                label="Email"
-                type="email"
-                size="small"
-                autoComplete="on"
-                fullWidth
-              />
+              <TextField id="email" label="Email" type="email" autoComplete="on" fullWidth />
               <TextField
                 id="password"
                 label="Password"
                 type="password"
-                size="small"
                 autoComplete="off"
                 fullWidth
                 error={!!loginError}
