@@ -10,7 +10,7 @@ if (getApps().length === 0) {
       credential: cert(JSON.parse(`${process.env.FIREBASE_SERVICE_ACCOUNT}`) as string),
     });
   } else {
-    // Firebase deploy script goes there when it checks the code, otherwiswe we expect to have env.FIREBASE_SERVICE_ACCOUNT set
+    // Firebase deploy script goes there when it checks the code, otherwise we expect to have env.FIREBASE_SERVICE_ACCOUNT set
     app = initializeApp();
   }
 } else {

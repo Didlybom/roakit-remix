@@ -48,6 +48,8 @@ export interface InitiativeData {
   countersLastUpdated: number;
 }
 
+export type InitiativeMap = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
+
 export interface ActorData {
   id: string;
   name?: string;
@@ -62,6 +64,8 @@ export interface ActivityData {
   date: number;
   initiativeId: string;
 }
+
+export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
 
 export const emptyActivity: ActivityData = {
   id: '',

@@ -99,11 +99,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const form = await request.formData();
     const activityIds = form.get('activityIds')?.toString() ?? '';
     if (activityIds) {
-      const initiative = form.get('initiativeId')?.toString() ?? '';
+      const initiativeId = form.get('initiativeId')?.toString() ?? '';
       const batch = firestore.batch();
       activityIds.split(',').forEach(activityId => {
         const doc = firestore.doc('customers/' + customerId + '/activities/' + activityId);
-        batch.update(doc, { initiative });
+        batch.update(doc, { initiativeId });
       });
       await batch.commit(); // up to 500 operations
     }

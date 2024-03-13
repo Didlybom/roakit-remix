@@ -77,3 +77,5 @@ export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
 export const disabledNotOpaqueSx: SxProps = {
   ['&.Mui-disabled']: { opacity: 'initial' },
 };
+
+export const renderJson = (data: unknown) => <pre>{JSON.stringify(data, undefined, 2)}</pre>;

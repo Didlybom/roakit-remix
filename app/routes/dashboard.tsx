@@ -1,7 +1,7 @@
-import { Alert, Paper, Typography } from '@mui/material';
+import { Alert, Paper, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { BarChart, BarItemIdentifier, PieChart, PieItemIdentifier } from '@mui/x-charts';
-import { ActionFunctionArgs, LoaderFunctionArgs, json, redirect } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
 import retry from 'async-retry';
 import pino from 'pino';
@@ -10,16 +10,18 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
-import { ACTIVITY_TYPES, ActivityData, activitySchema, emptyActivity } from '../schemas/schemas';
+import { groupActivities } from '../schemas/activityFeed';
+import { ActivityData, activitySchema, emptyActivity } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
-import {
-  DATE_RANGE_LOCAL_STORAGE_KEY,
-  DateRange,
-  ONE_HOUR,
-  dateFilterToStartDate,
-} from '../utils/dateUtils';
+import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
-import { fetchActorMap, fetchInitiatives } from '../utils/firestoreUtils.server';
+import {
+  fetchActorMap,
+  fetchInitiativeMap,
+  updateInitiativeCounters,
+} from '../utils/firestoreUtils.server';
+import { renderJson } from '../utils/jsxUtils';
+import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -38,6 +40,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
+  if (!sessionData.customerId) {
+    throw Error('Unexpected empty customerId');
+  }
 
   const clientData = await request.formData();
   const dateFilter = clientData.get('dateFilter')?.toString() ?? '';
@@ -47,94 +52,46 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     // retrieve initiatives and users
-    const [initiatives, actors] = await Promise.all([
-      fetchInitiatives(sessionData.customerId),
+    const [fetchedInitiatives, actors] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId),
       fetchActorMap(sessionData.customerId),
     ]);
 
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
-    const now = Date.now();
-    const oneHourAgo = now - ONE_HOUR;
-    const flatCounters: {
-      initiativeId: string;
-      activityType: ActivityData['type'];
-      lastUpdated: number;
-    }[] = [];
-    initiatives.forEach(initiative => {
-      if (initiative.countersLastUpdated >= oneHourAgo) {
-        return;
-      }
-      ACTIVITY_TYPES.forEach(activityType => {
-        flatCounters.push({
-          initiativeId: initiative.id,
-          activityType,
-          lastUpdated: initiative.countersLastUpdated,
-        });
-      });
-    });
-    const newFlatCounts = await Promise.all(
-      flatCounters.map(async counter => {
-        const countQuery = firestore
-          .collection('customers/' + sessionData.customerId + '/activities')
-          .where('type', '==', counter.activityType)
-          .orderBy('date')
-          .startAt(counter.lastUpdated)
-          .count();
-        const count = (await countQuery.get()).data().count;
-        return { ...counter, count };
-      })
-    );
-    newFlatCounts.forEach(flatCount => {
-      const initiative = initiatives.find(i => i.id === flatCount.initiativeId);
-      initiative!.counters.activities[flatCount.activityType] =
-        initiative!.counters.activities[flatCount.activityType] + flatCount.count;
-      initiative!.countersLastUpdated = now;
-    });
-    await Promise.all(
-      initiatives.map(async initiative => {
-        const initiativeDoc = firestore.doc(
-          'customers/' + sessionData.customerId + '/initiatives/' + initiative.id
-        );
-        await initiativeDoc.set(
-          { counters: initiative.counters, countersLastUpdated: initiative.countersLastUpdated },
-          { merge: true }
-        );
-      })
-    );
+    const initiatives = await updateInitiativeCounters(sessionData.customerId, fetchedInitiatives);
 
     // retrieve activities
     const startDate = dateFilterToStartDate(dateFilter as DateRange);
+
     return await retry(
       async bail => {
         const activitiesCollection = firestore
           .collection('customers/' + sessionData.customerId + '/activities')
           .orderBy('date')
           .startAt(startDate)
-          .limit(5000) // FIXME limit
-          .withConverter({
-            fromFirestore: snapshot => {
-              const props = activitySchema.safeParse(snapshot.data());
-              if (!props.success) {
-                bail(new ParseError('Failed to parse activities. ' + props.error.message));
-                return emptyActivity; // not used, bail() will throw
-              }
-              return {
-                id: snapshot.id,
-                action: props.data.action,
-                actorId: props.data.actorId,
-                type: props.data.type,
-                date: props.data.date,
-                initiativeId: props.data.initiativeId,
-              };
-            },
-            toFirestore: activity => activity,
-          });
-        const activityDocs = await activitiesCollection.get();
-        const activities: ActivityData[] = [];
+          .limit(5000); // FIXME limit
+        const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
+          () => activitiesCollection.get(),
+          { metricsName: 'dashboard:getActivities' }
+        );
+        const activities: Record<ActivityData['id'], Omit<ActivityData, 'id'>> = {};
         activityDocs.forEach(activity => {
-          activities.push(activity.data());
+          const props = activitySchema.safeParse(activity.data());
+          if (!props.success) {
+            bail(new ParseError('Failed to parse activities. ' + props.error.message));
+            return emptyActivity; // not used, bail() will throw
+          }
+          activities[activity.id] = {
+            action: props.data.action,
+            actorId: props.data.actorId,
+            type: props.data.type,
+            date: props.data.date,
+            initiativeId: props.data.initiativeId,
+          };
         });
-        return json({ activities, initiatives, actors });
+        const groupedActivities = groupActivities(activities);
+
+        return { groupedActivities, activities, initiatives, actors };
       },
       {
         // see https://github.com/tim-kos/node-retry#api
@@ -153,6 +110,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
+  const { groupedActivities, activities, actors, initiatives } = data ?? {
+    groupedActivities: null,
+    activities: null,
+    actors: null,
+    initiatives: null,
+  };
   const isHydrated = useHydrated();
   const submit = useSubmit();
   const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
@@ -160,7 +123,6 @@ export default function Dashboard() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState(data?.activities);
   const [error /*, setError*/] = useState('');
   const [clickedOn, setClickedOn] = useState<BarItemIdentifier | PieItemIdentifier | null>(null);
 
@@ -174,11 +136,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (data) {
-      setActivities(data.activities);
+    if (activities) {
       setLoading(false);
     }
-  }, [data]);
+  }, [activities]);
 
   // Hand the date range over to server
   useEffect(() => {
@@ -296,15 +257,22 @@ export default function Dashboard() {
       <Typography fontSize="small" textAlign="center">
         <code>{!!clickedOn && JSON.stringify(clickedOn)}</code>
       </Typography>
-      <Typography fontSize="small" sx={{ p: 2 }}>
-        <code>{JSON.stringify(activities)}</code>
-      </Typography>
-      <Typography fontSize="small" sx={{ p: 2 }}>
-        <code>{JSON.stringify(data?.actors)}</code>
-      </Typography>
-      <Typography fontSize="small" sx={{ p: 2 }}>
-        <code>{JSON.stringify(data?.initiatives)}</code>
-      </Typography>
+      {activities && (
+        <Stack direction="row">
+          <Typography component="div" fontSize="small" sx={{ p: 2 }}>
+            <b>grouped activities</b> {renderJson(groupedActivities)}
+          </Typography>
+          <Typography component="div" fontSize="small" sx={{ p: 2 }}>
+            <b>raw activities</b> {renderJson(activities)}
+          </Typography>
+          <Typography component="div" fontSize="small" sx={{ p: 2 }}>
+            <b>actors</b> {renderJson(actors)}
+          </Typography>
+          <Typography component="div" fontSize="small" sx={{ p: 2 }}>
+            <b>initiatives</b> {renderJson(initiatives)}
+          </Typography>
+        </Stack>
+      )}
       {error && (
         <Alert severity="error" sx={{ m: 2 }}>
           {error}
