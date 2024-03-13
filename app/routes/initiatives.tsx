@@ -150,9 +150,9 @@ export default function Initiatives() {
     setRowModesModel(newRowModesModel);
   };
 
-  const handleDeleteClick = (id: GridRowId, iniativeKey: string) => {
+  const handleDeleteClick = (id: GridRowId, initiativeId: string) => {
     setRows(rows.filter(row => row.id !== id));
-    fetcher.submit({ initiativeId: iniativeKey }, { method: 'DELETE' });
+    fetcher.submit({ initiativeId }, { method: 'DELETE' });
   };
 
   const columns: GridColDef[] = [

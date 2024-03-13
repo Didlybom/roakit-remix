@@ -38,12 +38,7 @@ export interface InitiativeData {
   id: string;
   label?: string;
   counters: {
-    activities: {
-      code: number;
-      codeOrg: number;
-      task: number;
-      taskOrg: number;
-    };
+    activities: ActivityCount;
   };
   countersLastUpdated: number;
 }
@@ -56,16 +51,25 @@ export interface ActorData {
   url?: string;
 }
 
+export type ActivityType = 'code' | 'codeOrg' | 'task' | 'taskOrg';
+
 export interface ActivityData {
   id: string;
   action: string;
   actorId: string;
-  type: 'code' | 'codeOrg' | 'task' | 'taskOrg';
+  type: ActivityType;
   date: number;
   initiativeId: string;
 }
 
 export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
+
+export interface ActivityCount {
+  code: number;
+  codeOrg: number;
+  task: number;
+  taskOrg: number;
+}
 
 export const emptyActivity: ActivityData = {
   id: '',

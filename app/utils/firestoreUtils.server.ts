@@ -1,6 +1,8 @@
+import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
 import {
   ACTIVITY_TYPES,
+  ActivityCount,
   ActivityData,
   ActorData,
   InitiativeData,
@@ -95,6 +97,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
       const countQuery = firestore
         .collection(`customers/${customerId}/activities`)
         .where('type', '==', counter.activityType)
+        .where('initiativeId', '==', counter.initiativeId)
         .orderBy('date')
         .startAt(counter.lastUpdated)
         .count();
@@ -119,4 +122,22 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
     })
   );
   return initiatives;
+};
+
+export const incrementInitiativeCounters = async (
+  customerId: string,
+  initiativeId: string,
+  counters: ActivityCount
+) => {
+  const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
+  await initiativeDoc.update({
+    counters: {
+      activities: {
+        code: FieldValue.increment(counters.code),
+        codeOrg: FieldValue.increment(counters.codeOrg),
+        task: FieldValue.increment(counters.task),
+        taskOrg: FieldValue.increment(counters.taskOrg),
+      },
+    },
+  });
 };

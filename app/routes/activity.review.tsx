@@ -27,10 +27,14 @@ import App from '../components/App';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
-import { ActivityData, activitySchema } from '../schemas/schemas';
+import { ActivityCount, ActivityData, ActivityType, activitySchema } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import { fetchActorMap, fetchInitiatives } from '../utils/firestoreUtils.server';
+import {
+  fetchActorMap,
+  fetchInitiatives,
+  incrementInitiativeCounters,
+} from '../utils/firestoreUtils.server';
 import { actorColdDef, dateColdDef } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
@@ -86,6 +90,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+type ActivityPayload = { id: string; type: ActivityType }[];
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
   if (!jwt) {
@@ -93,20 +99,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   try {
     const token = await serverAuth.verifySessionCookie(jwt);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const customerId = token.customerId;
+    const customerId = token.customerId as string;
 
     const form = await request.formData();
-    const activityIds = form.get('activityIds')?.toString() ?? '';
-    if (activityIds) {
-      const initiativeId = form.get('initiativeId')?.toString() ?? '';
-      const batch = firestore.batch();
-      activityIds.split(',').forEach(activityId => {
-        const doc = firestore.doc('customers/' + customerId + '/activities/' + activityId);
-        batch.update(doc, { initiativeId });
-      });
-      await batch.commit(); // up to 500 operations
+    const activitiesJson = form.get('activities')?.toString() ?? '';
+    const initiativeId = form.get('initiativeId')?.toString() ?? '';
+    if (!activitiesJson || !initiativeId) {
+      return null;
     }
+
+    const activities = JSON.parse(activitiesJson) as ActivityPayload;
+    const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0 };
+    const batch = firestore.batch();
+    activities.forEach(activity => {
+      counters[activity.type]++;
+      const activityDoc = firestore.doc('customers/' + customerId + '/activities/' + activity.id);
+      batch.update(activityDoc, { initiativeId });
+    });
+    await batch.commit(); // up to 500 operations
+
+    //  update the initiative counters
+    await incrementInitiativeCounters(customerId, initiativeId, counters);
 
     return null;
   } catch (e) {
@@ -211,7 +224,14 @@ export default function ActivityReview() {
               disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
               onClick={() =>
                 fetcher.submit(
-                  { initiativeId: bulkInitiative, activityIds: selectedRows },
+                  {
+                    initiativeId: bulkInitiative,
+                    activities: JSON.stringify(
+                      selectedRows.map(id => {
+                        return { id, type: sessionData.activities.find(a => a.id === id)!.type };
+                      }) as ActivityPayload
+                    ),
+                  },
                   { method: 'post' }
                 )
               }
@@ -243,7 +263,12 @@ export default function ActivityReview() {
           checkboxSelection
           processRowUpdate={(updatedRow: ActivityData) => {
             fetcher.submit(
-              { initiativeId: updatedRow.initiativeId, activityIds: [updatedRow.id] },
+              {
+                initiativeId: updatedRow.initiativeId,
+                activities: JSON.stringify([
+                  { id: updatedRow.id, type: updatedRow.type },
+                ] as ActivityPayload),
+              },
               { method: 'post' }
             );
             return updatedRow;
