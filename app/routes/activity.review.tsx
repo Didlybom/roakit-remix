@@ -6,6 +6,7 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
+  Link,
   MenuItem,
   Select,
   Stack,
@@ -43,6 +44,7 @@ import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClic
 import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
+import { getSummary, getUrl } from '../schemas/activityFeed';
 import { ActivityCount, ActivityData, Artifact, activitySchema } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
@@ -51,7 +53,7 @@ import {
   fetchInitiativeMap,
   incrementInitiativeCounters,
 } from '../utils/firestoreUtils.server';
-import { actorColdDef, dateColdDef } from '../utils/jsxUtils';
+import { actorColdDef, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -192,6 +194,8 @@ export default function ActivityReview() {
           artifact: fields.data.artifact,
           createdTimestamp: fields.data.createdTimestamp,
           initiativeId: fields.data.initiative,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          metadata: fields.data.metadata,
         });
       });
       setActivities(activityData);
@@ -244,7 +248,31 @@ export default function ActivityReview() {
         sortable: false,
       }),
       { field: 'action', headerName: 'Action', width: 100, sortable: false },
-      { field: 'artifact', headerName: 'Artifact', width: 100, sortable: false },
+      { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
+      {
+        field: 'metadata',
+        headerName: 'Summary',
+        minWidth: 300,
+        flex: 1,
+        sortable: false,
+        renderCell: params => {
+          const summary = getSummary(params.value);
+          const url = getUrl(params.value);
+          if (url) {
+            return (
+              <Link href={url} target="_blank" title={summary} sx={{ ...ellipsisSx }}>
+                {summary}
+              </Link>
+            );
+          } else {
+            return (
+              <Box title={summary} sx={{ ...ellipsisSx }}>
+                {summary}
+              </Box>
+            );
+          }
+        },
+      },
       {
         field: 'initiativeId',
         headerName: 'Initiative',

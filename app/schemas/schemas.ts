@@ -32,6 +32,7 @@ export const activitySchema = z.object({
   createdTimestamp: z.number(),
   artifact: z.enum(ARTIFACTS),
   initiative: z.string(),
+  metadata: z.any(),
 });
 
 export interface InitiativeData {
@@ -60,9 +61,11 @@ export interface ActivityData {
   artifact: Artifact;
   createdTimestamp: number;
   initiativeId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: any;
 }
 
-export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
+export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;
 
 export interface ActivityCount {
   code: number;
@@ -78,6 +81,7 @@ export const emptyActivity: ActivityData = {
   artifact: 'code',
   createdTimestamp: -1,
   initiativeId: '-1',
+  metadata: {},
 };
 
 export interface SettingsData {

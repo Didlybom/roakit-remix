@@ -12,6 +12,27 @@ interface Initiative {
   effort: number;
 }
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const getSummary = (metadata: any) => {
+  if (metadata?.issue) {
+    return metadata.issue.key + ' ' + metadata.issue.summary;
+  }
+  if (metadata?.mimeType) {
+    return metadata.mimeType as string;
+  }
+  return '';
+};
+
+export const getUrl = (metadata: any) => {
+  if (!metadata?.issue?.uri) {
+    return null;
+  }
+  return `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`;
+};
+/* eslint-enable @typescript-eslint/no-unsafe-member-access */
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export const groupActivities = (activities: ActivityMap) => {
   const actors: Actor[] = [];
   const initiatives: Initiative[] = [];
