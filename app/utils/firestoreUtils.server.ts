@@ -50,18 +50,32 @@ export const fetchInitiativeMap = async (customerId: number | undefined) => {
 };
 
 export const fetchActors = async (customerId: number | undefined) => {
-  const coll = firestore.collection(`customers/${customerId}/accounts`);
-  const docs = await coll.get();
   const actors: ActorData[] = [];
-  docs.forEach(actor => {
-    const data = actorSchema.parse(actor.data());
-    actors.push({ id: actor.id, name: data.accountName });
-  });
+
+  await Promise.all([
+    async () => {
+      const gitHubColl = firestore.collection(`customers/${customerId}/feeds/1/accounts`);
+      const gitHubDocs = await gitHubColl.get();
+      gitHubDocs.forEach(actor => {
+        const data = actorSchema.parse(actor.data());
+        actors.push({ id: actor.id, name: data.accountName });
+      });
+    },
+    async () => {
+      const jiraColl = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
+      const jiraDocs = await jiraColl.get();
+      jiraDocs.forEach(actor => {
+        const data = actorSchema.parse(actor.data());
+        actors.push({ id: actor.id, name: data.accountName });
+      });
+    },
+  ]);
+
   return actors;
 };
 
 export const fetchActorMap = async (customerId: number | undefined) => {
-  const coll = firestore.collection(`customers/${customerId}/accounts`);
+  const coll = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
   const docs = await coll.get();
   const actors: Record<ActorData['id'], Omit<ActorData, 'id'>> = {};
   docs.forEach(actor => {
