@@ -100,7 +100,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
     }
     ARTIFACTS.forEach(artifact => {
       flatCounters.push({
-        initiativeId: initiativeId,
+        initiativeId,
         artifact,
         lastUpdated: initiative.countersLastUpdated,
       });
@@ -111,7 +111,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
       const countQuery = firestore
         .collection(`customers/${customerId}/activities`)
         .where('artifact', '==', counter.artifact)
-        .where('initiativeId', '==', counter.initiativeId)
+        .where('initiative', '==', counter.initiativeId)
         .orderBy('createdTimestamp')
         .startAt(counter.lastUpdated)
         .count();

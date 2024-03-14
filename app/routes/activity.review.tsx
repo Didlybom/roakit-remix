@@ -107,7 +107,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         counters[activity.artifact]++;
       }
       const activityDoc = firestore.doc('customers/' + customerId + '/activities/' + activity.id);
-      batch.update(activityDoc, { initiativeId });
+      batch.update(activityDoc, { initiative: initiativeId });
     });
     await batch.commit(); // up to 500 operations
 
@@ -149,11 +149,11 @@ export default function ActivityReview() {
       let activitiesQuery;
       if (!showAllActivity) {
         activitiesCount = (
-          await getCountFromServer(query(activitiesCollection, where('initiativeId', '==', '')))
+          await getCountFromServer(query(activitiesCollection, where('initiative', '==', '')))
         ).data().count;
         activitiesQuery = query(
           activitiesCollection,
-          where('initiativeId', '==', ''),
+          where('initiative', '==', ''),
           orderBy('createdTimestamp', 'desc')
         );
       } else {
@@ -191,7 +191,7 @@ export default function ActivityReview() {
           actorId: fields.data.actorAccountId,
           artifact: fields.data.artifact,
           createdTimestamp: fields.data.createdTimestamp,
-          initiativeId: fields.data.initiativeId ?? '',
+          initiativeId: fields.data.initiative,
         });
       });
       setActivities(activityData);
@@ -232,6 +232,8 @@ export default function ActivityReview() {
         valueGetter: (params: GridValueGetterParams) => new Date(params.value as number),
       }),
       actorColdDef({
+        width: 200,
+        headerName: 'Contributor',
         valueGetter: (params: GridValueGetterParams) => {
           const fields = params.row as ActivityData;
           return {
@@ -239,9 +241,7 @@ export default function ActivityReview() {
             name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
           };
         },
-        headerName: 'Actor',
         sortable: false,
-        width: 120,
       }),
       { field: 'action', headerName: 'Action', width: 100, sortable: false },
       { field: 'artifact', headerName: 'Artifact', width: 100, sortable: false },
@@ -333,20 +333,21 @@ export default function ActivityReview() {
       <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />
     : <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
         <Stack sx={{ m: 3 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showAllActivity}
-                onChange={e => {
-                  setPaginationModel({ page: 0, pageSize: PAGE_SIZE });
-                  setBoundaryDocs(null);
-                  setShowAllActivity(e.target.checked);
-                }}
-              />
-            }
-            label="Show all activities"
-            sx={{ mb: 2, justifyContent: 'right' }}
-          />
+          <Box sx={{ display: 'flex', mb: 2, justifyContent: 'right' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAllActivity}
+                  onChange={e => {
+                    setPaginationModel({ page: 0, pageSize: PAGE_SIZE });
+                    setBoundaryDocs(null);
+                    setShowAllActivity(e.target.checked);
+                  }}
+                />
+              }
+              label="Show all activities"
+            />
+          </Box>
           <DataGridWithSingleClickEditing
             columns={columns}
             rows={activities}

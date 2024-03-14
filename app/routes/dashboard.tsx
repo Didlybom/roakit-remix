@@ -87,7 +87,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             actorId: props.data.actorAccountId,
             artifact: props.data.artifact,
             createdTimestamp: props.data.createdTimestamp,
-            initiativeId: props.data.initiativeId ?? '',
+            initiativeId: props.data.initiative,
           };
         });
         const groupedActivities = groupActivities(activities);
@@ -328,7 +328,7 @@ export default function Dashboard() {
           {groupedActivities.actors.map(actor => {
             return (
               <Grid key={actor.id} sx={{ mb: 4 }}>
-                <Typography variant="h6">{actors[actor.id].name ?? 'unknown'}</Typography>
+                <Typography variant="h6">{actors[actor.id]?.name ?? 'unknown'}</Typography>
                 <DataGrid
                   {...dataGridProps}
                   columns={actorColumns}

@@ -31,7 +31,7 @@ export const activitySchema = z.object({
   actorAccountId: z.string(),
   createdTimestamp: z.number(),
   artifact: z.enum(ARTIFACTS),
-  initiativeId: z.string(),
+  initiative: z.string(),
 });
 
 export interface InitiativeData {
