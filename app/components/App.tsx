@@ -53,7 +53,7 @@ export default function App({
   onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
   isNavOpen?: boolean;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const [open, setOpen] = useState(!!isNavOpen);
 
