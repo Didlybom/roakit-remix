@@ -77,7 +77,7 @@ export default function NavDrawer({
       </List>
       <Divider />
       <List>
-        <ListSubheader color="primary">Atomic data</ListSubheader>
+        <ListSubheader color="primary">Real-time atomic data</ListSubheader>
         <ListItem key="github" disablePadding>
           <ListItemButton href="/github" selected={view === 'github'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
