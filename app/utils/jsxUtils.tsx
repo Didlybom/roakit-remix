@@ -35,7 +35,7 @@ export const dataGridCommonProps = {
   pageSizeOptions: [25, 50, 100],
   initialState: {
     pagination: { paginationModel: { pageSize: 25 } },
-    sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
+    sorting: { sortModel: [{ field: 'date', sort: 'desc' as GridSortDirection }] },
   },
 };
 
