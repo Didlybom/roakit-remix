@@ -15,7 +15,7 @@ import { groupActivities } from '../schemas/activityFeed';
 import { ActivityMap, activitySchema, emptyActivity } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { ParseError } from '../utils/errorUtils';
+import { ParseError, errMsg } from '../utils/errorUtils';
 import {
   fetchActorMap,
   fetchInitiativeMap,
@@ -91,8 +91,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           };
         });
         const groupedActivities = groupActivities(activities);
-
-        return { groupedActivities, activities, initiatives, actors };
+        return { groupedActivities, activities, initiatives, actors, error: null };
       },
       {
         // see https://github.com/tim-kos/node-retry#api
@@ -104,14 +103,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   } catch (e) {
     logger.error(e);
-    throw e;
+    return {
+      error: errMsg(e, 'Failed to fetch activity'),
+      groupedActivities: null,
+      activities: null,
+      actors: null,
+      initiatives: null,
+    };
   }
 };
 
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
-  const { groupedActivities, activities, actors, initiatives } = data ?? {
+  const { groupedActivities, activities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
     activities: null,
     actors: null,
@@ -124,7 +129,6 @@ export default function Dashboard() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const [loading, setLoading] = useState(true);
-  const [error /*, setError*/] = useState('');
   const [clickedOn, setClickedOn] = useState<BarItemIdentifier | PieItemIdentifier | null>(null);
 
   const commonPaperSx = { width: 380, p: 1 };
@@ -176,9 +180,14 @@ export default function Dashboard() {
       }}
       showProgress={loading}
     >
+      {error && (
+        <Alert severity="error" sx={{ m: 2 }}>
+          {error}
+        </Alert>
+      )}
       {activities && data && (
         <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
-          {data.groupedActivities.initiatives.length > 0 && (
+          {data.groupedActivities?.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
@@ -212,7 +221,7 @@ export default function Dashboard() {
               </Paper>
             </Grid>
           )}
-          {data.groupedActivities.initiatives.length > 0 && (
+          {data.groupedActivities?.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
@@ -243,7 +252,7 @@ export default function Dashboard() {
               </Paper>
             </Grid>
           )}
-          {data.groupedActivities.initiatives.map((initiative, i) => {
+          {data.groupedActivities?.initiatives.map((initiative, i) => {
             const totalCounters = initiatives[initiative.id].counters.activities;
             return (
               <Grid key={i}>
@@ -366,11 +375,6 @@ export default function Dashboard() {
             <b>initiatives</b> {renderJson(initiatives)}
           </Typography>
         </Stack>
-      )}
-      {error && (
-        <Alert severity="error" sx={{ m: 2 }}>
-          {error}
-        </Alert>
       )}
     </App>
   );

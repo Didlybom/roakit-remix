@@ -143,70 +143,74 @@ export default function ActivityReview() {
 
   useEffect(() => {
     const fetchActivities = async () => {
-      const activitiesCollection = collection(
-        firestoreClient,
-        `customers/${sessionData.customerId}/activities`
-      );
-      let activitiesCount;
-      let activitiesQuery;
-      if (!showAllActivity) {
-        activitiesCount = (
-          await getCountFromServer(query(activitiesCollection, where('initiative', '==', '')))
-        ).data().count;
-        activitiesQuery = query(
-          activitiesCollection,
-          where('initiative', '==', ''),
-          orderBy('createdTimestamp', 'desc')
+      try {
+        const activitiesCollection = collection(
+          firestoreClient,
+          `customers/${sessionData.customerId}/activities`
         );
-      } else {
-        activitiesCount = (await getCountFromServer(activitiesCollection)).data().count;
-        activitiesQuery = query(activitiesCollection, orderBy('createdTimestamp', 'desc'));
-      }
-      if (prevPaginationModel && boundaryDocs) {
-        if (prevPaginationModel?.page < paginationModel.page) {
+        let activitiesCount;
+        let activitiesQuery;
+        if (!showAllActivity) {
+          activitiesCount = (
+            await getCountFromServer(query(activitiesCollection, where('initiative', '==', '')))
+          ).data().count;
           activitiesQuery = query(
-            activitiesQuery,
-            startAfter(boundaryDocs.last),
-            limit(paginationModel.pageSize)
+            activitiesCollection,
+            where('initiative', '==', ''),
+            orderBy('createdTimestamp', 'desc')
           );
+        } else {
+          activitiesCount = (await getCountFromServer(activitiesCollection)).data().count;
+          activitiesQuery = query(activitiesCollection, orderBy('createdTimestamp', 'desc'));
         }
-        if (prevPaginationModel?.page > paginationModel.page) {
-          activitiesQuery = query(
-            activitiesQuery,
-            endBefore(boundaryDocs.first),
-            limitToLast(paginationModel.pageSize)
-          );
+        if (prevPaginationModel && boundaryDocs) {
+          if (prevPaginationModel?.page < paginationModel.page) {
+            activitiesQuery = query(
+              activitiesQuery,
+              startAfter(boundaryDocs.last),
+              limit(paginationModel.pageSize)
+            );
+          }
+          if (prevPaginationModel?.page > paginationModel.page) {
+            activitiesQuery = query(
+              activitiesQuery,
+              endBefore(boundaryDocs.first),
+              limitToLast(paginationModel.pageSize)
+            );
+          }
+        } else {
+          activitiesQuery = query(activitiesQuery, limit(paginationModel.pageSize));
         }
-      } else {
-        activitiesQuery = query(activitiesQuery, limit(paginationModel.pageSize));
-      }
-      const activityDocs = await getDocs(activitiesQuery);
-      const activityData: ActivityData[] = [];
-      activityDocs.forEach(activity => {
-        const fields = activitySchema.safeParse(activity.data());
-        if (!fields.success) {
-          throw new ParseError('Failed to parse activities. ' + fields.error.message);
-        }
-        activityData.push({
-          id: activity.id,
-          action: fields.data.action,
-          actorId: fields.data.actorAccountId,
-          artifact: fields.data.artifact,
-          createdTimestamp: fields.data.createdTimestamp,
-          initiativeId: fields.data.initiative,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          metadata: fields.data.metadata,
+        const activityDocs = await getDocs(activitiesQuery);
+        const activityData: ActivityData[] = [];
+        activityDocs.forEach(activity => {
+          const fields = activitySchema.safeParse(activity.data());
+          if (!fields.success) {
+            throw new ParseError('Failed to parse activities. ' + fields.error.message);
+          }
+          activityData.push({
+            id: activity.id,
+            action: fields.data.action,
+            actorId: fields.data.actorAccountId,
+            artifact: fields.data.artifact,
+            createdTimestamp: fields.data.createdTimestamp,
+            initiativeId: fields.data.initiative,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            metadata: fields.data.metadata,
+          });
         });
-      });
-      setActivities(activityData);
-      setRowTotal(activitiesCount);
-      if (activityDocs.docs.length > 0) {
-        setBoundaryDocs({
-          first: activityDocs.docs[0],
-          last: activityDocs.docs[activityDocs.docs.length - 1],
-        });
+        setActivities(activityData);
+        setRowTotal(activitiesCount);
+        if (activityDocs.docs.length > 0) {
+          setBoundaryDocs({
+            first: activityDocs.docs[0],
+            last: activityDocs.docs[activityDocs.docs.length - 1],
+          });
+        }
+        setLoading(false);
+      } catch (e) {
+        setError(errMsg(e, 'Failed to fetch activities'));
       }
-      setLoading(false);
     };
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -361,6 +365,11 @@ export default function ActivityReview() {
       <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />
     : <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
         <Stack sx={{ m: 3 }}>
+          {error && (
+            <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
+              {error}
+            </Alert>
+          )}
           <Box sx={{ display: 'flex', mb: 2, justifyContent: 'right' }}>
             <FormControlLabel
               control={
@@ -411,11 +420,6 @@ export default function ActivityReview() {
             }}
             onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update'))}
           />
-          {error && (
-            <Alert severity="error" variant="standard" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
         </Stack>
       </App>;
 }
