@@ -1,17 +1,18 @@
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { BarChart, BarItemIdentifier, PieChart, PieItemIdentifier } from '@mui/x-charts';
+import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
 import retry from 'async-retry';
 import pino from 'pino';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
 import { groupActivities } from '../schemas/activityFeed';
-import { ActivityData, activitySchema, emptyActivity } from '../schemas/schemas';
+import { ActivityMap, activitySchema, emptyActivity } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
@@ -20,7 +21,7 @@ import {
   fetchInitiativeMap,
   updateInitiativeCounters,
 } from '../utils/firestoreUtils.server';
-import { renderJson } from '../utils/jsxUtils';
+import { dateColdDef, renderJson } from '../utils/jsxUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'route:dashboard' });
@@ -67,14 +68,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       async bail => {
         const activitiesCollection = firestore
           .collection('customers/' + sessionData.customerId + '/activities')
-          .orderBy('date')
+          .orderBy('createdTimestamp')
           .startAt(startDate)
           .limit(5000); // FIXME limit
         const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
           () => activitiesCollection.get(),
           { metricsName: 'dashboard:getActivities' }
         );
-        const activities: Record<ActivityData['id'], Omit<ActivityData, 'id'>> = {};
+        const activities: ActivityMap = {};
         activityDocs.forEach(activity => {
           const props = activitySchema.safeParse(activity.data());
           if (!props.success) {
@@ -83,10 +84,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           }
           activities[activity.id] = {
             action: props.data.action,
-            actorId: props.data.actorId,
-            type: props.data.type,
-            date: props.data.date,
-            initiativeId: props.data.initiativeId,
+            actorId: props.data.actorAccountId,
+            artifact: props.data.artifact,
+            createdTimestamp: props.data.createdTimestamp,
+            initiativeId: props.data.initiativeId ?? '',
           };
         });
         const groupedActivities = groupActivities(activities);
@@ -127,11 +128,15 @@ export default function Dashboard() {
   const [clickedOn, setClickedOn] = useState<BarItemIdentifier | PieItemIdentifier | null>(null);
 
   const commonPaperSx = { width: 380, p: 1 };
-  const commonChartProps = {
-    width: 360,
-    height: 200,
-    slotProps: {
-      legend: { labelStyle: { fontSize: 12 } },
+
+  const dataGridProps = {
+    density: 'compact' as GridDensity,
+    disableRowSelectionOnClick: true,
+    disableColumnMenu: true,
+    pageSizeOptions: [25, 50, 100],
+    initialState: {
+      pagination: { paginationModel: { pageSize: 25 } },
+      sorting: { sortModel: [{ field: 'date', sort: 'desc' as GridSortDirection }] },
     },
   };
 
@@ -149,6 +154,16 @@ export default function Dashboard() {
     submit({ dateFilter }, { method: 'post' });
   }, [dateFilter, loading, submit]);
 
+  const actorColumns: GridColDef[] = useMemo<GridColDef[]>(
+    () => [
+      dateColdDef(),
+      { field: 'action', headerName: 'Action', width: 100 },
+      { field: 'artifact', headerName: 'Artifact', width: 100 },
+      { field: 'initiativeId', headerName: 'Initiative', minWidth: 80 },
+    ],
+    []
+  );
+
   return (
     <App
       view="dashboard"
@@ -161,73 +176,128 @@ export default function Dashboard() {
       }}
       showProgress={loading}
     >
-      {activities && (
+      {activities && data && (
         <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
-          <Grid>
-            <Paper sx={{ ...commonPaperSx }}>
-              <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
-                Effort by Initiative
-              </Typography>
-              <PieChart
-                series={[
-                  {
-                    id: 'effort-by-initiative',
-                    valueFormatter: item => `${item.value}%`,
-                    data: [
-                      { id: 1, value: 70, label: 'Initiative B' },
-                      { id: 2, value: 10, label: 'Initiative A' },
-                      { id: 3, value: 5, label: 'Initiative D' },
-                      { id: 4, value: 15, label: 'Initiative C' },
-                    ],
-                  },
-                ]}
-                {...commonChartProps}
-                onItemClick={(_, item) => setClickedOn(item)}
-              />
-            </Paper>
-          </Grid>
-          <Grid>
-            <Paper sx={{ ...commonPaperSx }}>
-              <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
-                Contributors by Initiative
-              </Typography>
-              <BarChart
-                series={[
-                  { id: 'actors total', data: [20, 15, 5, 30], label: 'Total', stack: 'total' },
-                  { id: 'actors new', data: [3, 2, 0, 5], label: 'New', stack: 'total' },
-                ]}
-                xAxis={[
-                  {
-                    data: ['Initiative A', 'Initiative B', 'Initiative C', 'Initiative D'],
-                    scaleType: 'band',
-                  },
-                ]}
-                {...commonChartProps}
-                onItemClick={(_, item) => setClickedOn(item)}
-              />
-            </Paper>
-          </Grid>
-          <Grid>
-            <Paper sx={{ ...commonPaperSx }}>
-              <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
-                Initiative A Activity
-              </Typography>
-              <BarChart
-                series={[
-                  { id: 'init A total', data: [20, 35, 10, 5], label: 'Total', stack: 'total' },
-                  { id: 'init A new', data: [3, 4, 0, 1], label: 'New', stack: 'total' },
-                ]}
-                xAxis={[
-                  {
-                    data: ['Software', 'Task', 'Software Org.', 'Task Org.'],
-                    scaleType: 'band',
-                  },
-                ]}
-                {...commonChartProps}
-                onItemClick={(_, item) => setClickedOn(item)}
-              />
-            </Paper>
-          </Grid>
+          {data.groupedActivities.initiatives.length > 0 && (
+            <Grid>
+              <Paper sx={{ ...commonPaperSx }}>
+                <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
+                  Effort by Initiative
+                </Typography>
+                <PieChart
+                  series={[
+                    {
+                      id: 'effort-by-initiative',
+                      valueFormatter: item => `${item.value}`,
+                      data: data.groupedActivities.initiatives.map(initiative => {
+                        return {
+                          id: initiative.id,
+                          value: initiative.effort,
+                          label: data.initiatives[initiative.id].label,
+                          arcLabel: initiative.id,
+                        };
+                      }),
+                      arcLabel: item => `${item.arcLabel}`,
+                      innerRadius: 30,
+                      paddingAngle: 3,
+                      cornerRadius: 5,
+                    },
+                  ]}
+                  onItemClick={(_, item) => setClickedOn(item)}
+                  sx={{ ml: '100px' }}
+                  width={360}
+                  height={280}
+                  slotProps={{ legend: { hidden: true } }}
+                />
+              </Paper>
+            </Grid>
+          )}
+          {data.groupedActivities.initiatives.length > 0 && (
+            <Grid>
+              <Paper sx={{ ...commonPaperSx }}>
+                <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
+                  Contributors by Initiative
+                </Typography>
+                <BarChart
+                  series={[
+                    {
+                      id: 'actors',
+                      data: data.groupedActivities.initiatives.map(i => i.actorIds.length),
+                      label: 'Contributors',
+                      stack: 'total',
+                    },
+                  ]}
+                  xAxis={[
+                    {
+                      data: data.groupedActivities.initiatives.map(i => i.id),
+                      scaleType: 'band',
+                    },
+                  ]}
+                  onItemClick={(_, item) => setClickedOn(item)}
+                  width={360}
+                  height={280}
+                  slotProps={{
+                    legend: { hidden: true },
+                  }}
+                />
+              </Paper>
+            </Grid>
+          )}
+          {data.groupedActivities.initiatives.map((initiative, i) => {
+            const totalCounters = initiatives[initiative.id].counters.activities;
+            return (
+              <Grid key={i}>
+                <Paper sx={{ ...commonPaperSx }}>
+                  <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
+                    {initiatives[initiative.id].label}
+                  </Typography>
+                  <BarChart
+                    series={[
+                      {
+                        id: `${initiative.id} total`,
+                        data: [
+                          totalCounters.code,
+                          totalCounters.task,
+                          totalCounters.codeOrg,
+                          totalCounters.taskOrg,
+                        ],
+                        label: 'Total',
+                        stack: 'total',
+                      },
+                      {
+                        id: `${initiative.id} new`,
+                        data: [
+                          initiative.activityCount.code,
+                          initiative.activityCount.task,
+                          initiative.activityCount.codeOrg,
+                          initiative.activityCount.taskOrg,
+                        ],
+                        label: 'New',
+                        stack: 'total',
+                      },
+                    ]}
+                    xAxis={[
+                      {
+                        data: ['Dev', 'Task', 'Dev Org.', 'Task Org.'],
+                        scaleType: 'band',
+                      },
+                    ]}
+                    onItemClick={(_, item) => setClickedOn(item)}
+                    width={360}
+                    height={280}
+                    slotProps={{
+                      legend: {
+                        direction: 'row',
+                        position: { vertical: 'bottom', horizontal: 'middle' },
+                        itemMarkHeight: 6,
+                        labelStyle: { fontSize: 12 },
+                      },
+                    }}
+                  />
+                </Paper>
+              </Grid>
+            );
+          })}
           <Grid>
             <Paper sx={{ ...commonPaperSx }}>
               <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
@@ -247,17 +317,41 @@ export default function Dashboard() {
                     ],
                   },
                 ]}
-                {...commonChartProps}
                 onItemClick={(_, item) => setClickedOn(item)}
+                sx={{ ml: '100px' }}
+                width={360}
+                height={280}
+                slotProps={{ legend: { hidden: true } }}
               />
             </Paper>
           </Grid>
+          {groupedActivities.actors.map(actor => {
+            return (
+              <Grid key={actor.id} sx={{ mb: 4 }}>
+                <Typography variant="h6">{actors[actor.id].name ?? 'unknown'}</Typography>
+                <DataGrid
+                  {...dataGridProps}
+                  columns={actorColumns}
+                  rows={actor.activityIds.map(activityId => {
+                    const activity = activities[activityId];
+                    return {
+                      id: activityId,
+                      date: new Date(activity.createdTimestamp),
+                      action: activity.action,
+                      artifact: activity.artifact,
+                      initiativeId: activity.initiativeId,
+                    };
+                  })}
+                />
+              </Grid>
+            );
+          })}
         </Grid>
       )}
       <Typography fontSize="small" textAlign="center">
         <code>{!!clickedOn && JSON.stringify(clickedOn)}</code>
       </Typography>
-      {activities && (
+      {false && activities && (
         <Stack direction="row">
           <Typography component="div" fontSize="small" sx={{ p: 2 }}>
             <b>grouped activities</b> {renderJson(groupedActivities)}

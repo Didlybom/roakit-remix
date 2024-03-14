@@ -39,7 +39,7 @@ export const dataGridCommonProps = {
   },
 };
 
-export const dateColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
+export const dateColdDef = (colDef?: GridColDef) => {
   return {
     field: 'date',
     headerName: 'Date',

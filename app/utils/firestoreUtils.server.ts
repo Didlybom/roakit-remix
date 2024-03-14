@@ -1,10 +1,10 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
 import {
-  ACTIVITY_TYPES,
+  ARTIFACTS,
   ActivityCount,
-  ActivityData,
   ActorData,
+  Artifact,
   InitiativeData,
   InitiativeMap,
   actorSchema,
@@ -50,23 +50,23 @@ export const fetchInitiativeMap = async (customerId: number | undefined) => {
 };
 
 export const fetchActors = async (customerId: number | undefined) => {
-  const coll = firestore.collection(`customers/${customerId}/actors`);
+  const coll = firestore.collection(`customers/${customerId}/accounts`);
   const docs = await coll.get();
   const actors: ActorData[] = [];
   docs.forEach(actor => {
     const data = actorSchema.parse(actor.data());
-    actors.push({ id: actor.id, name: data.name });
+    actors.push({ id: actor.id, name: data.accountName });
   });
   return actors;
 };
 
 export const fetchActorMap = async (customerId: number | undefined) => {
-  const coll = firestore.collection(`customers/${customerId}/actors`);
+  const coll = firestore.collection(`customers/${customerId}/accounts`);
   const docs = await coll.get();
   const actors: Record<ActorData['id'], Omit<ActorData, 'id'>> = {};
   docs.forEach(actor => {
     const data = actorSchema.parse(actor.data());
-    actors[actor.id] = { name: data.name };
+    actors[actor.id] = { name: data.accountName };
   });
   return actors;
 };
@@ -76,7 +76,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
   const oneHourAgo = now - ONE_HOUR;
   const flatCounters: {
     initiativeId: string;
-    activityType: ActivityData['type'];
+    artifact: Artifact;
     lastUpdated: number;
   }[] = [];
   Object.keys(initiatives).forEach(initiativeId => {
@@ -84,10 +84,10 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
     if (initiative.countersLastUpdated >= oneHourAgo) {
       return;
     }
-    ACTIVITY_TYPES.forEach(activityType => {
+    ARTIFACTS.forEach(artifact => {
       flatCounters.push({
         initiativeId: initiativeId,
-        activityType,
+        artifact,
         lastUpdated: initiative.countersLastUpdated,
       });
     });
@@ -96,9 +96,9 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
     flatCounters.map(async counter => {
       const countQuery = firestore
         .collection(`customers/${customerId}/activities`)
-        .where('type', '==', counter.activityType)
+        .where('artifact', '==', counter.artifact)
         .where('initiativeId', '==', counter.initiativeId)
-        .orderBy('date')
+        .orderBy('createdTimestamp')
         .startAt(counter.lastUpdated)
         .count();
       const count = (await countQuery.get()).data().count;
@@ -107,9 +107,8 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
   );
   newFlatCounts.forEach(flatCount => {
     const initiative = initiatives[flatCount.initiativeId];
-    initiative.counters.activities[flatCount.activityType] =
-      initiative.counters.activities[flatCount.activityType] + flatCount.count;
-    initiative.countersLastUpdated = now;
+    initiative.counters.activities[flatCount.artifact] =
+      initiative.counters.activities[flatCount.artifact] + flatCount.count;
   });
   void Promise.all(
     Object.keys(initiatives).map(initiativeId => {

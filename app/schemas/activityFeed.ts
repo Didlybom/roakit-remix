@@ -1,36 +1,50 @@
 import { ActivityCount, ActivityMap } from './schemas';
 
+interface Actor {
+  id: string;
+  activityIds: string[];
+}
+
+interface Initiative {
+  id: string;
+  activityCount: ActivityCount;
+  actorIds: string[];
+  effort: number;
+}
+
 export const groupActivities = (activities: ActivityMap) => {
-  const actors: Record<string, { activityIds: string[] }> = {};
-  const initiatives: Record<
-    string,
-    {
-      activityCount: ActivityCount;
-      actorIds: string[];
-    }
-  > = {};
+  const actors: Actor[] = [];
+  const initiatives: Initiative[] = [];
 
   Object.keys(activities).forEach(activityId => {
-    const { actorId, initiativeId, type } = activities[activityId];
+    const { actorId, initiativeId, artifact } = activities[activityId];
 
     // actors
-    if (!actors[actorId]) {
-      actors[actorId] = { activityIds: [] };
+    let actor = actors.find(a => a.id === actorId);
+    if (!actor) {
+      actor = { id: actorId, activityIds: [] };
+      actors.push(actor);
     }
-    actors[actorId].activityIds.push(activityId);
+    actor.activityIds.push(activityId);
 
     // initiatives
+    let initiative;
     if (initiativeId) {
-      if (!initiatives[initiativeId]) {
-        initiatives[initiativeId] = {
+      initiative = initiatives.find(i => i.id === initiativeId);
+      if (!initiative) {
+        initiative = {
+          id: initiativeId,
           activityCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 },
           actorIds: [],
+          effort: 0,
         };
+        initiatives.push(initiative);
       }
-      initiatives[initiativeId].activityCount[type]++;
-      if (!initiatives[initiativeId].actorIds.includes(actorId)) {
-        initiatives[initiativeId].actorIds.push(actorId);
+      initiative.activityCount[artifact]++;
+      if (!initiative.actorIds.includes(actorId)) {
+        initiative.actorIds.push(actorId);
       }
+      initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
   });
 

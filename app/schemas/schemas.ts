@@ -6,7 +6,7 @@ export const feedSchema = z.object({
 });
 
 export const actorSchema = z.object({
-  name: z.string().optional(),
+  accountName: z.string().optional(),
 });
 
 export const initiativeSchema = z.object({
@@ -24,13 +24,13 @@ export const initiativeSchema = z.object({
   countersLastUpdated: z.number().optional(),
 });
 
-export const ACTIVITY_TYPES = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
+export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
 
 export const activitySchema = z.object({
   action: z.string(),
-  actorId: z.string(),
-  date: z.number(),
-  type: z.enum(ACTIVITY_TYPES),
+  actorAccountId: z.string(),
+  createdTimestamp: z.number(),
+  artifact: z.enum(ARTIFACTS),
   initiativeId: z.string(),
 });
 
@@ -51,14 +51,14 @@ export interface ActorData {
   url?: string;
 }
 
-export type ActivityType = 'code' | 'codeOrg' | 'task' | 'taskOrg';
+export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 
 export interface ActivityData {
   id: string;
   action: string;
   actorId: string;
-  type: ActivityType;
-  date: number;
+  artifact: Artifact;
+  createdTimestamp: number;
   initiativeId: string;
 }
 
@@ -75,8 +75,8 @@ export const emptyActivity: ActivityData = {
   id: '',
   action: '',
   actorId: '-1',
-  type: 'code',
-  date: -1,
+  artifact: 'code',
+  createdTimestamp: -1,
   initiativeId: '-1',
 };
 
