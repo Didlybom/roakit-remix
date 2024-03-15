@@ -32,6 +32,7 @@ export const activitySchema = z.object({
   createdTimestamp: z.number(),
   artifact: z.enum(ARTIFACTS),
   initiative: z.string(),
+  priority: z.number().optional(),
   metadata: z.any(),
 });
 
@@ -61,6 +62,7 @@ export interface ActivityData {
   artifact: Artifact;
   createdTimestamp: number;
   initiativeId: string;
+  priorityId?: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
 }
@@ -81,6 +83,7 @@ export const emptyActivity: ActivityData = {
   artifact: 'code',
   createdTimestamp: -1,
   initiativeId: '-1',
+  priorityId: -1,
   metadata: {},
 };
 

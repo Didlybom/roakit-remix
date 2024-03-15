@@ -14,7 +14,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { useState } from 'react';
-import { DateRange, dateRanges } from '../utils/dateUtils';
+import { DateRange, dateRangeLabels } from '../utils/dateUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
   [DateRange.TwoWeeks]: <CalendarMonthIcon fontSize="small" />,
@@ -42,7 +42,7 @@ export default function DateRangePicker({
         onClick={e => setMenuEl(e.currentTarget)}
         sx={{ textWrap: 'nowrap', textTransform: 'none' }}
       >
-        {dateRanges[dateRange]}
+        {dateRangeLabels[dateRange]}
       </Button>
       <Menu
         id="date-range"
@@ -51,7 +51,7 @@ export default function DateRangePicker({
         onClose={() => setMenuEl(null)}
         sx={{ color: 'inherit' }}
       >
-        {(Object.keys(dateRanges) as DateRange[]).map((date, i) => (
+        {(Object.keys(dateRangeLabels) as DateRange[]).map((date, i) => (
           <MenuItem
             key={i}
             value={date}
@@ -62,7 +62,7 @@ export default function DateRangePicker({
             }}
           >
             <ListItemIcon>{icons[date]}</ListItemIcon>
-            <ListItemText>{dateRanges[date]}</ListItemText>
+            <ListItemText>{dateRangeLabels[date]}</ListItemText>
           </MenuItem>
         ))}
       </Menu>

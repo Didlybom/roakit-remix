@@ -2,12 +2,17 @@ import retry from 'async-retry';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
 import {
+  ActivityMap,
   ActorData,
   InitiativeData,
   InitiativeMap,
+  activitySchema,
   actorSchema,
+  emptyActivity,
   initiativeSchema,
 } from '../schemas/schemas';
+import { ParseError } from '../utils/errorUtils';
+import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
 
@@ -119,6 +124,43 @@ export const fetchActorMap = async (customerId: number | undefined) => {
     {
       ...retryProps,
       onRetry: e => logger.warn(`Retrying fetchActorMap... ${e.message}`),
+    }
+  );
+};
+
+export const fetchActivities = async (customerId: number, startDate: number) => {
+  return await retry(
+    async bail => {
+      const activitiesCollection = firestore
+        .collection(`customers/${customerId}/activities`)
+        .orderBy('createdTimestamp')
+        .startAt(startDate)
+        .limit(5000); // FIXME limit
+      const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
+        () => activitiesCollection.get(),
+        { metricsName: 'dashboard:getActivities' }
+      );
+      const activities: ActivityMap = {};
+      activityDocs.forEach(activity => {
+        const props = activitySchema.safeParse(activity.data());
+        if (!props.success) {
+          bail(new ParseError('Failed to parse activities. ' + props.error.message));
+          return emptyActivity; // not used, bail() will throw
+        }
+        activities[activity.id] = {
+          action: props.data.action,
+          actorId: props.data.actorAccountId,
+          artifact: props.data.artifact,
+          createdTimestamp: props.data.createdTimestamp,
+          initiativeId: props.data.initiative,
+          priorityId: props.data.priority,
+        };
+      });
+      return activities;
+    },
+    {
+      ...retryProps,
+      onRetry: e => logger.warn(`Retrying fetchActivities... ${e.message}`),
     }
   );
 };
