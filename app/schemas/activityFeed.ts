@@ -88,6 +88,7 @@ export const groupActivities = (activities: ActivityMap) => {
       }
       priority.activityCount++;
     }
+    priorities.sort((a, b) => (a.id < b.id ? 1 : -1));
 
     // initiatives
     let initiative;
@@ -109,9 +110,7 @@ export const groupActivities = (activities: ActivityMap) => {
       initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
   });
-
-  // sort priorities
-  priorities.sort((a, b) => (a.id < b.id ? 1 : -1));
+  initiatives.sort((a, b) => a.id.localeCompare(b.id));
 
   Object.keys(topActors).forEach(action => {
     const actors = topActors[action];
