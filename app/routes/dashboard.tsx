@@ -363,7 +363,7 @@ export default function Dashboard() {
                   {Object.keys(groupedActivities?.topActors).map(action => {
                     return (
                       <Grid key={action}>
-                        <Paper sx={{ p: 1 }} /* sx={{ ...commonPaperSx, width: 620 }}*/>
+                        <Paper sx={{ ...commonPaperSx }}>
                           {widgetTitle(topCreatorActions[action] ?? action)}
                           <BarChart
                             series={[
@@ -386,10 +386,10 @@ export default function Dashboard() {
                             ]}
                             onItemClick={(_, item) => setClickedOn(item)}
                             layout="horizontal"
-                            width={600}
-                            height={300}
+                            width={360}
+                            height={280}
+                            margin={{ left: 180 }}
                             slotProps={{ legend: { hidden: true } }}
-                            margin={{ left: 200 }}
                           />
                         </Paper>
                       </Grid>
