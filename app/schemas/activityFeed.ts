@@ -110,24 +110,5 @@ export const groupActivities = (activities: ActivityMap) => {
     }
   });
 
-  // sort priorities
-  priorities.sort((a, b) => (a.id < b.id ? 1 : -1));
-
-  Object.keys(topActors).forEach(action => {
-    const actors = topActors[action];
-    // sort top actors
-    actors.sort((a, b) => (a.activityCount < b.activityCount ? 1 : -1));
-    // keep top 10
-    // calculate count for the rest
-    let totalOthers = 0;
-    for (let i = 10; i < actors.length; i++) {
-      totalOthers += actors[i].activityCount;
-    }
-    topActors[action] = actors.slice(0, 10);
-    if (totalOthers > 0) {
-      topActors[action].push({ actorId: TOP_ACTORS_OTHERS_ID, activityCount: totalOthers });
-    }
-  });
-
   return { topActors, priorities, initiatives };
 };
