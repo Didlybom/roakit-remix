@@ -39,7 +39,7 @@ export enum DateRange {
   OneDay = 'OneDay',
 }
 
-export const dateRanges: Record<DateRange, string> = {
+export const dateRangeLabels: Record<DateRange, string> = {
   [DateRange.TwoWeeks]: 'Last 14 days',
   [DateRange.OneWeek]: 'Last 7 days',
   [DateRange.OneDay]: 'Last 24 hours',

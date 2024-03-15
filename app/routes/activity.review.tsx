@@ -289,14 +289,12 @@ export default function ActivityReview() {
         flex: 1,
         editable: true,
         sortable: false,
-        renderCell: params => {
-          console.log(params.value + 'xxxx');
-          return params.value !== UNSET_INITIATIVE_ID ?
-              <Box className="MuiDataGrid-cellContent">
-                {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
-              </Box>
-            : <EditIcon color="primary" fontSize="small" />;
-        },
+        renderCell: params =>
+          params.value !== UNSET_INITIATIVE_ID ?
+            <Box className="MuiDataGrid-cellContent">
+              {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
+            </Box>
+          : <EditIcon color="primary" fontSize="small" />,
       },
     ],
     [sessionData.actors, sessionData.initiatives]
