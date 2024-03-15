@@ -23,9 +23,9 @@ import { v4 as uuidv4 } from 'uuid';
 import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { firestore, auth as serverAuth } from '../firebase.server';
+import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
-import { fetchInitiatives } from '../utils/firestoreUtils.server';
 
 const logger = pino({ name: 'route:initiatives' });
 

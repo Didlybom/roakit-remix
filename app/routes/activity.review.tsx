@@ -44,15 +44,12 @@ import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClic
 import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
+import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
+import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { getSummary, getUrl } from '../schemas/activityFeed';
 import { ActivityCount, ActivityData, Artifact, activitySchema } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import {
-  fetchActorMap,
-  fetchInitiativeMap,
-  incrementInitiativeCounters,
-} from '../utils/firestoreUtils.server';
 import { actorColdDef, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
@@ -283,7 +280,7 @@ export default function ActivityReview() {
         type: 'singleSelect',
         valueOptions: Object.keys(sessionData.initiatives).map(initiativeId => {
           const initiative = sessionData.initiatives[initiativeId];
-          return { value: initiativeId, label: initiative.label };
+          return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
         }),
         minWidth: 200,
         flex: 1,
@@ -311,7 +308,6 @@ export default function ActivityReview() {
             <FormControl size="small" sx={{ width: '100%' }}>
               <InputLabel id="initiative">Add to initiative</InputLabel>
               <Select
-                labelId="initiative-label"
                 id="initiative-select"
                 value={bulkInitiative}
                 label="Select an initiative"

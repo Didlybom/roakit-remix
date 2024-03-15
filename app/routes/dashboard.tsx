@@ -11,16 +11,13 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
+import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
+import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { groupActivities } from '../schemas/activityFeed';
 import { ActivityMap, activitySchema, emptyActivity } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import {
-  fetchActorMap,
-  fetchInitiativeMap,
-  updateInitiativeCounters,
-} from '../utils/firestoreUtils.server';
 import { dateColdDef, renderJson } from '../utils/jsxUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
@@ -187,7 +184,7 @@ export default function Dashboard() {
       )}
       {activities && data && (
         <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
-          {data.groupedActivities?.initiatives.length && (
+          {!!data.groupedActivities?.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
@@ -221,7 +218,7 @@ export default function Dashboard() {
               </Paper>
             </Grid>
           )}
-          {data.groupedActivities?.initiatives.length && (
+          {!!data.groupedActivities?.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 <Typography textAlign="center" variant="h6" sx={{ mb: 2 }}>
