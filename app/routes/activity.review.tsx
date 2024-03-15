@@ -56,6 +56,7 @@ const logger = pino({ name: 'route:activity.review' });
 
 const MAX_BATCH = 500;
 const PAGE_SIZE = 50;
+const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
 
 // verify JWT, load activities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -100,18 +101,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (
+        initiativeId !== UNSET_INITIATIVE_ID &&
         initiativeCountersLastUpdated &&
         activity.createdTimestamp < +initiativeCountersLastUpdated
       ) {
         counters[activity.artifact]++;
       }
       const activityDoc = firestore.doc('customers/' + customerId + '/activities/' + activity.id);
-      batch.update(activityDoc, { initiative: initiativeId });
+      batch.update(activityDoc, {
+        initiative: initiativeId === UNSET_INITIATIVE_ID ? '' : initiativeId,
+      });
     });
     await batch.commit(); // up to 500 operations
 
     //  update the initiative counters
-    await incrementInitiativeCounters(customerId, initiativeId, counters);
+    if (initiativeId !== UNSET_INITIATIVE_ID) {
+      await incrementInitiativeCounters(customerId, initiativeId, counters);
+    }
     // FIXME decrement the activity that had an initiative and were changed
 
     return null;
@@ -191,7 +197,7 @@ export default function ActivityReview() {
             actorId: fields.data.actorAccountId,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
-            initiativeId: fields.data.initiative,
+            initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             metadata: fields.data.metadata,
           });
@@ -259,39 +265,38 @@ export default function ActivityReview() {
         renderCell: params => {
           const summary = getSummary(params.value);
           const url = getUrl(params.value);
-          if (url) {
-            return (
+          return url ?
               <Link href={url} target="_blank" title={summary} sx={{ ...ellipsisSx }}>
                 {summary}
               </Link>
-            );
-          } else {
-            return (
-              <Box title={summary} sx={{ ...ellipsisSx }}>
+            : <Box title={summary} sx={{ ...ellipsisSx }}>
                 {summary}
-              </Box>
-            );
-          }
+              </Box>;
         },
       },
       {
         field: 'initiativeId',
         headerName: 'Initiative',
         type: 'singleSelect',
-        valueOptions: Object.keys(sessionData.initiatives).map(initiativeId => {
-          const initiative = sessionData.initiatives[initiativeId];
-          return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
-        }),
+        valueOptions: [
+          { value: UNSET_INITIATIVE_ID, label: '[unset]' },
+          ...Object.keys(sessionData.initiatives).map(initiativeId => {
+            const initiative = sessionData.initiatives[initiativeId];
+            return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
+          }),
+        ],
         minWidth: 200,
         flex: 1,
         editable: true,
         sortable: false,
-        renderCell: params =>
-          params.value ?
-            <Box className="MuiDataGrid-cellContent">
-              {sessionData.initiatives[params.value as string].label ?? 'unknown'}
-            </Box>
-          : <EditIcon color="primary" fontSize="small" />,
+        renderCell: params => {
+          console.log(params.value + 'xxxx');
+          return params.value !== UNSET_INITIATIVE_ID ?
+              <Box className="MuiDataGrid-cellContent">
+                {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
+              </Box>
+            : <EditIcon color="primary" fontSize="small" />;
+        },
       },
     ],
     [sessionData.actors, sessionData.initiatives]
@@ -316,7 +321,7 @@ export default function ActivityReview() {
               >
                 {Object.keys(sessionData.initiatives).map(initiativeId => (
                   <MenuItem key={initiativeId} value={initiativeId}>
-                    {sessionData.initiatives[initiativeId].label}
+                    {`[${initiativeId}] ${sessionData.initiatives[initiativeId].label}`}
                   </MenuItem>
                 ))}
               </Select>
@@ -330,7 +335,7 @@ export default function ActivityReview() {
                   {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
-                      sessionData.initiatives[bulkInitiative].countersLastUpdated,
+                      sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
                     activities: JSON.stringify(
                       selectedRows.map(id => {
                         return {
@@ -395,7 +400,7 @@ export default function ActivityReview() {
                 {
                   initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
-                    sessionData.initiatives[updatedRow.initiativeId].countersLastUpdated,
+                    sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
                   activities: JSON.stringify([
                     {
                       id: updatedRow.id,
