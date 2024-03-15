@@ -47,7 +47,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
       const initiative = initiatives[initiativeId];
       const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
       void initiativeDoc.set(
-        { counters: initiative.counters, countersLastUpdated: initiative.countersLastUpdated },
+        { counters: initiative.counters, countersLastUpdated: now },
         { merge: true }
       ); // no need to await (I think)
     })
