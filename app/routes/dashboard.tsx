@@ -4,8 +4,8 @@ import {
   AccordionDetails,
   AccordionSummary,
   Alert,
-  Box,
   Paper,
+  Stack,
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
@@ -119,8 +119,6 @@ export default function Dashboard() {
 
   const dateRangeLabel = dateFilter ? dateRangeLabels[dateFilter] : 'New';
 
-  const commonPaperSx = { width: 380, p: 1 };
-
   const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
     1: { id: 1, label: 'Highest', color: '#f26d50' },
     2: { id: 2, label: 'High', color: '#f17c37' },
@@ -140,6 +138,10 @@ export default function Dashboard() {
     'codeOrg-created': 'New dev org',
     'codeOrg-updated': 'Dev org update',
   };
+
+  const commonPaperSx = { width: 320, p: 1 };
+
+  const widgetSize = { width: 300, height: 260 };
 
   const widgetTitle = (title: string) => (
     <Typography textAlign="center" sx={{ mb: 2 }}>
@@ -182,6 +184,225 @@ export default function Dashboard() {
     submit({ dateFilter }, { method: 'post' });
   }, [dateFilter, loading, submit]);
 
+  const widgets =
+    !activities ?
+      <></>
+    : <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
+        <Grid container justifyContent="center" spacing={5} sx={{ m: 3 }}>
+          {!!groupedActivities?.initiatives.length && (
+            <Grid>
+              <Paper sx={{ ...commonPaperSx }}>
+                {widgetTitle('Effort by Initiative')}
+                <PieChart
+                  series={[
+                    {
+                      id: 'effort-by-initiative',
+                      valueFormatter: item => `${item.value}`,
+                      data: groupedActivities.initiatives.map(initiative => {
+                        return {
+                          id: initiative.id,
+                          value: initiative.effort,
+                          label: initiatives[initiative.id].label,
+                        };
+                      }),
+                      arcLabel: item => `${item.id}`,
+                      innerRadius: 30,
+                      paddingAngle: 3,
+                    },
+                  ]}
+                  onItemClick={(_, item) => setClickedOn(item)}
+                  sx={{
+                    ml: '100px',
+                    [`& .${pieArcLabelClasses.root}`]: { fill: 'white' },
+                  }}
+                  {...widgetSize}
+                  slotProps={{ legend: { hidden: true } }}
+                />
+              </Paper>
+              <Typography variant="caption" justifyContent="center" sx={{ display: 'flex' }}>
+                simulated
+              </Typography>
+            </Grid>
+          )}
+          <Grid>
+            <Paper sx={{ ...commonPaperSx }}>
+              {widgetTitle('Activities by Priority')}
+              <PieChart
+                series={[
+                  {
+                    id: 'activity-by-priority',
+                    valueFormatter: item =>
+                      `${item.value} ${pluralizeMemo('activity', item.value)}`,
+                    data: groupedActivities.priorities.map(p => {
+                      return { value: p.activityCount, ...priorityDefs[p.id] };
+                    }),
+                  },
+                ]}
+                onItemClick={(_, item) => setClickedOn(item)}
+                sx={{ ml: '100px' }}
+                {...widgetSize}
+                slotProps={{ legend: { hidden: true } }}
+              />
+            </Paper>
+          </Grid>
+          {!!groupedActivities?.initiatives.length && (
+            <Grid>
+              <Paper sx={{ ...commonPaperSx }}>
+                {widgetTitle('Contributors by Initiative')}
+                <BarChart
+                  series={[
+                    {
+                      id: 'contributors-by-initiative',
+                      valueFormatter: value =>
+                        `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
+                      data: groupedActivities.initiatives.map(i => i.actorIds.length),
+                    },
+                  ]}
+                  yAxis={[
+                    { data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' },
+                  ]}
+                  onItemClick={(_, item) => setClickedOn(item)}
+                  layout="horizontal"
+                  {...widgetSize}
+                  slotProps={{ legend: { hidden: true } }}
+                />
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <strong>Activities by Initiative</strong>
+          </AccordionSummary>
+          <AccordionDetails sx={{ mb: 2 }}>
+            <Grid container justifyContent="center" spacing={5}>
+              {groupedActivities?.initiatives.map(initiative => {
+                const totalCounters = initiatives[initiative.id].counters.activities;
+                return (
+                  <Grid key={initiative.id}>
+                    <Paper sx={{ ...commonPaperSx }}>
+                      <Typography textAlign="center" sx={{ mb: 2 }}>
+                        {initiatives[initiative.id].label}
+                      </Typography>
+                      <BarChart
+                        series={[
+                          {
+                            id: `${initiative.id} total`,
+                            data: [
+                              totalCounters.code,
+                              totalCounters.task,
+                              totalCounters.codeOrg,
+                              totalCounters.taskOrg,
+                            ],
+                            valueFormatter: value =>
+                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                            label: 'Total',
+                            stack: 'total',
+                          },
+                          {
+                            id: `${initiative.id} new`,
+                            data: [
+                              initiative.activityCount.code,
+                              initiative.activityCount.task,
+                              initiative.activityCount.codeOrg,
+                              initiative.activityCount.taskOrg,
+                            ],
+                            valueFormatter: value =>
+                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                            label: dateRangeLabel,
+                            stack: 'total',
+                          },
+                        ]}
+                        xAxis={[
+                          { data: ['Dev', 'Task', 'Dev Org.', 'Task Org.'], scaleType: 'band' },
+                        ]}
+                        onItemClick={(_, item) => setClickedOn(item)}
+                        {...widgetSize}
+                        slotProps={{
+                          legend: {
+                            direction: 'row',
+                            position: { vertical: 'top', horizontal: 'middle' },
+                            itemMarkHeight: 10,
+                            itemGap: 20,
+                            padding: 0,
+                            labelStyle: { fontSize: 12 },
+                          },
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <strong>Top Contributors</strong>
+          </AccordionSummary>
+          <AccordionDetails sx={{ mb: 2 }}>
+            <Grid container justifyContent="center" spacing={5}>
+              {Object.keys(groupedActivities?.topActors).map(action => {
+                return (
+                  <Grid key={action}>
+                    <Paper sx={{ ...commonPaperSx }}>
+                      {widgetTitle(topCreatorActions[action] ?? action)}
+                      <BarChart
+                        series={[
+                          {
+                            id: `top-actors-${action}`,
+                            valueFormatter: value =>
+                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                            data: groupedActivities.topActors[action].map(a => a.activityCount),
+                          },
+                        ]}
+                        yAxis={[
+                          {
+                            data: groupedActivities.topActors[action].map(a =>
+                              a.actorId === TOP_ACTORS_OTHERS_ID ?
+                                'All others'
+                              : actors[a.actorId].name ?? 'unknown'
+                            ),
+                            scaleType: 'band',
+                          },
+                        ]}
+                        onItemClick={(_, item) => setClickedOn(item)}
+                        layout="horizontal"
+                        {...widgetSize}
+                        margin={{ left: 180 }}
+                        slotProps={{ legend: { hidden: true } }}
+                      />
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+
+        {/* {groupedActivities?.actors.map(actor => {
+          return (
+            <Grid key={actor.id} sx={{ mb: 4 }}>
+              <Typography variant="h6">{actors[actor.id]?.name ?? 'unknown'}</Typography>
+              <DataGrid
+                {...dataGridProps}
+                columns={actorColumns}
+                rows={actor.activityIds.map(activityId => {
+                  const activity = activities[activityId];
+                  return {
+                    id: activityId,
+                    date: new Date(activity.createdTimestamp),
+                    action: activity.action,
+                    artifact: activity.artifact,
+                    initiativeId: activity.initiativeId,
+                  };
+                })}
+              />
+            </Grid>
+          );
+        })} */}
+      </Stack>;
+
   return (
     <App
       view="dashboard"
@@ -199,230 +420,7 @@ export default function Dashboard() {
           {error}
         </Alert>
       )}
-      {activities && (
-        <>
-          <Grid container justifyContent="center" spacing={5} sx={{ my: 5 }}>
-            {!!groupedActivities?.initiatives.length && (
-              <Grid>
-                <Paper sx={{ ...commonPaperSx }}>
-                  {widgetTitle('Effort by Initiative')}
-                  <PieChart
-                    series={[
-                      {
-                        id: 'effort-by-initiative',
-                        valueFormatter: item => `${item.value}`,
-                        data: groupedActivities.initiatives.map(initiative => {
-                          return {
-                            id: initiative.id,
-                            value: initiative.effort,
-                            label: initiatives[initiative.id].label,
-                          };
-                        }),
-                        arcLabel: item => `${item.id}`,
-                        innerRadius: 30,
-                        paddingAngle: 3,
-                      },
-                    ]}
-                    onItemClick={(_, item) => setClickedOn(item)}
-                    sx={{
-                      ml: '100px',
-                      [`& .${pieArcLabelClasses.root}`]: { fill: 'white' },
-                    }}
-                    width={360}
-                    height={280}
-                    slotProps={{ legend: { hidden: true } }}
-                  />
-                </Paper>
-                <Typography variant="caption" justifyContent="center" sx={{ display: 'flex' }}>
-                  simulated
-                </Typography>
-              </Grid>
-            )}
-            <Grid>
-              <Paper sx={{ ...commonPaperSx }}>
-                {widgetTitle('Activities by Priority')}
-                <PieChart
-                  series={[
-                    {
-                      id: 'activity-by-priority',
-                      valueFormatter: item =>
-                        `${item.value} ${pluralizeMemo('activity', item.value)}`,
-                      data: groupedActivities.priorities.map(p => {
-                        return { value: p.activityCount, ...priorityDefs[p.id] };
-                      }),
-                    },
-                  ]}
-                  onItemClick={(_, item) => setClickedOn(item)}
-                  sx={{ ml: '100px' }}
-                  width={360}
-                  height={280}
-                  slotProps={{ legend: { hidden: true } }}
-                />
-              </Paper>
-            </Grid>
-            {!!groupedActivities?.initiatives.length && (
-              <Grid>
-                <Paper sx={{ ...commonPaperSx }}>
-                  {widgetTitle('Contributors by Initiative')}
-                  <BarChart
-                    series={[
-                      {
-                        id: 'contributors-by-initiative',
-                        valueFormatter: value =>
-                          `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-                        data: groupedActivities.initiatives.map(i => i.actorIds.length),
-                      },
-                    ]}
-                    yAxis={[
-                      { data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' },
-                    ]}
-                    onItemClick={(_, item) => setClickedOn(item)}
-                    layout="horizontal"
-                    width={360}
-                    height={280}
-                    slotProps={{ legend: { hidden: true } }}
-                  />
-                </Paper>
-              </Grid>
-            )}
-          </Grid>
-          <Box sx={{ mx: 3, mb: 4 }}>
-            <Accordion defaultExpanded>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <strong>Activities by Initiative</strong>
-              </AccordionSummary>
-              <AccordionDetails sx={{ mb: 2 }}>
-                <Grid container justifyContent="center" spacing={5}>
-                  {groupedActivities?.initiatives.map(initiative => {
-                    const totalCounters = initiatives[initiative.id].counters.activities;
-                    return (
-                      <Grid key={initiative.id}>
-                        <Paper sx={{ ...commonPaperSx }}>
-                          <Typography textAlign="center" sx={{ mb: 2 }}>
-                            {initiatives[initiative.id].label}
-                          </Typography>
-                          <BarChart
-                            series={[
-                              {
-                                id: `${initiative.id} total`,
-                                data: [
-                                  totalCounters.code,
-                                  totalCounters.task,
-                                  totalCounters.codeOrg,
-                                  totalCounters.taskOrg,
-                                ],
-                                valueFormatter: value =>
-                                  `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                                label: 'Total',
-                                stack: 'total',
-                              },
-                              {
-                                id: `${initiative.id} new`,
-                                data: [
-                                  initiative.activityCount.code,
-                                  initiative.activityCount.task,
-                                  initiative.activityCount.codeOrg,
-                                  initiative.activityCount.taskOrg,
-                                ],
-                                valueFormatter: value =>
-                                  `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                                label: dateRangeLabel,
-                                stack: 'total',
-                              },
-                            ]}
-                            xAxis={[
-                              { data: ['Dev', 'Task', 'Dev Org.', 'Task Org.'], scaleType: 'band' },
-                            ]}
-                            onItemClick={(_, item) => setClickedOn(item)}
-                            width={360}
-                            height={280}
-                            slotProps={{
-                              legend: {
-                                direction: 'row',
-                                position: { vertical: 'bottom', horizontal: 'middle' },
-                                itemMarkHeight: 6,
-                                labelStyle: { fontSize: 12 },
-                              },
-                            }}
-                          />
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          </Box>
-          <Box sx={{ mx: 3, mb: 4 }}>
-            <Accordion defaultExpanded>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <strong>Top Contributors</strong>
-              </AccordionSummary>
-              <AccordionDetails sx={{ mb: 2 }}>
-                <Grid container justifyContent="center" spacing={5}>
-                  {Object.keys(groupedActivities?.topActors).map(action => {
-                    return (
-                      <Grid key={action}>
-                        <Paper sx={{ ...commonPaperSx }}>
-                          {widgetTitle(topCreatorActions[action] ?? action)}
-                          <BarChart
-                            series={[
-                              {
-                                id: `top-actors-${action}`,
-                                valueFormatter: value =>
-                                  `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                                data: groupedActivities.topActors[action].map(a => a.activityCount),
-                              },
-                            ]}
-                            yAxis={[
-                              {
-                                data: groupedActivities.topActors[action].map(a =>
-                                  a.actorId === TOP_ACTORS_OTHERS_ID ?
-                                    'All others'
-                                  : actors[a.actorId].name ?? 'unknown'
-                                ),
-                                scaleType: 'band',
-                              },
-                            ]}
-                            onItemClick={(_, item) => setClickedOn(item)}
-                            layout="horizontal"
-                            width={360}
-                            height={280}
-                            margin={{ left: 180 }}
-                            slotProps={{ legend: { hidden: true } }}
-                          />
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          </Box>
-
-          {/* {groupedActivities?.actors.map(actor => {
-              return (
-                <Grid key={actor.id} sx={{ mb: 4 }}>
-                  <Typography variant="h6">{actors[actor.id]?.name ?? 'unknown'}</Typography>
-                  <DataGrid
-                    {...dataGridProps}
-                    columns={actorColumns}
-                    rows={actor.activityIds.map(activityId => {
-                      const activity = activities[activityId];
-                      return {
-                        id: activityId,
-                        date: new Date(activity.createdTimestamp),
-                        action: activity.action,
-                        artifact: activity.artifact,
-                        initiativeId: activity.initiativeId,
-                      };
-                    })}
-                  />
-                </Grid>
-              );
-            })} */}
-        </>
-      )}
+      {widgets}
       <Typography fontSize="small" textAlign="center">
         <code>{!!clickedOn && JSON.stringify(clickedOn)}</code>
       </Typography>
