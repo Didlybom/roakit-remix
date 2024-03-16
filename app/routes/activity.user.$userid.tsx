@@ -1,7 +1,7 @@
 import PersonIcon from '@mui/icons-material/Person';
 import { Alert, Box, Link, Stack, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
@@ -26,6 +26,14 @@ const priorityLabels: Record<number, string> = {
   3: 'Medium',
   4: 'Low',
   5: 'Lowest',
+};
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  let title = 'User';
+  if (data?.userId) {
+    title = data.actors[data.userId]?.name ?? 'User';
+  }
+  return [{ title: `${title} Activity | ROAKIT` }];
 };
 
 // verify JWT, load initiatives and users
@@ -135,7 +143,7 @@ export default function UserActivity() {
 
   return (
     <App
-      view="activity.review"
+      view="activity.user"
       isLoggedIn={true}
       isNavOpen={true}
       dateRange={dateFilter}

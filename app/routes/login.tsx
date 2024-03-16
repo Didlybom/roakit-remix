@@ -11,6 +11,8 @@ import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
 import { errMsg } from '../utils/errorUtils';
 
+export const meta = () => [{ title: 'Login | ROAKIT' }];
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
   const idToken = form.get('idToken')?.toString() ?? '';

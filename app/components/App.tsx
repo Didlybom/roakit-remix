@@ -10,6 +10,7 @@ const navbarWidth = 180;
 export type View =
   | 'dashboard'
   | 'activity.review'
+  | 'activity.user'
   | 'github'
   | 'jira'
   | 'initiatives'

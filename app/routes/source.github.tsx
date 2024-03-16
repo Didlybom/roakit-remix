@@ -53,6 +53,7 @@ import {
   dateColdDef,
   disabledNotOpaqueSx,
   ellipsisSx,
+  internalLinkSx,
   stickySx,
 } from '../utils/jsxUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
@@ -69,6 +70,8 @@ enum EventTab {
   Push = 2,
   Release = 3,
 }
+
+export const meta = () => [{ title: 'Live GitHub Activity | ROAKIT' }];
 
 // verify JWT and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -125,12 +128,7 @@ export default function GitHub() {
                   setShowBy(ActivityView.Author);
                   setScrollToAuthor(fields.name);
                 }}
-                sx={{
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  borderBottom: 'dotted 1px',
-                  ...ellipsisSx,
-                }}
+                sx={internalLinkSx}
               >
                 {fields.name}
               </Link>

@@ -38,6 +38,8 @@ enum FeedTab {
   Confluence,
 }
 
+export const meta = () => [{ title: 'Settings | ROAKIT' }];
+
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);

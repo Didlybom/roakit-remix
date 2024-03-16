@@ -27,6 +27,8 @@ enum View {
   CommentCreated = 1,
 }
 
+export const meta = () => [{ title: 'Live Jira Activity | ROAKIT' }];
+
 // verify JWT and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);

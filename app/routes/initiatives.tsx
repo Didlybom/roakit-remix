@@ -38,6 +38,8 @@ interface InitiativeRow {
   isNew?: boolean;
 }
 
+export const meta = () => [{ title: 'Initiatives Admin | ROAKIT' }];
+
 // verify JWT, load initiatives
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);

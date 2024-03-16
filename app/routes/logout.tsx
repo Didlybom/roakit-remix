@@ -7,6 +7,8 @@ import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth } from '../firebase.client';
 
+export const meta = () => [{ title: 'Logout | ROAKIT' }];
+
 export const action = async () => {
   return redirect('/', {
     headers: {

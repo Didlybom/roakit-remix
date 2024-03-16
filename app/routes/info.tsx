@@ -5,6 +5,8 @@ import packageJson from '../../package.json';
 import App from '../components/App';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
+export const meta = () => [{ title: 'Version Info | ROAKIT' }];
+
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
   return await getSessionData(request);
 };

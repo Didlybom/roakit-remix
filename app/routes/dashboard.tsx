@@ -11,7 +11,7 @@ import {
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { BarChart, PieChart, PieValueType, pieArcLabelClasses } from '@mui/x-charts';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { useActionData, useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
+import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
@@ -34,8 +34,11 @@ import {
   dateRangeLabels,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { openUserActivity } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:dashboard' });
+
+export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
 // verify and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -92,7 +95,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
   const data = useActionData<typeof action>();
   const { groupedActivities, activities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
@@ -348,14 +350,10 @@ export default function Dashboard() {
                           if (item.dataIndex === 10) {
                             return;
                           }
-                          const url = `/activity/user/${encodeURIComponent(
+                          openUserActivity(
+                            e.nativeEvent,
                             groupedActivities.topActors[action][item.dataIndex].id
-                          )}`;
-                          if (e.metaKey || e.ctrlKey) {
-                            window.open(url, '_blank');
-                          } else {
-                            navigate(url);
-                          }
+                          );
                         }}
                         layout="horizontal"
                         {...widgetSize}
