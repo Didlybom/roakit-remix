@@ -157,7 +157,19 @@ export default function UserActivity() {
               <PersonIcon sx={{ mr: 1 }} />
               {sessionData.actors[sessionData.userId]?.name ?? 'Unknown user'}
             </Typography>
-            <DataGrid columns={columns} rows={activities} {...dataGridCommonProps} rowHeight={50} />
+            <DataGrid
+              columns={columns}
+              rows={activities}
+              {...dataGridCommonProps}
+              rowHeight={50}
+              slots={{
+                noRowsOverlay: () => (
+                  <Box height="75px" display="flex" alignItems="center" justifyContent="center">
+                    Not activity for these dates
+                  </Box>
+                ),
+              }}
+            />
           </>
         )}
         {error && (
