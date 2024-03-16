@@ -80,7 +80,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const activities = await fetchActivities(sessionData.customerId, startDate);
     const groupedActivities = groupActivities(activities);
 
-    return { groupedActivities, activities, initiatives, actors, error: null };
+    return { groupedActivities, initiatives, actors, error: null };
   } catch (e) {
     logger.error(e);
     return {
