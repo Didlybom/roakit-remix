@@ -49,7 +49,6 @@ import { actorColdDef, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
 const logger = pino({ name: 'route:activity.review' });
 
 const MAX_BATCH = 500;
-const PAGE_SIZE = 50;
 const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
 
 // verify JWT, load activities
@@ -129,7 +128,7 @@ export default function ActivityReview() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
   const [rowTotal, setRowTotal] = useState(0);
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: PAGE_SIZE });
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const prevPaginationModel = usePrevious(paginationModel);
   const [boundaryDocs, setBoundaryDocs] = useState<{
     first: QueryDocumentSnapshot;
@@ -225,8 +224,9 @@ export default function ActivityReview() {
     density: 'compact' as GridDensity,
     disableRowSelectionOnClick: true,
     disableColumnMenu: true,
+    checkboxSelection: true,
     paginationMode: 'server' as GridFeatureMode,
-    pageSizeOptions: [PAGE_SIZE],
+    pageSizeOptions: [25, 50, 100],
   };
 
   const columns = useMemo<GridColDef[]>(
@@ -354,65 +354,74 @@ export default function ActivityReview() {
     );
   }
 
-  return loading ?
-      <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />
-    : <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
-        <Stack sx={{ m: 3 }}>
-          {error && (
-            <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
-              {error}
-            </Alert>
-          )}
-          <Box sx={{ display: 'flex', mb: 2, justifyContent: 'right' }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAllActivity}
-                  onChange={e => {
-                    setPaginationModel({ page: 0, pageSize: PAGE_SIZE });
-                    setBoundaryDocs(null);
-                    setShowAllActivity(e.target.checked);
-                  }}
-                />
-              }
-              label="Show all activities"
-            />
-          </Box>
-          <DataGridWithSingleClickEditing
-            columns={columns}
-            rows={activities}
-            {...dataGridProps}
-            rowCount={rowTotal}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            slots={{ toolbar: selectedRows.length ? BulkToolbar : undefined }}
-            checkboxSelection
-            processRowUpdate={(updatedRow: ActivityData) => {
-              fetcher.submit(
-                {
-                  initiativeId: updatedRow.initiativeId,
-                  initiativeCountersLastUpdated:
-                    sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
-                  activities: JSON.stringify([
-                    {
-                      id: updatedRow.id,
-                      artifact: updatedRow.artifact,
-                      createdTimestamp: updatedRow.createdTimestamp,
-                    },
-                  ] as ActivityPayload),
-                },
-                { method: 'post' }
-              );
-              return updatedRow;
-            }}
-            onRowSelectionModelChange={rowSelectionModel => {
-              setSelectedRows(rowSelectionModel as string[]);
-              if (!rowSelectionModel.length) {
-                setBulkInitiative('');
-              }
-            }}
-            onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update'))}
+  if (loading) {
+    return <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />;
+  }
+  return (
+    <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
+      <Stack sx={{ m: 3 }}>
+        {error && (
+          <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
+        <Box sx={{ display: 'flex', mb: 2, justifyContent: 'right' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showAllActivity}
+                onChange={e => {
+                  setPaginationModel({ page: 0, pageSize: 25 });
+                  setBoundaryDocs(null);
+                  setShowAllActivity(e.target.checked);
+                }}
+              />
+            }
+            label="Show all activities"
           />
-        </Stack>
-      </App>;
+        </Box>
+        <DataGridWithSingleClickEditing
+          columns={columns}
+          rows={activities}
+          {...dataGridProps}
+          rowCount={rowTotal}
+          paginationModel={paginationModel}
+          onPaginationModelChange={paginationModel => {
+            if (prevPaginationModel && prevPaginationModel.pageSize !== paginationModel.pageSize) {
+              setBoundaryDocs(null);
+              setPaginationModel({ ...paginationModel, page: 0 });
+            } else {
+              setPaginationModel(paginationModel);
+            }
+          }}
+          slots={{ toolbar: selectedRows.length ? BulkToolbar : undefined }}
+          processRowUpdate={(updatedRow: ActivityData) => {
+            fetcher.submit(
+              {
+                initiativeId: updatedRow.initiativeId,
+                initiativeCountersLastUpdated:
+                  sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
+                activities: JSON.stringify([
+                  {
+                    id: updatedRow.id,
+                    artifact: updatedRow.artifact,
+                    createdTimestamp: updatedRow.createdTimestamp,
+                  },
+                ] as ActivityPayload),
+              },
+              { method: 'post' }
+            );
+            return updatedRow;
+          }}
+          onRowSelectionModelChange={rowSelectionModel => {
+            setSelectedRows(rowSelectionModel as string[]);
+            if (!rowSelectionModel.length) {
+              setBulkInitiative('');
+            }
+          }}
+          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update'))}
+        />
+      </Stack>
+    </App>
+  );
 }
