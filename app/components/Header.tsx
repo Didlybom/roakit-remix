@@ -136,7 +136,7 @@ export default function Header({
                   sx={{ display: { xs: 'flex', sm: 'none' } }}
                 >
                   <LogoutIcon />
-                </IconButton>{' '}
+                </IconButton>
                 <Button
                   href="/logout"
                   title="Logout"
