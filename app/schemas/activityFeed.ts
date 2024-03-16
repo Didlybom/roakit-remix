@@ -1,4 +1,6 @@
-import { ActivityCount, ActivityMap } from './schemas';
+import firebase from 'firebase/compat/app';
+import { ParseError } from '../utils/errorUtils';
+import { ActivityCount, ActivityMap, Artifact, activitySchema } from './schemas';
 
 // interface Actor {
 //   id: string;
@@ -133,4 +135,37 @@ export const groupActivities = (activities: ActivityMap) => {
   });
 
   return { topActors, priorities, initiatives };
+};
+
+export interface UserActivityRow {
+  id: string;
+  date: Date;
+  action: string;
+  artifact: Artifact;
+  initiativeId: string;
+  priority?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: any;
+}
+
+export const userActivityRows = (snapshot: firebase.firestore.QuerySnapshot): UserActivityRow[] => {
+  const rows: UserActivityRow[] = [];
+  snapshot.forEach(doc => {
+    const props = activitySchema.safeParse(doc.data());
+    if (!props.success) {
+      throw new ParseError('Failed to parse activities. ' + props.error.message);
+    }
+    const row = {
+      id: doc.id,
+      date: new Date(props.data.createdTimestamp),
+      action: props.data.action,
+      artifact: props.data.artifact,
+      initiativeId: props.data.initiative,
+      priority: props.data.priority,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: props.data.metadata,
+    };
+    rows.push(row);
+  });
+  return rows;
 };

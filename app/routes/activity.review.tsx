@@ -51,7 +51,7 @@ const logger = pino({ name: 'route:activity.review' });
 const MAX_BATCH = 500;
 const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
 
-// verify JWT, load activities
+// verify JWT, load initiatives and users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {

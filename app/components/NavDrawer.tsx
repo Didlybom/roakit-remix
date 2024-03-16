@@ -79,7 +79,7 @@ export default function NavDrawer({
       <List>
         <ListSubheader color="primary">Real-time atomic data</ListSubheader>
         <ListItem key="github" disablePadding>
-          <ListItemButton href="/github" selected={view === 'github'}>
+          <ListItemButton href="/source/github" selected={view === 'github'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
               <GitHubIcon fontSize="small" />
             </ListItemIcon>
@@ -87,7 +87,7 @@ export default function NavDrawer({
           </ListItemButton>
         </ListItem>
         <ListItem key="jira" disablePadding>
-          <ListItemButton href="/jira" selected={view === 'jira'}>
+          <ListItemButton href="/source/jira" selected={view === 'jira'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
               <JiraIcon />
             </ListItemIcon>

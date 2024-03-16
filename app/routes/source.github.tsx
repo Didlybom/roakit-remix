@@ -70,7 +70,7 @@ enum EventTab {
   Release = 3,
 }
 
-// verify and get session data
+// verify JWT and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -79,7 +79,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return sessionData;
 };
 
-export default function Index() {
+export default function GitHub() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
   const isHydrated = useHydrated();
@@ -276,6 +276,7 @@ export default function Index() {
     if (!dateFilter) {
       return;
     }
+    setError('');
     setGotSnapshot(false);
     const unsubscribe: Record<string, () => void> = {};
     Object.values(GitHubEventType).map((type: GitHubEventType) => {

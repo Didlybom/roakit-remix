@@ -9,16 +9,9 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import {
-  BarChart,
-  BarItemIdentifier,
-  PieChart,
-  PieItemIdentifier,
-  PieValueType,
-  pieArcLabelClasses,
-} from '@mui/x-charts';
+import { BarChart, PieChart, PieValueType, pieArcLabelClasses } from '@mui/x-charts';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
+import { useActionData, useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
@@ -99,6 +92,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const data = useActionData<typeof action>();
   const { groupedActivities, activities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
@@ -113,7 +107,6 @@ export default function Dashboard() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const [loading, setLoading] = useState(true);
-  const [clickedOn, setClickedOn] = useState<BarItemIdentifier | PieItemIdentifier | null>(null);
 
   const pluralizeMemo = memoize(pluralize);
 
@@ -148,27 +141,6 @@ export default function Dashboard() {
       {title}
     </Typography>
   );
-
-  // const dataGridProps = {
-  //   density: 'compact' as GridDensity,
-  //   disableRowSelectionOnClick: true,
-  //   disableColumnMenu: true,
-  //   pageSizeOptions: [25, 50, 100],
-  //   initialState: {
-  //     pagination: { paginationModel: { pageSize: 25 } },
-  //     sorting: { sortModel: [{ field: 'date', sort: 'desc' as GridSortDirection }] },
-  //   },
-  // };
-
-  // const actorColumns: GridColDef[] = useMemo<GridColDef[]>(
-  //   () => [
-  //     dateColdDef(),
-  //     { field: 'action', headerName: 'Action', width: 100 },
-  //     { field: 'artifact', headerName: 'Artifact', width: 100 },
-  //     { field: 'initiativeId', headerName: 'Initiative', minWidth: 80 },
-  //   ],
-  //   []
-  // );
 
   useEffect(() => {
     if (activities) {
@@ -211,7 +183,6 @@ export default function Dashboard() {
                       paddingAngle: 2,
                     },
                   ]}
-                  onItemClick={(_, item) => setClickedOn(item)}
                   margin={{ left: 100 }}
                   sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
                   {...widgetSize}
@@ -238,7 +209,6 @@ export default function Dashboard() {
                     outerRadius: 100,
                   },
                 ]}
-                onItemClick={(_, item) => setClickedOn(item)}
                 margin={{ left: 100 }}
                 {...widgetSize}
                 slotProps={{ legend: { hidden: true } }}
@@ -262,7 +232,6 @@ export default function Dashboard() {
                     { data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' },
                   ]}
                   xAxis={[{ tickMinStep: 1 }]}
-                  onItemClick={(_, item) => setClickedOn(item)}
                   layout="horizontal"
                   {...widgetSize}
                   slotProps={{ legend: { hidden: true } }}
@@ -324,7 +293,6 @@ export default function Dashboard() {
                           },
                         ]}
                         yAxis={[{ tickMinStep: 1 }]}
-                        onItemClick={(_, item) => setClickedOn(item)}
                         {...widgetSize}
                         margin={{ bottom: 60 }}
                         slotProps={{
@@ -376,7 +344,19 @@ export default function Dashboard() {
                           },
                         ]}
                         xAxis={[{ tickMinStep: 1 }]}
-                        onItemClick={(_, item) => setClickedOn(item)}
+                        onItemClick={(e, item) => {
+                          if (item.dataIndex === 10) {
+                            return;
+                          }
+                          const url = `/activity/user/${encodeURIComponent(
+                            groupedActivities.topActors[action][item.dataIndex].id
+                          )}`;
+                          if (e.metaKey || e.ctrlKey) {
+                            window.open(url, '_blank');
+                          } else {
+                            navigate(url);
+                          }
+                        }}
                         layout="horizontal"
                         {...widgetSize}
                         margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
@@ -389,28 +369,6 @@ export default function Dashboard() {
             </Grid>
           </AccordionDetails>
         </Accordion>
-
-        {/* {groupedActivities?.actors.map(actor => {
-          return (
-            <Grid key={actor.id} sx={{ mb: 4 }}>
-              <Typography variant="h6">{actors[actor.id]?.name ?? 'unknown'}</Typography>
-              <DataGrid
-                {...dataGridProps}
-                columns={actorColumns}
-                rows={actor.activityIds.map(activityId => {
-                  const activity = activities[activityId];
-                  return {
-                    id: activityId,
-                    date: new Date(activity.createdTimestamp),
-                    action: activity.action,
-                    artifact: activity.artifact,
-                    initiativeId: activity.initiativeId,
-                  };
-                })}
-              />
-            </Grid>
-          );
-        })} */}
       </Stack>;
 
   return (
@@ -431,9 +389,6 @@ export default function Dashboard() {
         </Alert>
       )}
       {widgets}
-      <Typography fontSize="small" textAlign="center">
-        <code>{!!clickedOn && JSON.stringify(clickedOn)}</code>
-      </Typography>
     </App>
   );
 }

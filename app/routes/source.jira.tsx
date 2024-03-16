@@ -27,7 +27,7 @@ enum View {
   CommentCreated = 1,
 }
 
-// verify and get session data
+// verify JWT and get session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -36,7 +36,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return sessionData;
 };
 
-export default function Index() {
+export default function Jira() {
   const sessionData = useLoaderData<typeof loader>();
   const [view, setView] = useState<View>(View.IssueCreated);
   const isHydrated = useHydrated();
@@ -44,14 +44,12 @@ export default function Index() {
     defaultValue: DateRange.OneDay,
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
+  const prevDateFilter = usePrevious(dateFilter);
+  const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
   const [jiraIssuesCreated, setJiraIssuesCreated] = useState<JiraRow[]>([]);
   const [jiraCommentsCreated, setJiraCommentsCreated] = useState<JiraRow[]>([]);
-
-  const prevDateFilter = usePrevious(dateFilter);
-
-  const [error, setError] = useState('');
 
   const jiraColumns = useMemo<GridColDef[]>(
     () => [
@@ -151,6 +149,7 @@ export default function Index() {
     if (!dateFilter) {
       return;
     }
+    setError('');
     setGotSnapshot(false);
     const unsubscribe: Record<string, () => void> = {};
     Object.values(JiraEventType).map((type: JiraEventType) => {
