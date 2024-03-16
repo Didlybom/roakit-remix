@@ -96,7 +96,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dashboard() {
   const sessionData = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
-  const { groupedActivities, activities, actors, initiatives, error } = data ?? {
+  const { groupedActivities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
     activities: null,
     actors: null,
@@ -108,11 +108,12 @@ export default function Dashboard() {
     defaultValue: DateRange.OneDay,
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
+  const [dateRangeLabel, setDateRangeLabel] = useState(
+    dateFilter ? dateRangeLabels[dateFilter] : 'New'
+  );
   const [loading, setLoading] = useState(true);
 
   const pluralizeMemo = memoize(pluralize);
-
-  const dateRangeLabel = dateFilter ? dateRangeLabels[dateFilter] : 'New';
 
   const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
     1: { id: 1, label: 'Highest', color: '#f26d50' },
@@ -145,10 +146,12 @@ export default function Dashboard() {
   );
 
   useEffect(() => {
-    if (activities) {
+    if (groupedActivities) {
       setLoading(false);
+      setDateRangeLabel(dateFilter ? dateRangeLabels[dateFilter] : 'New');
     }
-  }, [activities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupedActivities]); // dateFilter must be omitted
 
   // Hand the date range over to server
   useEffect(() => {
@@ -159,7 +162,7 @@ export default function Dashboard() {
   }, [dateFilter, loading, submit]);
 
   const widgets =
-    !activities ?
+    !groupedActivities ?
       <></>
     : <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
         <Grid container justifyContent="center" spacing={5} sx={{ m: 3 }}>
@@ -346,13 +349,13 @@ export default function Dashboard() {
                           },
                         ]}
                         xAxis={[{ tickMinStep: 1 }]}
-                        onItemClick={(e, item) => {
-                          if (item.dataIndex === 10) {
+                        onAxisClick={(event, data) => {
+                          if (!data || data.dataIndex === 10) {
                             return;
                           }
                           openUserActivity(
-                            e.nativeEvent,
-                            groupedActivities.topActors[action][item.dataIndex].id
+                            event,
+                            groupedActivities.topActors[action][data.dataIndex].id
                           );
                         }}
                         layout="horizontal"

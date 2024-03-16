@@ -1,4 +1,5 @@
 import pino, { Logger } from 'pino';
+import { setTimeout } from 'timers/promises';
 
 const loggers: Record<string, Logger> = {};
 const getLogger = (name: string): Logger => {
@@ -18,3 +19,6 @@ export const withMetricsAsync = async <T>(
   metricsLogger.info(`${process.hrtime(timer)[1] / 1000000}ms`);
   return result;
 };
+
+// useful for debugging
+export const sleep = async (duration: number) => await setTimeout(duration);
