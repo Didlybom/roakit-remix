@@ -13,6 +13,13 @@ export const stickySx: SxProps = {
   overflowY: 'auto',
 };
 
+export const internalLinkSx: SxProps = {
+  cursor: 'pointer',
+  textDecoration: 'none',
+  borderBottom: 'dotted 1px',
+  ...ellipsisSx,
+};
+
 export const dataGridCommonProps = {
   autoHeight: true, // otherwise empty state looks ugly
   slots: {
@@ -70,6 +77,11 @@ export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
 
 export const disabledNotOpaqueSx: SxProps = {
   ['&.Mui-disabled']: { opacity: 'initial' },
+};
+
+export const openUserActivity = (event: MouseEvent, userId: string) => {
+  const url = `/activity/user/${userId}`;
+  window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
 };
 
 export const renderJson = (data: unknown) => <pre>{JSON.stringify(data, undefined, 2)}</pre>;

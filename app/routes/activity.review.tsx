@@ -41,15 +41,29 @@ import { firestore, auth as serverAuth } from '../firebase.server';
 import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { getSummary, getUrl } from '../schemas/activityFeed';
-import { ActivityCount, ActivityData, Artifact, activitySchema } from '../schemas/schemas';
+import {
+  ActivityCount,
+  ActivityData,
+  ActorData,
+  Artifact,
+  activitySchema,
+} from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import { actorColdDef, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
+import {
+  actorColdDef,
+  dateColdDef,
+  ellipsisSx,
+  internalLinkSx,
+  openUserActivity,
+} from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
 const MAX_BATCH = 500;
 const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
+
+export const meta = () => [{ title: 'Activity Review | ROAKIT' }];
 
 // verify JWT, load initiatives and users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -245,6 +259,14 @@ export default function ActivityReview() {
             id: fields.actorId,
             name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
           };
+        },
+        renderCell: params => {
+          const fields = params.value as ActorData;
+          return (
+            <Link onClick={e => openUserActivity(e.nativeEvent, fields.id)} sx={internalLinkSx}>
+              {fields.name}
+            </Link>
+          );
         },
         sortable: false,
       }),

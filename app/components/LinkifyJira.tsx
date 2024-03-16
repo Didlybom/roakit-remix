@@ -1,5 +1,6 @@
 import { Link } from '@mui/material';
 import { LinkIt } from 'react-linkify-it';
+import { internalLinkSx } from '../utils/jsxUtils';
 import { JIRA_REGEXP } from '../utils/stringUtils';
 
 export default function LinkifyJira({
@@ -16,11 +17,7 @@ export default function LinkifyJira({
           // key={key}
           // using the key causes the first click to be eaten when the grid cell is re-rendered to indicate it's selected and LinkIt generates a new key
           onClick={() => onClick(jira)}
-          sx={{
-            cursor: 'pointer',
-            textDecoration: 'none',
-            borderBottom: 'dotted 1px',
-          }}
+          sx={internalLinkSx}
         >
           {jira}
         </Link>
