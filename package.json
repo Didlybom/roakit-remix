@@ -26,7 +26,7 @@
     "@google-cloud/secret-manager": "^5.2.0",
     "@mui/material": "^5.15.13",
     "@mui/x-charts": "^7.0.0-beta.7",
-    "@mui/x-data-grid": "^6.19.6",
+    "@mui/x-data-grid": "^7.0.0-beta.7",
     "@remix-run/css-bundle": "^2.8.1",
     "@remix-run/node": "^2.8.1",
     "@remix-run/react": "^2.8.1",

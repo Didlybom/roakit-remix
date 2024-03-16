@@ -1,11 +1,5 @@
 import { Box, SxProps, Tooltip } from '@mui/material';
-import {
-  GridColDef,
-  GridDensity,
-  GridRenderCellParams,
-  GridSortDirection,
-  GridValueFormatterParams,
-} from '@mui/x-data-grid';
+import { GridColDef, GridDensity, GridRenderCellParams, GridSortDirection } from '@mui/x-data-grid';
 import { ActorData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 
@@ -45,14 +39,14 @@ export const dateColdDef = (colDef?: GridColDef) => {
     headerName: 'Date',
     type: 'dateTime',
     width: 120,
-    valueFormatter: (params: GridValueFormatterParams) => formatRelative(params.value as Date),
+    valueFormatter: (value: Date) => formatRelative(value),
     renderCell: (params: GridRenderCellParams) => (
       <Tooltip title={formatMonthDayTime(params.value as Date)}>
         <Box sx={{ ...ellipsisSx }}>{formatRelative(params.value as Date)}</Box>
       </Tooltip>
     ),
     ...colDef,
-  };
+  } as GridColDef;
 };
 
 export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
@@ -71,7 +65,7 @@ export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
         );
     },
     ...colDef,
-  };
+  } as GridColDef;
 };
 
 export const disabledNotOpaqueSx: SxProps = {

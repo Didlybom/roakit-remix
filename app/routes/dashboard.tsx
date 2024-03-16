@@ -206,15 +206,14 @@ export default function Dashboard() {
                         };
                       }),
                       arcLabel: item => `${item.id}`,
+                      outerRadius: 100,
                       innerRadius: 30,
-                      paddingAngle: 3,
+                      paddingAngle: 2,
                     },
                   ]}
                   onItemClick={(_, item) => setClickedOn(item)}
-                  sx={{
-                    ml: '100px',
-                    [`& .${pieArcLabelClasses.root}`]: { fill: 'white' },
-                  }}
+                  margin={{ left: 100 }}
+                  sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
                   {...widgetSize}
                   slotProps={{ legend: { hidden: true } }}
                 />
@@ -234,12 +233,13 @@ export default function Dashboard() {
                     valueFormatter: item =>
                       `${item.value} ${pluralizeMemo('activity', item.value)}`,
                     data: groupedActivities.priorities.map(p => {
-                      return { value: p.activityCount, ...priorityDefs[p.id] };
+                      return { value: p.count, ...priorityDefs[p.id] };
                     }),
+                    outerRadius: 100,
                   },
                 ]}
                 onItemClick={(_, item) => setClickedOn(item)}
-                sx={{ ml: '100px' }}
+                margin={{ left: 100 }}
                 {...widgetSize}
                 slotProps={{ legend: { hidden: true } }}
               />
@@ -255,12 +255,13 @@ export default function Dashboard() {
                       id: 'contributors-by-initiative',
                       valueFormatter: value =>
                         `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-                      data: groupedActivities.initiatives.map(i => i.actorIds.length),
+                      data: groupedActivities.initiatives.map(i => i.actorCount),
                     },
                   ]}
                   yAxis={[
                     { data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' },
                   ]}
+                  xAxis={[{ tickMinStep: 1 }]}
                   onItemClick={(_, item) => setClickedOn(item)}
                   layout="horizontal"
                   {...widgetSize}
@@ -302,10 +303,10 @@ export default function Dashboard() {
                           {
                             id: `${initiative.id} new`,
                             data: [
-                              initiative.activityCount.code,
-                              initiative.activityCount.task,
-                              initiative.activityCount.codeOrg,
-                              initiative.activityCount.taskOrg,
+                              initiative.count.code,
+                              initiative.count.task,
+                              initiative.count.codeOrg,
+                              initiative.count.taskOrg,
                             ],
                             valueFormatter: value =>
                               `${value} ${pluralizeMemo('activity', value ?? 0)}`,
@@ -314,10 +315,18 @@ export default function Dashboard() {
                           },
                         ]}
                         xAxis={[
-                          { data: ['Dev', 'Task', 'Dev Org.', 'Task Org.'], scaleType: 'band' },
+                          {
+                            data: ['Dev', 'Task', 'Dev Org', 'Task Org'],
+                            scaleType: 'band',
+                            tickLabelStyle: { angle: 45, textAnchor: 'start' },
+                            tickMinStep: 1,
+                            tickMaxStep: 1,
+                          },
                         ]}
+                        yAxis={[{ tickMinStep: 1 }]}
                         onItemClick={(_, item) => setClickedOn(item)}
                         {...widgetSize}
+                        margin={{ bottom: 60 }}
                         slotProps={{
                           legend: {
                             direction: 'row',
@@ -353,23 +362,24 @@ export default function Dashboard() {
                             id: `top-actors-${action}`,
                             valueFormatter: value =>
                               `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                            data: groupedActivities.topActors[action].map(a => a.activityCount),
+                            data: groupedActivities.topActors[action].map(a => a.count),
                           },
                         ]}
                         yAxis={[
                           {
                             data: groupedActivities.topActors[action].map(a =>
-                              a.actorId === TOP_ACTORS_OTHERS_ID ?
+                              a.id === TOP_ACTORS_OTHERS_ID ?
                                 'All others'
-                              : actors[a.actorId].name ?? 'unknown'
+                              : actors[a.id].name ?? 'unknown'
                             ),
                             scaleType: 'band',
                           },
                         ]}
+                        xAxis={[{ tickMinStep: 1 }]}
                         onItemClick={(_, item) => setClickedOn(item)}
                         layout="horizontal"
                         {...widgetSize}
-                        margin={{ left: 180 }}
+                        margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
                         slotProps={{ legend: { hidden: true } }}
                       />
                     </Paper>

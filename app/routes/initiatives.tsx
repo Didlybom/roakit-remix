@@ -13,12 +13,14 @@ import {
   GridRowsProp,
   GridSortDirection,
   GridToolbarContainer,
+  GridToolbarProps,
+  ToolbarPropsOverrides,
 } from '@mui/x-data-grid';
 import { redirect, useFetcher, useLoaderData } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
-import { useState } from 'react';
+import { JSXElementConstructor, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
@@ -215,7 +217,9 @@ export default function Initiatives() {
             );
           }}
           onRowModesModelChange={handleRowModesModelChange}
-          slots={{ toolbar: EditToolbar }}
+          slots={{
+            toolbar: EditToolbar as JSXElementConstructor<GridToolbarProps & ToolbarPropsOverrides>,
+          }}
           slotProps={{ toolbar: { setRows, setRowModesModel } }}
           processRowUpdate={(newRow: InitiativeRow) => {
             if (!newRow.key) {

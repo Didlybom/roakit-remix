@@ -6,20 +6,21 @@ import { ActivityCount, ActivityMap } from './schemas';
 // }
 
 interface ActorActivityCount {
-  actorId: string;
-  activityCount: number;
+  id: string;
+  count: number;
 }
 type TopActors = Record<string, ActorActivityCount[]>;
 
 interface Priority {
   id: number;
-  activityCount: number;
+  count: number;
 }
 
 interface Initiative {
   id: string;
-  activityCount: ActivityCount;
-  actorIds: string[];
+  count: ActivityCount;
+  actorIds?: Set<string>; // will be removed before returning for serialization
+  actorCount: number;
   effort: number;
 }
 
@@ -54,7 +55,7 @@ export const groupActivities = (activities: ActivityMap) => {
   //const actors: Actor[] = [];
   const topActors: TopActors = {};
   const priorities: Priority[] = [];
-  const initiatives: Initiative[] = [];
+  let initiatives: Initiative[] = [];
 
   Object.keys(activities).forEach(activityId => {
     const { actorId, initiativeId, priorityId, artifact, action } = activities[activityId];
@@ -72,21 +73,21 @@ export const groupActivities = (activities: ActivityMap) => {
     if (topActors[topActorKey] === undefined) {
       topActors[topActorKey] = [];
     }
-    let topActor = topActors[topActorKey].find(a => a.actorId === actorId);
+    let topActor = topActors[topActorKey].find(a => a.id === actorId);
     if (topActor === undefined) {
-      topActor = { actorId, activityCount: 0 };
+      topActor = { id: actorId, count: 0 };
       topActors[topActorKey].push(topActor);
     }
-    topActor.activityCount++;
+    topActor.count++;
 
     if (priorityId !== undefined) {
       // priorities
       let priority = priorities.find(p => p.id === priorityId);
       if (priority === undefined) {
-        priority = { id: priorityId, activityCount: 0 };
+        priority = { id: priorityId, count: 0 };
         priorities.push(priority);
       }
-      priority.activityCount++;
+      priority.count++;
     }
     priorities.sort((a, b) => (a.id < b.id ? 1 : -1));
 
@@ -97,34 +98,37 @@ export const groupActivities = (activities: ActivityMap) => {
       if (initiative === undefined) {
         initiative = {
           id: initiativeId,
-          activityCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 },
-          actorIds: [],
+          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 },
+          actorIds: new Set<string>(),
+          actorCount: 0,
           effort: 0,
         };
         initiatives.push(initiative);
       }
-      initiative.activityCount[artifact]++;
-      if (!initiative.actorIds.includes(actorId)) {
-        initiative.actorIds.push(actorId);
-      }
+      initiative.count[artifact]++;
+      initiative.actorIds!.add(actorId); // set dedupes
       initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
   });
-  initiatives.sort((a, b) => a.id.localeCompare(b.id));
+  initiatives = initiatives
+    .map(i => {
+      return { id: i.id, count: i.count, actorCount: i.actorIds!.size, effort: i.effort };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 
   Object.keys(topActors).forEach(action => {
     const actors = topActors[action];
     // sort top actors
-    actors.sort((a, b) => (a.activityCount < b.activityCount ? 1 : -1));
+    actors.sort((a, b) => (a.count < b.count ? 1 : -1));
     // keep top 10
     // calculate count for the rest
     let totalOthers = 0;
     for (let i = 10; i < actors.length; i++) {
-      totalOthers += actors[i].activityCount;
+      totalOthers += actors[i].count;
     }
     topActors[action] = actors.slice(0, 10);
     if (totalOthers > 0) {
-      topActors[action].push({ actorId: TOP_ACTORS_OTHERS_ID, activityCount: totalOthers });
+      topActors[action].push({ id: TOP_ACTORS_OTHERS_ID, count: totalOthers });
     }
   });
 

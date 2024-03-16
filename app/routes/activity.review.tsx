@@ -13,13 +13,7 @@ import {
   Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import {
-  GridColDef,
-  GridDensity,
-  GridFeatureMode,
-  GridToolbarContainer,
-  GridValueGetterParams,
-} from '@mui/x-data-grid';
+import { GridColDef, GridDensity, GridFeatureMode, GridToolbarContainer } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import {
@@ -146,45 +140,45 @@ export default function ActivityReview() {
 
   useEffect(() => {
     const fetchActivities = async () => {
+      setError('');
       try {
         const activitiesCollection = collection(
           firestoreClient,
           `customers/${sessionData.customerId}/activities`
         );
-        let activitiesCount;
-        let activitiesQuery;
-        if (!showAllActivity) {
-          activitiesCount = (
-            await getCountFromServer(query(activitiesCollection, where('initiative', '==', '')))
-          ).data().count;
-          activitiesQuery = query(
-            activitiesCollection,
-            where('initiative', '==', ''),
-            orderBy('createdTimestamp', 'desc')
-          );
-        } else {
-          activitiesCount = (await getCountFromServer(activitiesCollection)).data().count;
-          activitiesQuery = query(activitiesCollection, orderBy('createdTimestamp', 'desc'));
-        }
+        const activityQuery =
+          showAllActivity ?
+            query(activitiesCollection)
+          : query(activitiesCollection, where('initiative', '==', ''));
+        let activityPageQuery = activityQuery;
         if (prevPaginationModel && boundaryDocs) {
           if (prevPaginationModel?.page < paginationModel.page) {
-            activitiesQuery = query(
-              activitiesQuery,
+            activityPageQuery = query(
+              activityQuery,
+              orderBy('createdTimestamp', 'desc'),
               startAfter(boundaryDocs.last),
               limit(paginationModel.pageSize)
             );
           }
           if (prevPaginationModel?.page > paginationModel.page) {
-            activitiesQuery = query(
-              activitiesQuery,
+            activityPageQuery = query(
+              activityQuery,
+              orderBy('createdTimestamp', 'desc'),
               endBefore(boundaryDocs.first),
               limitToLast(paginationModel.pageSize)
             );
           }
         } else {
-          activitiesQuery = query(activitiesQuery, limit(paginationModel.pageSize));
+          activityPageQuery = query(
+            activityQuery,
+            orderBy('createdTimestamp', 'desc'),
+            limit(paginationModel.pageSize)
+          );
         }
-        const activityDocs = await getDocs(activitiesQuery);
+        const [activityDocs, activityCount] = await Promise.all([
+          getDocs(activityPageQuery),
+          getCountFromServer(activityQuery),
+        ]);
         const activityData: ActivityData[] = [];
         activityDocs.forEach(activity => {
           const fields = activitySchema.safeParse(activity.data());
@@ -203,7 +197,7 @@ export default function ActivityReview() {
           });
         });
         setActivities(activityData);
-        setRowTotal(activitiesCount);
+        setRowTotal(activityCount.data().count);
         if (activityDocs.docs.length > 0) {
           setBoundaryDocs({
             first: activityDocs.docs[0],
@@ -240,13 +234,13 @@ export default function ActivityReview() {
       dateColdDef({
         field: 'createdTimestamp',
         sortable: false,
-        valueGetter: (params: GridValueGetterParams) => new Date(params.value as number),
+        valueGetter: (value: number) => new Date(value),
       }),
       actorColdDef({
         width: 200,
         headerName: 'Contributor',
-        valueGetter: (params: GridValueGetterParams) => {
-          const fields = params.row as ActivityData;
+        valueGetter: (_, row) => {
+          const fields = row as ActivityData;
           return {
             id: fields.actorId,
             name: sessionData.actors[fields.actorId]?.name ?? 'unknown',

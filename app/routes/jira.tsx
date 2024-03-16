@@ -63,7 +63,7 @@ export default function Index() {
         width: 160,
         sortComparator: (a: JiraRow['project'], b: JiraRow['project']) =>
           (a?.key ?? '').localeCompare(b?.key ?? ''),
-        valueFormatter: params => (params.value as JiraRow['project'])?.name ?? '',
+        valueFormatter: value => (value as JiraRow['project'])?.name ?? '',
       },
       {
         field: 'priority',
@@ -71,7 +71,7 @@ export default function Index() {
         width: 100,
         sortComparator: (a: JiraRow['priority'], b: JiraRow['priority']) =>
           (b?.id ?? 999) - (a?.id ?? 999),
-        valueFormatter: params => (params.value as JiraRow['priority'])?.name ?? '',
+        valueFormatter: value => (value as JiraRow['priority'])?.name ?? '',
       },
       {
         field: 'ref',
