@@ -50,13 +50,7 @@ import {
 } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import {
-  actorColdDef,
-  dateColdDef,
-  ellipsisSx,
-  internalLinkSx,
-  openUserActivity,
-} from '../utils/jsxUtils';
+import { actorColdDef, dateColdDef, ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -263,7 +257,7 @@ export default function ActivityReview() {
         renderCell: params => {
           const fields = params.value as ActorData;
           return (
-            <Link onClick={e => openUserActivity(e.nativeEvent, fields.id)} sx={internalLinkSx}>
+            <Link href={`/activity/user/${fields.id}`} title="View activity" sx={internalLinkSx}>
               {fields.name}
             </Link>
           );
