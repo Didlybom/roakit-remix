@@ -371,7 +371,7 @@ export default function Dashboard() {
                         }}
                         layout="horizontal"
                         {...widgetSize}
-                        margin={{ top: 10, right: 20, bottom: 30, left: 100 }}
+                        margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
                         slotProps={{ legend: { hidden: true } }}
                       />
                     </Paper>
