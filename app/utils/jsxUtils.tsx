@@ -9,7 +9,7 @@ export const stickySx: SxProps = {
   textWrap: 'nowrap',
   position: 'sticky',
   top: 60, // depends on header height
-  maxHeight: '100vh',
+  maxHeight: 'calc(100vh - 75px)', // depends on header height
   overflowY: 'auto',
 };
 
