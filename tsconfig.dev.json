@@ -5,7 +5,8 @@
     "remix.config.js",
     "vite.config.js",
     "svgr.config.js",
-    "svgo.config.js"
+    "svgo.config.js",
+    "jest.config.js"
   ],
   "sourceMap": true
 }

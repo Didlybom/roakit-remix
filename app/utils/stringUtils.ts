@@ -1,6 +1,9 @@
 export const caseInsensitiveSort = (data: string[]): string[] =>
   data.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
+export const caseInsensitiveCompare = (a: string, b: string): number =>
+  a.localeCompare(b, undefined, { sensitivity: 'base' });
+
 export const JIRA_REGEXP = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/;
 export const JIRA_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
 

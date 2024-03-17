@@ -349,18 +349,29 @@ export default function Dashboard() {
                           },
                         ]}
                         xAxis={[{ tickMinStep: 1 }]}
-                        onAxisClick={(event, data) => {
-                          if (!data || data.dataIndex === 10) {
-                            return;
+                        onItemClick={(event, data) => {
+                          if (data) {
+                            openUserActivity(
+                              event.nativeEvent,
+                              data.dataIndex === 10 ?
+                                '*'
+                              : groupedActivities.topActors[action][data.dataIndex].id
+                            );
                           }
-                          openUserActivity(
-                            event,
-                            groupedActivities.topActors[action][data.dataIndex].id
-                          );
+                        }}
+                        onAxisClick={(event, data) => {
+                          if (data) {
+                            openUserActivity(
+                              event,
+                              data.dataIndex === 10 ?
+                                '*'
+                              : groupedActivities.topActors[action][data.dataIndex].id
+                            );
+                          }
                         }}
                         layout="horizontal"
                         {...widgetSize}
-                        margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
+                        margin={{ top: 10, right: 20, bottom: 30, left: 100 }}
                         slotProps={{ legend: { hidden: true } }}
                       />
                     </Paper>

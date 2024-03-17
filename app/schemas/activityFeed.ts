@@ -144,11 +144,15 @@ export interface UserActivityRow {
   artifact: Artifact;
   initiativeId: string;
   priority?: number;
+  actorId?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
 }
 
-export const userActivityRows = (snapshot: firebase.firestore.QuerySnapshot): UserActivityRow[] => {
+export const userActivityRows = (
+  snapshot: firebase.firestore.QuerySnapshot,
+  includeActorId: boolean
+): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
   snapshot.forEach(doc => {
     const props = activitySchema.safeParse(doc.data());
@@ -164,6 +168,7 @@ export const userActivityRows = (snapshot: firebase.firestore.QuerySnapshot): Us
       priority: props.data.priority,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: props.data.metadata,
+      ...(includeActorId && { actorId: props.data.actorAccountId }),
     };
     rows.push(row);
   });

@@ -409,7 +409,7 @@ export default function GitHub() {
                     <Box key={i}>
                       <Link
                         fontSize="small"
-                        sx={{ cursor: 'pointer' }}
+                        sx={internalLinkSx}
                         onClick={() => setScrollToJira(jira)}
                       >
                         {jira}
@@ -455,7 +455,7 @@ export default function GitHub() {
                     <Box key={i}>
                       <Link
                         fontSize="small"
-                        sx={{ cursor: 'pointer' }}
+                        sx={internalLinkSx}
                         onClick={() => setScrollToAuthor(author)}
                       >
                         {author}
