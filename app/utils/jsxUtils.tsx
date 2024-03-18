@@ -84,4 +84,6 @@ export const openUserActivity = (event: MouseEvent, userId: string) => {
   window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
 };
 
-export const renderJson = (data: unknown) => <pre>{JSON.stringify(data, undefined, 2)}</pre>;
+export const formatJson = (data: unknown) => JSON.stringify(data, undefined, 2);
+
+export const renderJson = (data: unknown) => <pre>{formatJson(data)}</pre>;

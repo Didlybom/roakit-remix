@@ -1,6 +1,9 @@
+import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import PersonIcon from '@mui/icons-material/Person';
-import { Alert, Box, Link, Stack, Tooltip, Typography } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { Alert, Box, IconButton, Link, Popover, Stack, Tooltip, Typography } from '@mui/material';
+import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
@@ -20,6 +23,7 @@ import {
   dataGridCommonProps,
   dateColdDef,
   ellipsisSx,
+  formatJson,
   internalLinkSx,
   stickySx,
 } from '../utils/jsxUtils';
@@ -74,6 +78,7 @@ export default function UserActivity() {
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
+  const [popover, setPopover] = useState<{ element: HTMLElement; content: string } | null>(null);
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
@@ -81,7 +86,7 @@ export default function UserActivity() {
 
   const actorElementId = (actor: string) => `ACTOR-${removeSpaces(actor)}`;
 
-  // Firestore listeners
+  // Firestore listener
   useEffect(() => {
     const setRows = (querySnapshot: firebase.firestore.QuerySnapshot, allUsers: boolean) => {
       try {
@@ -150,7 +155,7 @@ export default function UserActivity() {
   const columns = useMemo<GridColDef[]>(
     () => [
       dateColdDef(),
-      { field: 'action', headerName: 'Action', width: 100 },
+      { field: 'action', headerName: 'Action', width: 80 },
       { field: 'artifact', headerName: 'Artifact', width: 80 },
       {
         field: 'priority',
@@ -161,13 +166,13 @@ export default function UserActivity() {
       {
         field: 'initiativeId',
         headerName: 'Initiative',
+        width: 80,
         renderCell: params => {
           const initiativeId = params.value as string;
           return initiativeId ?
               <Tooltip title={sessionData.initiatives[initiativeId]?.label}>{params.value}</Tooltip>
             : '[unset]';
         },
-        minWidth: 80,
       },
       {
         field: 'metadata',
@@ -184,6 +189,28 @@ export default function UserActivity() {
             : <Box title={summary} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>;
+        },
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        width: 50,
+        cellClassName: 'actions',
+        getActions: params => {
+          const activity = params.row as UserActivityRow;
+          return [
+            <GridActionsCellItem
+              key={1}
+              icon={<DataObjectIcon />}
+              label="View metadata"
+              onClick={e =>
+                setPopover({
+                  element: e.currentTarget,
+                  content: formatJson(activity.metadata),
+                })
+              }
+            />,
+          ];
         },
       },
     ],
@@ -223,6 +250,38 @@ export default function UserActivity() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
+      <Popover
+        id={popover?.element ? 'popover' : undefined}
+        open={!!popover?.element}
+        anchorEl={popover?.element}
+        onClose={() => setPopover(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Stack direction="row" sx={{ m: 1, float: 'right' }}>
+          <IconButton onClick={() => setPopover(null)}>
+            <ContentCopyIcon
+              onClick={e => {
+                e.stopPropagation();
+                if (popover?.content) {
+                  void navigator.clipboard.writeText(popover.content);
+                }
+              }}
+            />
+          </IconButton>
+          <IconButton onClick={() => setPopover(null)}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+        <Typography
+          component="pre"
+          fontSize="small"
+          fontFamily="monospace"
+          color="GrayText"
+          sx={{ p: 2 }}
+        >
+          {popover?.content}
+        </Typography>
+      </Popover>
       <Stack sx={{ m: 3 }}>
         {activities.size === 0 && gotSnapshot ?
           <Typography textAlign="center" sx={{ m: 4 }}>
