@@ -43,7 +43,6 @@ export const dataGridCommonProps = {
 
 export const dateColdDef = (colDef?: GridColDef) => {
   return {
-    field: 'date',
     headerName: 'Date',
     type: 'dateTime',
     width: 120,
@@ -59,7 +58,6 @@ export const dateColdDef = (colDef?: GridColDef) => {
 
 export const actorColdDef = (colDef?: GridColDef) => {
   return {
-    field: 'actor',
     headerName: 'Author',
     width: 120,
     sortComparator: (a: ActorData, b: ActorData) =>
@@ -78,7 +76,6 @@ export const actorColdDef = (colDef?: GridColDef) => {
 
 export const priorityColDef = (colDef?: GridColDef) => {
   return {
-    field: 'priority',
     headerName: 'Priority',
     width: 80,
     renderCell: params => {

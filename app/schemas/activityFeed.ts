@@ -55,15 +55,13 @@ export const groupActivities = (activities: ActivityMap) => {
   let initiatives: Initiative[] = [];
 
   Object.keys(activities).forEach(activityId => {
-    const { actorId, initiativeId, priorityId, artifact, action } = activities[activityId];
-
-    // actors
-    // let actor = actors.find(a => a.id === actorId);
-    // if (actor === undefined) {
-    //   actor = { id: actorId, activityIds: [] };
-    //   actors.push(actor);
-    // }
-    // actor.activityIds.push(activityId);
+    const {
+      actorId,
+      initiativeId,
+      priority: priorityId,
+      artifact,
+      action,
+    } = activities[activityId];
 
     // top actors
     const topActorKey = buildTopActorKey(artifact, action);

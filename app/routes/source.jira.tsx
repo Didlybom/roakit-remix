@@ -55,8 +55,8 @@ export default function Jira() {
 
   const jiraColumns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef(),
-      actorColdDef({ headerName: 'Author', width: 120 }),
+      dateColdDef({ field: 'date' }),
+      actorColdDef({ field: 'actor', headerName: 'Author', width: 120 }),
       {
         field: 'project',
         headerName: 'Project',

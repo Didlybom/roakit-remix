@@ -153,7 +153,7 @@ export const fetchActivities = async (customerId: number, startDate: number) => 
           artifact: props.data.artifact,
           createdTimestamp: props.data.createdTimestamp,
           initiativeId: props.data.initiative,
-          priorityId: props.data.priority,
+          priority: props.data.priority,
         };
       });
       return activities;

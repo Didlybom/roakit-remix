@@ -62,7 +62,7 @@ export interface ActivityData {
   artifact: Artifact;
   createdTimestamp: number;
   initiativeId: string;
-  priorityId?: number;
+  priority?: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
 }
@@ -83,7 +83,7 @@ export const emptyActivity: ActivityData = {
   artifact: 'code',
   createdTimestamp: -1,
   initiativeId: '-1',
-  priorityId: -1,
+  priority: -1,
   metadata: {},
 };
 

@@ -114,7 +114,7 @@ export default function GitHub() {
 
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef(),
+      dateColdDef({ field: 'date' }),
       { field: 'repositoryName', headerName: 'Repo.', width: 120 },
       actorColdDef({
         field: 'actor',

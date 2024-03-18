@@ -64,6 +64,7 @@ import {
   ellipsisSx,
   formatJson,
   internalLinkSx,
+  priorityColDef,
 } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
@@ -213,6 +214,7 @@ export default function ActivityReview() {
             actorId: fields.data.actorAccountId,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
+            priority: fields.data.priority,
             initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             metadata: fields.data.metadata,
@@ -282,6 +284,7 @@ export default function ActivityReview() {
       }),
       { field: 'action', headerName: 'Action', width: 100, sortable: false },
       { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
+      priorityColDef(),
       {
         field: 'metadata',
         headerName: 'Summary',
