@@ -2,11 +2,6 @@ import firebase from 'firebase/compat/app';
 import { ParseError } from '../utils/errorUtils';
 import { ActivityCount, ActivityMap, Artifact, activitySchema } from './schemas';
 
-// interface Actor {
-//   id: string;
-//   activityIds: string[];
-// }
-
 interface ActorActivityCount {
   id: string;
   count: number;

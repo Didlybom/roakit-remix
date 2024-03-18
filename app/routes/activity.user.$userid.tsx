@@ -1,8 +1,6 @@
-import CloseIcon from '@mui/icons-material/Close';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import PersonIcon from '@mui/icons-material/Person';
-import { Alert, Box, IconButton, Link, Popover, Stack, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Link, Stack, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -13,6 +11,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
+import CodePopover, { PopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
 import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
 import { UserActivityRow, getSummary, getUrl, userActivityRows } from '../schemas/activityFeed';
@@ -78,7 +77,7 @@ export default function UserActivity() {
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
-  const [popover, setPopover] = useState<{ element: HTMLElement; content: string } | null>(null);
+  const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
@@ -250,38 +249,7 @@ export default function UserActivity() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
-      <Popover
-        id={popover?.element ? 'popover' : undefined}
-        open={!!popover?.element}
-        anchorEl={popover?.element}
-        onClose={() => setPopover(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Stack direction="row" sx={{ m: 1, float: 'right' }}>
-          <IconButton onClick={() => setPopover(null)}>
-            <ContentCopyIcon
-              onClick={e => {
-                e.stopPropagation();
-                if (popover?.content) {
-                  void navigator.clipboard.writeText(popover.content);
-                }
-              }}
-            />
-          </IconButton>
-          <IconButton onClick={() => setPopover(null)}>
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-        <Typography
-          component="pre"
-          fontSize="small"
-          fontFamily="monospace"
-          color="GrayText"
-          sx={{ p: 2 }}
-        >
-          {popover?.content}
-        </Typography>
-      </Popover>
+      <CodePopover popover={popover} onClose={() => setPopover(null)} />
       <Stack sx={{ m: 3 }}>
         {activities.size === 0 && gotSnapshot ?
           <Typography textAlign="center" sx={{ m: 4 }}>

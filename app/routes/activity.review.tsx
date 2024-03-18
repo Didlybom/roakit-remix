@@ -1,3 +1,4 @@
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import EditIcon from '@mui/icons-material/Edit';
 import {
   Alert,
@@ -13,7 +14,13 @@ import {
   Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { GridColDef, GridDensity, GridFeatureMode, GridToolbarContainer } from '@mui/x-data-grid';
+import {
+  GridActionsCellItem,
+  GridColDef,
+  GridDensity,
+  GridFeatureMode,
+  GridToolbarContainer,
+} from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import {
@@ -34,6 +41,7 @@ import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import App from '../components/App';
+import CodePopover, { PopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -50,7 +58,13 @@ import {
 } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { ParseError, errMsg } from '../utils/errorUtils';
-import { actorColdDef, dateColdDef, ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
+import {
+  actorColdDef,
+  dateColdDef,
+  ellipsisSx,
+  formatJson,
+  internalLinkSx,
+} from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -142,6 +156,7 @@ export default function ActivityReview() {
     first: QueryDocumentSnapshot;
     last: QueryDocumentSnapshot;
   } | null>(null);
+  const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -285,6 +300,28 @@ export default function ActivityReview() {
         },
       },
       {
+        field: 'actions',
+        type: 'actions',
+        width: 50,
+        cellClassName: 'actions',
+        getActions: params => {
+          const activity = params.row as ActivityData;
+          return [
+            <GridActionsCellItem
+              key={1}
+              icon={<DataObjectIcon />}
+              label="View metadata"
+              onClick={e =>
+                setPopover({
+                  element: e.currentTarget,
+                  content: formatJson(activity.metadata),
+                })
+              }
+            />,
+          ];
+        },
+      },
+      {
         field: 'initiativeId',
         headerName: 'Initiative',
         type: 'singleSelect',
@@ -375,6 +412,7 @@ export default function ActivityReview() {
   }
   return (
     <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
+      <CodePopover popover={popover} onClose={() => setPopover(null)} />
       <Stack sx={{ m: 3 }}>
         {error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
