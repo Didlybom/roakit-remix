@@ -9,7 +9,14 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { BarChart, PieChart, PieValueType, pieArcLabelClasses } from '@mui/x-charts';
+import {
+  BarChart,
+  ChartsAxisContentProps,
+  DefaultChartsAxisTooltipContent,
+  PieChart,
+  PieValueType,
+  pieArcLabelClasses,
+} from '@mui/x-charts';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
 import memoize from 'fast-memoize';
@@ -35,6 +42,7 @@ import {
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { openUserActivity } from '../utils/jsxUtils';
+import { priorityColors, priorityLabels } from '../utils/theme';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -116,11 +124,11 @@ export default function Dashboard() {
   const pluralizeMemo = memoize(pluralize);
 
   const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
-    1: { id: 1, label: 'Highest', color: '#f26d50' },
-    2: { id: 2, label: 'High', color: '#f17c37' },
-    3: { id: 3, label: 'Medium', color: '#f2c43d' },
-    4: { id: 4, label: 'Low', color: '#a7ecf2' },
-    5: { id: 5, label: 'Lowest', color: '#3e9cbf' },
+    1: { id: 1, label: priorityLabels[1], color: priorityColors[1] },
+    2: { id: 2, label: priorityLabels[2], color: priorityColors[2] },
+    3: { id: 3, label: priorityLabels[3], color: priorityColors[3] },
+    4: { id: 4, label: priorityLabels[4], color: priorityColors[4] },
+    5: { id: 5, label: priorityLabels[5], color: priorityColors[5] },
   };
 
   const topCreatorActions: Record<string, string> = {
@@ -161,6 +169,15 @@ export default function Dashboard() {
     submit({ dateFilter }, { method: 'post' });
   }, [dateFilter, loading, submit]);
 
+  const ContributorsByInitiativeTooltipContent = (props: ChartsAxisContentProps) => {
+    return initiatives ?
+        <DefaultChartsAxisTooltipContent
+          {...props}
+          axisValue={initiatives[props.axisValue as string]?.label ?? (props.axisValue as string)}
+        />
+      : <DefaultChartsAxisTooltipContent {...props} />;
+  };
+
   const widgets =
     !groupedActivities ?
       <></>
@@ -174,7 +191,6 @@ export default function Dashboard() {
                   series={[
                     {
                       id: 'effort-by-initiative',
-                      valueFormatter: item => `${item.value}`,
                       data: groupedActivities.initiatives.map(initiative => {
                         return {
                           id: initiative.id,
@@ -185,7 +201,6 @@ export default function Dashboard() {
                       arcLabel: item => `${item.id}`,
                       outerRadius: 100,
                       innerRadius: 30,
-                      paddingAngle: 2,
                     },
                   ]}
                   margin={{ left: 100 }}
@@ -194,7 +209,11 @@ export default function Dashboard() {
                   slotProps={{ legend: { hidden: true } }}
                 />
               </Paper>
-              <Typography variant="caption" justifyContent="center" sx={{ display: 'flex' }}>
+              <Typography
+                variant="caption"
+                justifyContent="center"
+                sx={{ mt: -3, display: 'flex' }}
+              >
                 simulated
               </Typography>
             </Grid>
@@ -240,6 +259,7 @@ export default function Dashboard() {
                   layout="horizontal"
                   {...widgetSize}
                   slotProps={{ legend: { hidden: true } }}
+                  tooltip={{ trigger: 'axis', axisContent: ContributorsByInitiativeTooltipContent }}
                 />
               </Paper>
             </Grid>

@@ -1,6 +1,16 @@
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import PersonIcon from '@mui/icons-material/Person';
-import { Alert, Box, Link, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  FormControlLabel,
+  FormGroup,
+  Link,
+  Stack,
+  Switch,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -24,6 +34,7 @@ import {
   ellipsisSx,
   formatJson,
   internalLinkSx,
+  priorityColDef,
   stickySx,
 } from '../utils/jsxUtils';
 import { groupByAndSort } from '../utils/mapUtils';
@@ -32,14 +43,6 @@ import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
 const logger = pino({ name: 'route:activity.user' });
 
 const ALL = '*';
-
-const priorityLabels: Record<number, string> = {
-  1: 'Highest',
-  2: 'High',
-  3: 'Medium',
-  4: 'Low',
-  5: 'Lowest',
-};
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   let title = 'User';
@@ -76,6 +79,7 @@ export default function UserActivity() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
   const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [error, setError] = useState('');
@@ -94,10 +98,12 @@ export default function UserActivity() {
         } else {
           setActivities(
             groupByAndSort(userActivityRows(querySnapshot, true), 'actorId', (a, b) =>
-              caseInsensitiveCompare(
-                sessionData.actors[a]?.name ?? '',
-                sessionData.actors[b]?.name ?? ''
-              )
+              sortAlphabetically ?
+                caseInsensitiveCompare(
+                  sessionData.actors[a.key]?.name ?? '',
+                  sessionData.actors[b.key]?.name ?? ''
+                )
+              : b.count - a.count
             )
           );
         }
@@ -131,7 +137,13 @@ export default function UserActivity() {
       error => setError(error.message)
     );
     return unsubscribe;
-  }, [dateFilter, sessionData.actors, sessionData.customerId, sessionData.userId]);
+  }, [
+    dateFilter,
+    sessionData.actors,
+    sessionData.customerId,
+    sessionData.userId,
+    sortAlphabetically,
+  ]);
 
   // Auto scrollers
   useEffect(() => {
@@ -156,12 +168,7 @@ export default function UserActivity() {
       dateColdDef(),
       { field: 'action', headerName: 'Action', width: 80 },
       { field: 'artifact', headerName: 'Artifact', width: 80 },
-      {
-        field: 'priority',
-        headerName: 'Priority',
-        width: 80,
-        valueFormatter: (value: number) => priorityLabels[value] ?? 'unknown',
-      },
+      priorityColDef(),
       {
         field: 'initiativeId',
         headerName: 'Initiative',
@@ -205,7 +212,7 @@ export default function UserActivity() {
               onClick={e =>
                 setPopover({
                   element: e.currentTarget,
-                  content: formatJson(activity.metadata),
+                  content: formatJson(activity.metadata as unknown),
                 })
               }
             />,
@@ -259,16 +266,27 @@ export default function UserActivity() {
             {sessionData.userId === ALL && (
               <Box sx={{ display: 'flex', mr: 2 }}>
                 <Box sx={{ position: 'relative' }}>
-                  <Box sx={{ ...stickySx }}>
+                  <Box fontSize="small" color="GrayText" sx={{ ...stickySx }}>
+                    <FormGroup sx={{ mb: 2, ml: 1 }}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={sortAlphabetically}
+                            onChange={() => setSortAlphabetically(!sortAlphabetically)}
+                          />
+                        }
+                        label="Sort alphabetically"
+                        title="Sort alphabetically or by activity count"
+                        disableTypography
+                      />
+                    </FormGroup>
                     {[...activities.keys()].map(actorId => (
                       <Box key={actorId}>
-                        <Link
-                          fontSize="small"
-                          sx={internalLinkSx}
-                          onClick={() => setScrollToActor(actorId)}
-                        >
-                          {`${sessionData.actors[actorId].name} (${activities.get(actorId)?.length ?? 0})`}
+                        <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
+                          {sessionData.actors[actorId].name}
                         </Link>
+                        {` (${activities.get(actorId)?.length ?? 0})`}
                       </Box>
                     ))}
                   </Box>

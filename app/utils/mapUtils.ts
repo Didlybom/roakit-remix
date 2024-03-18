@@ -10,7 +10,7 @@ export const groupBy = <T>(array: T[], key: keyof T): Record<string, T[]> =>
 export const groupByAndSort = <T>(
   array: T[],
   key: keyof T,
-  compare: (keyA: string, keyB: string) => number
+  compare: (a: { key: string; count: number }, b: { key: string; count: number }) => number
 ): Map<string, T[]> => {
   const grouped = array.reduce(
     (acc, value) => {
@@ -25,7 +25,9 @@ export const groupByAndSort = <T>(
     },
     [] as { key: string; values: T[] }[]
   );
-  grouped.sort((a, b) => compare(a.key, b.key));
+  grouped.sort((a, b) =>
+    compare({ key: a.key, count: a.values.length }, { key: b.key, count: b.values.length })
+  );
   const sorted = new Map<string, T[]>();
   grouped.forEach(v => sorted.set(v.key, v.values));
   return sorted;

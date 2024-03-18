@@ -1,7 +1,8 @@
-import { Box, SxProps, Tooltip } from '@mui/material';
+import { Box, SxProps, Tooltip, Typography } from '@mui/material';
 import { GridColDef, GridDensity, GridRenderCellParams, GridSortDirection } from '@mui/x-data-grid';
 import { ActorData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
+import { priorityColors, priorityLabels } from './theme';
 
 export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
@@ -56,7 +57,7 @@ export const dateColdDef = (colDef?: GridColDef) => {
   } as GridColDef;
 };
 
-export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
+export const actorColdDef = (colDef?: GridColDef) => {
   return {
     field: 'actor',
     headerName: 'Author',
@@ -70,6 +71,23 @@ export const actorColdDef = (colDef?: Omit<GridColDef, 'field'>) => {
             {fields.name}
           </Box>
         );
+    },
+    ...colDef,
+  } as GridColDef;
+};
+
+export const priorityColDef = (colDef?: GridColDef) => {
+  return {
+    field: 'priority',
+    headerName: 'Priority',
+    width: 80,
+    renderCell: params => {
+      const priority = params.value as number;
+      return (
+        <Typography component="span" fontSize="small" color={priorityColors[priority]}>
+          {priorityLabels[priority] ?? 'unknown'}
+        </Typography>
+      );
     },
     ...colDef,
   } as GridColDef;

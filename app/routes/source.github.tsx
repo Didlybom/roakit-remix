@@ -117,6 +117,7 @@ export default function GitHub() {
       dateColdDef(),
       { field: 'repositoryName', headerName: 'Repo.', width: 120 },
       actorColdDef({
+        field: 'actor',
         headerName: 'Author',
         width: 120,
         renderCell: (params: GridRenderCellParams) => {

@@ -5,6 +5,7 @@ const data = [
   { k: 'c', v: 'c1' },
   { k: 'b', v: 'b1' },
   { k: 'a', v: 'a2' },
+  { k: 'b', v: 'b2' },
   { k: 'a', v: 'a3' },
 ];
 
@@ -17,13 +18,16 @@ test('groupBy', () => {
       { k: 'a', v: 'a3' },
     ],
     c: [{ k: 'c', v: 'c1' }],
-    b: [{ k: 'b', v: 'b1' }],
+    b: [
+      { k: 'b', v: 'b1' },
+      { k: 'b', v: 'b2' },
+    ],
   }); // could be any order
 });
 
 test('groupByAndSort', () => {
   const dict: Record<string, string> = { a: 'AAA', b: 'BBB', c: 'CCC' };
-  let result = groupByAndSort(data, 'k', (x, y) => dict[x].localeCompare(dict[y]));
+  let result = groupByAndSort(data, 'k', (x, y) => dict[x.key].localeCompare(dict[y.key]));
   expect([...result]).toEqual([
     [
       'a',
@@ -33,16 +37,47 @@ test('groupByAndSort', () => {
         { k: 'a', v: 'a3' },
       ],
     ],
-    ['b', [{ k: 'b', v: 'b1' }]],
+    [
+      'b',
+      [
+        { k: 'b', v: 'b1' },
+        { k: 'b', v: 'b2' },
+      ],
+    ],
     ['c', [{ k: 'c', v: 'c1' }]],
   ]);
 
   dict.a = 'ZZZ';
-  result = groupByAndSort(data, 'k', (x, y) => dict[x].localeCompare(dict[y]));
-
+  result = groupByAndSort(data, 'k', (x, y) => dict[x.key].localeCompare(dict[y.key]));
   expect([...result]).toEqual([
-    ['b', [{ k: 'b', v: 'b1' }]],
+    [
+      'b',
+      [
+        { k: 'b', v: 'b1' },
+        { k: 'b', v: 'b2' },
+      ],
+    ],
     ['c', [{ k: 'c', v: 'c1' }]],
+    [
+      'a',
+      [
+        { k: 'a', v: 'a1' },
+        { k: 'a', v: 'a2' },
+        { k: 'a', v: 'a3' },
+      ],
+    ],
+  ]);
+
+  result = groupByAndSort(data, 'k', (x, y) => x.count - y.count);
+  expect([...result]).toEqual([
+    ['c', [{ k: 'c', v: 'c1' }]],
+    [
+      'b',
+      [
+        { k: 'b', v: 'b1' },
+        { k: 'b', v: 'b2' },
+      ],
+    ],
     [
       'a',
       [

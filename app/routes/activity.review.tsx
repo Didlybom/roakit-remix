@@ -260,6 +260,7 @@ export default function ActivityReview() {
         valueGetter: (value: number) => new Date(value),
       }),
       actorColdDef({
+        field: 'actor',
         width: 200,
         headerName: 'Contributor',
         valueGetter: (_, row) => {
@@ -314,7 +315,7 @@ export default function ActivityReview() {
               onClick={e =>
                 setPopover({
                   element: e.currentTarget,
-                  content: formatJson(activity.metadata),
+                  content: formatJson(activity.metadata as unknown),
                 })
               }
             />,
