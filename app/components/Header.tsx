@@ -84,28 +84,32 @@ export default function Header({
                 <DateRangePicker dateRange={dateRange} onDateRangeSelect={onDateRangeSelect} />
               )}
             </Box>
-            <IconButton
-              href="/settings"
-              title="Settings"
-              color="inherit"
-              sx={{ display: { xs: 'flex', sm: 'none' } }}
-            >
-              <SettingsIcon />
-            </IconButton>
-            <Button
-              href="/settings"
-              onClick={e => {
-                if (view === 'settings') {
-                  e.preventDefault();
-                }
-              }}
-              title="Settings"
-              color="inherit"
-              startIcon={<SettingsIcon />}
-              sx={{ mx: 2, display: { xs: 'none', sm: 'flex' } }}
-            >
-              Settings
-            </Button>
+            {isLoggedIn && (
+              <>
+                <IconButton
+                  href="/settings"
+                  title="Settings"
+                  color="inherit"
+                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                >
+                  <SettingsIcon />
+                </IconButton>
+                <Button
+                  href="/settings"
+                  onClick={e => {
+                    if (view === 'settings') {
+                      e.preventDefault();
+                    }
+                  }}
+                  title="Settings"
+                  color="inherit"
+                  startIcon={<SettingsIcon />}
+                  sx={{ mx: 2, display: { xs: 'none', sm: 'flex' } }}
+                >
+                  Settings
+                </Button>
+              </>
+            )}
             {!isLoggedIn && (
               <>
                 <IconButton
