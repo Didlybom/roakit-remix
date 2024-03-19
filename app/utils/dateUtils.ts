@@ -1,9 +1,8 @@
 import { formatRelative as formatRelativeFn } from 'date-fns/formatRelative';
 import { FormatRelativeToken, enUS } from 'date-fns/locale';
-import { startOfToday } from 'date-fns/startOfToday';
-import { subWeeks } from 'date-fns/subWeeks';
 
 export const ONE_HOUR = 60 * 60 * 1000;
+export const ONE_DAY = 24 * ONE_HOUR;
 
 export const formatMonthDayTime = (date: Date) =>
   date.toLocaleDateString('en-us', {
@@ -46,13 +45,14 @@ export const dateRangeLabels: Record<DateRange, string> = {
 };
 
 export const dateFilterToStartDate = (dateFilter: DateRange) => {
+  const now = Date.now();
   switch (dateFilter) {
     case DateRange.TwoWeeks:
-      return subWeeks(startOfToday(), 2).getTime();
+      return now - 14 * ONE_DAY;
     case DateRange.OneWeek:
-      return subWeeks(startOfToday(), 1).getTime();
+      return now - 7 * ONE_DAY;
     case DateRange.OneDay:
-      return startOfToday().getTime();
+      return now - ONE_DAY;
     default:
       return null;
   }
