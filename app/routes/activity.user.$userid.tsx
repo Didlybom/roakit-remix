@@ -165,10 +165,10 @@ export default function UserActivity() {
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef(),
+      dateColdDef({ field: 'date' }),
       { field: 'action', headerName: 'Action', width: 80 },
       { field: 'artifact', headerName: 'Artifact', width: 80 },
-      priorityColDef(),
+      priorityColDef({ field: 'priority' }),
       {
         field: 'initiativeId',
         headerName: 'Initiative',

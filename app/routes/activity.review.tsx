@@ -284,7 +284,7 @@ export default function ActivityReview() {
       }),
       { field: 'action', headerName: 'Action', width: 100, sortable: false },
       { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
-      priorityColDef(),
+      priorityColDef({ field: 'priority' }),
       {
         field: 'metadata',
         headerName: 'Summary',
