@@ -147,6 +147,9 @@ export default function Dashboard() {
 
   const widgetSize = { width: 300, height: 260 };
 
+  const totalColor = '#2E96FF';
+  const dateRangeColor = '#02B2AF';
+
   const widgetTitle = (title: string) => (
     <Typography textAlign="center" sx={{ mb: 2 }}>
       {title}
@@ -282,19 +285,6 @@ export default function Dashboard() {
                       <BarChart
                         series={[
                           {
-                            id: `${initiative.id} total`,
-                            data: [
-                              totalCounters.code,
-                              totalCounters.task,
-                              totalCounters.codeOrg,
-                              totalCounters.taskOrg,
-                            ],
-                            valueFormatter: value =>
-                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                            label: 'Total',
-                            stack: 'total',
-                          },
-                          {
                             id: `${initiative.id} new`,
                             data: [
                               initiative.count.code,
@@ -305,6 +295,21 @@ export default function Dashboard() {
                             valueFormatter: value =>
                               `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                             label: dateRangeLabel,
+                            color: dateRangeColor,
+                            stack: 'total',
+                          },
+                          {
+                            id: `${initiative.id} total`,
+                            data: [
+                              totalCounters.code,
+                              totalCounters.task,
+                              totalCounters.codeOrg,
+                              totalCounters.taskOrg,
+                            ],
+                            valueFormatter: value =>
+                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                            label: 'Total',
+                            color: totalColor,
                             stack: 'total',
                           },
                         ]}
@@ -356,6 +361,7 @@ export default function Dashboard() {
                             valueFormatter: value =>
                               `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                             data: groupedActivities.topActors[action].map(a => a.count),
+                            color: dateRangeColor,
                           },
                         ]}
                         yAxis={[
