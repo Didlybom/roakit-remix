@@ -32,7 +32,6 @@ import {
   dataGridCommonProps,
   dateColdDef,
   ellipsisSx,
-  formatJson,
   internalLinkSx,
   priorityColDef,
   stickySx,
@@ -212,7 +211,7 @@ export default function UserActivity() {
               onClick={e =>
                 setPopover({
                   element: e.currentTarget,
-                  content: formatJson(activity.metadata as unknown),
+                  content: activity.metadata,
                 })
               }
             />,

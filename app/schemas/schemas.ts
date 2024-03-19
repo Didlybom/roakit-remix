@@ -63,8 +63,7 @@ export interface ActivityData {
   createdTimestamp: number;
   initiativeId: string;
   priority?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata: any;
+  metadata: unknown;
 }
 
 export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;

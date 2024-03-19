@@ -65,6 +65,7 @@ export interface GitHubRow {
     commitMessages?: string[];
     pullRequestComment?: { comment: string; url: string };
   };
+  sourceData: unknown;
 }
 
 export const rowsByAuthor: Record<string, { url: string | undefined; rows: GitHubRow[] }> = {}; // all the events aggregated by author
@@ -139,6 +140,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
           pullRequestComment: { comment: data.comment.body, url: data.comment.html_url },
         }),
       },
+      sourceData: data,
     };
     if (row.actor?.name) {
       if (!(row.actor.name in rowsByAuthor)) {

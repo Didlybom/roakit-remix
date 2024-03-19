@@ -1,10 +1,11 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Popover, Stack, Typography } from '@mui/material';
+import { formatJson } from '../utils/jsxUtils';
 
 export interface PopoverContent {
   element: HTMLElement;
-  content: string;
+  content: unknown;
 }
 
 export default function CodePopover({
@@ -14,33 +15,35 @@ export default function CodePopover({
   popover: PopoverContent | null;
   onClose: () => void;
 }) {
+  if (!popover?.content) {
+    return null;
+  }
+  const formattedContent = formatJson(popover.content);
   return (
-    !!popover?.content && (
-      <Popover
-        id={popover.element ? 'popover' : undefined}
-        open={!!popover?.element}
-        anchorEl={popover?.element}
-        onClose={onClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+    <Popover
+      id={popover.element ? 'popover' : undefined}
+      open={!!popover?.element}
+      anchorEl={popover?.element}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+    >
+      <Stack direction="row" sx={{ m: 1, float: 'right' }}>
+        <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
+          <ContentCopyIcon />
+        </IconButton>
+        <IconButton onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
+      </Stack>
+      <Typography
+        component="pre"
+        fontSize="small"
+        fontFamily="monospace"
+        color="GrayText"
+        sx={{ p: 2 }}
       >
-        <Stack direction="row" sx={{ m: 1, float: 'right' }}>
-          <IconButton>
-            <ContentCopyIcon onClick={() => void navigator.clipboard.writeText(popover.content)} />
-          </IconButton>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-        <Typography
-          component="pre"
-          fontSize="small"
-          fontFamily="monospace"
-          color="GrayText"
-          sx={{ p: 2 }}
-        >
-          {popover.content}
-        </Typography>
-      </Popover>
-    )
+        {formattedContent}
+      </Typography>
+    </Popover>
   );
 }

@@ -312,7 +312,7 @@ export default function Dashboard() {
                           {
                             data: ['Dev', 'Task', 'Dev Org', 'Task Org'],
                             scaleType: 'band',
-                            tickLabelStyle: { angle: 45, textAnchor: 'start' },
+                            tickLabelStyle: { angle: -45, textAnchor: 'end' },
                             tickMinStep: 1,
                             tickMaxStep: 1,
                           },

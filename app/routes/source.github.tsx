@@ -1,3 +1,4 @@
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import {
@@ -16,7 +17,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -28,6 +29,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
+import CodePopover, { PopoverContent } from '../components/CodePopover';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -97,6 +99,7 @@ export default function GitHub() {
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
+  const [sourceDataPopover, setSourceDataPopover] = useState<PopoverContent | null>(null);
   const [error, setError] = useState('');
   const pluralizeMemo = memoize(pluralize);
 
@@ -145,7 +148,7 @@ export default function GitHub() {
         renderCell: params => {
           const fields = params.value as GitHubRow['ref'];
           return !fields ? '' : (
-              <Link href={fields.url} title={fields.label} sx={{ ...ellipsisSx }}>
+              <Link href={fields.url} target="_blank" title={fields.label} sx={{ ...ellipsisSx }}>
                 {fields.label}
               </Link>
             );
@@ -227,6 +230,28 @@ export default function GitHub() {
           } else {
             return cell;
           }
+        },
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        width: 50,
+        cellClassName: 'actions',
+        getActions: params => {
+          const row = params.row as GitHubRow;
+          return [
+            <GridActionsCellItem
+              key={1}
+              icon={<DataObjectIcon />}
+              label="View source"
+              onClick={e =>
+                setSourceDataPopover({
+                  element: e.currentTarget,
+                  content: row.sourceData,
+                })
+              }
+            />,
+          ];
         },
       },
     ],
@@ -377,6 +402,7 @@ export default function GitHub() {
       >
         <Typography sx={{ p: 2 }}>{popover?.content}</Typography>
       </Popover>
+      <CodePopover popover={sourceDataPopover} onClose={() => setSourceDataPopover(null)} />
       <Stack sx={{ mt: 3 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
           {[

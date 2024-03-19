@@ -62,7 +62,6 @@ import {
   actorColdDef,
   dateColdDef,
   ellipsisSx,
-  formatJson,
   internalLinkSx,
   priorityColDef,
 } from '../utils/jsxUtils';
@@ -318,7 +317,7 @@ export default function ActivityReview() {
               onClick={e =>
                 setPopover({
                   element: e.currentTarget,
-                  content: formatJson(activity.metadata as unknown),
+                  content: activity.metadata,
                 })
               }
             />,

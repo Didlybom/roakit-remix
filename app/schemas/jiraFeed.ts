@@ -48,6 +48,7 @@ export interface JiraRow {
     description?: string;
     comment?: string;
   };
+  sourceData: unknown;
 }
 
 export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] => {
@@ -77,6 +78,7 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
         description: data.issue.fields.description ?? undefined,
         comment: data.comment?.body,
       },
+      sourceData: data,
     };
     rows.push(row);
   });

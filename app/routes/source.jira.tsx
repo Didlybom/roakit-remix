@@ -1,5 +1,6 @@
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
@@ -9,6 +10,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
+import CodePopover, { PopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import { JiraEventType, JiraRow, jiraRows } from '../schemas/jiraFeed';
@@ -47,6 +49,7 @@ export default function Jira() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
+  const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
@@ -84,6 +87,7 @@ export default function Jira() {
           return !fields ? '' : (
               <Link
                 href={`${fields.url.split('rest')[0]}browse/${fields.label}`}
+                target="_blank"
                 sx={{ ...ellipsisSx }}
               >
                 {fields.label}
@@ -124,6 +128,28 @@ export default function Jira() {
               </Tooltip>
             </Stack>
           );
+        },
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        width: 50,
+        cellClassName: 'actions',
+        getActions: params => {
+          const row = params.row as JiraRow;
+          return [
+            <GridActionsCellItem
+              key={1}
+              icon={<DataObjectIcon />}
+              label="View source"
+              onClick={e =>
+                setPopover({
+                  element: e.currentTarget,
+                  content: row.sourceData,
+                })
+              }
+            />,
+          ];
         },
       },
     ],
@@ -180,6 +206,7 @@ export default function Jira() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
+      <CodePopover popover={popover} onClose={() => setPopover(null)} />
       <Stack>
         {gotSnapshot && (
           <>
