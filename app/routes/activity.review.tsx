@@ -34,6 +34,7 @@ import {
   orderBy,
   query,
   startAfter,
+  startAt,
   where,
 } from 'firebase/firestore';
 import pino from 'pino';
@@ -181,16 +182,23 @@ export default function ActivityReview() {
               startAfter(boundaryDocs.last),
               limit(paginationModel.pageSize)
             );
-          }
-          if (prevPaginationModel?.page > paginationModel.page) {
+          } else if (prevPaginationModel?.page > paginationModel.page) {
             activityPageQuery = query(
               activityQuery,
               orderBy('createdTimestamp', 'desc'),
               endBefore(boundaryDocs.first),
               limitToLast(paginationModel.pageSize)
             );
+          } else {
+            activityPageQuery = query(
+              activityQuery,
+              orderBy('createdTimestamp', 'desc'),
+              startAt(boundaryDocs.first),
+              limit(paginationModel.pageSize)
+            );
           }
         } else {
+          // reachable on dev hot reload, then page is the same but we are reloading
           activityPageQuery = query(
             activityQuery,
             orderBy('createdTimestamp', 'desc'),
@@ -314,12 +322,7 @@ export default function ActivityReview() {
               key={1}
               icon={<DataObjectIcon />}
               label="View metadata"
-              onClick={e =>
-                setPopover({
-                  element: e.currentTarget,
-                  content: activity.metadata,
-                })
-              }
+              onClick={e => setPopover({ element: e.currentTarget, content: activity.metadata })}
             />,
           ];
         },
@@ -386,10 +389,7 @@ export default function ActivityReview() {
                       sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
                     activities: JSON.stringify(
                       selectedRows.map(id => {
-                        return {
-                          id,
-                          artifact: activities.find(a => a.id === id)!.artifact,
-                        };
+                        return { id, artifact: activities.find(a => a.id === id)!.artifact };
                       }) as ActivityPayload
                     ),
                   },
