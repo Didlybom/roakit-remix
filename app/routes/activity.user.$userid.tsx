@@ -208,12 +208,7 @@ export default function UserActivity() {
               key={1}
               icon={<DataObjectIcon />}
               label="View metadata"
-              onClick={e =>
-                setPopover({
-                  element: e.currentTarget,
-                  content: activity.metadata,
-                })
-              }
+              onClick={e => setPopover({ element: e.currentTarget, content: activity.metadata })}
             />,
           ];
         },

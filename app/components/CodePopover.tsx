@@ -27,7 +27,7 @@ export default function CodePopover({
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
     >
-      <Stack direction="row" sx={{ m: 1, float: 'right' }}>
+      <Stack direction="row" sx={{ m: 1, position: 'absolute', top: 2, right: 0 }}>
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
           <ContentCopyIcon />
         </IconButton>
@@ -40,7 +40,7 @@ export default function CodePopover({
         fontSize="small"
         fontFamily="monospace"
         color="GrayText"
-        sx={{ p: 2 }}
+        sx={{ p: 2, overflowX: 'auto' }}
       >
         {formattedContent}
       </Typography>
