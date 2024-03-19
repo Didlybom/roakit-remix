@@ -8,7 +8,6 @@ import {
   Link,
   Stack,
   Switch,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
@@ -175,7 +174,7 @@ export default function UserActivity() {
         renderCell: params => {
           const initiativeId = params.value as string;
           return initiativeId ?
-              <Tooltip title={sessionData.initiatives[initiativeId]?.label}>{params.value}</Tooltip>
+              <Box title={sessionData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
             : '[unset]';
         },
       },

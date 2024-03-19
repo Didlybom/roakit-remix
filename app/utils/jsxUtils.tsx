@@ -79,6 +79,7 @@ export const priorityColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Priority',
     width: 80,
+    sortComparator: (a: number, b: number) => (b ?? 999) - (a ?? 999),
     renderCell: params => {
       const priority = params.value as number;
       return (
