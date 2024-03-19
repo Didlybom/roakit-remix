@@ -118,6 +118,7 @@ export default function Initiatives() {
     disableRowSelectionOnClick: true,
     disableColumnMenu: true,
     pageSizeOptions: [25, 50, 100],
+    sortingOrder: ['asc', 'desc'] as GridSortDirection[],
     initialState: {
       pagination: { paginationModel: { pageSize: 25 } },
       sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
@@ -196,7 +197,6 @@ export default function Initiatives() {
                 /* user cancelled */
               }
             }}
-            color="inherit"
           />,
         ];
       },

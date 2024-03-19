@@ -35,6 +35,7 @@ export const dataGridCommonProps = {
   disableRowSelectionOnClick: true,
   disableColumnMenu: true,
   pageSizeOptions: [25, 50, 100],
+  sortingOrder: ['asc', 'desc'] as GridSortDirection[],
   initialState: {
     pagination: { paginationModel: { pageSize: 25 } },
     sorting: { sortModel: [{ field: 'date', sort: 'desc' as GridSortDirection }] },
