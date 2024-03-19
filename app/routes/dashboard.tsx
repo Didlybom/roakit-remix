@@ -54,7 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-  return sessionData;
+  return { ...sessionData, loading: true };
 };
 
 // load activities
@@ -119,7 +119,7 @@ export default function Dashboard() {
   const [dateRangeLabel, setDateRangeLabel] = useState(
     dateFilter ? dateRangeLabels[dateFilter] : 'New'
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(sessionData.loading);
 
   const pluralizeMemo = memoize(pluralize);
 
@@ -171,6 +171,13 @@ export default function Dashboard() {
     }
     submit({ dateFilter }, { method: 'post' });
   }, [dateFilter, loading, submit]);
+
+  useEffect(() => {
+    // happens for a dev hot reload
+    if (sessionData.loading) {
+      setLoading(true);
+    }
+  }, [sessionData.loading]);
 
   const ContributorsByInitiativeTooltipContent = (props: ChartsAxisContentProps) => {
     return initiatives ?
