@@ -140,7 +140,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
           pullRequestComment: { comment: data.comment.body, url: data.comment.html_url },
         }),
       },
-      sourceData: data,
+      sourceData: docData,
     };
     if (row.actor?.name) {
       if (!(row.actor.name in rowsByAuthor)) {

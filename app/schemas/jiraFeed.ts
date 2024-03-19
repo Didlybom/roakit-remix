@@ -78,7 +78,7 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
         description: data.issue.fields.description ?? undefined,
         comment: data.comment?.body,
       },
-      sourceData: data,
+      sourceData: docData,
     };
     rows.push(row);
   });
