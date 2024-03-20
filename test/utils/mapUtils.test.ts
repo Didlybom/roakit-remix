@@ -30,7 +30,6 @@ test('groupByAndSort', () => {
   ]);
 
   dict.a = 'ZZZ';
-  console.log([...data]);
   result = groupByAndSort(cloneArray(data), 'k', (x, y) => dict[x.key].localeCompare(dict[y.key]));
   expect([...result]).toEqual([
     ['b', [{ v: 'b1' }, { v: 'b2' }]],
