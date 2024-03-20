@@ -42,8 +42,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
   );
   newFlatCounts.forEach(flatCount => {
     const initiative = initiatives[flatCount.initiativeId];
-    initiative.counters.activities[flatCount.artifact] =
-      initiative.counters.activities[flatCount.artifact] + flatCount.count;
+    initiative.counters.activities[flatCount.artifact] += flatCount.count;
   });
   void Promise.all(
     Object.keys(initiatives).map(initiativeId => {
