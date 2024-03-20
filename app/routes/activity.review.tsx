@@ -13,7 +13,13 @@ import {
   Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { GridColDef, GridDensity, GridFeatureMode, GridToolbarContainer } from '@mui/x-data-grid';
+import {
+  GridColDef,
+  GridDensity,
+  GridFeatureMode,
+  GridRowSelectionModel,
+  GridToolbarContainer,
+} from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import {
@@ -141,7 +147,7 @@ export default function ActivityReview() {
   const sessionData = useLoaderData<typeof loader>();
   const [activities, setActivities] = useState<ActivityData[] | null>(null);
   const [showAllActivity, setShowAllActivity] = useState(false);
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
   const [rowTotal, setRowTotal] = useState(0);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
@@ -153,6 +159,11 @@ export default function ActivityReview() {
   const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const resetPage = () => {
+    setPaginationModel({ page: 0, pageSize: 25 });
+    setBoundaryDocs(null);
+  };
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -325,7 +336,7 @@ export default function ActivityReview() {
       <GridToolbarContainer>
         <Grid container spacing={1} sx={{ m: 1 }}>
           <Grid sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-            {selectedRows.length} {pluralize('activity', selectedRows.length)} selected
+            {rowSelectionModel.length} {pluralize('activity', rowSelectionModel.length)} selected
           </Grid>
           <Grid>
             <FormControl size="small" sx={{ width: '100%' }}>
@@ -347,18 +358,25 @@ export default function ActivityReview() {
           </Grid>
           <Grid sx={{ display: 'flex' }}>
             <Button
-              disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
+              disabled={!bulkInitiative || rowSelectionModel.length > MAX_BATCH}
               onClick={() => {
+                setRowSelectionModel([]);
                 if (!activities) {
                   return;
                 }
+                activities
+                  .filter(a => rowSelectionModel.includes(a.id))
+                  .forEach(activity => {
+                    activity.initiativeId = bulkInitiative;
+                  });
+                setActivities(activities);
                 fetcher.submit(
                   {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
                       sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
                     activities: JSON.stringify(
-                      selectedRows.map(id => {
+                      rowSelectionModel.map(id => {
                         return { id, artifact: activities.find(a => a.id === id)!.artifact };
                       }) as ActivityPayload
                     ),
@@ -371,7 +389,7 @@ export default function ActivityReview() {
             </Button>
           </Grid>
         </Grid>
-        {selectedRows.length > MAX_BATCH && (
+        {rowSelectionModel.length > MAX_BATCH && (
           <Alert severity="warning" sx={{ display: 'flex', bgcolor: 'inherit' }}>
             Please select no more than {MAX_BATCH} activities.
           </Alert>
@@ -398,8 +416,7 @@ export default function ActivityReview() {
               <Switch
                 checked={showAllActivity}
                 onChange={e => {
-                  setPaginationModel({ page: 0, pageSize: 25 });
-                  setBoundaryDocs(null);
+                  resetPage();
                   setShowAllActivity(e.target.checked);
                 }}
               />
@@ -421,7 +438,7 @@ export default function ActivityReview() {
               setPaginationModel(paginationModel);
             }
           }}
-          slots={{ toolbar: selectedRows.length ? BulkToolbar : undefined }}
+          slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
           processRowUpdate={(updatedRow: ActivityData) => {
             fetcher.submit(
               {
@@ -441,11 +458,12 @@ export default function ActivityReview() {
             return updatedRow;
           }}
           onRowSelectionModelChange={rowSelectionModel => {
-            setSelectedRows(rowSelectionModel as string[]);
+            setRowSelectionModel(rowSelectionModel);
             if (!rowSelectionModel.length) {
               setBulkInitiative('');
             }
           }}
+          rowSelectionModel={rowSelectionModel}
           onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to update'))}
         />
       </Stack>
