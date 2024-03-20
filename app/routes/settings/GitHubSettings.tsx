@@ -142,10 +142,11 @@ export default function GitHubSettings({
         }
       />
       <Typography component="div" sx={{ mt: 5 }}>
-        In your GitHub website, navigate to the <code>Settings {'>'} Webhooks</code> page for your
-        organization (you must be an organization owner). You will need to create a new webhook for{' '}
-        <strong>Roakit</strong> by clicking the <code>Add webhook</code> button in the upper right
-        corner.
+        In your <strong>GitHub</strong> website, navigate to the{' '}
+        <strong>Settings {'>'} Webhooks</strong> page for your organization (you must be an
+        organization <code>owner</code>). You will need to create a new webhook for{' '}
+        <strong>Roakit</strong> by clicking the <strong>Add webhook</strong> button in the upper
+        right corner.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
             <code>Payload URL</code> — copy the value from the field above
@@ -160,9 +161,10 @@ export default function GitHubSettings({
             save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
           </ListItem>
         </List>
-        More information on configuring and using GitHub webhooks can be found on their{' '}
+        More information on configuring and using <strong>GitHub</strong> webhooks can be found on
+        their{' '}
         <Link
-          target={'_blank'}
+          target="_blank"
           href="https://docs.github.com/en/webhooks/using-webhooks/creating-webhooks#creating-an-organization-webhook"
         >
           website

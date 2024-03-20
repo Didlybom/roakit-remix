@@ -158,8 +158,9 @@ export default function ConfluenceSettings({
         }
       />
       <Typography component="div" sx={{ mt: 5 }}>
-        In your Confluence website, the administrator needs Confluence Administrator or System
-        Administrator permissions to create the webhook using the values indicated above.
+        In your <strong>Confluence</strong> website, the administrator needs{' '}
+        <code>Confluence Administrator</code> or <code>System Administrator</code> permissions to
+        create the webhook using the values indicated above.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
             Add a <code>Name</code> for the new webhook
@@ -172,7 +173,7 @@ export default function ConfluenceSettings({
             to save it on this page with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
           </ListItem>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
-            Select <code>Test connection</code> to verify your connection
+            Click <strong>Test connection</strong> to verify your connection
           </ListItem>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
             Choose the Events that should trigger the webhook
@@ -181,12 +182,13 @@ export default function ConfluenceSettings({
             Select <code>Active</code> to enable the webhook
           </ListItem>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
-            Click <code>Save</code>
+            Click <strong>Save</strong>
           </ListItem>
         </List>
-        More information on configuring and using Confluence webhooks can be found on their{' '}
+        More information on configuring and using <strong>Confluence</strong> webhooks can be found
+        on their{' '}
         <Link
-          target={'_blank'}
+          target="_blank"
           href="https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html"
         >
           website

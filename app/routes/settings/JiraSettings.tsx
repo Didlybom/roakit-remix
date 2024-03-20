@@ -79,22 +79,20 @@ export default function JiraSettings({
         }
       />
       <Typography component="div" sx={{ mt: 5 }}>
-        In your Jira administration console, go to <code>System WebHooks</code> in the Advanced
-        section and click the <code>Create a Webhook</code> button.
+        In your <strong>Jira</strong> administration console, go to <strong>System WebHooks</strong>{' '}
+        in the Advanced section and click the <strong>Create a Webhook</strong> button.
         <List sx={{ listStyleType: 'disc', pl: 2 }}>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
             In the form that is shown, enter the <code>Name</code>, <code>URL</code>,{' '}
             <code>Scope</code> and <code>Event</code> settings as indicated above.
           </ListItem>
           <ListItem disablePadding sx={{ display: 'list-item' }}>
-            To register the new webhook, click <code>Create</code>.
+            To register the new webhook, click <strong>Create</strong>.
           </ListItem>
         </List>
-        More information on configuring and using Jira webhooks can be found on their{' '}
-        <Link
-          target={'_blank'}
-          href="https://developer.atlassian.com/server/jira/platform/webhooks/"
-        >
+        More information on configuring and using <strong>Jira</strong> webhooks can be found on
+        their{' '}
+        <Link target="_blank" href="https://developer.atlassian.com/server/jira/platform/webhooks/">
           website
         </Link>
         .
