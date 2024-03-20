@@ -24,6 +24,9 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
       });
     });
   });
+  if (!flatCounters.length) {
+    return initiatives;
+  }
   const newFlatCounts = await Promise.all(
     flatCounters.map(async counter => {
       const countQuery = firestore
@@ -61,14 +64,17 @@ export const incrementInitiativeCounters = async (
   counters: ActivityCount
 ) => {
   const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
-  await initiativeDoc.update({
-    counters: {
-      activities: {
-        code: FieldValue.increment(counters.code),
-        codeOrg: FieldValue.increment(counters.codeOrg),
-        task: FieldValue.increment(counters.task),
-        taskOrg: FieldValue.increment(counters.taskOrg),
+  await initiativeDoc.set(
+    {
+      counters: {
+        activities: {
+          code: FieldValue.increment(counters.code),
+          codeOrg: FieldValue.increment(counters.codeOrg),
+          task: FieldValue.increment(counters.task),
+          taskOrg: FieldValue.increment(counters.taskOrg),
+        },
       },
     },
-  });
+    { merge: true }
+  );
 };
