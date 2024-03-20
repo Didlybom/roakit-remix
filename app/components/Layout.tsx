@@ -1,5 +1,4 @@
-import { Stack } from '@mui/material';
-import Box from '@mui/material/Box';
+import { Box, Stack } from '@mui/material';
 import { ReactNode } from 'react';
 import Copyright from './Copyright';
 

@@ -1,4 +1,3 @@
-import { DecodedIdToken } from 'firebase-admin/auth';
 import pino from 'pino';
 import { sessionCookie } from '../cookies.server';
 import { auth, queryCustomerId } from '../firebase.server';
@@ -19,7 +18,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   }
 
   let sessionData: SessionData;
-  let token: DecodedIdToken;
+  let token;
   try {
     token = await auth.verifySessionCookie(jwt);
     sessionData = { isLoggedIn: true, email: token.email };

@@ -3,6 +3,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
+  AppBar,
+  AppBarProps,
   Box,
   Button,
   IconButton,
@@ -11,20 +13,19 @@ import {
   Typography,
   styled,
 } from '@mui/material';
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import { DateRange } from '../utils/dateUtils';
 import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 
-interface AppBarProps extends MuiAppBarProps {
+interface NavBarProps extends AppBarProps {
   navbarWidth: number;
   navbarOpen?: boolean;
 }
 
 // see https://mui.com/material-ui/react-drawer/#persistent-drawer
-const AppBar = styled(MuiAppBar, {
+const NavBar = styled(AppBar, {
   shouldForwardProp: prop => prop !== 'navbarWidth' && prop !== 'navbarOpen',
-})<AppBarProps>(({ theme, navbarWidth, navbarOpen }) => ({
+})<NavBarProps>(({ theme, navbarWidth, navbarOpen }) => ({
   transition: theme.transitions.create(['margin', 'width'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -59,7 +60,7 @@ export default function Header({
   onNavBarOpen: () => void;
 }) {
   return (
-    <AppBar position="fixed" navbarWidth={navbarWidth} navbarOpen={isNavBarOpen}>
+    <NavBar position="fixed" navbarWidth={navbarWidth} navbarOpen={isNavBarOpen}>
       <Toolbar variant="dense">
         {isLoggedIn && (
           <IconButton
@@ -156,6 +157,6 @@ export default function Header({
         )}
       </Toolbar>
       {showProgress && <LinearProgress sx={{ mt: '-4px' }} />}
-    </AppBar>
+    </NavBar>
   );
 }
