@@ -57,7 +57,7 @@
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-prettier": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "@testing-library/react": "^14.2.1",
+    "@testing-library/react": "^14.2.2",
     "@types/async-retry": "^1.4.8",
     "@types/google-protobuf": "^3.15.12",
     "@types/jest": "^29.5.12",
