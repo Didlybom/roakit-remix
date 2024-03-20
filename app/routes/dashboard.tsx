@@ -166,11 +166,11 @@ export default function Dashboard() {
 
   // Hand the date range over to server
   useEffect(() => {
-    if (!dateFilter || !loading) {
+    if (!dateFilter) {
       return;
     }
     submit({ dateFilter }, { method: 'post' });
-  }, [dateFilter, loading, submit]);
+  }, [dateFilter, submit]);
 
   useEffect(() => {
     // happens for a dev hot reload
