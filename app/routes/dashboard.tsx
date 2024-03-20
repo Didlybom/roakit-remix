@@ -308,10 +308,11 @@ export default function Dashboard() {
                           {
                             id: `${initiative.id} total`,
                             data: [
-                              totalCounters.code,
-                              totalCounters.task,
-                              totalCounters.codeOrg,
-                              totalCounters.taskOrg,
+                              // max() is useful is totalCounters are behind (updated every hour only)
+                              Math.max(totalCounters.code, initiative.count.code),
+                              Math.max(totalCounters.task, initiative.count.task),
+                              Math.max(totalCounters.codeOrg, initiative.count.codeOrg),
+                              Math.max(totalCounters.taskOrg, initiative.count.taskOrg),
                             ],
                             valueFormatter: value =>
                               `${value} ${pluralizeMemo('activity', value ?? 0)}`,
