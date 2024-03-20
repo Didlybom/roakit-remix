@@ -133,7 +133,7 @@ export default function Initiatives() {
   function EditToolbar(props: EditToolbarProps) {
     const { setRows, setRowModesModel } = props;
 
-    const handleClick = () => {
+    const handleAddClick = () => {
       const id = uuidv4();
       setRows(oldRows => [...oldRows, { id, label: '', isNew: true }]);
       setRowModesModel(oldModel => ({
@@ -144,7 +144,7 @@ export default function Initiatives() {
 
     return (
       <GridToolbarContainer>
-        <Button color="primary" startIcon={<AddIcon />} onClick={handleClick}>
+        <Button color="primary" startIcon={<AddIcon />} onClick={handleAddClick}>
           Add initiative
         </Button>
       </GridToolbarContainer>
