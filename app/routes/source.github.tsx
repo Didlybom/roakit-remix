@@ -42,6 +42,7 @@ import {
   rowsByJira,
 } from '../schemas/githubFeed';
 import { loadSession } from '../utils/authUtils.server';
+import { actorColdDef, dataGridCommonProps, dateColdDef } from '../utils/dataGridUtils';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
   DateRange,
@@ -49,16 +50,9 @@ import {
   formatMonthDay,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import {
-  actorColdDef,
-  dataGridCommonProps,
-  dateColdDef,
-  disabledNotOpaqueSx,
-  ellipsisSx,
-  internalLinkSx,
-  stickySx,
-} from '../utils/jsxUtils';
+import { disabledNotOpaqueSx, ellipsisSx, internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
+import theme from '../utils/theme';
 
 enum ActivityView {
   All,
@@ -452,7 +446,7 @@ export default function GitHub() {
                   <Stack direction="row">
                     <Box sx={{ position: 'relative' }}>
                       <Box width="50px" sx={{ mt: 1, writingMode: 'vertical-rl' }}>
-                        <Typography color="GrayText" variant="h6">
+                        <Typography color={theme.palette.grey[500]} variant="h6">
                           {jira}
                         </Typography>
                       </Box>
@@ -496,7 +490,7 @@ export default function GitHub() {
               {sortedAuthors.map(author => (
                 <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
                   <Stack direction="row" alignItems="center">
-                    <Typography color="GrayText" variant="h6">
+                    <Typography color={theme.palette.grey[500]} variant="h6">
                       {author}
                     </Typography>
                     {rowsByAuthor?.[author]?.url && (

@@ -2,6 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Popover, Stack, Typography } from '@mui/material';
 import { formatJson } from '../utils/jsxUtils';
+import theme from '../utils/theme';
 
 export interface PopoverContent {
   element: HTMLElement;
@@ -39,7 +40,7 @@ export default function CodePopover({
         component="pre"
         fontSize="small"
         fontFamily="monospace"
-        color="GrayText"
+        color={theme.palette.grey[700]}
         sx={{ p: 2, overflowX: 'auto' }}
       >
         {formattedContent}

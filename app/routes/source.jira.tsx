@@ -15,6 +15,7 @@ import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import { JiraEventType, JiraRow, jiraRows } from '../schemas/jiraFeed';
 import { loadSession } from '../utils/authUtils.server';
+import { actorColdDef, dataGridCommonProps, dateColdDef } from '../utils/dataGridUtils';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
   DateRange,
@@ -22,7 +23,7 @@ import {
   formatMonthDay,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { actorColdDef, dataGridCommonProps, dateColdDef, ellipsisSx } from '../utils/jsxUtils';
+import { ellipsisSx } from '../utils/jsxUtils';
 
 enum View {
   IssueCreated = 0,

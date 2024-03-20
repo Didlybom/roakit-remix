@@ -1,4 +1,3 @@
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import EditIcon from '@mui/icons-material/Edit';
 import {
   Alert,
@@ -14,13 +13,7 @@ import {
   Switch,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import {
-  GridActionsCellItem,
-  GridColDef,
-  GridDensity,
-  GridFeatureMode,
-  GridToolbarContainer,
-} from '@mui/x-data-grid';
+import { GridColDef, GridDensity, GridFeatureMode, GridToolbarContainer } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import {
@@ -49,7 +42,6 @@ import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
-import { getSummary, getUrl } from '../schemas/activityFeed';
 import {
   ActivityCount,
   ActivityData,
@@ -58,14 +50,15 @@ import {
   activitySchema,
 } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
-import { ParseError, errMsg } from '../utils/errorUtils';
 import {
   actorColdDef,
   dateColdDef,
-  ellipsisSx,
-  internalLinkSx,
+  metadataActionsColDef,
   priorityColDef,
-} from '../utils/jsxUtils';
+  summaryColDef,
+} from '../utils/dataGridUtils';
+import { ParseError, errMsg } from '../utils/errorUtils';
+import { internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -292,41 +285,10 @@ export default function ActivityReview() {
       { field: 'action', headerName: 'Action', width: 100, sortable: false },
       { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
       priorityColDef({ field: 'priority', sortable: false }),
-      {
-        field: 'metadata',
-        headerName: 'Summary',
-        minWidth: 300,
-        flex: 1,
-        sortable: false,
-        renderCell: params => {
-          const summary = getSummary(params.value);
-          const url = getUrl(params.value);
-          return url ?
-              <Link href={url} target="_blank" title={summary} sx={{ ...ellipsisSx }}>
-                {summary}
-              </Link>
-            : <Box title={summary} sx={{ ...ellipsisSx }}>
-                {summary}
-              </Box>;
-        },
-      },
-      {
-        field: 'actions',
-        type: 'actions',
-        width: 50,
-        cellClassName: 'actions',
-        getActions: params => {
-          const activity = params.row as ActivityData;
-          return [
-            <GridActionsCellItem
-              key={1}
-              icon={<DataObjectIcon />}
-              label="View metadata"
-              onClick={e => setPopover({ element: e.currentTarget, content: activity.metadata })}
-            />,
-          ];
-        },
-      },
+      summaryColDef({ field: 'metadata', sortable: false }),
+      metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
+        setPopover({ element, content: metadata })
+      ),
       {
         field: 'initiativeId',
         headerName: 'Initiative',
@@ -344,10 +306,12 @@ export default function ActivityReview() {
         sortable: false,
         renderCell: params =>
           params.value !== UNSET_INITIATIVE_ID ?
-            <Box className="MuiDataGrid-cellContent">
+            <Box sx={{ cursor: 'pointer' }}>
               {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
-          : <EditIcon color="primary" fontSize="small" />,
+          : <Box alignItems="center" sx={{ display: 'flex', height: '100%', cursor: 'pointer' }}>
+              <EditIcon color="primary" fontSize="small" />
+            </Box>,
       },
     ],
     [sessionData.actors, sessionData.initiatives]

@@ -1,4 +1,3 @@
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
@@ -10,7 +9,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
@@ -23,20 +22,21 @@ import App from '../components/App';
 import CodePopover, { PopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
 import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
-import { UserActivityRow, getSummary, getUrl, userActivityRows } from '../schemas/activityFeed';
+import { UserActivityRow, userActivityRows } from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
 import {
   dataGridCommonProps,
   dateColdDef,
-  ellipsisSx,
-  internalLinkSx,
+  metadataActionsColDef,
   priorityColDef,
-  stickySx,
-} from '../utils/jsxUtils';
+  summaryColDef,
+} from '../utils/dataGridUtils';
+import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
+import { errMsg } from '../utils/errorUtils';
+import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
+import theme from '../utils/theme';
 
 const logger = pino({ name: 'route:activity.user' });
 
@@ -197,43 +197,13 @@ export default function UserActivity() {
           const initiativeId = params.value as string;
           return initiativeId ?
               <Box title={sessionData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
-            : '[unset]';
+            : <Box color={theme.palette.grey[400]}>unset</Box>;
         },
       },
-      {
-        field: 'metadata',
-        headerName: 'Summary',
-        minWidth: 300,
-        flex: 1,
-        renderCell: params => {
-          const summary = getSummary(params.value);
-          const url = getUrl(params.value);
-          return url ?
-              <Link href={url} target="_blank" title={summary} sx={{ ...ellipsisSx }}>
-                {summary}
-              </Link>
-            : <Box title={summary} sx={{ ...ellipsisSx }}>
-                {summary}
-              </Box>;
-        },
-      },
-      {
-        field: 'actions',
-        type: 'actions',
-        width: 50,
-        cellClassName: 'actions',
-        getActions: params => {
-          const activity = params.row as UserActivityRow;
-          return [
-            <GridActionsCellItem
-              key={1}
-              icon={<DataObjectIcon />}
-              label="View metadata"
-              onClick={e => setPopover({ element: e.currentTarget, content: activity.metadata })}
-            />,
-          ];
-        },
-      },
+      summaryColDef({ field: 'metadata' }),
+      metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
+        setPopover({ element, content: metadata })
+      ),
     ],
     [sessionData.initiatives]
   );
@@ -241,7 +211,12 @@ export default function UserActivity() {
   const grids = [...activities].map(([actorId, rows]) => {
     return (
       <Stack id={actorElementId(actorId)} key={actorId} sx={{ mb: 3 }}>
-        <Typography variant="h6" alignItems="center" sx={{ display: 'flex', mb: 1 }}>
+        <Typography
+          variant="h6"
+          alignItems="center"
+          color={theme.palette.grey[600]}
+          sx={{ display: 'flex', mb: 1 }}
+        >
           <PersonIcon sx={{ mr: 1 }} />
           {sessionData.actors[actorId]?.name ?? 'Unknown user'}
         </Typography>
@@ -281,7 +256,7 @@ export default function UserActivity() {
             {sessionData.userId === ALL && (
               <Box sx={{ display: 'flex', mr: 2 }}>
                 <Box sx={{ position: 'relative' }}>
-                  <Box fontSize="small" color="GrayText" sx={{ ...stickySx }}>
+                  <Box fontSize="small" color={theme.palette.grey[700]} sx={{ ...stickySx }}>
                     <FormGroup sx={{ mb: 2, ml: 2 }}>
                       <FormControlLabel
                         control={

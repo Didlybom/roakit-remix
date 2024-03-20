@@ -33,11 +33,14 @@ export const getSummary = (metadata: any) => {
   return '';
 };
 
-export const getUrl = (metadata: any) => {
+export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } | null => {
   if (!metadata?.issue?.uri) {
     return null;
   }
-  return `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`;
+  return {
+    url: `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`,
+    type: 'jira',
+  };
 };
 /* eslint-enable @typescript-eslint/no-unsafe-member-access */
 /* eslint-enable @typescript-eslint/no-explicit-any */
