@@ -139,7 +139,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function ActivityReview() {
   const fetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
-  const [activities, setActivities] = useState<ActivityData[]>([]);
+  const [activities, setActivities] = useState<ActivityData[] | null>(null);
   const [showAllActivity, setShowAllActivity] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
@@ -156,6 +156,7 @@ export default function ActivityReview() {
 
   useEffect(() => {
     const fetchActivities = async () => {
+      setLoading(true);
       setError('');
       try {
         const activitiesCollection = collection(
@@ -309,9 +310,11 @@ export default function ActivityReview() {
             <Box sx={{ cursor: 'pointer' }}>
               {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
-          : <Box alignItems="center" sx={{ display: 'flex', height: '100%', cursor: 'pointer' }}>
-              <EditIcon color="primary" fontSize="small" />
-            </Box>,
+          : <EditIcon
+              color="primary"
+              fontSize="small"
+              sx={{ verticalAlign: 'middle', cursor: 'pointer' }}
+            />,
       },
     ],
     [sessionData.actors, sessionData.initiatives]
@@ -345,7 +348,10 @@ export default function ActivityReview() {
           <Grid sx={{ display: 'flex' }}>
             <Button
               disabled={!bulkInitiative || selectedRows.length > MAX_BATCH}
-              onClick={() =>
+              onClick={() => {
+                if (!activities) {
+                  return;
+                }
                 fetcher.submit(
                   {
                     initiativeId: bulkInitiative,
@@ -358,8 +364,8 @@ export default function ActivityReview() {
                     ),
                   },
                   { method: 'post' }
-                )
-              }
+                );
+              }}
             >
               Save
             </Button>
@@ -374,11 +380,11 @@ export default function ActivityReview() {
     );
   }
 
-  if (loading) {
+  if (!activities) {
     return <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />;
   }
   return (
-    <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={false}>
+    <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={loading}>
       <CodePopover popover={popover} onClose={() => setPopover(null)} />
       <Stack sx={{ m: 3 }}>
         {error && (
