@@ -15,7 +15,7 @@ import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
@@ -35,7 +35,7 @@ import {
   priorityColDef,
   stickySx,
 } from '../utils/jsxUtils';
-import { groupByAndSort } from '../utils/mapUtils';
+import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
 
 const logger = pino({ name: 'route:activity.user' });
@@ -78,32 +78,41 @@ export default function UserActivity() {
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const prevSortAlphabetically = usePrevious(sortAlphabetically);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
   const [popover, setPopover] = useState<PopoverContent | null>(null);
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
+  const allUsersSnapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
   const [activities, setActivities] = useState<Map<string, UserActivityRow[]>>(new Map());
 
   const actorElementId = (actor: string) => `ACTOR-${removeSpaces(actor)}`;
 
   // Firestore listener
   useEffect(() => {
-    const setRows = (querySnapshot: firebase.firestore.QuerySnapshot, allUsers: boolean) => {
+    const sortAndSetAllUsersActivities = () => {
+      if (allUsersSnapshot.current) {
+        setActivities(
+          sortMap(allUsersSnapshot.current, (a, b) =>
+            sortAlphabetically ?
+              caseInsensitiveCompare(
+                sessionData.actors[a.key]?.name ?? '',
+                sessionData.actors[b.key]?.name ?? ''
+              )
+            : b.count - a.count
+          )
+        );
+      }
+    };
+
+    const setRows = (querySnapshot: firebase.firestore.QuerySnapshot) => {
       try {
-        if (!allUsers) {
+        if (sessionData.userId !== ALL) {
           setActivities(new Map([[sessionData.userId!, userActivityRows(querySnapshot, false)]]));
         } else {
-          setActivities(
-            groupByAndSort(userActivityRows(querySnapshot, true), 'actorId', (a, b) =>
-              sortAlphabetically ?
-                caseInsensitiveCompare(
-                  sessionData.actors[a.key]?.name ?? '',
-                  sessionData.actors[b.key]?.name ?? ''
-                )
-              : b.count - a.count
-            )
-          );
+          allUsersSnapshot.current = groupByArray(userActivityRows(querySnapshot, true), 'actorId');
+          sortAndSetAllUsersActivities();
         }
         setGotSnapshot(true);
       } catch (e: unknown) {
@@ -114,6 +123,17 @@ export default function UserActivity() {
     if (!dateFilter || !sessionData.userId) {
       return;
     }
+
+    if (
+      sessionData.userId === ALL &&
+      dateFilter === prevDateFilter &&
+      sortAlphabetically !== prevSortAlphabetically &&
+      allUsersSnapshot.current
+    ) {
+      // just re-sort
+      return sortAndSetAllUsersActivities();
+    }
+
     setError('');
     setGotSnapshot(false);
     const startDate = dateFilterToStartDate(dateFilter);
@@ -123,7 +143,7 @@ export default function UserActivity() {
           .collection(`customers/${sessionData.customerId}/activities/`)
           .orderBy('createdTimestamp')
           .startAt(startDate)
-          .limit(1000) // FIXME limit
+          .limit(5000) // FIXME limit
       : firestoreClient
           .collection(`customers/${sessionData.customerId}/activities/`)
           .where('actorAccountId', '==', sessionData.userId)
@@ -131,17 +151,19 @@ export default function UserActivity() {
           .startAt(startDate)
           .limit(1000); // FIXME limit
     const unsubscribe = query.onSnapshot(
-      snapshot => setRows(snapshot, sessionData.userId === ALL),
+      snapshot => setRows(snapshot),
       error => setError(error.message)
     );
     return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     dateFilter,
+    prevDateFilter,
     sessionData.actors,
     sessionData.customerId,
     sessionData.userId,
     sortAlphabetically,
-  ]);
+  ]); // prevSortAlphabetically must be omitted
 
   // Auto scrollers
   useEffect(() => {
@@ -231,7 +253,7 @@ export default function UserActivity() {
           slots={{
             noRowsOverlay: () => (
               <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-                Not activity for these dates
+                No activity for these dates
               </Box>
             ),
           }}
@@ -253,14 +275,14 @@ export default function UserActivity() {
       <Stack sx={{ m: 3 }}>
         {activities.size === 0 && gotSnapshot ?
           <Typography textAlign="center" sx={{ m: 4 }}>
-            Nothing to show for these dates
+            No activity for these dates
           </Typography>
         : <Stack direction="row">
             {sessionData.userId === ALL && (
               <Box sx={{ display: 'flex', mr: 2 }}>
                 <Box sx={{ position: 'relative' }}>
                   <Box fontSize="small" color="GrayText" sx={{ ...stickySx }}>
-                    <FormGroup sx={{ mb: 2, ml: 1 }}>
+                    <FormGroup sx={{ mb: 2, ml: 2 }}>
                       <FormControlLabel
                         control={
                           <Switch
