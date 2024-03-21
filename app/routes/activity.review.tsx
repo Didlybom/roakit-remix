@@ -161,7 +161,7 @@ export default function ActivityReview() {
   const [error, setError] = useState('');
 
   const resetPage = () => {
-    setPaginationModel({ page: 0, pageSize: 25 });
+    setPaginationModel({ ...paginationModel, page: 0 });
     setBoundaryDocs(null);
   };
 
@@ -422,6 +422,7 @@ export default function ActivityReview() {
               />
             }
             label="Show all activities"
+            title="Show only activities with initiatives or all of them"
           />
         </Box>
         <DataGridWithSingleClickEditing
