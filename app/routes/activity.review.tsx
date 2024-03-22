@@ -133,7 +133,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (initiativeId !== UNSET_INITIATIVE_ID) {
       await incrementInitiativeCounters(customerId, initiativeId, counters);
     }
-    // FIXME decrement the activity that had an initiative and were changed
+    // FIXME decrement the activities that had an initiative and were changed
 
     return null;
   } catch (e) {
@@ -195,6 +195,7 @@ export default function ActivityReview() {
               limitToLast(paginationModel.pageSize)
             );
           } else {
+            // reachable on dev hot reload, then page is the same but we are reloading
             activityPageQuery = query(
               activityQuery,
               orderBy('createdTimestamp', 'desc'),
@@ -203,7 +204,6 @@ export default function ActivityReview() {
             );
           }
         } else {
-          // reachable on dev hot reload, then page is the same but we are reloading
           activityPageQuery = query(
             activityQuery,
             orderBy('createdTimestamp', 'desc'),
@@ -433,8 +433,7 @@ export default function ActivityReview() {
           paginationModel={paginationModel}
           onPaginationModelChange={paginationModel => {
             if (prevPaginationModel && prevPaginationModel.pageSize !== paginationModel.pageSize) {
-              setBoundaryDocs(null);
-              setPaginationModel({ ...paginationModel, page: 0 });
+              resetPage();
             } else {
               setPaginationModel(paginationModel);
             }

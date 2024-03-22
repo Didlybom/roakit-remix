@@ -263,7 +263,10 @@ export default function UserActivity() {
                           <Switch
                             size="small"
                             checked={sortAlphabetically}
-                            onChange={e => setSortAlphabetically(e.target.checked)}
+                            onChange={e => {
+                              setSortAlphabetically(e.target.checked);
+                              window.scrollTo({ top: 0 });
+                            }}
                           />
                         }
                         label="Sort alphabetically"
