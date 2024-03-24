@@ -193,7 +193,7 @@ export default function Dashboard() {
       <></>
     : <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
         <Grid container justifyContent="center" spacing={5} sx={{ m: 3 }}>
-          {!!groupedActivities?.initiatives.length && (
+          {!!groupedActivities.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 {widgetTitle('Effort by Initiative')}
@@ -228,28 +228,30 @@ export default function Dashboard() {
               </Typography>
             </Grid>
           )}
-          <Grid>
-            <Paper sx={{ ...commonPaperSx }}>
-              {widgetTitle('Activities by Priority')}
-              <PieChart
-                series={[
-                  {
-                    id: 'activity-by-priority',
-                    valueFormatter: item =>
-                      `${item.value} ${pluralizeMemo('activity', item.value)}`,
-                    data: groupedActivities.priorities.map(p => {
-                      return { value: p.count, ...priorityDefs[p.id] };
-                    }),
-                    outerRadius: 100,
-                  },
-                ]}
-                margin={{ left: 100 }}
-                {...widgetSize}
-                slotProps={{ legend: { hidden: true } }}
-              />
-            </Paper>
-          </Grid>
-          {!!groupedActivities?.initiatives.length && (
+          {!!groupedActivities.priorities.length && (
+            <Grid>
+              <Paper sx={{ ...commonPaperSx }}>
+                {widgetTitle('Activities by Priority')}
+                <PieChart
+                  series={[
+                    {
+                      id: 'activity-by-priority',
+                      valueFormatter: item =>
+                        `${item.value} ${pluralizeMemo('activity', item.value)}`,
+                      data: groupedActivities.priorities.map(p => {
+                        return { value: p.count, ...priorityDefs[p.id] };
+                      }),
+                      outerRadius: 100,
+                    },
+                  ]}
+                  margin={{ left: 100 }}
+                  {...widgetSize}
+                  slotProps={{ legend: { hidden: true } }}
+                />
+              </Paper>
+            </Grid>
+          )}
+          {!!groupedActivities.initiatives.length && (
             <Grid>
               <Paper sx={{ ...commonPaperSx }}>
                 {widgetTitle('Contributors by Initiative')}
@@ -281,7 +283,7 @@ export default function Dashboard() {
           </AccordionSummary>
           <AccordionDetails sx={{ mb: 2 }}>
             <Grid container justifyContent="center" spacing={5}>
-              {groupedActivities?.initiatives.map(initiative => {
+              {groupedActivities.initiatives.map(initiative => {
                 const totalCounters = initiatives[initiative.id].counters.activities;
                 return (
                   <Grid key={initiative.id}>
@@ -357,7 +359,7 @@ export default function Dashboard() {
           </AccordionSummary>
           <AccordionDetails sx={{ mb: 2 }}>
             <Grid container justifyContent="center" spacing={5}>
-              {Object.keys(groupedActivities?.topActors).map(action => {
+              {Object.keys(groupedActivities.topActors).map(action => {
                 return (
                   <Grid key={action}>
                     <Paper sx={{ ...commonPaperSx }}>

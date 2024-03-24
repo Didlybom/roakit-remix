@@ -12,8 +12,4 @@ module.exports = {
   },
   ignorePatterns: ['/build/**/*'],
   plugins: ['@typescript-eslint'],
-  rules: {
-    quotes: ['error', 'single'],
-    indent: ['error', 2],
-  },
 };

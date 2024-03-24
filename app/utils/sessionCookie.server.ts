@@ -23,7 +23,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
     token = await auth.verifySessionCookie(jwt);
     sessionData = { isLoggedIn: true, email: token.email };
   } catch (e) {
-    logger.error('Error verifying session', e);
+    logger.error(e, 'Error verifying session');
     throw e;
   }
 

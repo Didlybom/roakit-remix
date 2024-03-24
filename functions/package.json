@@ -1,5 +1,7 @@
 {
-  "name": "functions",
+  "name": "@roakit/remix-function",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
   "private": true,
   "main": "build/index.js",
   "scripts": {
