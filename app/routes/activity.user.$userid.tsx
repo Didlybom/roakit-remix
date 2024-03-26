@@ -25,6 +25,7 @@ import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.
 import { UserActivityRow, userActivityRows } from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
+  actionColDef,
   dataGridCommonProps,
   dateColdDef,
   metadataActionsColDef,
@@ -186,8 +187,7 @@ export default function UserActivity() {
   const columns = useMemo<GridColDef[]>(
     () => [
       dateColdDef({ field: 'date' }),
-      { field: 'action', headerName: 'Action', width: 80 },
-      { field: 'artifact', headerName: 'Artifact', width: 80 },
+      actionColDef({ field: 'action' }),
       priorityColDef({ field: 'priority' }),
       {
         field: 'initiativeId',

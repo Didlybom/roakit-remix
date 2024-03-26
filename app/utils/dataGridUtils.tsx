@@ -69,6 +69,29 @@ export const actorColdDef = (colDef?: GridColDef) => {
   } as GridColDef;
 };
 
+export const actionColDef = (colDef?: GridColDef) => {
+  return {
+    headerName: 'Action',
+    width: 140,
+    renderCell: (params: GridRenderCellParams) => {
+      const action = params.value as string;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      const event = params.row.event as string;
+      return !event ? action : (
+          <Stack sx={{ mt: '3px' }}>
+            <Typography fontSize="small" lineHeight={1}>
+              {action}
+            </Typography>
+            <Typography variant="caption" fontSize="10px">
+              {event}
+            </Typography>
+          </Stack>
+        );
+    },
+    ...colDef,
+  } as GridColDef;
+};
+
 export const priorityColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Priority',
@@ -97,6 +120,8 @@ export const summaryColDef = (colDef?: GridColDef) => {
     flex: 1,
     renderCell: params => {
       const summary = getSummary(params.value);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const comment = params.value.comment?.body as string;
       const url = getUrl(params.value);
       const link =
         url ?
@@ -114,9 +139,19 @@ export const summaryColDef = (colDef?: GridColDef) => {
       return (
         <Stack direction="row">
           {link}
-          <Box title={summary} sx={{ ...ellipsisSx }}>
-            {summary}
-          </Box>
+          {comment ?
+            <Stack sx={{ mt: '3px' }}>
+              <Box title={summary} fontSize="small" lineHeight={1} sx={{ ...ellipsisSx }}>
+                {summary}
+              </Box>
+              <Typography title={comment} fontSize="10px" sx={{ ...ellipsisSx }}>
+                {comment}
+              </Typography>
+            </Stack>
+          : <Box title={summary} sx={{ ...ellipsisSx }}>
+              {summary}
+            </Box>
+          }
         </Stack>
       );
     },
@@ -134,8 +169,8 @@ export const metadataActionsColDef = (
     width: 50,
     cellClassName: 'actions',
     getActions: params => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const metadata: any = params.row.metadata as unknown;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const metadata = params.row.metadata;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       metadata.activityId = params.row.id as string;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

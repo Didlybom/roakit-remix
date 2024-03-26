@@ -27,8 +27,10 @@ export const getSummary = (metadata: any) => {
   if (metadata?.issue) {
     return metadata.issue.key + ' ' + metadata.issue.summary;
   }
-  if (metadata?.mimeType) {
-    return metadata.mimeType as string;
+  if (metadata?.attachment?.filename) {
+    return metadata.attachment.mimeType ?
+        `Attached ${metadata.attachment.filename} [${metadata.attachment.mimeType}]`
+      : `Attached ${metadata.attachment.filename}`;
   }
   return '';
 };
@@ -64,7 +66,7 @@ export const groupActivities = (activities: ActivityMap) => {
       artifact,
       action,
     } = activities[activityId];
-    console.log(actorId);
+
     // top actors
     if (actorId !== undefined) {
       const topActorKey = buildTopActorKey(artifact, action);
@@ -140,6 +142,7 @@ export interface UserActivityRow {
   id: string;
   date: Date;
   action: string;
+  event?: string;
   artifact: Artifact;
   initiativeId: string;
   priority?: number;
@@ -162,6 +165,7 @@ export const userActivityRows = (
       id: doc.id,
       date: new Date(props.data.createdTimestamp),
       action: props.data.action,
+      event: props.data.event,
       artifact: props.data.artifact,
       initiativeId: props.data.initiative,
       priority: props.data.priority,

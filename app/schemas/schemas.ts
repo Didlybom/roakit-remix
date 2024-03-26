@@ -28,6 +28,7 @@ export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
 
 export const activitySchema = z.object({
   action: z.string(),
+  event: z.string().optional(),
   actorAccountId: z.string().optional(),
   createdTimestamp: z.number(),
   artifact: z.enum(ARTIFACTS),
@@ -59,6 +60,7 @@ export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 export interface ActivityData {
   id: string;
   action: string;
+  event?: string;
   actorId?: string;
   artifact: Artifact;
   createdTimestamp: number;

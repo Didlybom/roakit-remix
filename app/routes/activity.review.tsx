@@ -57,6 +57,7 @@ import {
 } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import {
+  actionColDef,
   actorColdDef,
   dateColdDef,
   metadataActionsColDef,
@@ -223,6 +224,7 @@ export default function ActivityReview() {
           activityData.push({
             id: activity.id,
             action: fields.data.action,
+            event: fields.data.event,
             actorId: fields.data.actorAccountId,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
@@ -297,7 +299,7 @@ export default function ActivityReview() {
         },
         sortable: false,
       }),
-      { field: 'action', headerName: 'Action', width: 100, sortable: false },
+      actionColDef({ field: 'action', sortable: false }),
       { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
       priorityColDef({ field: 'priority', sortable: false }),
       summaryColDef({ field: 'metadata', sortable: false }),
