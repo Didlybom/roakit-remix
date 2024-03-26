@@ -42,6 +42,7 @@
     "material-ui-confirm": "^3.0.11",
     "pino": "^8.19.0",
     "pluralize": "^8.0.0",
+    "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-linkify-it": "^1.0.8",
     "remix-utils": "^7.5.0",

@@ -33,5 +33,5 @@ configs into the code.
 - `npm run deploy` and `npm run deploy.prod` will deploy the Remix app and its Cloud function
   ([see src](functions/src/index.ts))
   [Remix adapter](https://remix.run/docs/en/main/other-api/adapter) that will read the secrets
-  mentionned above from
+  mentioned above from
   [Google Secret Management](https://console.cloud.google.com/security/secret-manager?project=eternal-impulse-412418).

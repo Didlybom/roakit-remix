@@ -25,7 +25,7 @@ module.exports = {
       jsx: true,
     },
   },
-  ignorePatterns: ['/build/**/*'],
+  ignorePatterns: ['/build/**/*', '/app/proto/**/*'],
   plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks'],
   rules: {
     'no-console': [2],

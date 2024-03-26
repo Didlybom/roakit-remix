@@ -431,7 +431,7 @@ export default function ActivityReview() {
               />
             }
             label="Show all activities"
-            title="Show only activities with initiatives or all of them"
+            title="Show only activities without initiatives or all of them"
           />
         </Box>
         <DataGridWithSingleClickEditing
