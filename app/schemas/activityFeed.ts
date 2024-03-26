@@ -32,6 +32,12 @@ export const getSummary = (metadata: any) => {
         `Attached ${metadata.attachment.filename} [${metadata.attachment.mimeType}]`
       : `Attached ${metadata.attachment.filename}`;
   }
+  if (metadata?.sprint) {
+    return `Sprint ${metadata.sprint.name} ${metadata.sprint.state}`;
+  }
+  if (metadata?.worklog) {
+    return 'Worklog';
+  }
   return '';
 };
 
