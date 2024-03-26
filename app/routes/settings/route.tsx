@@ -174,7 +174,7 @@ export default function Settings() {
       >
         <Box sx={{ p: 2, overflow: 'scroll' }}>{popover?.content}</Box>
       </Popover>
-      <Paper square={false} sx={{ backgroundColor: grey[50], m: 2 }}>
+      <Paper variant="outlined" sx={{ backgroundColor: grey[50], m: 2 }}>
         <Typography variant="h6" sx={{ pl: 2, pt: 2, pb: 1 }}>
           Webhook Settings
         </Typography>

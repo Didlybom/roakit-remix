@@ -41,7 +41,7 @@ import {
   dateRangeLabels,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { openUserActivity } from '../utils/jsxUtils';
+import { ellipsisSx, openUserActivity } from '../utils/jsxUtils';
 import { priorityColors, priorityLabels } from '../utils/theme';
 
 const logger = pino({ name: 'route:dashboard' });
@@ -152,7 +152,15 @@ export default function Dashboard() {
   const dateRangeColor = '#02B2AF';
 
   const widgetTitle = (title: string) => (
-    <Typography textAlign="center" sx={{ mb: 2 }}>
+    <Typography
+      fontSize="14px"
+      sx={{
+        mb: 2,
+        borderBottom: 'solid 1px rgba(0, 0, 0, 0.12)',
+        whiteSpace: 'nowrap',
+        ...ellipsisSx,
+      }}
+    >
       {title}
     </Typography>
   );
@@ -196,7 +204,7 @@ export default function Dashboard() {
         <Grid container justifyContent="center" spacing={5} sx={{ m: 3 }}>
           {!!groupedActivities.initiatives.length && (
             <Grid>
-              <Paper sx={{ ...commonPaperSx }}>
+              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
                 {widgetTitle('Effort by Initiative')}
                 <PieChart
                   series={[
@@ -231,7 +239,7 @@ export default function Dashboard() {
           )}
           {!!groupedActivities.priorities.length && (
             <Grid>
-              <Paper sx={{ ...commonPaperSx }}>
+              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
                 {widgetTitle('Activities by Priority')}
                 <PieChart
                   series={[
@@ -254,7 +262,7 @@ export default function Dashboard() {
           )}
           {!!groupedActivities.initiatives.length && (
             <Grid>
-              <Paper sx={{ ...commonPaperSx }}>
+              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
                 {widgetTitle('Contributors by Initiative')}
                 <BarChart
                   series={[
@@ -278,9 +286,9 @@ export default function Dashboard() {
             </Grid>
           )}
         </Grid>
-        <Accordion defaultExpanded>
+        <Accordion variant="outlined" disableGutters defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <strong>Activities by Initiative</strong>
+            Activities by Initiative
           </AccordionSummary>
           <AccordionDetails sx={{ mb: 2 }}>
             <Grid container justifyContent="center" spacing={5}>
@@ -288,10 +296,8 @@ export default function Dashboard() {
                 const totalCounters = initiatives[initiative.id].counters.activities;
                 return (
                   <Grid key={initiative.id}>
-                    <Paper sx={{ ...commonPaperSx }}>
-                      <Typography textAlign="center" sx={{ mb: 2 }}>
-                        {initiatives[initiative.id].label}
-                      </Typography>
+                    <Paper variant="outlined" sx={{ ...commonPaperSx }}>
+                      {widgetTitle(initiatives[initiative.id].label!)}
                       <BarChart
                         series={[
                           {
@@ -354,16 +360,14 @@ export default function Dashboard() {
             </Grid>
           </AccordionDetails>
         </Accordion>
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <strong>Top Contributors</strong>
-          </AccordionSummary>
+        <Accordion variant="outlined" disableGutters defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
           <AccordionDetails sx={{ mb: 2 }}>
             <Grid container justifyContent="center" spacing={5}>
               {Object.keys(groupedActivities.topActors).map(action => {
                 return (
                   <Grid key={action}>
-                    <Paper sx={{ ...commonPaperSx }}>
+                    <Paper variant="outlined" sx={{ ...commonPaperSx }}>
                       {widgetTitle(topCreatorActions[action] ?? action)}
                       <BarChart
                         series={[
