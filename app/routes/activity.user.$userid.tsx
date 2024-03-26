@@ -246,7 +246,11 @@ export default function UserActivity() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
-      <CodePopover popover={popover} onClose={() => setPopover(null)} />
+      <CodePopover
+        popover={popover}
+        onClose={() => setPopover(null)}
+        customerId={sessionData.customerId}
+      />
       <Stack sx={{ m: 3 }}>
         {activities.size === 0 && gotSnapshot ?
           <Typography textAlign="center" sx={{ m: 4 }}>

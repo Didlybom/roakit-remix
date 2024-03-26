@@ -408,7 +408,11 @@ export default function ActivityReview() {
   }
   return (
     <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={loading}>
-      <CodePopover popover={popover} onClose={() => setPopover(null)} />
+      <CodePopover
+        popover={popover}
+        onClose={() => setPopover(null)}
+        customerId={sessionData.customerId}
+      />
       <Stack sx={{ m: 3 }}>
         {error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
