@@ -28,6 +28,7 @@ module.exports = {
   ignorePatterns: ['/build/**/*'],
   plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks'],
   rules: {
+    'no-console': [2],
     'arrow-parens': [2, 'as-needed'],
     '@typescript-eslint/no-misused-promises': [
       2,

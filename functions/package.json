@@ -6,13 +6,9 @@
   "main": "build/index.js",
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc --watch",
     "deploy": "firebase deploy --only functions",
     "lint": "eslint --ext .js,.ts .",
-    "logs": "firebase functions:log",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell"
+    "logs": "firebase functions:log"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0",
