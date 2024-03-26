@@ -87,7 +87,7 @@ export default function GitHub() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
-  const [showBy, setShowBy] = useState<ActivityView>(ActivityView.Jira);
+  const [showBy, setShowBy] = useState<ActivityView>(ActivityView.All);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
