@@ -277,7 +277,7 @@ export default function UserActivity() {
                     {[...activities.keys()].map(actorId => (
                       <Box key={actorId}>
                         <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
-                          {sessionData.actors[actorId].name}
+                          {sessionData.actors[actorId]?.name ?? 'Unknown'}
                         </Link>
                         {` (${activities.get(actorId)?.length ?? 0})`}
                       </Box>

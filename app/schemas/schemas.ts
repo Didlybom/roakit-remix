@@ -28,12 +28,13 @@ export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
 
 export const activitySchema = z.object({
   action: z.string(),
-  actorAccountId: z.string(),
+  actorAccountId: z.string().optional(),
   createdTimestamp: z.number(),
   artifact: z.enum(ARTIFACTS),
   initiative: z.string(),
   priority: z.number().optional(),
   metadata: z.any(),
+  objectId: z.string().optional(), // for debugging
 });
 
 export interface InitiativeData {
@@ -58,12 +59,13 @@ export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 export interface ActivityData {
   id: string;
   action: string;
-  actorId: string;
+  actorId?: string;
   artifact: Artifact;
   createdTimestamp: number;
   initiativeId: string;
   priority?: number;
   metadata: unknown;
+  objectId?: string; // for debugging
 }
 
 export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;

@@ -52,7 +52,6 @@ const buildTopActorKey = (artifact: string, action: string) => {
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
 export const groupActivities = (activities: ActivityMap) => {
-  //const actors: Actor[] = [];
   const topActors: TopActors = {};
   const priorities: Priority[] = [];
   let initiatives: Initiative[] = [];
@@ -65,18 +64,20 @@ export const groupActivities = (activities: ActivityMap) => {
       artifact,
       action,
     } = activities[activityId];
-
+    console.log(actorId);
     // top actors
-    const topActorKey = buildTopActorKey(artifact, action);
-    if (topActors[topActorKey] === undefined) {
-      topActors[topActorKey] = [];
+    if (actorId !== undefined) {
+      const topActorKey = buildTopActorKey(artifact, action);
+      if (topActors[topActorKey] === undefined) {
+        topActors[topActorKey] = [];
+      }
+      let topActor = topActors[topActorKey].find(a => a.id === actorId);
+      if (topActor === undefined) {
+        topActor = { id: actorId, count: 0 };
+        topActors[topActorKey].push(topActor);
+      }
+      topActor.count++;
     }
-    let topActor = topActors[topActorKey].find(a => a.id === actorId);
-    if (topActor === undefined) {
-      topActor = { id: actorId, count: 0 };
-      topActors[topActorKey].push(topActor);
-    }
-    topActor.count++;
 
     if (priorityId !== undefined) {
       // priorities
@@ -104,7 +105,9 @@ export const groupActivities = (activities: ActivityMap) => {
         initiatives.push(initiative);
       }
       initiative.count[artifact]++;
-      initiative.actorIds!.add(actorId); // set dedupes
+      if (actorId !== undefined) {
+        initiative.actorIds!.add(actorId); // set dedupes
+      }
       initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
   });
@@ -142,6 +145,7 @@ export interface UserActivityRow {
   priority?: number;
   actorId?: string;
   metadata: unknown;
+  objectId?: string;
 }
 
 export const userActivityRows = (
@@ -154,7 +158,7 @@ export const userActivityRows = (
     if (!props.success) {
       throw new ParseError('Failed to parse activities. ' + props.error.message);
     }
-    const row = {
+    const row: UserActivityRow = {
       id: doc.id,
       date: new Date(props.data.createdTimestamp),
       action: props.data.action,
@@ -163,7 +167,8 @@ export const userActivityRows = (
       priority: props.data.priority,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: props.data.metadata,
-      ...(includeActorId && { actorId: props.data.actorAccountId }),
+      ...(includeActorId && { actorId: props.data.actorAccountId ?? '-1' }),
+      objectId: props.data.objectId, // for debugging
     };
     rows.push(row);
   });

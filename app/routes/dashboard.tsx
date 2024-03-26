@@ -134,6 +134,7 @@ export default function Dashboard() {
   const topCreatorActions: Record<string, string> = {
     'task-created': 'Tasks created',
     'task-updated': 'Tasks updated',
+    'task-deleted': 'Tasks deleted',
     'task-disabled': 'Tasks disabled',
     'code-created': 'New code',
     'code-updated': 'Code updates',
@@ -379,7 +380,7 @@ export default function Dashboard() {
                             data: groupedActivities.topActors[action].map(a =>
                               a.id === TOP_ACTORS_OTHERS_ID ?
                                 'All others'
-                              : actors[a.id].name ?? 'unknown'
+                              : actors[a.id]?.name ?? 'unknown'
                             ),
                             scaleType: 'band',
                           },
