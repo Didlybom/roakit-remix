@@ -230,6 +230,7 @@ export default function ActivityReview() {
             initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             metadata: fields.data.metadata,
+            objectId: fields.data.objectId, // for debugging
           });
         });
         setActivities(activityData);
@@ -279,10 +280,12 @@ export default function ActivityReview() {
         headerName: 'Contributor',
         valueGetter: (_, row) => {
           const fields = row as ActivityData;
-          return {
-            id: fields.actorId,
-            name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
-          };
+          return fields.actorId ?
+              {
+                id: fields.actorId,
+                name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
+              }
+            : '';
         },
         renderCell: params => {
           const fields = params.value as ActorData;

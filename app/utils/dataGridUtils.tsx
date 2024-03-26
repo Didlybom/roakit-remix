@@ -134,8 +134,12 @@ export const metadataActionsColDef = (
     width: 50,
     cellClassName: 'actions',
     getActions: params => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      const metadata: any = params.row.metadata as unknown;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const metadata = params.row.metadata as unknown;
+      metadata.activityId = params.row.id as string;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      metadata.storageId = params.row.objectId as string;
       return [
         <GridActionsCellItem
           key={1}
