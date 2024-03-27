@@ -79,7 +79,11 @@ export const actionColDef = (colDef?: GridColDef) => {
       const event = params.row.event as string;
       return !event ? action : (
           <Stack sx={{ mt: '3px' }}>
-            <Typography fontSize="small" lineHeight={1}>
+            <Typography
+              fontSize="small"
+              color={action === 'unknown' ? theme.palette.grey[400] : undefined}
+              lineHeight={1}
+            >
               {action}
             </Typography>
             <Typography variant="caption" fontSize="10px">

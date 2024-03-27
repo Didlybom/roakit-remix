@@ -24,6 +24,17 @@ export const initiativeSchema = z.object({
   countersLastUpdated: z.number().optional(),
 });
 
+export const ticketSchema = z.object({
+  id: z.string(),
+  summary: z.string(),
+  priority: z.number().optional(),
+  uri: z.string().optional(),
+  project: z
+    .object({ id: z.string(), key: z.string(), name: z.string(), uri: z.string().optional() })
+    .optional(),
+  lastLastUpdatedTimestamp: z.number().optional(),
+});
+
 export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
 
 export const activitySchema = z.object({
@@ -47,7 +58,24 @@ export interface InitiativeData {
   countersLastUpdated: number;
 }
 
+export interface TicketData {
+  key: string;
+  id?: string;
+  summary?: string;
+  uri?: string;
+  priority?: number;
+  project?: {
+    id?: string;
+    key: string;
+    name?: string;
+    uri?: string;
+  };
+  lastUpdatedTimestamp?: number;
+}
+
 export type InitiativeMap = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
+
+export type TicketMap = Record<TicketData['key'], Omit<TicketData, 'key'>>;
 
 export interface ActorData {
   id: string;

@@ -138,6 +138,7 @@ export default function Dashboard() {
     'task-disabled': 'Tasks disabled',
     'code-created': 'New code',
     'code-updated': 'Code updates',
+    'code-unknown': 'Code [bot]',
     'taskOrg-created': 'Task org. created',
     'taskOrg-updated': 'Task org. updated',
     'codeOrg-created': 'New dev org',
@@ -201,7 +202,7 @@ export default function Dashboard() {
     !groupedActivities ?
       <></>
     : <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
-        <Grid container justifyContent="center" spacing={5} sx={{ m: 3 }}>
+        <Grid container spacing={5} sx={{ m: 3 }}>
           {!!groupedActivities.initiatives.length && (
             <Grid>
               <Paper variant="outlined" sx={{ ...commonPaperSx }}>
@@ -290,8 +291,8 @@ export default function Dashboard() {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             Activities by Initiative
           </AccordionSummary>
-          <AccordionDetails sx={{ mb: 2 }}>
-            <Grid container justifyContent="center" spacing={5}>
+          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+            <Grid container spacing={5}>
               {groupedActivities.initiatives.map(initiative => {
                 const totalCounters = initiatives[initiative.id].counters.activities;
                 return (
@@ -362,8 +363,8 @@ export default function Dashboard() {
         </Accordion>
         <Accordion variant="outlined" disableGutters defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
-          <AccordionDetails sx={{ mb: 2 }}>
-            <Grid container justifyContent="center" spacing={5}>
+          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+            <Grid container spacing={5}>
               {Object.keys(groupedActivities.topActors).map(action => {
                 return (
                   <Grid key={action}>

@@ -46,7 +46,11 @@ import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClic
 import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
-import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
+import {
+  fetchActorMap,
+  fetchInitiativeMap,
+  fetchTicketMap,
+} from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import {
   ActivityCount,
@@ -55,6 +59,7 @@ import {
   Artifact,
   activitySchema,
 } from '../schemas/schemas';
+import { inferPriority } from '../utils/activityUtils';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -81,12 +86,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    // retrieve initiatives and users
-    const [initiatives, actors] = await Promise.all([
+    // retrieve initiatives, tickets, and users
+    const [initiatives, actors, tickets] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId),
       fetchActorMap(sessionData.customerId),
+      fetchTicketMap(sessionData.customerId),
     ]);
-    return { customerId: sessionData.customerId, initiatives, actors };
+    return { customerId: sessionData.customerId, initiatives, actors, tickets };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -161,11 +167,6 @@ export default function ActivityReview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const resetPage = () => {
-    setPaginationModel({ ...paginationModel, page: 0 });
-    setBoundaryDocs(null);
-  };
-
   useEffect(() => {
     const fetchActivities = async () => {
       setLoading(true);
@@ -221,6 +222,10 @@ export default function ActivityReview() {
           if (!fields.success) {
             throw new ParseError('Failed to parse activities. ' + fields.error.message);
           }
+          let priority = fields.data.priority;
+          if (priority === undefined || priority === -1) {
+            priority = inferPriority(sessionData.tickets, fields.data.metadata);
+          }
           activityData.push({
             id: activity.id,
             action: fields.data.action,
@@ -228,7 +233,7 @@ export default function ActivityReview() {
             actorId: fields.data.actorAccountId,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
-            priority: fields.data.priority,
+            priority,
             initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             metadata: fields.data.metadata,
@@ -425,7 +430,8 @@ export default function ActivityReview() {
               <Switch
                 checked={showAllActivity}
                 onChange={e => {
-                  resetPage();
+                  setPaginationModel({ ...paginationModel, page: 0 });
+                  setBoundaryDocs(null);
                   setShowAllActivity(e.target.checked);
                 }}
               />
@@ -442,7 +448,8 @@ export default function ActivityReview() {
           paginationModel={paginationModel}
           onPaginationModelChange={paginationModel => {
             if (prevPaginationModel && prevPaginationModel.pageSize !== paginationModel.pageSize) {
-              resetPage();
+              setPaginationModel({ pageSize: paginationModel.pageSize, page: 0 });
+              setBoundaryDocs(null);
             } else {
               setPaginationModel(paginationModel);
             }

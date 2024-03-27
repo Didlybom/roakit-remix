@@ -18,6 +18,7 @@ export const gitHubEventSchema = z.object({
       assignee: zuser.optional().nullable(),
       created_at: z.string(),
       changed_files: z.number().optional(),
+      additions: z.number().optional(),
       deletions: z.number().optional(),
       comments: z.number().optional(),
       commits: z.number().optional(),

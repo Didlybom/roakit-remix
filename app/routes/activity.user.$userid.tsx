@@ -21,7 +21,11 @@ import usePrevious from 'use-previous';
 import App from '../components/App';
 import CodePopover, { PopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
-import { fetchActorMap, fetchInitiativeMap } from '../firestore.server/fetchers.server';
+import {
+  fetchActorMap,
+  fetchInitiativeMap,
+  fetchTicketMap,
+} from '../firestore.server/fetchers.server';
 import { UserActivityRow, userActivityRows } from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
@@ -58,12 +62,19 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    // retrieve initiatives and users
-    const [initiatives, actors] = await Promise.all([
+    // retrieve initiatives, tickets, and users
+    const [initiatives, actors, tickets] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId),
       fetchActorMap(sessionData.customerId),
+      fetchTicketMap(sessionData.customerId),
     ]);
-    return { customerId: sessionData.customerId, userId: params.userid, initiatives, actors };
+    return {
+      customerId: sessionData.customerId,
+      userId: params.userid,
+      initiatives,
+      tickets,
+      actors,
+    };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -110,9 +121,16 @@ export default function UserActivity() {
     const setRows = (querySnapshot: firebase.firestore.QuerySnapshot) => {
       try {
         if (sessionData.userId !== ALL) {
-          setActivities(new Map([[sessionData.userId!, userActivityRows(querySnapshot, false)]]));
+          setActivities(
+            new Map([
+              [sessionData.userId!, userActivityRows(querySnapshot, sessionData.tickets, false)],
+            ])
+          );
         } else {
-          allUsersSnapshot.current = groupByArray(userActivityRows(querySnapshot, true), 'actorId');
+          allUsersSnapshot.current = groupByArray(
+            userActivityRows(querySnapshot, sessionData.tickets, true),
+            'actorId'
+          );
           sortAndSetAllUsersActivities();
         }
         setGotSnapshot(true);

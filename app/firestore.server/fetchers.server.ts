@@ -6,10 +6,12 @@ import {
   ActorData,
   InitiativeData,
   InitiativeMap,
+  TicketMap,
   activitySchema,
   actorSchema,
   emptyActivity,
   initiativeSchema,
+  ticketSchema,
 } from '../schemas/schemas';
 import { ParseError } from '../utils/errorUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
@@ -67,42 +69,46 @@ export const fetchInitiativeMap = async (customerId: number | undefined) => {
   }, retryProps('Retrying fetchInitiativeMap...'));
 };
 
-export const fetchActors = async (customerId: number | undefined) => {
+export const fetchTicketMap = async (customerId: number | undefined) => {
   return await retry(async () => {
-    const actors: ActorData[] = [];
+    const coll = firestore.collection(`customers/${customerId}/tickets`);
+    const docs = await coll.get();
+    const tickets: TicketMap = {};
+    docs.forEach(ticket => {
+      const data = ticketSchema.parse(ticket.data());
+      tickets[ticket.id] = {
+        priority: data.priority,
+        ...(data.project && { project: { key: data.project.key } }),
+      };
+    });
+    return tickets;
+  }, retryProps('Retrying fetchTicketsMap...'));
+};
 
+type ActorMap = Record<ActorData['id'], Omit<ActorData, 'id'>>;
+export const fetchActorMap = async (customerId: number | undefined) => {
+  return await retry(async () => {
+    const actors: ActorMap = {};
     await Promise.all([
-      async () => {
+      (async () => {
         const gitHubColl = firestore.collection(`customers/${customerId}/feeds/1/accounts`);
         const gitHubDocs = await gitHubColl.get();
         gitHubDocs.forEach(actor => {
           const data = actorSchema.parse(actor.data());
-          actors.push({ id: actor.id, name: data.accountName });
+          actors[actor.id] = { name: data.accountName };
         });
-      },
-      async () => {
+        return actors;
+      })(),
+      (async () => {
         const jiraColl = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
         const jiraDocs = await jiraColl.get();
+
         jiraDocs.forEach(actor => {
           const data = actorSchema.parse(actor.data());
-          actors.push({ id: actor.id, name: data.accountName });
+          actors[actor.id] = { name: data.accountName };
         });
-      },
+      })(),
     ]);
-
-    return actors;
-  }, retryProps('Retrying fetchActors...'));
-};
-
-export const fetchActorMap = async (customerId: number | undefined) => {
-  return await retry(async () => {
-    const coll = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
-    const docs = await coll.get();
-    const actors: Record<ActorData['id'], Omit<ActorData, 'id'>> = {};
-    docs.forEach(actor => {
-      const data = actorSchema.parse(actor.data());
-      actors[actor.id] = { name: data.accountName };
-    });
     return actors;
   }, retryProps('Retrying fetchActorMap...'));
 };

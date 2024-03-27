@@ -1,6 +1,7 @@
 import firebase from 'firebase/compat/app';
+import { inferPriority } from '../utils/activityUtils';
 import { ParseError } from '../utils/errorUtils';
-import { ActivityCount, ActivityMap, Artifact, activitySchema } from './schemas';
+import { ActivityCount, ActivityMap, Artifact, TicketMap, activitySchema } from './schemas';
 
 interface ActorActivityCount {
   id: string;
@@ -38,17 +39,35 @@ export const getSummary = (metadata: any) => {
   if (metadata?.worklog) {
     return 'Worklog';
   }
+  if (metadata?.pullRequest) {
+    return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
+  }
+  if (metadata?.pullRequestComment) {
+    return metadata.pullRequestComment.body as string;
+  }
   return '';
 };
 
 export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } | null => {
-  if (!metadata?.issue?.uri) {
-    return null;
+  if (metadata?.issue?.uri) {
+    return {
+      url: `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`,
+      type: 'jira',
+    };
   }
-  return {
-    url: `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`,
-    type: 'jira',
-  };
+  if (metadata?.pullRequest?.uri) {
+    return {
+      url: metadata.pullRequest.uri as string,
+      type: 'github',
+    };
+  }
+  if (metadata?.pullRequestComment?.uri) {
+    return {
+      url: metadata.pullRequestComment.uri as string,
+      type: 'github',
+    };
+  }
+  return null;
 };
 /* eslint-enable @typescript-eslint/no-unsafe-member-access */
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -87,7 +106,7 @@ export const groupActivities = (activities: ActivityMap) => {
       topActor.count++;
     }
 
-    if (priorityId !== undefined) {
+    if (priorityId !== undefined && priorityId !== -1) {
       // priorities
       let priority = priorities.find(p => p.id === priorityId);
       if (priority === undefined) {
@@ -159,6 +178,7 @@ export interface UserActivityRow {
 
 export const userActivityRows = (
   snapshot: firebase.firestore.QuerySnapshot,
+  tickets: TicketMap,
   includeActorId: boolean
 ): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
@@ -167,6 +187,10 @@ export const userActivityRows = (
     if (!props.success) {
       throw new ParseError('Failed to parse activities. ' + props.error.message);
     }
+    let priority = props.data.priority;
+    if (priority === undefined || priority === -1) {
+      priority = inferPriority(tickets, props.data.metadata);
+    }
     const row: UserActivityRow = {
       id: doc.id,
       date: new Date(props.data.createdTimestamp),
@@ -174,7 +198,7 @@ export const userActivityRows = (
       event: props.data.event,
       artifact: props.data.artifact,
       initiativeId: props.data.initiative,
-      priority: props.data.priority,
+      priority,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: props.data.metadata,
       ...(includeActorId && { actorId: props.data.actorAccountId ?? '-1' }),
