@@ -22,7 +22,8 @@ export const disabledNotOpaqueSx: SxProps = {
 };
 
 export const openUserActivity = (event: MouseEvent, userId: string) => {
-  const url = `/activity/user/${userId}`;
+  event.stopPropagation();
+  const url = `/activity/user/${encodeURI(userId)}`;
   window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
 };
 
