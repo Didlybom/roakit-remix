@@ -9,7 +9,7 @@ import theme from '../utils/theme';
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const OBJECTID_REGEXP = /(?<="storageId": ")(.*)(?=")/;
 
-export interface PopoverContent {
+export interface CodePopoverContent {
   element: HTMLElement;
   content: unknown;
 }
@@ -19,7 +19,7 @@ export default function CodePopover({
   onClose,
   customerId,
 }: {
-  popover: PopoverContent | null;
+  popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
 }) {

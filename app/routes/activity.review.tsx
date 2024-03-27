@@ -8,6 +8,7 @@ import {
   InputLabel,
   Link,
   MenuItem,
+  Popover,
   Select,
   Stack,
   Switch,
@@ -41,7 +42,7 @@ import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
 import App from '../components/App';
-import CodePopover, { PopoverContent } from '../components/CodePopover';
+import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -163,7 +164,10 @@ export default function ActivityReview() {
     first: QueryDocumentSnapshot;
     last: QueryDocumentSnapshot;
   } | null>(null);
-  const [popover, setPopover] = useState<PopoverContent | null>(null);
+  const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
+  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -307,9 +311,11 @@ export default function ActivityReview() {
       actionColDef({ field: 'action', sortable: false }),
       { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
       priorityColDef({ field: 'priority', sortable: false }),
-      summaryColDef({ field: 'metadata', sortable: false }),
-      metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
-        setPopover({ element, content: metadata })
+      summaryColDef({ field: 'metadata', sortable: false }, (element, content) =>
+        setPopover({ element, content })
+      ),
+      metadataActionsColDef({}, (element, metadata) =>
+        setCodePopover({ element, content: metadata })
       ),
       {
         field: 'initiativeId',
@@ -414,10 +420,20 @@ export default function ActivityReview() {
   return (
     <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={loading}>
       <CodePopover
-        popover={popover}
-        onClose={() => setPopover(null)}
+        popover={codePopover}
+        onClose={() => setCodePopover(null)}
         customerId={sessionData.customerId}
       />
+      <Popover
+        id={popover?.element ? 'popover' : undefined}
+        open={!!popover?.element}
+        anchorEl={popover?.element}
+        onClose={() => setPopover(null)}
+        onClick={() => setPopover(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Box sx={{ py: 1 }}>{popover?.content}</Box>
+      </Popover>
       <Stack sx={{ m: 3 }}>
         {error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>

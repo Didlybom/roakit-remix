@@ -1,6 +1,18 @@
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Link,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import {
   GridActionsCellItem,
   GridColDef,
@@ -8,6 +20,8 @@ import {
   GridRenderCellParams,
   GridSortDirection,
 } from '@mui/x-data-grid';
+import memoize from 'fast-memoize';
+import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
 import { getSummary, getUrl } from '../schemas/activityFeed';
 import { ActorData } from '../schemas/schemas';
@@ -117,7 +131,12 @@ export const priorityColDef = (colDef?: GridColDef) => {
   } as GridColDef;
 };
 
-export const summaryColDef = (colDef?: GridColDef) => {
+const pluralizeMemo = memoize(pluralize);
+
+export const summaryColDef = (
+  colDef?: GridColDef,
+  setPopover?: (element: HTMLElement, content: JSX.Element) => void
+) => {
   return {
     headerName: 'Summary',
     minWidth: 300,
@@ -140,17 +159,50 @@ export const summaryColDef = (colDef?: GridColDef) => {
             : <GitHubIcon fontSize="small" color="primary" />}
           </IconButton>
         : <></>;
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      let commits = params.value.commits as { message: string; url?: string }[] | null;
+      if ((commits?.length ?? 0) < 2) {
+        commits = null;
+      }
       return (
         <Stack direction="row">
           {link}
-          {comment ?
+          {comment || commits ?
             <Stack sx={{ mt: '3px' }}>
               <Box title={summary} fontSize="small" lineHeight={1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>
-              <Typography title={comment} fontSize="10px" sx={{ ...ellipsisSx }}>
-                {comment}
-              </Typography>
+              {comment && (
+                <Typography title={comment} fontSize="10px" sx={{ ...ellipsisSx }}>
+                  {comment}
+                </Typography>
+              )}
+              {commits && commits.length > 1 && (
+                <Link
+                  fontSize="10px"
+                  onClick={e => {
+                    setPopover?.(
+                      e.currentTarget,
+                      <List dense={true} disablePadding>
+                        {commits?.map((commit, i) => (
+                          <ListItem key={i} sx={{ alignContent: 'top' }}>
+                            <ListItemButton component="a" href={commit.url} target="_blank">
+                              <ListItemIcon sx={{ minWidth: '28px' }}>
+                                <GitHubIcon fontSize="small" color="primary" />
+                              </ListItemIcon>
+                              <ListItemText>{commit.message}</ListItemText>
+                            </ListItemButton>
+                          </ListItem>
+                        ))}
+                      </List>
+                    );
+                  }}
+                  sx={{ lineHeight: 1.5, cursor: 'pointer' }}
+                >
+                  {`and ${commits.length - 1} more ${pluralizeMemo('commit', commits.length - 1)}`}
+                </Link>
+              )}
             </Stack>
           : <Box title={summary} sx={{ ...ellipsisSx }}>
               {summary}

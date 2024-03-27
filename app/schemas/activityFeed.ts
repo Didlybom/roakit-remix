@@ -45,6 +45,9 @@ export const getSummary = (metadata: any) => {
   if (metadata?.pullRequestComment) {
     return metadata.pullRequestComment.body as string;
   }
+  if (metadata?.commits?.length) {
+    return metadata.commits[0].message as string;
+  }
   return '';
 };
 
@@ -64,6 +67,12 @@ export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } 
   if (metadata?.pullRequestComment?.uri) {
     return {
       url: metadata.pullRequestComment.uri as string,
+      type: 'github',
+    };
+  }
+  if (metadata?.commits?.length) {
+    return {
+      url: metadata.commits[0].url as string,
       type: 'github',
     };
   }

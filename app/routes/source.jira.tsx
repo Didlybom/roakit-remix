@@ -10,7 +10,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
-import CodePopover, { PopoverContent } from '../components/CodePopover';
+import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
 import { JiraEventType, JiraRow, jiraRows } from '../schemas/jiraFeed';
@@ -50,7 +50,7 @@ export default function Jira() {
   });
   const dateFilter = isHydrated ? dateFilterLS : undefined;
   const prevDateFilter = usePrevious(dateFilter);
-  const [popover, setPopover] = useState<PopoverContent | null>(null);
+  const [popover, setPopover] = useState<CodePopoverContent | null>(null);
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);

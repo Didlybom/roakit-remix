@@ -5,6 +5,7 @@ import {
   FormControlLabel,
   FormGroup,
   Link,
+  Popover,
   Stack,
   Switch,
   Typography,
@@ -19,7 +20,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
-import CodePopover, { PopoverContent } from '../components/CodePopover';
+import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
   fetchActorMap,
@@ -92,7 +93,10 @@ export default function UserActivity() {
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const prevSortAlphabetically = usePrevious(sortAlphabetically);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
-  const [popover, setPopover] = useState<PopoverContent | null>(null);
+  const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
+  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
+    null
+  );
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
@@ -218,9 +222,9 @@ export default function UserActivity() {
             : <Box color={theme.palette.grey[400]}>unset</Box>;
         },
       },
-      summaryColDef({ field: 'metadata' }),
+      summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
       metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
-        setPopover({ element, content: metadata })
+        setCodePopover({ element, content: metadata })
       ),
     ],
     [sessionData.initiatives]
@@ -265,10 +269,20 @@ export default function UserActivity() {
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
     >
       <CodePopover
-        popover={popover}
-        onClose={() => setPopover(null)}
+        popover={codePopover}
+        onClose={() => setCodePopover(null)}
         customerId={sessionData.customerId}
       />
+      <Popover
+        id={popover?.element ? 'popover' : undefined}
+        open={!!popover?.element}
+        anchorEl={popover?.element}
+        onClose={() => setPopover(null)}
+        onClick={() => setPopover(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Box sx={{ py: 1 }}>{popover?.content}</Box>
+      </Popover>
       <Stack sx={{ m: 3 }}>
         {activities.size === 0 && gotSnapshot ?
           <Typography textAlign="center" sx={{ m: 4 }}>

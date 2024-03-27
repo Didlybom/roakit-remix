@@ -29,7 +29,7 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import App from '../components/App';
-import CodePopover, { PopoverContent } from '../components/CodePopover';
+import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import LinkifyJira from '../components/LinkifyJira';
 import TabPanel from '../components/TabPanel';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -93,7 +93,7 @@ export default function GitHub() {
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
-  const [sourceDataPopover, setSourceDataPopover] = useState<PopoverContent | null>(null);
+  const [sourceDataPopover, setSourceDataPopover] = useState<CodePopoverContent | null>(null);
   const [error, setError] = useState('');
   const pluralizeMemo = memoize(pluralize);
 
