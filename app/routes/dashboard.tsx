@@ -131,19 +131,19 @@ export default function Dashboard() {
     5: { id: 5, label: priorityLabels[5], color: priorityColors[5] },
   };
 
-  const topCreatorActions: Record<string, string> = {
-    'task-created': 'Tasks created',
-    'task-updated': 'Tasks updated',
-    'task-deleted': 'Tasks deleted',
-    'task-disabled': 'Tasks disabled',
-    'code-created': 'New code',
-    'code-updated': 'Code updates',
-    'code-deleted': 'Code deletions',
-    'code-unknown': 'Code [bot/unknown]',
-    'taskOrg-created': 'Task org. created',
-    'taskOrg-updated': 'Task org. updated',
-    'codeOrg-created': 'New dev org',
-    'codeOrg-updated': 'Dev org update',
+  const topCreatorActions: Record<string, { sortOrder: number; label: string }> = {
+    'task-created': { sortOrder: 1, label: 'Task creation' },
+    'task-updated': { sortOrder: 2, label: 'Task update' },
+    'task-deleted': { sortOrder: 3, label: 'Task deletion' },
+    'task-disabled': { sortOrder: 4, label: 'Task disable' },
+    'taskOrg-created': { sortOrder: 5, label: 'Task organization creation' },
+    'taskOrg-updated': { sortOrder: 6, label: 'Task organization update' },
+    'code-created': { sortOrder: 7, label: 'Code creation' },
+    'code-updated': { sortOrder: 8, label: 'Code update' },
+    'code-deleted': { sortOrder: 9, label: 'Code deletion' },
+    'code-unknown': { sortOrder: 10, label: 'Code [unknown]' },
+    'codeOrg-created': { sortOrder: 11, label: 'Code organization creation' },
+    'codeOrg-updated': { sortOrder: 12, label: 'Code organization update' },
   };
 
   const commonPaperSx = { width: 320, p: 1 };
@@ -366,61 +366,67 @@ export default function Dashboard() {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Grid container spacing={5}>
-              {Object.keys(groupedActivities.topActors).map(action => {
-                return (
-                  <Grid key={action}>
-                    <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                      {widgetTitle(topCreatorActions[action] ?? action)}
-                      <BarChart
-                        series={[
-                          {
-                            id: `top-actors-${action}`,
-                            valueFormatter: value =>
-                              `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                            data: groupedActivities.topActors[action].map(a => a.count),
-                            color: dateRangeColor,
-                          },
-                        ]}
-                        yAxis={[
-                          {
-                            data: groupedActivities.topActors[action].map(a =>
-                              a.id === TOP_ACTORS_OTHERS_ID ?
-                                'All others'
-                              : actors[a.id]?.name ?? 'unknown'
-                            ),
-                            scaleType: 'band',
-                          },
-                        ]}
-                        xAxis={[{ tickMinStep: 1 }]}
-                        onItemClick={(event, data) => {
-                          if (data) {
-                            openUserActivity(
-                              event.nativeEvent,
-                              data.dataIndex === 10 ?
-                                '*'
-                              : groupedActivities.topActors[action][data.dataIndex].id
-                            );
-                          }
-                        }}
-                        onAxisClick={(event, data) => {
-                          if (data) {
-                            openUserActivity(
-                              event,
-                              data.dataIndex === 10 ?
-                                '*'
-                              : groupedActivities.topActors[action][data.dataIndex].id
-                            );
-                          }
-                        }}
-                        layout="horizontal"
-                        {...widgetSize}
-                        margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
-                        slotProps={{ legend: { hidden: true } }}
-                      />
-                    </Paper>
-                  </Grid>
-                );
-              })}
+              {Object.keys(groupedActivities.topActors)
+                .sort(
+                  (a, b) =>
+                    (topCreatorActions[a]?.sortOrder ?? 999) -
+                    (topCreatorActions[b]?.sortOrder ?? 999)
+                )
+                .map(action => {
+                  return (
+                    <Grid key={action}>
+                      <Paper variant="outlined" sx={{ ...commonPaperSx }}>
+                        {widgetTitle(topCreatorActions[action]?.label ?? action)}
+                        <BarChart
+                          series={[
+                            {
+                              id: `top-actors-${action}`,
+                              valueFormatter: value =>
+                                `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                              data: groupedActivities.topActors[action].map(a => a.count),
+                              color: dateRangeColor,
+                            },
+                          ]}
+                          yAxis={[
+                            {
+                              data: groupedActivities.topActors[action].map(a =>
+                                a.id === TOP_ACTORS_OTHERS_ID ?
+                                  'All others'
+                                : actors[a.id]?.name ?? 'unknown'
+                              ),
+                              scaleType: 'band',
+                            },
+                          ]}
+                          xAxis={[{ tickMinStep: 1 }]}
+                          onItemClick={(event, data) => {
+                            if (data) {
+                              openUserActivity(
+                                event.nativeEvent,
+                                data.dataIndex === 10 ?
+                                  '*'
+                                : groupedActivities.topActors[action][data.dataIndex].id
+                              );
+                            }
+                          }}
+                          onAxisClick={(event, data) => {
+                            if (data) {
+                              openUserActivity(
+                                event,
+                                data.dataIndex === 10 ?
+                                  '*'
+                                : groupedActivities.topActors[action][data.dataIndex].id
+                              );
+                            }
+                          }}
+                          layout="horizontal"
+                          {...widgetSize}
+                          margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
+                          slotProps={{ legend: { hidden: true } }}
+                        />
+                      </Paper>
+                    </Grid>
+                  );
+                })}
             </Grid>
           </AccordionDetails>
         </Accordion>

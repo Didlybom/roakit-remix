@@ -86,11 +86,13 @@ export const actorColdDef = (colDef?: GridColDef) => {
 export const actionColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Action',
-    width: 140,
+    width: 200,
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
       const event = params.row.event as string;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const codeAction = params.row.metadata?.codeAction as string;
       return !event ? action : (
           <Stack sx={{ mt: '3px' }}>
             <Typography
@@ -101,7 +103,7 @@ export const actionColDef = (colDef?: GridColDef) => {
               {action}
             </Typography>
             <Typography variant="caption" fontSize="10px">
-              {event}
+              {event} {codeAction}
             </Typography>
           </Stack>
         );

@@ -287,7 +287,7 @@ export default function ActivityReview() {
       }),
       actorColdDef({
         field: 'actor',
-        width: 200,
+        width: 160,
         headerName: 'Contributor',
         valueGetter: (_, row) => {
           const fields = row as ActivityData;
