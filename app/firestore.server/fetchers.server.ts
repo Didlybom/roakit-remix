@@ -95,14 +95,13 @@ export const fetchActorMap = async (customerId: number | undefined) => {
         const gitHubDocs = await gitHubColl.get();
         gitHubDocs.forEach(actor => {
           const data = actorSchema.parse(actor.data());
-          actors[actor.id] = { name: data.accountName };
+          actors[actor.id] = { name: data.accountName, url: data.accountUri };
         });
         return actors;
       })(),
       (async () => {
         const jiraColl = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
         const jiraDocs = await jiraColl.get();
-
         jiraDocs.forEach(actor => {
           const data = actorSchema.parse(actor.data());
           actors[actor.id] = { name: data.accountName };

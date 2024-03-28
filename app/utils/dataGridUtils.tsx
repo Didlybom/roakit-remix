@@ -172,7 +172,7 @@ export const summaryColDef = (
           {link}
           {comment || commits ?
             <Stack sx={{ mt: '3px' }}>
-              <Box title={summary} fontSize="small" lineHeight={1} sx={{ ...ellipsisSx }}>
+              <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>
               {comment && (

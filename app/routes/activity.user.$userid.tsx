@@ -1,18 +1,26 @@
+import FilterListIcon from '@mui/icons-material/FilterList';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
   Box,
+  FormControl,
   FormControlLabel,
   FormGroup,
+  IconButton,
+  InputLabel,
   Link,
+  MenuItem,
   Popover,
+  Select,
   Stack,
   Switch,
   Typography,
 } from '@mui/material';
+
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
+import { useLoaderData, useLocation, useNavigate } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -27,7 +35,12 @@ import {
   fetchInitiativeMap,
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
-import { UserActivityRow, userActivityRows } from '../schemas/activityFeed';
+import {
+  UserActivityRow,
+  artifactActions,
+  buildArtifactActionKey,
+  userActivityRows,
+} from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -84,7 +97,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 export default function UserActivity() {
   const sessionData = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isHydrated = useHydrated();
+  const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
   const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
     defaultValue: DateRange.OneDay,
   });
@@ -230,32 +246,54 @@ export default function UserActivity() {
     [sessionData.initiatives]
   );
 
+  const filteredActivities = new Map(activities);
   const grids = [...activities].map(([actorId, rows]) => {
+    if (actionFilter) {
+      rows = rows.filter(a => buildArtifactActionKey(a.artifact, a.action) === actionFilter);
+      if (rows.length) {
+        filteredActivities.set(actorId, rows);
+      } else {
+        filteredActivities.delete(actorId);
+      }
+    }
     return (
-      <Stack id={actorElementId(actorId)} key={actorId} sx={{ mb: 3 }}>
-        <Typography
-          variant="h6"
-          alignItems="center"
-          color={theme.palette.grey[600]}
-          sx={{ display: 'flex', mb: 1 }}
-        >
-          <PersonIcon sx={{ mr: 1 }} />
-          {sessionData.actors[actorId]?.name ?? 'Unknown user'}
-        </Typography>
-        <DataGrid
-          columns={columns}
-          rows={rows}
-          {...dataGridCommonProps}
-          rowHeight={50}
-          slots={{
-            noRowsOverlay: () => (
-              <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-                No activity for these dates
-              </Box>
-            ),
-          }}
-        />
-      </Stack>
+      !!rows.length && (
+        <Stack id={actorElementId(actorId)} key={actorId} sx={{ mb: 3 }}>
+          <Typography
+            variant="h6"
+            alignItems="center"
+            color={theme.palette.grey[600]}
+            sx={{ display: 'flex', mb: 1 }}
+          >
+            <PersonIcon sx={{ mr: 1 }} />
+            {sessionData.actors[actorId]?.name ?? 'Unknown user'}
+            {sessionData.actors[actorId]?.url && (
+              <IconButton
+                component="a"
+                href={sessionData.actors[actorId].url}
+                target="_blank"
+                color="primary"
+                sx={{ ml: 1 }}
+              >
+                <GitHubIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Typography>
+          <DataGrid
+            columns={columns}
+            rows={rows}
+            {...dataGridCommonProps}
+            rowHeight={50}
+            slots={{
+              noRowsOverlay: () => (
+                <Box height="75px" display="flex" alignItems="center" justifyContent="center">
+                  No activity for these dates
+                </Box>
+              ),
+            }}
+          />
+        </Stack>
+      )
     );
   });
 
@@ -294,35 +332,67 @@ export default function UserActivity() {
                 <Box sx={{ position: 'relative' }}>
                   <Box fontSize="small" color={theme.palette.grey[700]} sx={{ ...stickySx }}>
                     <FormGroup sx={{ mb: 2, ml: 2 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={sortAlphabetically}
-                            onChange={e => {
-                              setSortAlphabetically(e.target.checked);
-                              window.scrollTo({ top: 0 });
-                            }}
-                          />
-                        }
-                        label="Sort alphabetically"
-                        title="Sort alphabetically or by activity count"
-                        disableTypography
-                      />
+                      {filteredActivities.size > 0 && gotSnapshot && (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={sortAlphabetically}
+                              onChange={e => {
+                                setSortAlphabetically(e.target.checked);
+                                window.scrollTo({ top: 0 });
+                              }}
+                            />
+                          }
+                          label="Sort alphabetically"
+                          title="Sort alphabetically or by activity count"
+                          disableTypography
+                        />
+                      )}
                     </FormGroup>
-                    {[...activities.keys()].map(actorId => (
+                    {[...filteredActivities.keys()].map(actorId => (
                       <Box key={actorId}>
                         <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
                           {sessionData.actors[actorId]?.name ?? 'Unknown'}
                         </Link>
-                        {` (${activities.get(actorId)?.length ?? 0})`}
+                        {` (${filteredActivities.get(actorId)?.length ?? 0})`}
                       </Box>
                     ))}
                   </Box>
                 </Box>
               </Box>
             )}
-            <Box sx={{ flex: 1, minWidth: 0 }}>{grids}</Box>
+            <Stack sx={{ flex: 1, minWidth: 0 }}>
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <FilterListIcon />
+                <FormControl size="small">
+                  <InputLabel>Filter</InputLabel>
+                  <Select
+                    id="action-filter"
+                    value={actionFilter ?? ''}
+                    label="Filter"
+                    sx={{ minWidth: '250px' }}
+                    onChange={e => {
+                      if (e.target.value) {
+                        navigate('#' + e.target.value);
+                      } else {
+                        navigate('');
+                      }
+                    }}
+                  >
+                    <MenuItem key={0} value={''}>
+                      <Typography color={theme.palette.grey[500]}>{'None'}</Typography>
+                    </MenuItem>
+                    {[...artifactActions].map(([key, action]) => (
+                      <MenuItem key={key} value={key}>
+                        {action.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+              {grids}
+            </Stack>
           </Stack>
         }
         {error && (

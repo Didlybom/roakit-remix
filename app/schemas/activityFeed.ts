@@ -3,6 +3,21 @@ import { inferPriority } from '../utils/activityUtils';
 import { ParseError } from '../utils/errorUtils';
 import { ActivityCount, ActivityMap, Artifact, TicketMap, activitySchema } from './schemas';
 
+export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
+  ['task-created', { sortOrder: 1, label: 'Task creation' }],
+  ['task-updated', { sortOrder: 2, label: 'Task update' }],
+  ['task-deleted', { sortOrder: 3, label: 'Task deletion' }],
+  ['task-disabled', { sortOrder: 4, label: 'Task disable' }],
+  ['taskOrg-created', { sortOrder: 5, label: 'Task organization creation' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task organization update' }],
+  ['code-created', { sortOrder: 7, label: 'Code creation' }],
+  ['code-updated', { sortOrder: 8, label: 'Code update' }],
+  ['code-deleted', { sortOrder: 9, label: 'Code deletion' }],
+  ['code-unknown', { sortOrder: 10, label: 'Code [unknown]' }],
+  ['codeOrg-created', { sortOrder: 11, label: 'Code organization creation' }],
+  ['codeOrg-updated', { sortOrder: 12, label: 'Code organization update' }],
+]);
+
 interface ActorActivityCount {
   id: string;
   count: number;
@@ -81,7 +96,7 @@ export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } 
 /* eslint-enable @typescript-eslint/no-unsafe-member-access */
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-const buildTopActorKey = (artifact: string, action: string) => {
+export const buildArtifactActionKey = (artifact: string, action: string) => {
   return artifact + '-' + action;
 };
 
@@ -103,7 +118,7 @@ export const groupActivities = (activities: ActivityMap) => {
 
     // top actors
     if (actorId !== undefined) {
-      const topActorKey = buildTopActorKey(artifact, action);
+      const topActorKey = buildArtifactActionKey(artifact, action);
       if (topActors[topActorKey] === undefined) {
         topActors[topActorKey] = [];
       }

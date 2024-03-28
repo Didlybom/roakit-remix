@@ -7,6 +7,7 @@ export const feedSchema = z.object({
 
 export const actorSchema = z.object({
   accountName: z.string().optional(),
+  accountUri: z.string().optional(),
 });
 
 export const initiativeSchema = z.object({

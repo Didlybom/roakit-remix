@@ -21,9 +21,8 @@ export const disabledNotOpaqueSx: SxProps = {
   ['&.Mui-disabled']: { opacity: 'initial' },
 };
 
-export const openUserActivity = (event: MouseEvent, userId: string) => {
+export const windowOpen = (event: MouseEvent, url: string) => {
   event.stopPropagation();
-  const url = `/activity/user/${encodeURI(userId)}`;
   window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
 };
 

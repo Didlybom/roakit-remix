@@ -32,7 +32,7 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
-import { TOP_ACTORS_OTHERS_ID, groupActivities } from '../schemas/activityFeed';
+import { TOP_ACTORS_OTHERS_ID, artifactActions, groupActivities } from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
@@ -41,7 +41,7 @@ import {
   dateRangeLabels,
 } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { ellipsisSx, openUserActivity } from '../utils/jsxUtils';
+import { ellipsisSx, windowOpen } from '../utils/jsxUtils';
 import { priorityColors, priorityLabels } from '../utils/theme';
 
 const logger = pino({ name: 'route:dashboard' });
@@ -129,21 +129,6 @@ export default function Dashboard() {
     3: { id: 3, label: priorityLabels[3], color: priorityColors[3] },
     4: { id: 4, label: priorityLabels[4], color: priorityColors[4] },
     5: { id: 5, label: priorityLabels[5], color: priorityColors[5] },
-  };
-
-  const topCreatorActions: Record<string, { sortOrder: number; label: string }> = {
-    'task-created': { sortOrder: 1, label: 'Task creation' },
-    'task-updated': { sortOrder: 2, label: 'Task update' },
-    'task-deleted': { sortOrder: 3, label: 'Task deletion' },
-    'task-disabled': { sortOrder: 4, label: 'Task disable' },
-    'taskOrg-created': { sortOrder: 5, label: 'Task organization creation' },
-    'taskOrg-updated': { sortOrder: 6, label: 'Task organization update' },
-    'code-created': { sortOrder: 7, label: 'Code creation' },
-    'code-updated': { sortOrder: 8, label: 'Code update' },
-    'code-deleted': { sortOrder: 9, label: 'Code deletion' },
-    'code-unknown': { sortOrder: 10, label: 'Code [unknown]' },
-    'codeOrg-created': { sortOrder: 11, label: 'Code organization creation' },
-    'codeOrg-updated': { sortOrder: 12, label: 'Code organization update' },
   };
 
   const commonPaperSx = { width: 320, p: 1 };
@@ -369,14 +354,14 @@ export default function Dashboard() {
               {Object.keys(groupedActivities.topActors)
                 .sort(
                   (a, b) =>
-                    (topCreatorActions[a]?.sortOrder ?? 999) -
-                    (topCreatorActions[b]?.sortOrder ?? 999)
+                    (artifactActions.get(a)?.sortOrder ?? 999) -
+                    (artifactActions.get(b)?.sortOrder ?? 999)
                 )
                 .map(action => {
                   return (
                     <Grid key={action}>
                       <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                        {widgetTitle(topCreatorActions[action]?.label ?? action)}
+                        {widgetTitle(artifactActions.get(action)?.label ?? action)}
                         <BarChart
                           series={[
                             {
@@ -400,21 +385,29 @@ export default function Dashboard() {
                           xAxis={[{ tickMinStep: 1 }]}
                           onItemClick={(event, data) => {
                             if (data) {
-                              openUserActivity(
+                              windowOpen(
                                 event.nativeEvent,
-                                data.dataIndex === 10 ?
-                                  '*'
-                                : groupedActivities.topActors[action][data.dataIndex].id
+                                `/activity/user/${
+                                  data.dataIndex === 10 ?
+                                    '*'
+                                  : encodeURI(
+                                      groupedActivities.topActors[action][data.dataIndex].id
+                                    )
+                                }#${action}`
                               );
                             }
                           }}
                           onAxisClick={(event, data) => {
                             if (data) {
-                              openUserActivity(
+                              windowOpen(
                                 event,
-                                data.dataIndex === 10 ?
-                                  '*'
-                                : groupedActivities.topActors[action][data.dataIndex].id
+                                `/activity/user/${
+                                  data.dataIndex === 10 ?
+                                    '*'
+                                  : encodeURI(
+                                      groupedActivities.topActors[action][data.dataIndex].id
+                                    )
+                                }#${action}`
                               );
                             }
                           }}
