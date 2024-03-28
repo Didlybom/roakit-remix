@@ -4,12 +4,15 @@ import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useFetcher, useNavigation, useSubmit } from '@remix-run/react';
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { queryCustomerId, auth as serverAuth } from '../firebase.server';
 import { errMsg } from '../utils/errorUtils';
+
+const logger = pino({ name: 'route:login' });
 
 export const meta = () => [{ title: 'Login | ROAKIT' }];
 
@@ -28,6 +31,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { refreshToken: true }; // hand over to client to refresh the Firebase token
     }
   }
+
+  logger.info(`${token.email} logged in`);
+
   const jwt = await serverAuth.createSessionCookie(idToken, {
     // 1 day - can be up to 2 weeks, see matching cookie expiration below
     expiresIn: 60 * 60 * 24 * 1 * 1000,
