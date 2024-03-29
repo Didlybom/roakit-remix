@@ -2,7 +2,7 @@ import firebase from 'firebase/compat/app';
 import { z } from 'zod';
 import { ParseError } from '../utils/errorUtils';
 import { capitalizeAndUseSpaces, findJiraProjects } from '../utils/stringUtils';
-import { ActorData } from './schemas';
+import { AccountData } from './schemas';
 
 const zuser = z.object({ login: z.string(), html_url: z.string() });
 
@@ -55,7 +55,7 @@ export interface GitHubRow {
   id: string;
   date: Date;
   repositoryName?: string;
-  actor?: ActorData;
+  actor?: AccountData;
   ref?: { label: string; url: string };
   activity?: {
     title?: string;
@@ -98,7 +98,7 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     } else {
       title = data.release?.body;
     }
-    let actor: ActorData | undefined;
+    let actor: AccountData | undefined;
     if (docData.name === GitHubEventType.PullRequest && data.pull_request?.assignee) {
       actor = {
         id: '',

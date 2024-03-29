@@ -1,7 +1,7 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
 import { ParseError } from '../utils/errorUtils';
-import { ActorData } from './schemas';
+import { AccountData } from './schemas';
 
 const zuser = z.object({ accountId: z.string(), displayName: z.string() });
 
@@ -39,7 +39,7 @@ export interface JiraRow {
   id: string;
   date: Date;
   project?: { key: string; name: string };
-  actor?: ActorData;
+  actor?: AccountData;
   ref?: { label: string; url: string };
   priority?: { id: number; name: string };
   activity?: {
@@ -60,7 +60,7 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
       throw new ParseError('Failed to parse Jira events. ' + props.error.message);
     }
     const data = props.data;
-    let actor: ActorData | undefined;
+    let actor: AccountData | undefined;
     if (docData.name === JiraEventType.IssueCreated) {
       actor = { id: '', name: data.issue?.fields?.creator?.displayName };
     } else if (docData.name === JiraEventType.CommentCreated) {

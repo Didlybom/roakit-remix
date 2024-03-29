@@ -60,11 +60,10 @@ export default function Jira() {
   const jiraColumns = useMemo<GridColDef[]>(
     () => [
       dateColdDef({ field: 'date' }),
-      actorColdDef({ field: 'actor', headerName: 'Author', width: 120 }),
+      actorColdDef({ field: 'actor', headerName: 'Author' }),
       {
         field: 'project',
         headerName: 'Project',
-        width: 160,
         sortComparator: (a: JiraRow['project'], b: JiraRow['project']) =>
           (a?.key ?? '').localeCompare(b?.key ?? ''),
         valueFormatter: value => (value as JiraRow['project'])?.name ?? '',
@@ -72,7 +71,6 @@ export default function Jira() {
       {
         field: 'priority',
         headerName: 'Priority',
-        width: 100,
         sortComparator: (a: JiraRow['priority'], b: JiraRow['priority']) =>
           (b?.id ?? 999) - (a?.id ?? 999),
         valueFormatter: value => (value as JiraRow['priority'])?.name ?? '',
@@ -80,7 +78,6 @@ export default function Jira() {
       {
         field: 'ref',
         headerName: 'Ref.',
-        width: 90,
         sortComparator: (a: JiraRow['ref'], b: JiraRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
@@ -99,7 +96,6 @@ export default function Jira() {
       {
         field: 'activity',
         headerName: 'Activity',
-        minWidth: 300,
         flex: 1,
         sortComparator: (a: JiraRow['activity'], b: JiraRow['activity']) =>
           (a?.title ?? '').localeCompare(b?.title ?? ''),
@@ -134,7 +130,6 @@ export default function Jira() {
       {
         field: 'actions',
         type: 'actions',
-        width: 50,
         cellClassName: 'actions',
         getActions: params => {
           const row = params.row as JiraRow;

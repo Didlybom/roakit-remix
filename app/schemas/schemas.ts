@@ -5,11 +5,6 @@ export const feedSchema = z.object({
   secret: z.string().optional(),
 });
 
-export const actorSchema = z.object({
-  accountName: z.string().optional(),
-  accountUri: z.string().optional(),
-});
-
 export const initiativeSchema = z.object({
   label: z.string().optional(),
   counters: z
@@ -23,6 +18,27 @@ export const initiativeSchema = z.object({
     })
     .optional(),
   countersLastUpdated: z.number().optional(),
+});
+
+export const accountSchema = z.object({
+  accountName: z.string(),
+  accountUri: z.string().optional(),
+});
+
+export const identitySchema = z.object({
+  email: z.string().optional(),
+  displayName: z.string().optional(),
+  accounts: z
+    .object({
+      feedId: z.number(),
+      type: z.string(),
+      id: z.string(),
+      name: z.string().optional(),
+      url: z.string().optional(),
+    })
+    .array()
+    .optional(),
+  lastLastUpdatedTimestamp: z.number().optional(),
 });
 
 export const ticketSchema = z.object({
@@ -60,6 +76,35 @@ export interface InitiativeData {
   countersLastUpdated: number;
 }
 
+export type InitiativeMap = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
+
+export interface AccountData {
+  id: string;
+  type: string;
+  name: string;
+  url?: string;
+}
+export type AccountMap = Map<AccountData['id'], Omit<AccountData, 'id'>>;
+
+export interface IdentityData {
+  id: string;
+  email?: string;
+  displayName?: string;
+  accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
+}
+
+export type IdentityAccountMap = Record<AccountData['id'], IdentityData['id']>;
+
+export const displayName = (id: IdentityData) => id.displayName || id.email || id.id;
+
+export interface ActorData {
+  id: string;
+  name: string;
+  email?: string;
+  urls?: { type: string; url: string }[];
+}
+export type ActorMap = Record<ActorData['id'], Omit<ActorData, 'id'>>;
+
 export interface TicketData {
   key: string;
   id?: string;
@@ -75,15 +120,7 @@ export interface TicketData {
   lastUpdatedTimestamp?: number;
 }
 
-export type InitiativeMap = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
-
 export type TicketMap = Record<TicketData['key'], Omit<TicketData, 'key'>>;
-
-export interface ActorData {
-  id: string;
-  name?: string;
-  url?: string;
-}
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 
@@ -101,7 +138,7 @@ export interface ActivityData {
   objectId?: string; // for debugging
 }
 
-export type ActivityMap = Record<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;
+export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;
 
 export interface ActivityCount {
   code: number;

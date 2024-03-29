@@ -47,7 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    const initiatives = await fetchInitiatives(sessionData.customerId);
+    const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { initiatives };
   } catch (e) {
     logger.error(e);

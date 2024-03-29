@@ -47,15 +47,17 @@ import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import {
-  fetchActorMap,
+  fetchAccountMap,
+  fetchIdentities,
   fetchInitiativeMap,
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
+import { identifyAccounts } from '../schemas/activityFeed';
 import {
+  AccountData,
   ActivityCount,
   ActivityData,
-  ActorData,
   Artifact,
   activitySchema,
 } from '../schemas/schemas';
@@ -88,12 +90,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   try {
     // retrieve initiatives, tickets, and users
-    const [initiatives, actors, tickets] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId),
-      fetchActorMap(sessionData.customerId),
-      fetchTicketMap(sessionData.customerId),
+    const [initiatives, accounts, identities, tickets] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
+      fetchAccountMap(sessionData.customerId!),
+      fetchIdentities(sessionData.customerId!),
+      fetchTicketMap(sessionData.customerId!),
     ]);
-    return { customerId: sessionData.customerId, initiatives, actors, tickets };
+    const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
+    return {
+      customerId: sessionData.customerId,
+      initiatives,
+      actors,
+      accountMap: identities.accountMap,
+      tickets,
+    };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -245,7 +255,10 @@ export default function ActivityReview() {
             id: activity.id,
             action: fields.data.action,
             event: fields.data.event,
-            actorId: fields.data.actorAccountId,
+            actorId:
+              fields.data.actorAccountId ?
+                sessionData.accountMap[fields.data.actorAccountId] ?? fields.data.actorAccountId // resolve identity
+              : undefined,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
             priority,
@@ -271,7 +284,7 @@ export default function ActivityReview() {
     };
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionData.customerId, showAllActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
+  }, [sessionData.customerId, sessionData.accountMap, showAllActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
 
   const dataGridProps = {
     autosizeOnMount: true,
@@ -311,7 +324,7 @@ export default function ActivityReview() {
             : '';
         },
         renderCell: params => {
-          const fields = params.value as ActorData;
+          const fields = params.value as AccountData;
           return (
             <Link href={`/activity/user/${fields.id}`} title="View activity" sx={internalLinkSx}>
               {fields.name}

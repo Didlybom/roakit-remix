@@ -31,16 +31,14 @@ import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
-  fetchActorMap,
+  fetchAccountMap,
+  fetchIdentities,
   fetchInitiativeMap,
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
-import {
-  UserActivityRow,
-  artifactActions,
-  buildArtifactActionKey,
-  userActivityRows,
-} from '../schemas/activityFeed';
+import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../schemas/activityFeed';
+import { Artifact, IdentityAccountMap, TicketMap, activitySchema } from '../schemas/schemas';
+import { inferPriority } from '../utils/activityUtils';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -51,7 +49,7 @@ import {
   summaryColDef,
 } from '../utils/dataGridUtils';
 import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
+import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
@@ -69,6 +67,55 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [{ title: `${title} Activity | ROAKIT` }];
 };
 
+interface UserActivityRow {
+  id: string;
+  date: Date;
+  action: string;
+  event?: string;
+  artifact: Artifact;
+  initiativeId: string;
+  priority?: number;
+  actorId?: string;
+  metadata: unknown;
+  objectId?: string;
+}
+
+const userActivityRows = (
+  snapshot: firebase.firestore.QuerySnapshot,
+  tickets: TicketMap,
+  accountMap: IdentityAccountMap
+): UserActivityRow[] => {
+  const rows: UserActivityRow[] = [];
+  snapshot.forEach(doc => {
+    const props = activitySchema.safeParse(doc.data());
+    if (!props.success) {
+      throw new ParseError('Failed to parse activities. ' + props.error.message);
+    }
+    let priority = props.data.priority;
+    if (priority === undefined || priority === -1) {
+      priority = inferPriority(tickets, props.data.metadata);
+    }
+    const row: UserActivityRow = {
+      id: doc.id,
+      date: new Date(props.data.createdTimestamp),
+      action: props.data.action,
+      event: props.data.event,
+      artifact: props.data.artifact,
+      initiativeId: props.data.initiative,
+      priority,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: props.data.metadata,
+      actorId:
+        props.data.actorAccountId ?
+          accountMap[props.data.actorAccountId] ?? props.data.actorAccountId // resolve identity
+        : undefined,
+      objectId: props.data.objectId, // for debugging
+    };
+    rows.push(row);
+  });
+  return rows;
+};
+
 // verify JWT, load initiatives and users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
@@ -77,17 +124,46 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
   try {
     // retrieve initiatives, tickets, and users
-    const [initiatives, actors, tickets] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId),
-      fetchActorMap(sessionData.customerId),
-      fetchTicketMap(sessionData.customerId),
+    const [initiatives, accounts, identities, tickets] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
+      fetchAccountMap(sessionData.customerId!),
+      fetchIdentities(sessionData.customerId!),
+      fetchTicketMap(sessionData.customerId!),
     ]);
+    const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
+
+    const userId = params.userid;
+
+    // all user ids candidate as activity keys (activities can use both identityIds and accountIds)
+    const activityUserIds: string[] = [];
+    if (userId && userId !== ALL) {
+      const userIds = new Set([userId]);
+      let identityId: string;
+      if (identities.accountMap[userId]) {
+        // if params.userId is not an identity, add the identity
+        identityId = identities.accountMap[userId];
+        userIds.add(identityId);
+      } else {
+        identityId = userId;
+      }
+      // add the other accounts for the identity
+      identities.list
+        .filter(identity => identity.id === identityId)
+        .flatMap(identity => identity.accounts)
+        .map(account => account.id)
+        .forEach(accountId => userIds.add(accountId));
+
+      activityUserIds.push(...userIds);
+    }
+
     return {
       customerId: sessionData.customerId,
-      userId: params.userid,
+      userId,
+      activityUserIds,
       initiatives,
       tickets,
       actors,
+      accountMap: identities.accountMap,
     };
   } catch (e) {
     logger.error(e);
@@ -101,6 +177,7 @@ export default function UserActivity() {
   const location = useLocation();
   const isHydrated = useHydrated();
   const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
+  const prevActionFilter = usePrevious(actionFilter);
   const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
     defaultValue: DateRange.OneDay,
   });
@@ -116,17 +193,28 @@ export default function UserActivity() {
   const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
-  const allUsersSnapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
+  const snapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
   const [activities, setActivities] = useState<Map<string, UserActivityRow[]>>(new Map());
 
   const actorElementId = (actor: string) => `ACTOR-${removeSpaces(actor)}`;
 
   // Firestore listener
   useEffect(() => {
-    const sortAndSetAllUsersActivities = () => {
-      if (allUsersSnapshot.current) {
+    const sortAndSetUserActivities = () => {
+      if (snapshot.current) {
+        const filteredSnapshot: { key: string; values: UserActivityRow[] }[] = [];
+        if (actionFilter) {
+          snapshot.current.forEach(user => {
+            const values = user.values.filter(
+              a => buildArtifactActionKey(a.artifact, a.action) === actionFilter
+            );
+            if (values.length > 0) {
+              filteredSnapshot.push({ key: user.key, values });
+            }
+          });
+        }
         setActivities(
-          sortMap(allUsersSnapshot.current, (a, b) =>
+          sortMap(actionFilter ? filteredSnapshot : snapshot.current, (a, b) =>
             sortAlphabetically ?
               caseInsensitiveCompare(
                 sessionData.actors[a.key]?.name ?? '',
@@ -140,19 +228,11 @@ export default function UserActivity() {
 
     const setRows = (querySnapshot: firebase.firestore.QuerySnapshot) => {
       try {
-        if (sessionData.userId !== ALL) {
-          setActivities(
-            new Map([
-              [sessionData.userId!, userActivityRows(querySnapshot, sessionData.tickets, false)],
-            ])
-          );
-        } else {
-          allUsersSnapshot.current = groupByArray(
-            userActivityRows(querySnapshot, sessionData.tickets, true),
-            'actorId'
-          );
-          sortAndSetAllUsersActivities();
-        }
+        snapshot.current = groupByArray(
+          userActivityRows(querySnapshot, sessionData.tickets, sessionData.accountMap),
+          'actorId'
+        );
+        sortAndSetUserActivities();
         setGotSnapshot(true);
       } catch (e: unknown) {
         setError(errMsg(e, 'Error parsing user activities'));
@@ -164,13 +244,12 @@ export default function UserActivity() {
     }
 
     if (
-      sessionData.userId === ALL &&
       dateFilter === prevDateFilter &&
-      sortAlphabetically !== prevSortAlphabetically &&
-      allUsersSnapshot.current
+      (sortAlphabetically !== prevSortAlphabetically || actionFilter !== prevActionFilter) &&
+      snapshot.current
     ) {
-      // just re-sort
-      return sortAndSetAllUsersActivities();
+      // just re-filter and re-sort
+      return sortAndSetUserActivities();
     }
 
     setError('');
@@ -185,7 +264,7 @@ export default function UserActivity() {
           .limit(5000) // FIXME limit
       : firestoreClient
           .collection(`customers/${sessionData.customerId}/activities/`)
-          .where('actorAccountId', '==', sessionData.userId)
+          .where('actorAccountId', 'in', sessionData.activityUserIds)
           .orderBy('createdTimestamp')
           .startAt(startDate)
           .limit(1000); // FIXME limit
@@ -202,7 +281,8 @@ export default function UserActivity() {
     sessionData.customerId,
     sessionData.userId,
     sortAlphabetically,
-  ]); // prevSortAlphabetically must be omitted
+    actionFilter,
+  ]); // prevSortAlphabetically and prevActionFilter must be omitted
 
   // Auto scrollers
   useEffect(() => {
@@ -230,7 +310,6 @@ export default function UserActivity() {
       {
         field: 'initiativeId',
         headerName: 'Initiative',
-        width: 80,
         renderCell: params => {
           const initiativeId = params.value as string;
           return initiativeId ?
@@ -246,19 +325,11 @@ export default function UserActivity() {
     [sessionData.initiatives]
   );
 
-  const filteredActivities = new Map(activities);
-  const grids = [...activities].map(([actorId, rows]) => {
-    if (actionFilter) {
-      rows = rows.filter(a => buildArtifactActionKey(a.artifact, a.action) === actionFilter);
-      if (rows.length) {
-        filteredActivities.set(actorId, rows);
-      } else {
-        filteredActivities.delete(actorId);
-      }
-    }
+  const grids = [...activities].map(([actorId, rows], i) => {
+    const actor = sessionData.actors[actorId];
     return (
       !!rows.length && (
-        <Stack id={actorElementId(actorId)} key={actorId} sx={{ mb: 3 }}>
+        <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
           <Typography
             variant="h6"
             alignItems="center"
@@ -266,11 +337,11 @@ export default function UserActivity() {
             sx={{ display: 'flex', mb: 1 }}
           >
             <PersonIcon sx={{ mr: 1 }} />
-            {sessionData.actors[actorId]?.name ?? 'Unknown user'}
-            {sessionData.actors[actorId]?.url && (
+            {actor?.name ?? 'Unknown user'}
+            {(actor?.urls?.length ?? 0) > 0 && (
               <IconButton
                 component="a"
-                href={sessionData.actors[actorId].url}
+                href={actor.urls![0].url} /* FIXME urls */
                 target="_blank"
                 color="primary"
                 sx={{ ml: 1 }}
@@ -322,79 +393,80 @@ export default function UserActivity() {
         <Box sx={{ py: 1 }}>{popover?.content}</Box>
       </Popover>
       <Stack sx={{ m: 3 }}>
-        {activities.size === 0 && gotSnapshot ?
-          <Typography textAlign="center" sx={{ m: 4 }}>
-            No activity for these dates
-          </Typography>
-        : <Stack direction="row">
-            {sessionData.userId === ALL && (
-              <Box sx={{ display: 'flex', mr: 2 }}>
-                <Box sx={{ position: 'relative' }}>
-                  <Box fontSize="small" color={theme.palette.grey[700]} sx={{ ...stickySx }}>
-                    <FormGroup sx={{ mb: 2, ml: 2 }}>
-                      {filteredActivities.size > 0 && gotSnapshot && (
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              size="small"
-                              checked={sortAlphabetically}
-                              onChange={e => {
-                                setSortAlphabetically(e.target.checked);
-                                window.scrollTo({ top: 0 });
-                              }}
-                            />
-                          }
-                          label="Sort alphabetically"
-                          title="Sort alphabetically or by activity count"
-                          disableTypography
-                        />
-                      )}
-                    </FormGroup>
-                    {[...filteredActivities.keys()].map(actorId => (
-                      <Box key={actorId}>
-                        <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
-                          {sessionData.actors[actorId]?.name ?? 'Unknown'}
-                        </Link>
-                        {` (${filteredActivities.get(actorId)?.length ?? 0})`}
-                      </Box>
-                    ))}
-                  </Box>
+        <Stack direction="row">
+          {sessionData.userId === ALL && (
+            <Box sx={{ display: 'flex', mr: 2 }}>
+              <Box sx={{ position: 'relative' }}>
+                <Box fontSize="small" color={theme.palette.grey[700]} sx={{ ...stickySx }}>
+                  <FormGroup sx={{ mb: 2, ml: 2 }}>
+                    {activities.size > 0 && gotSnapshot && (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={sortAlphabetically}
+                            onChange={e => {
+                              setSortAlphabetically(e.target.checked);
+                              window.scrollTo({ top: 0 });
+                            }}
+                          />
+                        }
+                        label="Sort alphabetically"
+                        title="Sort alphabetically or by activity count"
+                        disableTypography
+                      />
+                    )}
+                  </FormGroup>
+                  {[...activities.keys()].map((actorId, i) => (
+                    <Box key={i}>
+                      <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
+                        {sessionData.actors[actorId]?.name ?? 'Unknown'}
+                      </Link>
+                      {` (${activities.get(actorId)?.length ?? 0})`}
+                    </Box>
+                  ))}
                 </Box>
               </Box>
-            )}
-            <Stack sx={{ flex: 1, minWidth: 0 }}>
-              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                <FilterListIcon />
-                <FormControl size="small">
-                  <InputLabel>Filter</InputLabel>
-                  <Select
-                    id="action-filter"
-                    value={actionFilter ?? ''}
-                    label="Filter"
-                    sx={{ minWidth: '250px' }}
-                    onChange={e => {
-                      if (e.target.value) {
-                        navigate('#' + e.target.value);
-                      } else {
-                        navigate('');
-                      }
-                    }}
-                  >
-                    <MenuItem key={0} value={''}>
-                      <Typography color={theme.palette.grey[500]}>{'None'}</Typography>
+            </Box>
+          )}
+          <Stack sx={{ flex: 1, minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              justifyContent="right"
+              sx={{ mb: 2 }}
+            >
+              <FilterListIcon />
+              <FormControl size="small">
+                <InputLabel>Filter</InputLabel>
+                <Select
+                  id="action-filter"
+                  value={actionFilter ?? ''}
+                  label="Filter"
+                  sx={{ minWidth: '250px' }}
+                  onChange={e => {
+                    if (e.target.value) {
+                      navigate('#' + e.target.value);
+                    } else {
+                      navigate('');
+                    }
+                  }}
+                >
+                  <MenuItem key={0} value={''}>
+                    <Typography color={theme.palette.grey[500]}>{'None'}</Typography>
+                  </MenuItem>
+                  {[...artifactActions].map(([key, action]) => (
+                    <MenuItem key={key} value={key}>
+                      {action.label}
                     </MenuItem>
-                    {[...artifactActions].map(([key, action]) => (
-                      <MenuItem key={key} value={key}>
-                        {action.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-              {grids}
+                  ))}
+                </Select>
+              </FormControl>
             </Stack>
+            {grids}
           </Stack>
-        }
+        </Stack>
         {error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
             {error}

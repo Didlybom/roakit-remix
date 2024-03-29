@@ -24,7 +24,7 @@ import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
 import { getSummary, getUrl } from '../schemas/activityFeed';
-import { ActorData } from '../schemas/schemas';
+import { AccountData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 import { ellipsisSx } from './jsxUtils';
 import theme, { priorityColors, priorityLabels } from './theme';
@@ -68,10 +68,10 @@ export const dateColdDef = (colDef?: GridColDef) => {
 export const actorColdDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Author',
-    sortComparator: (a: ActorData, b: ActorData) =>
+    sortComparator: (a: AccountData, b: AccountData) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
     renderCell: (params: GridRenderCellParams) => {
-      const fields = params.value as ActorData;
+      const fields = params.value as AccountData;
       return !fields ? '' : (
           <Box sx={{ ...ellipsisSx }} title={fields.name ?? fields.id}>
             {fields.name}

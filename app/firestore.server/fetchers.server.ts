@@ -2,14 +2,18 @@ import retry from 'async-retry';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
 import {
+  AccountMap,
   ActivityMap,
-  ActorData,
+  IdentityAccountMap,
+  IdentityData,
   InitiativeData,
   InitiativeMap,
   TicketMap,
+  accountSchema,
   activitySchema,
-  actorSchema,
+  displayName,
   emptyActivity,
+  identitySchema,
   initiativeSchema,
   ticketSchema,
 } from '../schemas/schemas';
@@ -28,53 +32,74 @@ const retryProps = (message: string) => {
   };
 };
 
-export const fetchInitiatives = async (customerId: number | undefined) => {
+export const fetchInitiatives = async (customerId: number) => {
   return await retry(async () => {
-    const coll = firestore.collection(`customers/${customerId}/initiatives`);
-    const docs = await coll.get();
     const initiatives: InitiativeData[] = [];
-    docs.forEach(initiative => {
-      const data = initiativeSchema.parse(initiative.data());
-      initiatives.push({
-        id: initiative.id,
-        label: data.label,
-        counters:
-          data.counters ?
-            { activities: data.counters.activities }
-          : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
-        countersLastUpdated: data.countersLastUpdated ?? 0,
-      });
-    });
+    (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
+      initiative => {
+        const data = initiativeSchema.parse(initiative.data());
+        initiatives.push({
+          id: initiative.id,
+          label: data.label,
+          counters:
+            data.counters ?
+              { activities: data.counters.activities }
+            : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+          countersLastUpdated: data.countersLastUpdated ?? 0,
+        });
+      }
+    );
     return initiatives.sort((a, b) => a.id.localeCompare(b.id));
   }, retryProps('Retrying fetchInitiatives...'));
 };
 
-export const fetchInitiativeMap = async (customerId: number | undefined) => {
+export const fetchInitiativeMap = async (customerId: number) => {
   return await retry(async () => {
-    const coll = firestore.collection(`customers/${customerId}/initiatives`);
-    const docs = await coll.get();
     const initiatives: InitiativeMap = {};
-    docs.forEach(initiative => {
-      const data = initiativeSchema.parse(initiative.data());
-      initiatives[initiative.id] = {
-        label: data.label,
-        counters:
-          data.counters ?
-            { activities: data.counters.activities }
-          : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
-        countersLastUpdated: data.countersLastUpdated ?? 0,
-      };
-    });
+    (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
+      initiative => {
+        const data = initiativeSchema.parse(initiative.data());
+        initiatives[initiative.id] = {
+          label: data.label,
+          counters:
+            data.counters ?
+              { activities: data.counters.activities }
+            : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+          countersLastUpdated: data.countersLastUpdated ?? 0,
+        };
+      }
+    );
     return initiatives;
   }, retryProps('Retrying fetchInitiativeMap...'));
 };
 
-export const fetchTicketMap = async (customerId: number | undefined) => {
+export const fetchIdentities = async (customerId: number) => {
   return await retry(async () => {
-    const coll = firestore.collection(`customers/${customerId}/tickets`);
-    const docs = await coll.get();
+    const identities: IdentityData[] = [];
+    const accountMap: IdentityAccountMap = {};
+    (await firestore.collection(`customers/${customerId}/identities`).get()).forEach(identity => {
+      const data = identitySchema.parse(identity.data());
+      identities.push({
+        id: identity.id,
+        email: data.email,
+        displayName: data.displayName,
+        accounts: data.accounts ?? [],
+      });
+      data.accounts?.forEach(account => {
+        accountMap[account.id] = identity.id;
+      });
+    });
+    return {
+      list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
+      accountMap,
+    };
+  }, retryProps('Retrying fetchIdentities...'));
+};
+
+export const fetchTicketMap = async (customerId: number) => {
+  return await retry(async () => {
     const tickets: TicketMap = {};
-    docs.forEach(ticket => {
+    (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
       const data = ticketSchema.parse(ticket.data());
       tickets[ticket.id] = {
         priority: data.priority,
@@ -85,59 +110,62 @@ export const fetchTicketMap = async (customerId: number | undefined) => {
   }, retryProps('Retrying fetchTicketsMap...'));
 };
 
-type ActorMap = Record<ActorData['id'], Omit<ActorData, 'id'>>;
-export const fetchActorMap = async (customerId: number | undefined) => {
+export const fetchAccountMap = async (customerId: number) => {
   return await retry(async () => {
-    const actors: ActorMap = {};
+    const accounts: AccountMap = new Map();
     await Promise.all([
       (async () => {
-        const gitHubColl = firestore.collection(`customers/${customerId}/feeds/1/accounts`);
-        const gitHubDocs = await gitHubColl.get();
-        gitHubDocs.forEach(actor => {
-          const data = actorSchema.parse(actor.data());
-          actors[actor.id] = { name: data.accountName, url: data.accountUri };
-        });
-        return actors;
+        (await firestore.collection(`customers/${customerId}/feeds/1/accounts`).get()).forEach(
+          account => {
+            const data = accountSchema.parse(account.data());
+            accounts.set(account.id, {
+              type: 'github',
+              name: data.accountName,
+              url: data.accountUri,
+            });
+          }
+        );
       })(),
       (async () => {
-        const jiraColl = firestore.collection(`customers/${customerId}/feeds/2/accounts`);
-        const jiraDocs = await jiraColl.get();
-        jiraDocs.forEach(actor => {
-          const data = actorSchema.parse(actor.data());
-          actors[actor.id] = { name: data.accountName };
-        });
+        (await firestore.collection(`customers/${customerId}/feeds/2/accounts`).get()).forEach(
+          account => {
+            const data = accountSchema.parse(account.data());
+            accounts.set(account.id, { type: 'jira', name: data.accountName });
+          }
+        );
       })(),
     ]);
-    return actors;
-  }, retryProps('Retrying fetchActorMap...'));
+    return accounts;
+  }, retryProps('Retrying fetchAccountMap...'));
 };
 
 export const fetchActivities = async (customerId: number, startDate: number) => {
   return await retry(async bail => {
-    const activitiesCollection = firestore
-      .collection(`customers/${customerId}/activities`)
-      .orderBy('createdTimestamp')
-      .startAt(startDate)
-      .limit(5000); // FIXME limit
     const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
-      () => activitiesCollection.get(),
+      () =>
+        firestore
+          .collection(`customers/${customerId}/activities`)
+          .orderBy('createdTimestamp')
+          .startAt(startDate)
+          .limit(5000) // FIXME limit
+          .get(),
       { metricsName: 'dashboard:getActivities' }
     );
-    const activities: ActivityMap = {};
+    const activities: ActivityMap = new Map();
     activityDocs.forEach(activity => {
       const props = activitySchema.safeParse(activity.data());
       if (!props.success) {
         bail(new ParseError('Failed to parse activities. ' + props.error.message));
         return emptyActivity; // not used, bail() will throw
       }
-      activities[activity.id] = {
+      activities.set(activity.id, {
         action: props.data.action,
         actorId: props.data.actorAccountId,
         artifact: props.data.artifact,
         createdTimestamp: props.data.createdTimestamp,
         initiativeId: props.data.initiative,
         priority: props.data.priority,
-      };
+      });
     });
     return activities;
   }, retryProps('Retrying fetchActivities...'));

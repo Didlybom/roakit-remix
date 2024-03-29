@@ -3,6 +3,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import GroupIcon from '@mui/icons-material/Group';
 import {
   Divider,
   Drawer,
@@ -72,6 +73,14 @@ export default function NavDrawer({
               <BusinessCenterIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary={'Initiatives'} />
+          </ListItemButton>
+        </ListItem>
+        <ListItem key="contributors" disablePadding>
+          <ListItemButton href="/users" selected={view === 'users'}>
+            <ListItemIcon sx={{ minWidth: '30px' }}>
+              <GroupIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={'Contributors'} />
           </ListItemButton>
         </ListItem>
       </List>

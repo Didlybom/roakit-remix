@@ -27,12 +27,19 @@ import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import App from '../components/App';
 import {
+  fetchAccountMap,
   fetchActivities,
-  fetchActorMap,
+  fetchIdentities,
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
-import { TOP_ACTORS_OTHERS_ID, artifactActions, groupActivities } from '../schemas/activityFeed';
+import {
+  TOP_ACTORS_OTHERS_ID,
+  artifactActions,
+  groupActivities,
+  identifyAccounts,
+  identifyActivities,
+} from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   DATE_RANGE_LOCAL_STORAGE_KEY,
@@ -75,9 +82,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     // retrieve initiatives and users
-    const [fetchedInitiatives, actors] = await Promise.all([
+    const [fetchedInitiatives, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId),
-      fetchActorMap(sessionData.customerId),
+      fetchAccountMap(sessionData.customerId),
+      fetchIdentities(sessionData.customerId),
     ]);
 
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
@@ -86,7 +94,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // retrieve activities
     const startDate = dateFilterToStartDate(dateFilter as DateRange)!;
     const activities = await fetchActivities(sessionData.customerId, startDate);
-    const groupedActivities = groupActivities(activities);
+    const groupedActivities = groupActivities(
+      identifyActivities(activities, identities.accountMap)
+    );
+    const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
     return { groupedActivities, initiatives, actors, error: null };
   } catch (e) {
@@ -95,7 +106,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       error: errMsg(e, 'Failed to fetch activity'),
       groupedActivities: null,
       activities: null,
-      actors: null,
+      actors: new Map(),
       initiatives: null,
     };
   }
@@ -107,7 +118,7 @@ export default function Dashboard() {
   const { groupedActivities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
     activities: null,
-    actors: null,
+    actors: new Map(),
     initiatives: null,
   };
   const isHydrated = useHydrated();
@@ -377,7 +388,7 @@ export default function Dashboard() {
                               data: groupedActivities.topActors[action].map(a =>
                                 a.id === TOP_ACTORS_OTHERS_ID ?
                                   'All others'
-                                : actors[a.id]?.name ?? 'unknown'
+                                : actors[a.id].name ?? 'unknown'
                               ),
                               scaleType: 'band',
                             },

@@ -14,6 +14,7 @@ export type View =
   | 'github'
   | 'jira'
   | 'initiatives'
+  | 'users'
   | 'settings'
   | 'login'
   | 'logout'

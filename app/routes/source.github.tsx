@@ -112,11 +112,10 @@ export default function GitHub() {
   const gitHubColumns = useMemo<GridColDef[]>(
     () => [
       dateColdDef({ field: 'date' }),
-      { field: 'repositoryName', headerName: 'Repo.', width: 120 },
+      { field: 'repositoryName', headerName: 'Repo.' },
       actorColdDef({
         field: 'actor',
         headerName: 'Author',
-        width: 120,
         renderCell: (params: GridRenderCellParams) => {
           const fields = params.value as GitHubRow['actor'];
           return !fields ? '' : (
@@ -136,7 +135,7 @@ export default function GitHub() {
       {
         field: 'ref',
         headerName: 'Ref.',
-        width: 90,
+        maxWidth: 120,
         sortComparator: (a: GitHubRow['ref'], b: GitHubRow['ref']) =>
           (a?.label ?? '').localeCompare(b?.label ?? ''),
         renderCell: params => {
@@ -151,7 +150,6 @@ export default function GitHub() {
       {
         field: 'activity',
         headerName: 'Activity',
-        minWidth: 300,
         flex: 1,
         sortComparator: (a: GitHubRow['activity'], b: GitHubRow['activity']) =>
           (a?.title ?? '').localeCompare(b?.title ?? ''),
@@ -229,7 +227,6 @@ export default function GitHub() {
       {
         field: 'actions',
         type: 'actions',
-        width: 50,
         cellClassName: 'actions',
         getActions: params => {
           const row = params.row as GitHubRow;

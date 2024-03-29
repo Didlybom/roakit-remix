@@ -1,7 +1,11 @@
-import firebase from 'firebase/compat/app';
-import { inferPriority } from '../utils/activityUtils';
-import { ParseError } from '../utils/errorUtils';
-import { ActivityCount, ActivityMap, Artifact, TicketMap, activitySchema } from './schemas';
+import {
+  AccountMap,
+  ActivityCount,
+  ActivityMap,
+  ActorMap,
+  IdentityAccountMap,
+  IdentityData,
+} from './schemas';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
   ['task-created', { sortOrder: 1, label: 'Task creation' }],
@@ -17,25 +21,6 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-created', { sortOrder: 11, label: 'Code organization creation' }],
   ['codeOrg-updated', { sortOrder: 12, label: 'Code organization update' }],
 ]);
-
-interface ActorActivityCount {
-  id: string;
-  count: number;
-}
-type TopActors = Record<string, ActorActivityCount[]>;
-
-interface Priority {
-  id: number;
-  count: number;
-}
-
-interface Initiative {
-  id: string;
-  count: ActivityCount;
-  actorIds?: Set<string>; // will be removed before returning for serialization
-  actorCount: number;
-  effort: number;
-}
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -102,19 +87,75 @@ export const buildArtifactActionKey = (artifact: string, action: string) => {
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
+interface ActorActivityCount {
+  id: string;
+  count: number;
+}
+type TopActorsMap = Record<string, ActorActivityCount[]>;
+
+interface Priority {
+  id: number;
+  count: number;
+}
+
+interface Initiative {
+  id: string;
+  count: ActivityCount;
+  actorIds?: Set<string>; // will be removed before returning for serialization
+  actorCount: number;
+  effort: number;
+}
+
+export const identifyAccounts = (
+  accounts: AccountMap,
+  identities: IdentityData[],
+  identityAccountMap: IdentityAccountMap
+) => {
+  const actors: ActorMap = {};
+
+  accounts.forEach((account, accountId) => {
+    const identityId = identityAccountMap[accountId];
+    if (identityId) {
+      const identity = identities.find(i => i.id === identityId);
+      if (!identity) {
+        return;
+      }
+      actors[identityId] = {
+        name: identity.displayName ?? identityId,
+        email: identity.email,
+        urls: identity.accounts
+          ?.filter(a => a.url)
+          .map(a => {
+            return { type: a.type, url: a.url ?? '' };
+          }),
+      };
+    } else {
+      actors[accountId] = {
+        name: account.name || accountId,
+        ...(account.url && { urls: [{ type: account.type, url: account.url }] }),
+      };
+    }
+  });
+
+  return actors;
+};
+
+export const identifyActivities = (activities: ActivityMap, accountMap: IdentityAccountMap) => {
+  activities.forEach(activity => {
+    if (activity.actorId && accountMap[activity.actorId]) {
+      activity.actorId = accountMap[activity.actorId];
+    }
+  });
+  return activities;
+};
+
 export const groupActivities = (activities: ActivityMap) => {
-  const topActors: TopActors = {};
+  const topActors: TopActorsMap = {};
   const priorities: Priority[] = [];
   let initiatives: Initiative[] = [];
 
-  Object.keys(activities).forEach(activityId => {
-    const {
-      actorId,
-      initiativeId,
-      priority: priorityId,
-      artifact,
-      action,
-    } = activities[activityId];
+  activities.forEach(activity => {
+    const { actorId, initiativeId, priority: priorityId, artifact, action } = activity;
 
     // top actors
     if (actorId !== undefined) {
@@ -185,50 +226,4 @@ export const groupActivities = (activities: ActivityMap) => {
   });
 
   return { topActors, priorities, initiatives };
-};
-
-export interface UserActivityRow {
-  id: string;
-  date: Date;
-  action: string;
-  event?: string;
-  artifact: Artifact;
-  initiativeId: string;
-  priority?: number;
-  actorId?: string;
-  metadata: unknown;
-  objectId?: string;
-}
-
-export const userActivityRows = (
-  snapshot: firebase.firestore.QuerySnapshot,
-  tickets: TicketMap,
-  includeActorId: boolean
-): UserActivityRow[] => {
-  const rows: UserActivityRow[] = [];
-  snapshot.forEach(doc => {
-    const props = activitySchema.safeParse(doc.data());
-    if (!props.success) {
-      throw new ParseError('Failed to parse activities. ' + props.error.message);
-    }
-    let priority = props.data.priority;
-    if (priority === undefined || priority === -1) {
-      priority = inferPriority(tickets, props.data.metadata);
-    }
-    const row: UserActivityRow = {
-      id: doc.id,
-      date: new Date(props.data.createdTimestamp),
-      action: props.data.action,
-      event: props.data.event,
-      artifact: props.data.artifact,
-      initiativeId: props.data.initiative,
-      priority,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      metadata: props.data.metadata,
-      ...(includeActorId && { actorId: props.data.actorAccountId ?? '-1' }),
-      objectId: props.data.objectId, // for debugging
-    };
-    rows.push(row);
-  });
-  return rows;
 };
