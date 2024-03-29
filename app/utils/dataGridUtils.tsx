@@ -30,6 +30,7 @@ import { ellipsisSx } from './jsxUtils';
 import theme, { priorityColors, priorityLabels } from './theme';
 
 export const dataGridCommonProps = {
+  autosizeOnMount: true,
   autoHeight: true, // otherwise empty state looks ugly
   slots: {
     noRowsOverlay: () => (
@@ -54,7 +55,6 @@ export const dateColdDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Date',
     type: 'dateTime',
-    width: 120,
     valueFormatter: (value: Date) => formatRelative(value),
     renderCell: (params: GridRenderCellParams) => (
       <Tooltip title={formatMonthDayTime(params.value as Date)}>
@@ -68,7 +68,6 @@ export const dateColdDef = (colDef?: GridColDef) => {
 export const actorColdDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Author',
-    width: 120,
     sortComparator: (a: ActorData, b: ActorData) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
     renderCell: (params: GridRenderCellParams) => {
@@ -86,7 +85,6 @@ export const actorColdDef = (colDef?: GridColDef) => {
 export const actionColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Action',
-    width: 180,
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
@@ -115,7 +113,6 @@ export const actionColDef = (colDef?: GridColDef) => {
 export const priorityColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Priority',
-    width: 80,
     sortComparator: (a: number, b: number) => (b ?? 999) - (a ?? 999),
     renderCell: params => {
       const priority = params.value as number;
@@ -141,7 +138,6 @@ export const summaryColDef = (
 ) => {
   return {
     headerName: 'Summary',
-    minWidth: 300,
     flex: 1,
     renderCell: params => {
       const summary = getSummary(params.value);
@@ -224,7 +220,6 @@ export const metadataActionsColDef = (
   return {
     field: 'actions',
     type: 'actions',
-    width: 50,
     cellClassName: 'actions',
     getActions: params => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access

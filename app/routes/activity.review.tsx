@@ -274,6 +274,7 @@ export default function ActivityReview() {
   }, [sessionData.customerId, showAllActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
 
   const dataGridProps = {
+    autosizeOnMount: true,
     autoHeight: true, // otherwise empty state looks ugly
     slots: {
       noRowsOverlay: () => (
@@ -299,7 +300,6 @@ export default function ActivityReview() {
       }),
       actorColdDef({
         field: 'actor',
-        width: 160,
         headerName: 'Contributor',
         valueGetter: (_, row) => {
           const fields = row as ActivityData;
@@ -321,7 +321,7 @@ export default function ActivityReview() {
         sortable: false,
       }),
       actionColDef({ field: 'action', sortable: false }),
-      { field: 'artifact', headerName: 'Artifact', width: 80, sortable: false },
+      { field: 'artifact', headerName: 'Artifact', sortable: false },
       priorityColDef({ field: 'priority', sortable: false }),
       summaryColDef({ field: 'metadata', sortable: false }, (element, content) =>
         setPopover({ element, content })
@@ -332,6 +332,7 @@ export default function ActivityReview() {
       {
         field: 'initiativeId',
         headerName: 'Initiative',
+        minWidth: 150,
         type: 'singleSelect',
         valueOptions: [
           { value: UNSET_INITIATIVE_ID, label: '[unset]' },
@@ -340,8 +341,6 @@ export default function ActivityReview() {
             return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
           }),
         ],
-        minWidth: 150,
-        flex: 1,
         editable: true,
         sortable: false,
         renderCell: params =>
@@ -355,11 +354,13 @@ export default function ActivityReview() {
         field: 'note',
         headerName: 'Note',
         minWidth: 150,
-        flex: 1,
         editable: true,
         sortable: false,
-        renderCell: params =>
-          !params.value ? <Box sx={{ cursor: 'pointer' }}>{'...'}</Box> : (params.value as string),
+        renderCell: params => (
+          <Box title={params.value as string} sx={{ cursor: 'pointer' }}>
+            {params.value || '...'}
+          </Box>
+        ),
       },
     ],
     [sessionData.actors, sessionData.initiatives]
