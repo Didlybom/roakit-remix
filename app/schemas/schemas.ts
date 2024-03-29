@@ -47,6 +47,7 @@ export const activitySchema = z.object({
   initiative: z.string(),
   priority: z.number().optional(),
   metadata: z.any(),
+  note: z.string().optional(),
   objectId: z.string().optional(), // for debugging
 });
 
@@ -96,6 +97,7 @@ export interface ActivityData {
   initiativeId: string;
   priority?: number;
   metadata: unknown;
+  note?: string;
   objectId?: string; // for debugging
 }
 

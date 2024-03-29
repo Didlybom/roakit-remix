@@ -1,4 +1,3 @@
-import EditIcon from '@mui/icons-material/Edit';
 import {
   Alert,
   Box,
@@ -77,6 +76,7 @@ const logger = pino({ name: 'route:activity.review' });
 
 const MAX_BATCH = 500;
 const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
+const DELETE = '_DELETE_';
 
 export const meta = () => [{ title: 'Activity Review | ROAKIT' }];
 
@@ -100,6 +100,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+type ActivityRow = ActivityData & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -112,6 +113,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const customerId = token.customerId as string;
 
     const form = await request.formData();
+
+    const note = form.get('note')?.toString() ?? '';
+    if (note) {
+      const activityId = form.get('activityId')?.toString() ?? '';
+      await firestore
+        .doc('customers/' + customerId + '/activities/' + activityId)
+        .update({ note: note === DELETE ? '' : note });
+      return null;
+    }
+
     const activitiesJson = form.get('activities')?.toString() ?? '';
     const initiativeId = form.get('initiativeId')?.toString() ?? '';
     const initiativeCountersLastUpdated =
@@ -153,7 +164,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function ActivityReview() {
   const fetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
-  const [activities, setActivities] = useState<ActivityData[] | null>(null);
+  const [activities, setActivities] = useState<ActivityRow[] | null>(null);
   const [showAllActivity, setShowAllActivity] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
@@ -241,6 +252,7 @@ export default function ActivityReview() {
             initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             metadata: fields.data.metadata,
+            note: fields.data.note,
             objectId: fields.data.objectId, // for debugging
           });
         });
@@ -328,7 +340,7 @@ export default function ActivityReview() {
             return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
           }),
         ],
-        minWidth: 200,
+        minWidth: 150,
         flex: 1,
         editable: true,
         sortable: false,
@@ -337,11 +349,17 @@ export default function ActivityReview() {
             <Box sx={{ cursor: 'pointer' }}>
               {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
-          : <EditIcon
-              color="primary"
-              fontSize="small"
-              sx={{ verticalAlign: 'middle', cursor: 'pointer' }}
-            />,
+          : <Box sx={{ cursor: 'pointer' }}>{'...'}</Box>,
+      },
+      {
+        field: 'note',
+        headerName: 'Note',
+        minWidth: 150,
+        flex: 1,
+        editable: true,
+        sortable: false,
+        renderCell: params =>
+          !params.value ? <Box sx={{ cursor: 'pointer' }}>{'...'}</Box> : (params.value as string),
       },
     ],
     [sessionData.actors, sessionData.initiatives]
@@ -471,22 +489,30 @@ export default function ActivityReview() {
             }
           }}
           slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
-          processRowUpdate={(updatedRow: ActivityData) => {
-            fetcher.submit(
-              {
-                initiativeId: updatedRow.initiativeId,
-                initiativeCountersLastUpdated:
-                  sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
-                activities: JSON.stringify([
-                  {
-                    id: updatedRow.id,
-                    artifact: updatedRow.artifact,
-                    createdTimestamp: updatedRow.createdTimestamp,
-                  },
-                ] as ActivityPayload),
-              },
-              { method: 'post' }
-            );
+          processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
+            if (updatedRow.initiativeId !== oldRow.initiativeId) {
+              fetcher.submit(
+                {
+                  initiativeId: updatedRow.initiativeId,
+                  initiativeCountersLastUpdated:
+                    sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
+                  activities: JSON.stringify([
+                    {
+                      id: updatedRow.id,
+                      artifact: updatedRow.artifact,
+                      createdTimestamp: updatedRow.createdTimestamp,
+                    },
+                  ] as ActivityPayload),
+                },
+                { method: 'post' }
+              );
+            } else if (updatedRow.note !== oldRow.note) {
+              fetcher.submit(
+                { activityId: updatedRow.id, note: updatedRow.note || DELETE },
+                { method: 'post' }
+              );
+            }
+
             return updatedRow;
           }}
           onRowSelectionModelChange={rowSelectionModel => {

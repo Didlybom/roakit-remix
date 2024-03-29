@@ -86,7 +86,7 @@ export const actorColdDef = (colDef?: GridColDef) => {
 export const actionColDef = (colDef?: GridColDef) => {
   return {
     headerName: 'Action',
-    width: 200,
+    width: 180,
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
@@ -171,7 +171,7 @@ export const summaryColDef = (
         <Stack direction="row">
           {link}
           {comment || commits ?
-            <Stack sx={{ mt: '3px' }}>
+            <Stack sx={{ mt: '3px', minWidth: 0 }}>
               <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>

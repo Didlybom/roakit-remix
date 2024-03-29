@@ -28,8 +28,9 @@ module.exports = {
   ignorePatterns: ['/build/**/*', '/app/proto/**/*'],
   plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks'],
   rules: {
-    'no-console': [2],
-    'arrow-parens': [2, 'as-needed'],
+    '@typescript-eslint/prefer-nullish-coalescing': ['off'],
+    'no-console': ['error'],
+    'arrow-parens': ['error', 'as-needed'],
     '@typescript-eslint/no-misused-promises': [
       2,
       {
