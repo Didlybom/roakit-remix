@@ -23,7 +23,7 @@
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.4",
     "@emotion/server": "^11.11.0",
-    "@emotion/styled": "^11.11.0",
+    "@emotion/styled": "^11.11.5",
     "@google-cloud/secret-manager": "^5.2.0",
     "@mui/material": "^5.15.14",
     "@mui/x-charts": "^7.1.0",
