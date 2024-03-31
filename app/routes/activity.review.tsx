@@ -326,7 +326,11 @@ export default function ActivityReview() {
         renderCell: params => {
           const fields = params.value as AccountData;
           return (
-            <Link href={`/activity/user/${fields.id}`} title="View activity" sx={internalLinkSx}>
+            <Link
+              href={`/activity/user/${encodeURI(fields.id)}`}
+              title="View activity"
+              sx={internalLinkSx}
+            >
               {fields.name}
             </Link>
           );

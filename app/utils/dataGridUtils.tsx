@@ -138,6 +138,7 @@ export const summaryColDef = (
 ) => {
   return {
     headerName: 'Summary',
+    minWidth: 150,
     flex: 1,
     renderCell: params => {
       const summary = getSummary(params.value);

@@ -72,7 +72,7 @@ export default function Users() {
       renderCell: params => {
         return (
           <Link
-            href={'/activity/user/' + params.value}
+            href={`/activity/user/${encodeURI(params.value as string)}`}
             title={params.value as string}
             sx={internalLinkSx}
           >

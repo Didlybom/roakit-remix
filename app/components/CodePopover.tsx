@@ -55,7 +55,7 @@ export default function CodePopover({
       <Typography
         component="pre"
         fontSize="small"
-        fontFamily="monospace"
+        fontFamily="Roboto Mono, monospace"
         color={theme.palette.grey[700]}
         sx={{ p: 2, overflowX: 'auto', minWidth: '150px', minHeight: '70px' }}
       >
