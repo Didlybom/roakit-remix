@@ -16,11 +16,12 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 
-import { useFetcher, useNavigation } from '@remix-run/react';
+import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
+import BannedItems from './BannedItems.';
 import githubImage from './images/github-webhook.png';
 import { actionIcon, screenshotThumbSx } from './route';
 
@@ -34,8 +35,7 @@ export default function GitHubSettings({
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
   const navigation = useNavigation();
-  const fetcher = useFetcher();
-
+  const submit = useSubmit();
   const serverData = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
   const url = `https://ingest.roakit.com/github/${serverData.clientId}`;
   const [secret, setSecret] = useState(serverData.secret);
@@ -104,7 +104,7 @@ export default function GitHubSettings({
                     <DoneIcon />,
                     'Save the secret (make sure to copy it first, as it will be hidden once saved)',
                     () =>
-                      fetcher.submit(
+                      submit(
                         {
                           feedId: serverData.feedId,
                           type: feedUtils.GITHUB_FEED_TYPE,
@@ -171,6 +171,27 @@ export default function GitHubSettings({
         </Link>
         .
       </Typography>
+      <Typography variant="h6" sx={{ mt: 5, mb: 2 }}>
+        Advanced Settings
+      </Typography>
+      <Box>
+        <BannedItems
+          storedBannedItems={serverData.bannedEvents}
+          storageKey="bannedEvents"
+          title="Banned Events"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
+      <Box sx={{ mt: 3 }}>
+        <BannedItems
+          storedBannedItems={serverData.bannedAccounts}
+          storageKey="bannedAccounts"
+          title="Banned Accounts"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
     </>
   );
 }

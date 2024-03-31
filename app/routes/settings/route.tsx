@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   GlobalStyles,
   IconButton,
@@ -14,15 +15,15 @@ import {
 import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { Form, useLoaderData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
 import { sessionCookie } from '../../cookies.server';
 import { firestore, auth as serverAuth } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
-import { feedSchema } from '../../schemas/schemas';
+import { bannedRecordSchema, feedSchema } from '../../schemas/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
@@ -49,7 +50,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
-    const feedDocs = await feedsCollection.listDocuments();
+    const feedDocs = await firestore
+      .collection('customers/' + sessionData.customerId + '/feeds')
+      .listDocuments();
     const feeds = await Promise.all(
       feedDocs.map(async feed => {
         const feedDoc = await feed.get();
@@ -59,6 +62,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           type: feedData.type,
           clientId: createClientId(+sessionData.customerId!, +feed.id),
           ...(feedData.secret && { secret: feedData.secret }),
+          ...(feedData.bannedEvents && { bannedEvents: feedData.bannedEvents }),
+          ...(feedData.bannedAccounts && { bannedAccounts: feedData.bannedAccounts }),
         };
       })
     );
@@ -80,7 +85,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
 
     // retrieve initiatives
-    const initiatives = await fetchInitiatives(sessionData.customerId);
+    const initiatives = await fetchInitiatives(sessionData.customerId!);
 
     return { feeds, initiatives };
   } catch (e) {
@@ -104,15 +109,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const feedId = form.get('feedId')?.toString() ?? '';
     if (feedId) {
-      const secret = form.get('secret')?.toString() ?? '';
-      const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
-      await doc.update({ secret });
+      const secret = form.get('secret');
+      if (secret) {
+        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        await doc.update({ secret });
+      }
+      const bannedEvents = form.get('bannedEvents');
+      if (bannedEvents) {
+        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        await doc.update({
+          bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents as string)),
+        });
+      }
+      const bannedAccounts = form.get('bannedAccounts');
+      if (bannedAccounts) {
+        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        await doc.update({
+          bannedAccounts: bannedRecordSchema.parse(JSON.parse(bannedAccounts as string)),
+        });
+      }
     }
 
     return null;
   } catch (e) {
     logger.error(e);
-    return redirect('/logout');
+    return { error: 'Failed to save' };
   }
 };
 
@@ -133,8 +154,10 @@ export const screenshotThumbSx: SxProps = {
 
 export default function Settings() {
   const serverData = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const [tabValue, setTabValue] = useState(0);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
+  const [showError, setShowError] = useState<string | null>(actionData?.error ?? null);
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
@@ -146,6 +169,10 @@ export default function Settings() {
     void navigator.clipboard.writeText(content);
     setShowCopyConfirmation(content);
   };
+
+  useEffect(() => {
+    setShowError(actionData?.error ?? null);
+  }, [actionData]);
 
   return (
     <App view="settings" isLoggedIn={true}>
@@ -190,6 +217,20 @@ export default function Settings() {
             }}
             message={'Copied ' + (showCopyConfirmation ?? '')}
           />
+          <Snackbar
+            open={showError !== null}
+            autoHideDuration={3000}
+            onClose={(_, reason?: string) => {
+              if (reason === 'clickaway') {
+                return;
+              }
+              setShowError(null);
+            }}
+          >
+            <Alert severity="error" variant="filled" sx={{ width: '100%' }}>
+              {'Error: ' + (showError ?? '')}
+            </Alert>
+          </Snackbar>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
             <Tabs
               variant="scrollable"

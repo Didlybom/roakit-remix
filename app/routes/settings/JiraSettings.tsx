@@ -3,6 +3,7 @@ import { Box, Link, List, ListItem, Stack, TextField, Typography } from '@mui/ma
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
+import BannedItems from './BannedItems.';
 import jiraImage from './images/jira-webhook.png';
 import { actionIcon, screenshotThumbSx } from './route';
 
@@ -15,9 +16,9 @@ export default function JiraSettings({
   handleCopy: (content?: string) => void;
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
-  const serverJiraFeed = settingsData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
+  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
 
-  const url = `https://ingest.roakit.com/jira/${serverJiraFeed.clientId}`;
+  const url = `https://ingest.roakit.com/jira/${serverData.clientId}`;
   const scope = 'all issues';
   const events = 'all events';
 
@@ -97,6 +98,27 @@ export default function JiraSettings({
         </Link>
         .
       </Typography>
+      <Typography variant="h6" sx={{ mt: 5, mb: 2 }}>
+        Advanced Settings
+      </Typography>
+      <Box>
+        <BannedItems
+          storedBannedItems={serverData.bannedEvents}
+          storageKey="bannedEvents"
+          title="Banned Events"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
+      <Box sx={{ mt: 3 }}>
+        <BannedItems
+          storedBannedItems={serverData.bannedAccounts}
+          storageKey="bannedAccounts"
+          title="Banned Accounts"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
     </>
   );
 }

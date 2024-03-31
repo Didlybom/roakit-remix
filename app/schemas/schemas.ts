@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
+export const bannedRecordSchema = z.record(z.string(), z.boolean());
 export const feedSchema = z.object({
   type: z.string(),
   secret: z.string().optional(),
+  bannedEvents: bannedRecordSchema.optional(),
+  bannedAccounts: bannedRecordSchema.optional(),
 });
 
 export const initiativeSchema = z.object({
@@ -164,6 +167,8 @@ export interface SettingsData {
     feedId: string;
     type: string;
     clientId: string;
+    bannedEvents?: Record<string, boolean>;
+    bannedAccounts?: Record<string, boolean>;
   }[];
   initiatives: InitiativeData[];
 }

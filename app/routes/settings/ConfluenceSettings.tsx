@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
+import BannedItems from './BannedItems.';
 import confluenceImage from './images/confluence-webhook.png';
 import { actionIcon, screenshotThumbSx } from './route';
 
@@ -195,6 +196,27 @@ export default function ConfluenceSettings({
         </Link>
         .
       </Typography>
+      <Typography variant="h6" sx={{ mt: 5, mb: 2 }}>
+        Advanced Settings
+      </Typography>
+      <Box>
+        <BannedItems
+          storedBannedItems={serverData.bannedEvents}
+          storageKey="bannedEvents"
+          title="Banned Events"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
+      <Box sx={{ mt: 3 }}>
+        <BannedItems
+          storedBannedItems={serverData.bannedAccounts}
+          storageKey="bannedAccounts"
+          title="Banned Accounts"
+          feedId={serverData.feedId}
+          feedType={serverData.type}
+        />
+      </Box>
     </>
   );
 }

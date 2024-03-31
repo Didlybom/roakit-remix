@@ -4,6 +4,15 @@ export const cloneArray = <T>(array: T[]) => {
   return cloned;
 };
 
+const toArray = <T>(rec: Record<string, T>) =>
+  Object.keys(rec)
+    .sort((a, b) => a.localeCompare(b))
+    .map(k => {
+      return { k, v: rec[k] };
+    });
+export const areRecordsEqual = <T>(rec1: Record<string, T>, rec2: Record<string, T>) =>
+  JSON.stringify(toArray(rec1)) === JSON.stringify(toArray(rec2));
+
 export const groupBy = <T>(array: T[], key: keyof T): Record<string, T[]> =>
   array.reduce(
     (acc, value) => {
