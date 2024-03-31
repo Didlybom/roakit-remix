@@ -37,6 +37,7 @@ export enum DateRange {
   OneWeek = 'OneWeek',
   OneDay = 'OneDay',
 }
+export type DateRangeValue = DateRange.TwoWeeks | DateRange.OneWeek | DateRange.OneDay;
 
 export const dateRangeLabels: Record<DateRange, string> = {
   [DateRange.TwoWeeks]: 'Last 14 days',
@@ -57,5 +58,3 @@ export const dateFilterToStartDate = (dateFilter: DateRange) => {
       return null;
   }
 };
-
-export const DATE_RANGE_LOCAL_STORAGE_KEY = 'dateRange';

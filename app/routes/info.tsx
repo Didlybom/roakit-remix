@@ -1,8 +1,10 @@
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
+import { loadSession } from '../utils/authUtils.server';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Version Info | ROAKIT' }];
@@ -11,11 +13,25 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
   return await getSessionData(request);
 };
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
+  }
+};
+
 export default function Info() {
   const sessionData = useLoaderData<typeof loader>();
 
   return (
-    <App view="info" isLoggedIn={sessionData.isLoggedIn}>
+    <App view="info" isLoggedIn={sessionData.isLoggedIn} isNavOpen={sessionData.isNavOpen}>
       <Grid container spacing={2} sx={{ display: 'flex', flex: 1, minWidth: 0, m: 4 }}>
         <Grid>
           <Grid>
@@ -27,11 +43,19 @@ export default function Info() {
           <Grid>
             <strong>Customer ID</strong>
           </Grid>
+          <Grid>
+            <strong>Date Filter</strong>
+          </Grid>
+          <Grid>
+            <strong>IsNavOpen</strong>
+          </Grid>
         </Grid>
         <Grid>
           <Grid>{packageJson.version}</Grid>
           <Grid>{sessionData.email}</Grid>
           <Grid>{sessionData.customerId}</Grid>
+          <Grid>{sessionData.dateFilter}</Grid>
+          <Grid>{`${sessionData.isNavOpen}`}</Grid>
         </Grid>
       </Grid>
     </App>

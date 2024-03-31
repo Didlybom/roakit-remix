@@ -20,14 +20,11 @@ import {
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
+import { useLoaderData, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHydrated } from 'remix-utils/use-hydrated';
-import useLocalStorageState from 'use-local-storage-state';
-import usePrevious from 'use-previous';
 import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
@@ -44,12 +41,7 @@ import {
 } from '../schemas/githubFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { actorColdDef, dataGridCommonProps, dateColdDef } from '../utils/dataGridUtils';
-import {
-  DATE_RANGE_LOCAL_STORAGE_KEY,
-  DateRange,
-  dateFilterToStartDate,
-  formatMonthDay,
-} from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate, formatMonthDay } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { disabledNotOpaqueSx, ellipsisSx, internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
@@ -95,13 +87,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function GitHub() {
   const sessionData = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
-  const isHydrated = useHydrated();
-  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
-    defaultValue: DateRange.OneDay,
-  });
-  const dateFilter = isHydrated ? dateFilterLS : undefined;
-  const prevDateFilter = usePrevious(dateFilter);
+  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.All);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -395,8 +383,7 @@ export default function GitHub() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
-      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
+      showProgress={!gotSnapshot || navigation.state === 'submitting'}
     >
       <Popover
         id={popover?.element ? 'popover' : undefined}

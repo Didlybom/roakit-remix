@@ -45,7 +45,6 @@ export default function App({
   isLoggedIn,
   view,
   dateRange,
-  onDateRangeSelect,
   showProgress,
   isNavOpen,
   children,
@@ -53,13 +52,12 @@ export default function App({
   isLoggedIn: boolean;
   view: View;
   dateRange?: DateRange;
-  onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
   isNavOpen?: boolean;
   children?: ReactNode;
 }) {
   const fetcher = useFetcher();
-  let isOpen = !!isNavOpen;
+  let isOpen = isLoggedIn ? isNavOpen ?? true : false;
   if (fetcher.formData?.has('isNavOpen')) {
     isOpen = fetcher.formData.get('isNavOpen') === 'true';
   }
@@ -70,10 +68,9 @@ export default function App({
         isLoggedIn={isLoggedIn}
         view={view}
         dateRange={dateRange}
-        onDateRangeSelect={onDateRangeSelect}
         showProgress={showProgress}
         navbarWidth={navbarWidth}
-        open={isLoggedIn ? isOpen : false}
+        navbarOpen={isOpen}
         onNavBarOpen={() => fetcher.submit({ isNavOpen: true }, { method: 'post' })}
       />
       <NavDrawer

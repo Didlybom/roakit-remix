@@ -20,12 +20,11 @@ import {
 
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
-import { useLoaderData, useLocation, useNavigate } from '@remix-run/react';
+import { useLoaderData, useLocation, useNavigate, useNavigation } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
-import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
 import { appActions } from '../appActions.server';
 import App from '../components/App';
@@ -49,7 +48,7 @@ import {
   priorityColDef,
   summaryColDef,
 } from '../utils/dataGridUtils';
-import { DATE_RANGE_LOCAL_STORAGE_KEY, DateRange, dateFilterToStartDate } from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
@@ -188,16 +187,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function UserActivity() {
   const sessionData = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
   const isHydrated = useHydrated();
   const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
   const prevActionFilter = usePrevious(actionFilter);
-  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
-    defaultValue: DateRange.OneDay,
-  });
-  const dateFilter = isHydrated ? dateFilterLS : undefined;
-  const prevDateFilter = usePrevious(dateFilter);
+  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const prevSortAlphabetically = usePrevious(sortAlphabetically);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
@@ -259,7 +255,6 @@ export default function UserActivity() {
     }
 
     if (
-      dateFilter === prevDateFilter &&
       (sortAlphabetically !== prevSortAlphabetically || actionFilter !== prevActionFilter) &&
       snapshot.current
     ) {
@@ -291,7 +286,6 @@ export default function UserActivity() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     dateFilter,
-    prevDateFilter,
     sessionData.actors,
     sessionData.customerId,
     sessionData.userId,
@@ -389,8 +383,7 @@ export default function UserActivity() {
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
-      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
+      showProgress={!gotSnapshot || navigation.state === 'submitting'}
     >
       <CodePopover
         popover={codePopover}

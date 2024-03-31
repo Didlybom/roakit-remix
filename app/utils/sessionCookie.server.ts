@@ -1,6 +1,7 @@
 import pino from 'pino';
 import { sessionCookie } from '../cookies.server';
 import { auth, queryCustomerId } from '../firebase.server';
+import { DateRange, DateRangeValue } from './dateUtils';
 
 const logger = pino({ name: 'utils:session-cookie' });
 
@@ -10,11 +11,13 @@ export interface SessionData {
   email?: string;
   customerId?: number;
   isNavOpen?: boolean;
+  dateFilter?: DateRange;
 }
 
 export interface CookieData {
   jwt?: string;
   isNavOpen?: boolean;
+  dateRange?: DateRangeValue;
 }
 
 export const parseCookie = async (request: Request) => {
@@ -23,7 +26,7 @@ export const parseCookie = async (request: Request) => {
 };
 
 export const getSessionData = async (request: Request): Promise<SessionData> => {
-  const { jwt, isNavOpen } = await parseCookie(request);
+  const { jwt, isNavOpen, dateRange } = await parseCookie(request);
   if (!jwt) {
     return { isLoggedIn: false };
   }
@@ -32,7 +35,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   let token;
   try {
     token = await auth.verifySessionCookie(jwt);
-    sessionData = { isLoggedIn: true, email: token.email, isNavOpen };
+    sessionData = { isLoggedIn: true, email: token.email, isNavOpen, dateFilter: dateRange };
   } catch (e) {
     logger.error(e, 'Error verifying session');
     throw e;

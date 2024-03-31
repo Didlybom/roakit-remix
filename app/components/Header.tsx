@@ -44,19 +44,17 @@ export default function Header({
   isLoggedIn,
   view,
   dateRange,
-  onDateRangeSelect,
   showProgress,
   navbarWidth,
-  open: isNavBarOpen,
+  navbarOpen: isNavBarOpen,
   onNavBarOpen,
 }: {
   isLoggedIn: boolean;
   view: View;
   dateRange?: DateRange;
-  onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
   navbarWidth: number;
-  open?: boolean;
+  navbarOpen?: boolean;
   onNavBarOpen: () => void;
 }) {
   return (
@@ -81,9 +79,7 @@ export default function Header({
         {view !== 'login' && view !== 'logout' && (
           <>
             <Box sx={{ flex: 1, ml: 2 }}>
-              {dateRange && onDateRangeSelect && (
-                <DateRangePicker dateRange={dateRange} onDateRangeSelect={onDateRangeSelect} />
-              )}
+              {dateRange && <DateRangePicker dateRange={dateRange} />}
             </Box>
             {isLoggedIn && (
               <>

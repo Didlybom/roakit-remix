@@ -18,13 +18,11 @@ import {
   pieArcLabelClasses,
 } from '@mui/x-charts';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { useActionData, useLoaderData, useSubmit } from '@remix-run/react';
+import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import { useHydrated } from 'remix-utils/use-hydrated';
-import useLocalStorageState from 'use-local-storage-state';
 import { appActions } from '../appActions.server';
 import App from '../components/App';
 import {
@@ -42,12 +40,7 @@ import {
   identifyActivities,
 } from '../schemas/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import {
-  DATE_RANGE_LOCAL_STORAGE_KEY,
-  DateRange,
-  dateFilterToStartDate,
-  dateRangeLabels,
-} from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate, dateRangeLabels } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { ellipsisSx, windowOpen } from '../utils/jsxUtils';
 import { priorityColors, priorityLabels } from '../utils/theme';
@@ -56,7 +49,7 @@ const logger = pino({ name: 'route:dashboard' });
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
-// verify and get session data
+// verify session data, load activities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -78,12 +71,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (appAction) {
     return appAction;
   }
-
-  const dateFilter = formData.get('dateFilter')?.toString() ?? '';
-  if (!dateFilter) {
-    return null; // client effect posts the dateFilter (read from local storage) the code below needs
-  }
-
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
@@ -96,17 +83,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
     // retrieve activities
-    const startDate = dateFilterToStartDate(dateFilter as DateRange)!;
+    const startDate = dateFilterToStartDate(sessionData.dateFilter ?? DateRange.OneDay)!;
+
     const activities = await fetchActivities(sessionData.customerId!, startDate);
     const groupedActivities = groupActivities(
       identifyActivities(activities, identities.accountMap)
     );
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-
-    return { groupedActivities, initiatives, actors, error: null };
+    return { ...sessionData, groupedActivities, initiatives, actors, error: null };
   } catch (e) {
     logger.error(e);
     return {
+      ...sessionData,
       error: errMsg(e, 'Failed to fetch activity'),
       groupedActivities: null,
       activities: null,
@@ -117,6 +105,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Dashboard() {
+  const navigation = useNavigation();
+  const submit = useSubmit();
   const sessionData = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
   const { groupedActivities, actors, initiatives, error } = data ?? {
@@ -125,16 +115,10 @@ export default function Dashboard() {
     actors: new Map(),
     initiatives: null,
   };
-  const isHydrated = useHydrated();
-  const submit = useSubmit();
-  const [dateFilterLS, setDateFilter] = useLocalStorageState(DATE_RANGE_LOCAL_STORAGE_KEY, {
-    defaultValue: DateRange.OneDay,
-  });
-  const dateFilter = isHydrated ? dateFilterLS : undefined;
-  const [dateRangeLabel, setDateRangeLabel] = useState(
-    dateFilter ? dateRangeLabels[dateFilter] : 'New'
-  );
-  const [loading, setLoading] = useState(sessionData.loading);
+  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
+  const dateRangeLabel = dateRangeLabels[dateFilter];
+  const [loading, setLoading] = useState(true);
+
   const pluralizeMemo = memoize(pluralize);
 
   const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
@@ -169,17 +153,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (groupedActivities) {
       setLoading(false);
-      setDateRangeLabel(dateFilter ? dateRangeLabels[dateFilter] : 'New');
+    } else {
+      submit({}, { method: 'post' }); // ask server to load
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupedActivities]); // dateFilter must be omitted
 
-  // Hand the date range over to server
   useEffect(() => {
-    if (!dateFilter) {
-      return;
-    }
-    submit({ dateFilter }, { method: 'post' });
+    setLoading(true);
+    submit({}, { method: 'post' }); // ask server to load
   }, [dateFilter, submit]);
 
   useEffect(() => {
@@ -444,12 +426,8 @@ export default function Dashboard() {
       view="dashboard"
       isLoggedIn={sessionData.isLoggedIn}
       dateRange={dateFilter}
-      onDateRangeSelect={dateFilter => {
-        setDateFilter(dateFilter);
-        setLoading(true);
-      }}
       isNavOpen={sessionData.isNavOpen}
-      showProgress={loading}
+      showProgress={loading || navigation.state === 'submitting'}
     >
       {error && (
         <Alert severity="error" sx={{ m: 2 }}>

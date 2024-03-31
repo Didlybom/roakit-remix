@@ -13,6 +13,7 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
+import { useFetcher } from '@remix-run/react';
 import { useState } from 'react';
 import { DateRange, dateRangeLabels } from '../utils/dateUtils';
 
@@ -24,13 +25,12 @@ const icons: Record<DateRange, JSX.Element> = {
 
 export default function DateRangePicker({
   dateRange,
-  onDateRangeSelect,
   showProgress,
 }: {
   dateRange: DateRange;
-  onDateRangeSelect: (dateRange: DateRange) => void;
   showProgress?: boolean;
 }) {
+  const fetcher = useFetcher();
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
 
   return (
@@ -58,7 +58,7 @@ export default function DateRangePicker({
             selected={date === dateRange}
             onClick={() => {
               setMenuEl(null);
-              onDateRangeSelect(date);
+              fetcher.submit({ dateRange: date }, { method: 'post' });
             }}
           >
             <ListItemIcon>{icons[date]}</ListItemIcon>
