@@ -1,5 +1,6 @@
 import { Box, styled } from '@mui/material';
-import { ReactNode, useState } from 'react';
+import { useFetcher } from '@remix-run/react';
+import { ReactNode } from 'react';
 import { DateRange } from '../utils/dateUtils';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
@@ -57,7 +58,11 @@ export default function App({
   isNavOpen?: boolean;
   children?: ReactNode;
 }) {
-  const [open, setOpen] = useState(!!isNavOpen);
+  const fetcher = useFetcher();
+  let isOpen = !!isNavOpen;
+  if (fetcher.formData?.has('isNavOpen')) {
+    isOpen = fetcher.formData.get('isNavOpen') === 'true';
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -68,11 +73,16 @@ export default function App({
         onDateRangeSelect={onDateRangeSelect}
         showProgress={showProgress}
         navbarWidth={navbarWidth}
-        open={isLoggedIn ? open : false}
-        onNavBarOpen={() => setOpen(true)}
+        open={isLoggedIn ? isOpen : false}
+        onNavBarOpen={() => fetcher.submit({ isNavOpen: true }, { method: 'post' })}
       />
-      <NavDrawer view={view} width={navbarWidth} open={open} onClose={() => setOpen(false)} />
-      <Main open={open}>
+      <NavDrawer
+        view={view}
+        width={navbarWidth}
+        open={isOpen}
+        onClose={() => fetcher.submit({ isNavOpen: false }, { method: 'post' })}
+      />
+      <Main open={isOpen}>
         <DrawerHeader />
         {children}
       </Main>

@@ -18,7 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import type { LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import memoize from 'fast-memoize';
@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import LinkifyJira from '../components/LinkifyJira';
@@ -76,6 +77,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   return sessionData;
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
+  }
 };
 
 export default function GitHub() {
@@ -378,7 +393,7 @@ export default function GitHub() {
     <App
       view="github"
       isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={true}
+      isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}

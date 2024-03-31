@@ -1,9 +1,10 @@
 import { Alert, Box, Divider, Link, Stack } from '@mui/material';
 import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
 import { redirect, useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs } from '@remix-run/server-runtime';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { useState } from 'react';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { IdentityData } from '../schemas/schemas';
@@ -30,17 +31,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
-    return { identities };
+    return { ...sessionData, identities };
   } catch (e) {
     logger.error(e);
     throw e;
   }
 };
 
-export default function Users() {
-  const serverData = useLoaderData<typeof loader>();
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
 
-  const [rows] = useState<IdentityRow[]>(serverData.identities.list);
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
+  }
+};
+
+export default function Users() {
+  const sessionData = useLoaderData<typeof loader>();
+
+  const [rows] = useState<IdentityRow[]>(sessionData.identities.list);
   const [error] = useState('');
 
   const dataGridProps = {
@@ -109,7 +124,7 @@ export default function Users() {
   ];
 
   return (
-    <App isLoggedIn={true} view="users" isNavOpen={true}>
+    <App isLoggedIn={true} isNavOpen={sessionData.isNavOpen} view="users">
       <Stack sx={{ m: 3 }}>
         <DataGrid columns={columns} rows={rows} {...dataGridProps} getRowHeight={() => 'auto'} />
         {error && (

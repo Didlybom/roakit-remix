@@ -40,10 +40,10 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
-import { sessionCookie } from '../cookies.server';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import {
@@ -73,6 +73,7 @@ import {
 } from '../utils/dataGridUtils';
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
+import { parseCookie } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -98,7 +99,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
-      customerId: sessionData.customerId,
+      ...sessionData,
       initiatives,
       actors,
       accountMap: identities.accountMap,
@@ -114,7 +115,7 @@ type ActivityRow = ActivityData & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+  const { jwt } = await parseCookie(request);
   if (!jwt) {
     return redirect('/login');
   }
@@ -122,21 +123,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const token = await serverAuth.verifySessionCookie(jwt);
     const customerId = token.customerId as string;
 
-    const form = await request.formData();
+    const formData = await request.formData();
 
-    const note = form.get('note')?.toString() ?? '';
+    const appAction = await appActions(request, formData);
+    if (appAction) {
+      return appAction;
+    }
+
+    const note = formData.get('note')?.toString() ?? '';
     if (note) {
-      const activityId = form.get('activityId')?.toString() ?? '';
+      const activityId = formData.get('activityId')?.toString() ?? '';
       await firestore
         .doc('customers/' + customerId + '/activities/' + activityId)
         .update({ note: note === DELETE ? '' : note });
       return null;
     }
 
-    const activitiesJson = form.get('activities')?.toString() ?? '';
-    const initiativeId = form.get('initiativeId')?.toString() ?? '';
+    const activitiesJson = formData.get('activities')?.toString() ?? '';
+    const initiativeId = formData.get('initiativeId')?.toString() ?? '';
     const initiativeCountersLastUpdated =
-      form.get('initiativeCountersLastUpdated')?.toString() ?? '';
+      formData.get('initiativeCountersLastUpdated')?.toString() ?? '';
     if (!activitiesJson || !initiativeId) {
       return null;
     }
@@ -451,10 +457,22 @@ export default function ActivityReview() {
   }
 
   if (!activities) {
-    return <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={true} />;
+    return (
+      <App
+        view="activity.review"
+        isLoggedIn={true}
+        isNavOpen={sessionData.isNavOpen}
+        showProgress={true}
+      />
+    );
   }
   return (
-    <App view="activity.review" isLoggedIn={true} isNavOpen={true} showProgress={loading}>
+    <App
+      view="activity.review"
+      isLoggedIn={true}
+      isNavOpen={sessionData.isNavOpen}
+      showProgress={loading}
+    >
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}

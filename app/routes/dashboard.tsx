@@ -25,6 +25,7 @@ import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import {
   fetchAccountMap,
@@ -70,12 +71,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-  if (!sessionData.customerId) {
-    throw Error('Unexpected empty customerId');
+
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
   }
 
-  const clientData = await request.formData();
-  const dateFilter = clientData.get('dateFilter')?.toString() ?? '';
+  const dateFilter = formData.get('dateFilter')?.toString() ?? '';
   if (!dateFilter) {
     return null; // client effect posts the dateFilter (read from local storage) the code below needs
   }
@@ -83,17 +87,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId),
-      fetchAccountMap(sessionData.customerId),
-      fetchIdentities(sessionData.customerId),
+      fetchInitiativeMap(sessionData.customerId!),
+      fetchAccountMap(sessionData.customerId!),
+      fetchIdentities(sessionData.customerId!),
     ]);
 
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
-    const initiatives = await updateInitiativeCounters(sessionData.customerId, fetchedInitiatives);
+    const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
     // retrieve activities
     const startDate = dateFilterToStartDate(dateFilter as DateRange)!;
-    const activities = await fetchActivities(sessionData.customerId, startDate);
+    const activities = await fetchActivities(sessionData.customerId!, startDate);
     const groupedActivities = groupActivities(
       identifyActivities(activities, identities.accountMap)
     );
@@ -131,7 +135,6 @@ export default function Dashboard() {
     dateFilter ? dateRangeLabels[dateFilter] : 'New'
   );
   const [loading, setLoading] = useState(sessionData.loading);
-
   const pluralizeMemo = memoize(pluralize);
 
   const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
@@ -295,7 +298,7 @@ export default function Dashboard() {
                 return (
                   <Grid key={initiative.id}>
                     <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                      {widgetTitle(initiatives[initiative.id].label!)}
+                      {widgetTitle(initiatives[initiative.id]?.label ?? 'Unknown')}
                       <BarChart
                         series={[
                           {
@@ -440,12 +443,12 @@ export default function Dashboard() {
     <App
       view="dashboard"
       isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={true}
       dateRange={dateFilter}
       onDateRangeSelect={dateFilter => {
         setDateFilter(dateFilter);
         setLoading(true);
       }}
+      isNavOpen={sessionData.isNavOpen}
       showProgress={loading}
     >
       {error && (

@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData, useLocation, useNavigate } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
@@ -27,6 +27,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import { firestore as firestoreClient } from '../firebase.client';
@@ -157,7 +158,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
 
     return {
-      customerId: sessionData.customerId,
+      ...sessionData,
       userId,
       activityUserIds,
       initiatives,
@@ -168,6 +169,20 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   } catch (e) {
     logger.error(e);
     throw e;
+  }
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
   }
 };
 
@@ -372,7 +387,7 @@ export default function UserActivity() {
     <App
       view="activity.user"
       isLoggedIn={true}
-      isNavOpen={true}
+      isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}

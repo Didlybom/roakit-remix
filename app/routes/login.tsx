@@ -41,9 +41,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const now = new Date();
   return redirect('/', {
     headers: {
-      'Set-Cookie': await sessionCookie.serialize(jwt, {
-        expires: new Date(now.setDate(now.getDate() + 1)), // 1 day, matching JWT expiration above
-      }),
+      'Set-Cookie': await sessionCookie.serialize(
+        { jwt },
+        {
+          expires: new Date(now.setDate(now.getDate() + 1)), // 1 day, matching JWT expiration above
+        }
+      ),
     },
   });
 };

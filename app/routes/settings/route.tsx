@@ -18,15 +18,16 @@ import { redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
+import { appActions } from '../../appActions.server';
 import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
-import { sessionCookie } from '../../cookies.server';
 import { firestore, auth as serverAuth } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
 import { bannedRecordSchema, feedSchema } from '../../schemas/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
+import { parseCookie } from '../../utils/sessionCookie.server';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
@@ -87,7 +88,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // retrieve initiatives
     const initiatives = await fetchInitiatives(sessionData.customerId!);
 
-    return { feeds, initiatives };
+    return { ...sessionData, feeds, initiatives };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -95,7 +96,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+  const { jwt } = await parseCookie(request);
   if (!jwt) {
     return redirect('/login');
   }
@@ -105,25 +106,30 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customerId = token.customerId;
 
-    const form = await request.formData();
+    const formData = await request.formData();
 
-    const feedId = form.get('feedId')?.toString() ?? '';
+    const appAction = await appActions(request, formData);
+    if (appAction) {
+      return appAction;
+    }
+
+    const feedId = formData.get('feedId')?.toString() ?? '';
     if (feedId) {
-      const secret = form.get('secret');
+      const secret = formData.get('secret');
       if (secret) {
-        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        const doc = firestore.doc(`customers/${customerId}/feeds/${feedId}`);
         await doc.update({ secret });
       }
-      const bannedEvents = form.get('bannedEvents');
+      const bannedEvents = formData.get('bannedEvents');
       if (bannedEvents) {
         const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
         await doc.update({
           bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents as string)),
         });
       }
-      const bannedAccounts = form.get('bannedAccounts');
+      const bannedAccounts = formData.get('bannedAccounts');
       if (bannedAccounts) {
-        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        const doc = firestore.doc(`customers/${customerId}/feeds/${feedId}`);
         await doc.update({
           bannedAccounts: bannedRecordSchema.parse(JSON.parse(bannedAccounts as string)),
         });
@@ -153,7 +159,7 @@ export const screenshotThumbSx: SxProps = {
 };
 
 export default function Settings() {
-  const serverData = useLoaderData<typeof loader>();
+  const sessionData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [tabValue, setTabValue] = useState(0);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
@@ -175,7 +181,7 @@ export default function Settings() {
   }, [actionData]);
 
   return (
-    <App view="settings" isLoggedIn={true}>
+    <App view="settings" isNavOpen={sessionData.isNavOpen} isLoggedIn={true}>
       <GlobalStyles
         styles={{
           code: {
@@ -244,21 +250,21 @@ export default function Settings() {
           </Box>
           <TabPanel value={tabValue} index={FeedTab.Jira}>
             <JiraSettings
-              settingsData={serverData}
+              settingsData={sessionData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />
           </TabPanel>
           <TabPanel value={tabValue} index={FeedTab.GitHub}>
             <GitHubSettings
-              settingsData={serverData}
+              settingsData={sessionData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />
           </TabPanel>
           <TabPanel value={tabValue} index={FeedTab.Confluence}>
             <ConfluenceSettings
-              settingsData={serverData}
+              settingsData={sessionData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />

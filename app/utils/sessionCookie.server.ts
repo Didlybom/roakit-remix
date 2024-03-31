@@ -9,10 +9,21 @@ export interface SessionData {
   isLoggedIn: boolean;
   email?: string;
   customerId?: number;
+  isNavOpen?: boolean;
 }
 
+export interface CookieData {
+  jwt?: string;
+  isNavOpen?: boolean;
+}
+
+export const parseCookie = async (request: Request) => {
+  const cookie = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+  return (cookie as CookieData) ?? { jwt: null };
+};
+
 export const getSessionData = async (request: Request): Promise<SessionData> => {
-  const jwt = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
+  const { jwt, isNavOpen } = await parseCookie(request);
   if (!jwt) {
     return { isLoggedIn: false };
   }
@@ -21,7 +32,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   let token;
   try {
     token = await auth.verifySessionCookie(jwt);
-    sessionData = { isLoggedIn: true, email: token.email };
+    sessionData = { isLoggedIn: true, email: token.email, isNavOpen };
   } catch (e) {
     logger.error(e, 'Error verifying session');
     throw e;

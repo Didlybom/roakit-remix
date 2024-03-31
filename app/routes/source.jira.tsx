@@ -1,7 +1,7 @@
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
-import type { LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import useLocalStorageState from 'use-local-storage-state';
 import usePrevious from 'use-previous';
+import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
@@ -39,6 +40,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   return sessionData;
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
+  }
+
+  const formData = await request.formData();
+
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
+  }
 };
 
 export default function Jira() {
@@ -197,7 +212,7 @@ export default function Jira() {
     <App
       view="jira"
       isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={true}
+      isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || (prevDateFilter && dateFilter !== prevDateFilter)}
