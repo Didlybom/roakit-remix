@@ -78,16 +78,21 @@ export default function Users() {
       sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
     },
   };
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  // const accounts = params.row.accounts as IdentityData['accounts'];
   const columns: GridColDef[] = [
     {
       field: 'id',
       headerName: 'ID',
+    },
+    { field: 'email', headerName: 'Email' },
+    {
+      field: 'displayName',
+      headerName: 'Name',
       renderCell: params => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const id = params.row.id as string;
         return (
           <Link
-            href={`/activity/user/${encodeURI(params.value as string)}`}
+            href={`/activity/user/${encodeURI(id)}`}
             title={params.value as string}
             sx={internalLinkSx}
           >
@@ -96,8 +101,6 @@ export default function Users() {
         );
       },
     },
-    { field: 'email', headerName: 'Email' },
-    { field: 'displayName', headerName: 'Name' },
     {
       field: 'accounts',
       headerName: 'Accounts',
@@ -111,10 +114,12 @@ export default function Users() {
                 spacing="10px"
                 sx={{ textWrap: 'nowrap' }}
               >
-                <strong>{account.type}:</strong>
+                <strong>{account.type}</strong>
                 <Box>{account.id}</Box>
-                <Box>{account.name ?? account.id}</Box>
-                <Box>{account.url}</Box>
+                {account.name && <Box>{account.name}</Box>}
+                <Link href={account.url} target="_blank" sx={{ cursor: 'pointer' }}>
+                  {account.url}
+                </Link>
               </Stack>
             </Stack>
           );
