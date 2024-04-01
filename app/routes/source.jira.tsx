@@ -203,6 +203,7 @@ export default function Jira() {
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showPulse={true}
     >
       <CodePopover popover={popover} onClose={() => setPopover(null)} />
       <Stack>

@@ -384,6 +384,7 @@ export default function GitHub() {
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showPulse={true}
     >
       <Popover
         id={popover?.element ? 'popover' : undefined}

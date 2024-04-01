@@ -428,6 +428,7 @@ export default function Dashboard() {
       dateRange={dateFilter}
       isNavOpen={sessionData.isNavOpen}
       showProgress={loading || navigation.state === 'submitting'}
+      showPulse={false}
     >
       {error && (
         <Alert severity="error" sx={{ m: 2 }}>

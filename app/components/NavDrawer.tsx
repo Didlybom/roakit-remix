@@ -5,6 +5,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import GroupIcon from '@mui/icons-material/Group';
 import {
+  Box,
   Divider,
   Drawer,
   IconButton,
@@ -18,15 +19,18 @@ import {
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
+import Pulse from './Pulse';
 
 export default function NavDrawer({
   view,
   width,
+  showPulse,
   open,
   onClose,
 }: {
   view: View;
   width: number;
+  showPulse?: boolean;
   open: boolean;
   onClose: () => void;
 }) {
@@ -42,6 +46,12 @@ export default function NavDrawer({
       open={open}
     >
       <DrawerHeader>
+        {showPulse && (
+          <Box title="This page show real-time activity" sx={{ mb: '2px', ml: '15px' }}>
+            <Pulse />
+          </Box>
+        )}
+        <Box sx={{ flex: 1 }} />
         <IconButton onClick={onClose}>
           <ChevronLeftIcon />
         </IconButton>

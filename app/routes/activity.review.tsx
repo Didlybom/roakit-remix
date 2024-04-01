@@ -472,6 +472,7 @@ export default function ActivityReview() {
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
       showProgress={loading}
+      showPulse={false}
     >
       <CodePopover
         popover={codePopover}

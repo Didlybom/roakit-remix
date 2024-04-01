@@ -46,6 +46,7 @@ export default function App({
   view,
   dateRange,
   showProgress,
+  showPulse,
   isNavOpen,
   children,
 }: {
@@ -53,6 +54,7 @@ export default function App({
   view: View;
   dateRange?: DateRange;
   showProgress?: boolean;
+  showPulse?: boolean;
   isNavOpen?: boolean;
   children?: ReactNode;
 }) {
@@ -76,6 +78,7 @@ export default function App({
       <NavDrawer
         view={view}
         width={navbarWidth}
+        showPulse={showPulse}
         open={isOpen}
         onClose={() => fetcher.submit({ isNavOpen: false }, { method: 'post' })}
       />

@@ -7,7 +7,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   minHeight: '48px', // dense toolbar
-  justifyContent: 'flex-end',
 }));
 
 export default DrawerHeader;

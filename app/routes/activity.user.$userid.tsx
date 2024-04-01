@@ -384,6 +384,7 @@ export default function UserActivity() {
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
       showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showPulse={true}
     >
       <CodePopover
         popover={codePopover}
