@@ -15,12 +15,18 @@ export interface SessionData {
 }
 
 export interface CookieData {
+  expires?: number;
   jwt?: string;
   isNavOpen?: boolean;
   dateRange?: DateRangeValue;
 }
 
 export const parseCookie = async (request: Request) => {
+  const cookie = (await sessionCookie.parse(request.headers.get('Cookie'))) as CookieData;
+  return cookie ?? { jwt: null };
+};
+
+export const getCookieExpiration = async (request: Request) => {
   const cookie = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
   return (cookie as CookieData) ?? { jwt: null };
 };

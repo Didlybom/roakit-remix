@@ -10,7 +10,10 @@ export const appActions = async (request: Request, formData: FormData) => {
     cookie.isNavOpen = isNavOpen === 'true';
     return json(null, {
       headers: {
-        'Set-Cookie': await sessionCookie.serialize(cookie),
+        'Set-Cookie': await sessionCookie.serialize(
+          cookie,
+          cookie.expires ? { expires: new Date(cookie.expires) } : undefined
+        ),
       },
     });
   }
@@ -21,7 +24,10 @@ export const appActions = async (request: Request, formData: FormData) => {
     cookie.dateRange = dateRange as DateRangeValue;
     return json(null, {
       headers: {
-        'Set-Cookie': await sessionCookie.serialize(cookie),
+        'Set-Cookie': await sessionCookie.serialize(
+          cookie,
+          cookie.expires ? { expires: new Date(cookie.expires) } : undefined
+        ),
       },
     });
   }

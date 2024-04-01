@@ -39,12 +39,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     expiresIn: 60 * 60 * 24 * 1 * 1000,
   });
   const now = new Date();
+  const expires = new Date(now.setDate(now.getDate() + 1)); // 1 day, matching JWT expiration above
   return redirect('/', {
     headers: {
       'Set-Cookie': await sessionCookie.serialize(
-        { jwt },
+        { jwt, expires: expires.getTime() /* allow the server to read the expires value */ },
         {
-          expires: new Date(now.setDate(now.getDate() + 1)), // 1 day, matching JWT expiration above
+          expires, // browser deletes the cookie when it expires
         }
       ),
     },
