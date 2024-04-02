@@ -47,7 +47,7 @@ export default function NavDrawer({
     >
       <DrawerHeader>
         {showPulse && (
-          <Box title="This page show real-time activity" sx={{ mb: '2px', ml: '15px' }}>
+          <Box title="This page show real-time activity" sx={{ mb: '5px', ml: '14px' }}>
             <Pulse />
           </Box>
         )}

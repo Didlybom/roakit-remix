@@ -27,21 +27,21 @@ const pulseDot = keyframes`
 `;
 
 const Pulse = styled('div')(() => ({
-  width: '6px',
-  height: '6px',
+  width: '5px',
+  height: '5px',
 
   '&:before': {
     content: "''",
     position: 'relative',
     display: 'block',
-    width: '300%',
-    height: '300%',
+    width: '400%',
+    height: '400%',
     boxSizing: 'border-box',
     marginLeft: '-100%',
     marginTop: '-100%',
     borderRadius: '45px',
     backgroundColor: grey[300],
-    animation: `${pulseRing} 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
+    animation: `${pulseRing} 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
   },
 
   '&:after.': {
@@ -55,7 +55,7 @@ const Pulse = styled('div')(() => ({
     backgroundColor: 'white',
     borderRadius: '15px',
     boxShadow: '0 0 8px rgba(0,0,0,.3)',
-    animation: `${pulseDot} 1.25s cubic-bezier(0.455, 0.03, 0.515, 0.955) -.4s infinite`,
+    animation: `${pulseDot} 3s cubic-bezier(0.455, 0.03, 0.515, 0.955) -.4s infinite`,
   },
 }));
 
