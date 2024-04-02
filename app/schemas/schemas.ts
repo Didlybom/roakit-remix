@@ -35,7 +35,7 @@ export const identitySchema = z.object({
     .object({
       feedId: z.number(),
       type: z.string(),
-      id: z.string(),
+      id: z.string().optional(),
       name: z.string().optional(),
       url: z.string().optional(),
     })
@@ -93,7 +93,7 @@ export interface IdentityData {
   id: string;
   email?: string;
   displayName?: string;
-  accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
+  accounts: { feedId: number; type: string; id?: AccountData['id']; name?: string; url?: string }[];
 }
 
 export type IdentityAccountMap = Record<AccountData['id'], IdentityData['id']>;
@@ -123,7 +123,7 @@ export interface TicketData {
   lastUpdatedTimestamp?: number;
 }
 
-export type TicketMap = Record<TicketData['key'], Omit<TicketData, 'key'>>;
+export type TicketMap = Record<TicketData['key'], TicketData['priority']>;
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 

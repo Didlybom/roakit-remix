@@ -151,7 +151,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         .filter(identity => identity.id === identityId)
         .flatMap(identity => identity.accounts)
         .map(account => account.id)
-        .forEach(accountId => userIds.add(accountId));
+        .filter(accountId => accountId !== undefined)
+        .forEach(accountId => userIds.add(accountId!));
 
       activityUserIds.push(...userIds);
     }
@@ -315,6 +316,7 @@ export default function UserActivity() {
     () => [
       dateColdDef({ field: 'date' }),
       actionColDef({ field: 'action' }),
+      { field: 'artifact', headerName: 'Artifact' },
       priorityColDef({ field: 'priority' }),
       {
         field: 'initiativeId',

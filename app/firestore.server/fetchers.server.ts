@@ -32,7 +32,7 @@ const retryProps = (message: string) => {
   };
 };
 
-export const fetchInitiatives = async (customerId: number) => {
+export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
   return await retry(async () => {
     const initiatives: InitiativeData[] = [];
     (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
@@ -53,7 +53,7 @@ export const fetchInitiatives = async (customerId: number) => {
   }, retryProps('Retrying fetchInitiatives...'));
 };
 
-export const fetchInitiativeMap = async (customerId: number) => {
+export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeMap> => {
   return await retry(async () => {
     const initiatives: InitiativeMap = {};
     (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
@@ -73,7 +73,9 @@ export const fetchInitiativeMap = async (customerId: number) => {
   }, retryProps('Retrying fetchInitiativeMap...'));
 };
 
-export const fetchIdentities = async (customerId: number) => {
+export const fetchIdentities = async (
+  customerId: number
+): Promise<{ list: IdentityData[]; accountMap: IdentityAccountMap }> => {
   return await retry(async () => {
     const identities: IdentityData[] = [];
     const accountMap: IdentityAccountMap = {};
@@ -86,7 +88,11 @@ export const fetchIdentities = async (customerId: number) => {
         accounts: data.accounts ?? [],
       });
       data.accounts?.forEach(account => {
-        accountMap[account.id] = identity.id;
+        if (account.id) {
+          accountMap[account.id] = identity.id;
+        } else if (account.name) {
+          accountMap[account.name] = identity.id;
+        }
       });
     });
     return {
@@ -96,21 +102,18 @@ export const fetchIdentities = async (customerId: number) => {
   }, retryProps('Retrying fetchIdentities...'));
 };
 
-export const fetchTicketMap = async (customerId: number) => {
+export const fetchTicketMap = async (customerId: number): Promise<TicketMap> => {
   return await retry(async () => {
     const tickets: TicketMap = {};
     (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
       const data = ticketSchema.parse(ticket.data());
-      tickets[ticket.id] = {
-        priority: data.priority,
-        ...(data.project && { project: { key: data.project.key } }),
-      };
+      tickets[ticket.id] = data.priority;
     });
     return tickets;
   }, retryProps('Retrying fetchTicketsMap...'));
 };
 
-export const fetchAccountMap = async (customerId: number) => {
+export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {
   return await retry(async () => {
     const accounts: AccountMap = new Map();
     await Promise.all([

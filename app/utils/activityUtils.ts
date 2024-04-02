@@ -4,7 +4,7 @@ import { findJiraTickets } from './stringUtils';
 const findPriority = (str: string, tickets: TicketMap) => {
   for (const ticket of findJiraTickets(str)) {
     if (tickets[ticket]) {
-      return tickets[ticket].priority;
+      return tickets[ticket];
     }
   }
   return undefined;
