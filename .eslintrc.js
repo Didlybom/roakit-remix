@@ -26,7 +26,7 @@ module.exports = {
     },
   },
   ignorePatterns: ['/build/**/*', '/app/proto/**/*'],
-  plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks'],
+  plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks', 'jest'],
   rules: {
     '@typescript-eslint/prefer-nullish-coalescing': ['off'],
     'no-console': ['error'],
