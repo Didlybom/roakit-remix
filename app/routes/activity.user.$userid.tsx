@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 
+import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData, useLocation, useNavigate, useNavigation } from '@remix-run/react';
@@ -53,7 +54,6 @@ import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
-import theme from '../utils/theme';
 
 const logger = pino({ name: 'route:activity.user' });
 
@@ -325,7 +325,7 @@ export default function UserActivity() {
           const initiativeId = params.value as string;
           return initiativeId ?
               <Box title={sessionData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
-            : <Box color={theme.palette.grey[400]}>unset</Box>;
+            : <Box color={grey[400]}>unset</Box>;
         },
       },
       summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
@@ -344,7 +344,7 @@ export default function UserActivity() {
           <Typography
             variant="h6"
             alignItems="center"
-            color={theme.palette.grey[600]}
+            color={grey[600]}
             sx={{ display: 'flex', mb: 1 }}
           >
             <PersonIcon sx={{ mr: 1 }} />
@@ -408,7 +408,7 @@ export default function UserActivity() {
           {sessionData.userId === ALL && (
             <Box sx={{ display: 'flex', mr: 2 }}>
               <Box sx={{ position: 'relative' }}>
-                <Box fontSize="small" color={theme.palette.grey[700]} sx={{ ...stickySx }}>
+                <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
                     {activities.size > 0 && gotSnapshot && (
                       <FormControlLabel
@@ -465,7 +465,7 @@ export default function UserActivity() {
                   }}
                 >
                   <MenuItem key={0} value={''}>
-                    <Typography color={theme.palette.grey[500]}>{'None'}</Typography>
+                    <Typography color={grey[500]}>{'None'}</Typography>
                   </MenuItem>
                   {[...artifactActions].map(([key, action]) => (
                     <MenuItem key={key} value={key}>

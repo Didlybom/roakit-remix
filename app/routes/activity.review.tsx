@@ -1,18 +1,19 @@
+import FilterListIcon from '@mui/icons-material/FilterList';
 import {
   Alert,
   Box,
   Button,
   FormControl,
-  FormControlLabel,
   InputLabel,
   Link,
   MenuItem,
   Popover,
   Select,
   Stack,
-  Switch,
+  Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import grey from '@mui/material/colors/grey';
 import {
   GridColDef,
   GridDensity,
@@ -177,11 +178,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+type ShowActivity = 'all' | 'withInitiative' | 'withoutInitiative';
+
 export default function ActivityReview() {
   const fetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
   const [activities, setActivities] = useState<ActivityRow[] | null>(null);
-  const [showAllActivity, setShowAllActivity] = useState(false);
+  const [showActivity, setShowActivity] = useState<ShowActivity>('all');
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
   const [rowTotal, setRowTotal] = useState(0);
@@ -208,9 +211,12 @@ export default function ActivityReview() {
           `customers/${sessionData.customerId}/activities`
         );
         const activityQuery =
-          showAllActivity ?
+          showActivity === 'all' ?
             query(activitiesCollection)
-          : query(activitiesCollection, where('initiative', '==', ''));
+          : query(
+              activitiesCollection,
+              where('initiative', showActivity === 'withInitiative' ? '!=' : '==', '')
+            );
         let activityPageQuery = activityQuery;
         if (prevPaginationModel && boundaryDocs) {
           if (prevPaginationModel?.page < paginationModel.page) {
@@ -290,7 +296,7 @@ export default function ActivityReview() {
     };
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionData.customerId, sessionData.accountMap, showAllActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
+  }, [sessionData.customerId, sessionData.accountMap, showActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
 
   const dataGridProps = {
     autosizeOnMount: true,
@@ -495,22 +501,35 @@ export default function ActivityReview() {
             {error}
           </Alert>
         )}
-        <Box sx={{ display: 'flex', mb: 2, justifyContent: 'right' }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showAllActivity}
-                onChange={e => {
-                  setPaginationModel({ ...paginationModel, page: 0 });
-                  setBoundaryDocs(null);
-                  setShowAllActivity(e.target.checked);
-                }}
-              />
-            }
-            label="Show all activities"
-            title="Show only activities without initiatives or all of them"
-          />
-        </Box>
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          justifyContent="right"
+          sx={{ mb: 3 }}
+        >
+          <FilterListIcon />
+          <FormControl size="small">
+            <InputLabel>Filter</InputLabel>
+            <Select
+              id="activity-filter"
+              value={showActivity}
+              label="Filter"
+              sx={{ minWidth: '250px' }}
+              onChange={e => {
+                setPaginationModel({ ...paginationModel, page: 0 });
+                setBoundaryDocs(null);
+                setShowActivity(e.target.value as ShowActivity);
+              }}
+            >
+              <MenuItem value="all">
+                <Typography color={grey[500]}>{'None'}</Typography>
+              </MenuItem>
+              <MenuItem value="withoutInitiative">{'Without initiatives'}</MenuItem>
+              <MenuItem value="withInitiative">{'With initiatives'}</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={activities}
