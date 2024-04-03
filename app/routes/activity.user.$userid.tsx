@@ -1,19 +1,14 @@
-import FilterListIcon from '@mui/icons-material/FilterList';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
   Box,
-  FormControl,
   FormControlLabel,
   FormGroup,
   IconButton,
-  InputLabel,
   Link,
-  MenuItem,
   Popover,
-  Select,
   Stack,
   Switch,
   Typography,
@@ -31,6 +26,7 @@ import usePrevious from 'use-previous';
 import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
+import FilterMenu from '../components/FilterMenu';
 import { firestore as firestoreClient } from '../firebase.client';
 import {
   fetchAccountMap,
@@ -451,40 +447,23 @@ export default function UserActivity() {
             </Box>
           )}
           <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              justifyContent="right"
+            <FilterMenu
               sx={{ mb: 2 }}
-            >
-              <FilterListIcon />
-              <FormControl size="small">
-                <InputLabel>Filter</InputLabel>
-                <Select
-                  id="action-filter"
-                  value={actionFilter ?? ''}
-                  label="Filter"
-                  sx={{ minWidth: '250px' }}
-                  onChange={e => {
-                    if (e.target.value) {
-                      navigate('#' + e.target.value);
-                    } else {
-                      navigate('');
-                    }
-                  }}
-                >
-                  <MenuItem key={0} value={''}>
-                    <Typography color={grey[500]}>{'None'}</Typography>
-                  </MenuItem>
-                  {[...artifactActions].map(([key, action]) => (
-                    <MenuItem key={key} value={key}>
-                      {action.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
+              selectedValue={actionFilter ?? ''}
+              items={[
+                { value: '', label: 'None', color: grey[500] },
+                ...[...artifactActions].map(([key, action]) => {
+                  return { value: key, label: action.label };
+                }),
+              ]}
+              onChange={e => {
+                if (e.target.value) {
+                  navigate('#' + e.target.value);
+                } else {
+                  navigate('');
+                }
+              }}
+            />
             {grids}
           </Stack>
         </Stack>

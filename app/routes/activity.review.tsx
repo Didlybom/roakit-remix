@@ -1,4 +1,3 @@
-import FilterListIcon from '@mui/icons-material/FilterList';
 import {
   Alert,
   Box,
@@ -10,7 +9,6 @@ import {
   Popover,
   Select,
   Stack,
-  Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import grey from '@mui/material/colors/grey';
@@ -45,6 +43,7 @@ import { appActions } from '../appActions.server';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
+import FilterMenu from '../components/FilterMenu';
 import { firestore as firestoreClient } from '../firebase.client';
 import { firestore, auth as serverAuth } from '../firebase.server';
 import {
@@ -178,13 +177,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
-type ShowActivity = 'all' | 'withInitiative' | 'withoutInitiative';
+type ShowActivity = '' | 'withInitiative' | 'withoutInitiative';
 
 export default function ActivityReview() {
   const fetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
   const [activities, setActivities] = useState<ActivityRow[] | null>(null);
-  const [showActivity, setShowActivity] = useState<ShowActivity>('all');
+  const [activityFilter, setActivityFilter] = useState<ShowActivity>('');
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
   const [bulkInitiative, setBulkInitiative] = useState('');
   const [rowTotal, setRowTotal] = useState(0);
@@ -211,11 +210,11 @@ export default function ActivityReview() {
           `customers/${sessionData.customerId}/activities`
         );
         const activityQuery =
-          showActivity === 'all' ?
+          activityFilter === '' ?
             query(activitiesCollection)
           : query(
               activitiesCollection,
-              where('initiative', showActivity === 'withInitiative' ? '!=' : '==', '')
+              where('initiative', activityFilter === 'withInitiative' ? '!=' : '==', '')
             );
         let activityPageQuery = activityQuery;
         if (prevPaginationModel && boundaryDocs) {
@@ -296,7 +295,7 @@ export default function ActivityReview() {
     };
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionData.customerId, sessionData.accountMap, showActivity, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
+  }, [sessionData.customerId, sessionData.accountMap, activityFilter, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
 
   const dataGridProps = {
     autosizeOnMount: true,
@@ -501,35 +500,20 @@ export default function ActivityReview() {
             {error}
           </Alert>
         )}
-        <Stack
-          direction="row"
-          spacing={2}
-          alignItems="center"
-          justifyContent="right"
+        <FilterMenu
           sx={{ mb: 3 }}
-        >
-          <FilterListIcon />
-          <FormControl size="small">
-            <InputLabel>Filter</InputLabel>
-            <Select
-              id="activity-filter"
-              value={showActivity}
-              label="Filter"
-              sx={{ minWidth: '250px' }}
-              onChange={e => {
-                setPaginationModel({ ...paginationModel, page: 0 });
-                setBoundaryDocs(null);
-                setShowActivity(e.target.value as ShowActivity);
-              }}
-            >
-              <MenuItem value="all">
-                <Typography color={grey[500]}>{'None'}</Typography>
-              </MenuItem>
-              <MenuItem value="withoutInitiative">{'Without initiatives'}</MenuItem>
-              <MenuItem value="withInitiative">{'With initiatives'}</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
+          selectedValue={activityFilter}
+          items={[
+            { value: '', label: 'None', color: grey[500] },
+            { value: 'withoutInitiative', label: 'Without initiatives' },
+            { value: 'withInitiative', label: 'With initiatives' },
+          ]}
+          onChange={e => {
+            setPaginationModel({ ...paginationModel, page: 0 });
+            setBoundaryDocs(null);
+            setActivityFilter(e.target.value as ShowActivity);
+          }}
+        />
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={activities}
