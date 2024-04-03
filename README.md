@@ -35,3 +35,29 @@ configs into the code.
   [Remix adapter](https://remix.run/docs/en/main/other-api/adapter) that will read the secrets
   mentioned above from
   [Google Secret Management](https://console.cloud.google.com/security/secret-manager?project=eternal-impulse-412418).
+
+## App/Route Implementation Requirement
+
+All Remix routes using the [App component](../components/App.tsx) (except login/logout) should
+handle app [global actions](../appActions.server.tsx) in their `action()` function by calling
+`appActions()` and returning its non-null value as shown above. (We're trying to work around Remix
+letting you having actions only on routes, not reusable components.) One such action is to set the
+value of `isNavBarOpen` in the session cookie, triggered by opening/closing hte nav bar in the app
+header.
+
+    import { appActions } from '../appActions.server';
+
+    export const action = async ({ request }: ActionFunctionArgs) => {
+
+      ...
+
+      const formData = await request.formData();
+
+      const appAction = await appActions(request, formData);
+      if (appAction) {
+       return appAction;
+      }
+
+      ...
+
+    }
