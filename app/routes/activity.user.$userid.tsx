@@ -1,5 +1,6 @@
 import FilterListIcon from '@mui/icons-material/FilterList';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
@@ -358,6 +359,15 @@ export default function UserActivity() {
                 sx={{ ml: 1 }}
               >
                 <GitHubIcon fontSize="small" />
+              </IconButton>
+            )}
+            {sessionData.userId === ALL && (
+              <IconButton
+                component="a"
+                href={`/activity/user/${encodeURI(actorId)}`}
+                sx={{ ml: 1 }}
+              >
+                <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
           </Typography>
