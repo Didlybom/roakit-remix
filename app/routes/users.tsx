@@ -1,7 +1,14 @@
 import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
-import { redirect, useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
+import {
+  Link as RemixLink,
+  redirect,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+} from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
@@ -53,32 +60,30 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const imports = formData.get('imports')?.toString() ?? '';
-  if (!imports) {
-    return;
-  }
+  if (imports) {
+    const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
+    const batch = firestore.batch();
 
-  const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
-  const batch = firestore.batch();
+    const accounts = imports.split(/\r|\n/);
 
-  const accounts = imports.split(/\r|\n/);
-
-  if (accounts.length > MAX_IMPORT) {
-    return { error: `You cannot import more than ${MAX_IMPORT} accounts at a time` };
+    if (accounts.length > MAX_IMPORT) {
+      return { error: `You cannot import more than ${MAX_IMPORT} accounts at a time` };
+    }
+    const dateCreated = Date.now();
+    for (const account of accounts) {
+      const [email, jiraId, jiraName, gitHubId] = account.split(',');
+      batch.set(identitiesColl.doc(), {
+        dateCreated,
+        displayName: jiraName,
+        ...(email && { email }),
+        accounts: [
+          { feedId: 2, type: 'jira', id: jiraId, name: jiraName },
+          { feedId: 1, type: 'github', id: gitHubId, name: '' },
+        ],
+      });
+    }
+    await batch.commit(); // up to 500 operations
   }
-  const dateCreated = Date.now();
-  for (const account of accounts) {
-    const [jiraName, email, gitHubId, jiraId] = account.split(',');
-    batch.set(identitiesColl.doc(), {
-      dateCreated,
-      displayName: jiraName,
-      ...(email && { email }),
-      accounts: [
-        { feedId: 2, type: 'jira', id: jiraId, name: jiraName },
-        { feedId: 1, type: 'github', id: gitHubId, name: '' },
-      ],
-    });
-  }
-  await batch.commit(); // up to 500 operations
 
   return null;
 };
@@ -201,6 +206,9 @@ export default function Users() {
             }}
             getRowHeight={() => 'auto'}
           />
+          <Link component={RemixLink} to="csv" reloadDocument sx={{ mt: 1 }}>
+            Download as CSV
+          </Link>
           <TextField
             label=" CSV list to import"
             value={imports}
@@ -208,8 +216,9 @@ export default function Users() {
             multiline
             minRows={5}
             maxRows={15}
-            helperText="Jira name,email,GitHub username,Jira ID"
-            placeholder="John Doe,jdoe@example.com,jdoe,qwerty123456\rJane Smith,jsmith@example.com,jsmith,asdfgh7890"
+            helperText="email,Jira ID,Jira name,GitHub username"
+            placeholder="jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe,
+jsmith@example.com,Jane Smith,qyXNw7qryWGENPNbTnZW,jsmith"
             size="small"
             onChange={e => {
               setError('');
@@ -242,7 +251,7 @@ export default function Users() {
       </TabPanel>
       <TabPanel value={tabValue} index={UsersTab.NeedsReview}>
         <Typography sx={{ mb: 2 }}>
-          <em>We found activity for these accounts not in the directory.</em>
+          <em>We found activity for these accounts not listed in the directory.</em>
         </Typography>
         <DataGrid
           columns={accountReviewCols}

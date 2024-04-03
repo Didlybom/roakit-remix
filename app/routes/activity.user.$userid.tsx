@@ -456,13 +456,7 @@ export default function UserActivity() {
                   return { value: key, label: action.label };
                 }),
               ]}
-              onChange={e => {
-                if (e.target.value) {
-                  navigate('#' + e.target.value);
-                } else {
-                  navigate('');
-                }
-              }}
+              onChange={e => navigate(e.target.value ? `#${e.target.value}` : '')}
             />
             {grids}
           </Stack>
