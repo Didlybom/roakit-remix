@@ -1,3 +1,5 @@
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
@@ -201,12 +203,18 @@ export default function Users() {
             rows={sessionData.identities.list}
             {...dataGridCommonProps}
             initialState={{
-              pagination: { paginationModel: { pageSize: 100 } },
+              pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
             }}
             getRowHeight={() => 'auto'}
           />
-          <Link component={RemixLink} to="csv" reloadDocument sx={{ mt: 1 }}>
+          <Link
+            component={RemixLink}
+            to="csv"
+            reloadDocument
+            sx={{ mt: 1, display: 'flex', alignItems: 'center' }}
+          >
+            <DownloadIcon />
             Download as CSV
           </Link>
           <TextField
@@ -217,8 +225,8 @@ export default function Users() {
             minRows={5}
             maxRows={15}
             helperText="email,Jira ID,Jira name,GitHub username"
-            placeholder="jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe,
-jsmith@example.com,Jane Smith,qyXNw7qryWGENPNbTnZW,jsmith"
+            placeholder="jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe
+jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
             size="small"
             onChange={e => {
               setError('');
@@ -237,6 +245,7 @@ jsmith@example.com,Jane Smith,qyXNw7qryWGENPNbTnZW,jsmith"
           <Button
             variant="contained"
             disabled={navigation.state === 'submitting'}
+            startIcon={<UploadIcon />}
             sx={{ mt: 2, maxWidth: 150 }}
             onClick={() => submit({ imports }, { method: 'post' })}
           >
@@ -258,7 +267,7 @@ jsmith@example.com,Jane Smith,qyXNw7qryWGENPNbTnZW,jsmith"
           rows={sessionData.accountsToReview}
           {...dataGridCommonProps}
           initialState={{
-            pagination: { paginationModel: { pageSize: 100 } },
+            pagination: { paginationModel: { pageSize: 25 } },
             sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
           }}
           rowHeight={50}
