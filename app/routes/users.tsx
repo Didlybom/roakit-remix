@@ -130,6 +130,7 @@ export default function Users() {
       headerName: 'Accounts',
       minWidth: 200,
       flex: 1,
+      sortable: false,
       renderCell: params => {
         return (params.value as IdentityData['accounts']).map((account, i) => {
           return (
@@ -208,15 +209,18 @@ export default function Users() {
             }}
             getRowHeight={() => 'auto'}
           />
-          <Link
-            component={RemixLink}
-            to="csv"
-            reloadDocument
-            sx={{ mt: 1, display: 'flex', alignItems: 'center' }}
-          >
-            <DownloadIcon />
-            Download as CSV
-          </Link>
+          <Box>
+            <Button
+              component={RemixLink}
+              to="csv"
+              reloadDocument
+              variant="text"
+              sx={{ mt: 1, textWrap: 'nowrap' }}
+              startIcon={<DownloadIcon />}
+            >
+              Download as CSV
+            </Button>
+          </Box>
           <TextField
             label=" CSV list to import"
             value={imports}
@@ -241,16 +245,18 @@ jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
               },
             }}
             sx={{ mt: 5 }}
-          />
-          <Button
-            variant="contained"
-            disabled={navigation.state === 'submitting'}
-            startIcon={<UploadIcon />}
-            sx={{ mt: 2, maxWidth: 150 }}
-            onClick={() => submit({ imports }, { method: 'post' })}
-          >
-            Import
-          </Button>
+          />{' '}
+          <Box flex={0}>
+            <Button
+              variant="contained"
+              disabled={navigation.state === 'submitting'}
+              startIcon={<UploadIcon />}
+              sx={{ mt: 2, textWrap: 'nowrap' }}
+              onClick={() => submit({ imports }, { method: 'post' })}
+            >
+              Import
+            </Button>
+          </Box>
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}
