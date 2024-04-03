@@ -102,12 +102,14 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     if (docData.name === GitHubEventType.PullRequest && data.pull_request?.assignee) {
       actor = {
         id: '',
+        type: 'github',
         name: data.pull_request.assignee.login,
         url: data.pull_request.assignee.html_url,
       };
     } else if (docData.name === GitHubEventType.PullRequestReviewComment && data.comment?.user) {
       actor = {
         id: '',
+        type: 'github',
         name: data.comment.user.login,
         url: data.comment.user.html_url,
       };
@@ -115,8 +117,8 @@ export const gitHubRows = (snapshot: firebase.firestore.QuerySnapshot): GitHubRo
     if (!actor) {
       actor =
         data.sender ?
-          { id: '', name: data.sender.login, url: data.sender.html_url }
-        : { id: '', name: 'unknown' };
+          { id: '', type: 'github', name: data.sender.login, url: data.sender.html_url }
+        : { id: '', type: 'github', name: 'unknown' };
     }
     const row = {
       id: doc.id,

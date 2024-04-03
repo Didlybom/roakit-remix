@@ -62,9 +62,9 @@ export const jiraRows = (snapshot: firebase.firestore.QuerySnapshot): JiraRow[] 
     const data = props.data;
     let actor: AccountData | undefined;
     if (docData.name === JiraEventType.IssueCreated) {
-      actor = { id: '', name: data.issue?.fields?.creator?.displayName };
+      actor = { id: '', type: 'jira', name: data.issue?.fields?.creator?.displayName ?? 'unknown' };
     } else if (docData.name === JiraEventType.CommentCreated) {
-      actor = { id: '', name: data.comment?.author.displayName };
+      actor = { id: '', type: 'jira', name: data.comment?.author.displayName ?? 'unknown' };
     }
     const row = {
       id: doc.id,
