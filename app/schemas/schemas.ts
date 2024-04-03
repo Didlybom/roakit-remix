@@ -28,6 +28,12 @@ export const accountSchema = z.object({
   accountUri: z.string().optional(),
 });
 
+export const accountToReviewSchema = z.object({
+  createdDate: z.number(),
+  accountName: z.string(),
+  accountUri: z.string().optional(),
+});
+
 export const identitySchema = z.object({
   email: z.string().optional(),
   displayName: z.string().optional(),

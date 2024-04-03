@@ -2,6 +2,7 @@ import retry from 'async-retry';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
 import {
+  AccountData,
   AccountMap,
   ActivityMap,
   IdentityAccountMap,
@@ -10,6 +11,7 @@ import {
   InitiativeMap,
   TicketMap,
   accountSchema,
+  accountToReviewSchema,
   activitySchema,
   displayName,
   emptyActivity,
@@ -18,6 +20,7 @@ import {
   ticketSchema,
 } from '../schemas/schemas';
 import { ParseError } from '../utils/errorUtils';
+import { FEED_TYPES } from '../utils/feedUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
@@ -116,30 +119,46 @@ export const fetchTicketMap = async (customerId: number): Promise<TicketMap> => 
 export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {
   return await retry(async () => {
     const accounts: AccountMap = new Map();
-    await Promise.all([
-      (async () => {
-        (await firestore.collection(`customers/${customerId}/feeds/1/accounts`).get()).forEach(
-          account => {
-            const data = accountSchema.parse(account.data());
-            accounts.set(account.id, {
-              type: 'github',
-              name: data.accountName,
-              url: data.accountUri,
-            });
-          }
-        );
-      })(),
-      (async () => {
-        (await firestore.collection(`customers/${customerId}/feeds/2/accounts`).get()).forEach(
-          account => {
-            const data = accountSchema.parse(account.data());
-            accounts.set(account.id, { type: 'jira', name: data.accountName });
-          }
-        );
-      })(),
-    ]);
+    await Promise.all(
+      FEED_TYPES.map(async feed => {
+        (
+          await firestore.collection(`customers/${customerId}/feeds/${feed.id}/accounts`).get()
+        ).forEach(account => {
+          const data = accountSchema.parse(account.data());
+          accounts.set(account.id, {
+            type: feed.type,
+            name: data.accountName,
+            url: data.accountUri,
+          });
+        });
+      })
+    );
     return accounts;
   }, retryProps('Retrying fetchAccountMap...'));
+};
+
+export const fetchAccountsToReview = async (customerId: number): Promise<AccountData[]> => {
+  return await retry(async () => {
+    const accounts: AccountData[] = [];
+    await Promise.all(
+      FEED_TYPES.map(async feed => {
+        (
+          await firestore
+            .collection(`customers/${customerId}/feeds/${feed.id}/accountsToReview`)
+            .get()
+        ).forEach(account => {
+          const data = accountToReviewSchema.parse(account.data());
+          accounts.push({
+            id: account.id,
+            type: feed.type,
+            name: data.accountName,
+            url: data.accountUri,
+          });
+        });
+      })
+    );
+    return accounts;
+  }, retryProps('Retrying fetchAccountsToReview...'));
 };
 
 export const fetchActivities = async (customerId: number, startDate: number) => {

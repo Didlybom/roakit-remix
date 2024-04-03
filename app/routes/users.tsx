@@ -1,16 +1,18 @@
-import { Alert, Box, Button, Link, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import grey from '@mui/material/colors/grey';
-import { DataGrid, GridColDef, GridDensity, GridSortDirection } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import { redirect, useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import { appActions } from '../appActions.server';
 import App from '../components/App';
+import TabPanel from '../components/TabPanel';
 import { firestore } from '../firebase.server';
-import { fetchIdentities } from '../firestore.server/fetchers.server';
+import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import { IdentityData } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
+import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:identities' });
@@ -26,8 +28,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    const identities = await fetchIdentities(sessionData.customerId!);
-    return { ...sessionData, identities };
+    const [identities, accountsToReview] = await Promise.all([
+      fetchIdentities(sessionData.customerId!),
+      fetchAccountsToReview(sessionData.customerId!),
+    ]);
+    return { ...sessionData, identities, accountsToReview };
   } catch (e) {
     logger.error(e);
     throw e;
@@ -52,9 +57,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return;
   }
 
-  const identitiesColl = firestore.collection(
-    'customers/' + sessionData.customerId + '/identities'
-  );
+  const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
   const batch = firestore.batch();
 
   const accounts = imports.split(/\r|\n/);
@@ -85,9 +88,8 @@ export default function Users() {
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
-  const [imports, setImports] = useState(
-    'John Doe,jdoe@example.com,jdoe,qwerty123456\rJane Smith,smith@example.com,jsmith,asdfgh7890'
-  );
+  const [tabValue, setTabValue] = useState(0);
+  const [imports, setImports] = useState('');
 
   const [error, setError] = useState('');
 
@@ -95,26 +97,7 @@ export default function Users() {
     setError(actionData?.error ?? '');
   }, [actionData?.error]);
 
-  const dataGridProps = {
-    autoHeight: true, // otherwise empty state looks ugly
-    slots: {
-      noRowsOverlay: () => (
-        <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-          Nothing to show
-        </Box>
-      ),
-    },
-    density: 'compact' as GridDensity,
-    disableRowSelectionOnClick: true,
-    disableColumnMenu: true,
-    pageSizeOptions: [25, 50, 100],
-    sortingOrder: ['asc', 'desc'] as GridSortDirection[],
-    initialState: {
-      pagination: { paginationModel: { pageSize: 25 } },
-      sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
-    },
-  };
-  const columns: GridColDef[] = [
+  const identityCols: GridColDef[] = [
     {
       field: 'id',
       headerName: 'ROAKIT ID',
@@ -128,11 +111,7 @@ export default function Users() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const id = params.row.id as string;
         return (
-          <Link
-            href={`/activity/user/${encodeURI(id)}`}
-            title={params.value as string}
-            sx={internalLinkSx}
-          >
+          <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
             {params.value}
           </Link>
         );
@@ -165,6 +144,34 @@ export default function Users() {
     },
   ];
 
+  const accountReviewCols: GridColDef[] = [
+    {
+      field: 'id',
+      headerName: 'Account ID',
+      minWidth: 200,
+    },
+    { field: 'type', headerName: 'Source', minWidth: 80 },
+    {
+      field: 'name',
+      headerName: 'Name',
+      minWidth: 250,
+      renderCell: params => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const id = params.row.id as string;
+        return (
+          <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
+            {params.value}
+          </Link>
+        );
+      },
+    },
+  ];
+
+  enum UsersTab {
+    Directory,
+    NeedsReview,
+  }
+
   return (
     <App
       isLoggedIn={true}
@@ -172,50 +179,83 @@ export default function Users() {
       showProgress={navigation.state === 'submitting'}
       view="users"
     >
-      <Stack sx={{ m: 3 }}>
-        <DataGrid
-          columns={columns}
-          rows={sessionData.identities.list}
-          {...dataGridProps}
-          getRowHeight={() => 'auto'}
-        />
-        <TextField
-          label="Import"
-          value={imports}
-          fullWidth
-          multiline
-          minRows={5}
-          maxRows={15}
-          helperText="Jira name,email,GitHub username,Jira ID"
-          size="small"
-          onChange={e => {
-            setError('');
-            setImports(e.target.value);
-          }}
-          inputProps={{
-            style: {
-              fontFamily: 'Roboto Mono, monospace',
-              fontSize: '.8rem',
-              backgroundColor: grey[200],
-              padding: '5px',
-            },
-          }}
-          sx={{ mt: 5 }}
-        />
-        <Button
-          variant="contained"
-          disabled={navigation.state === 'submitting'}
-          sx={{ mt: 2, maxWidth: 150 }}
-          onClick={() => submit({ imports }, { method: 'post' })}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
+        <Tabs
+          variant="scrollable"
+          value={tabValue}
+          onChange={(_, newValue: number) => setTabValue(newValue)}
         >
-          Import
-        </Button>
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
-      </Stack>
+          <Tab label="Directory" id={`tab-${UsersTab.Directory}`} />
+          <Tab label="To Review" id={`tab-${UsersTab.NeedsReview}`} />
+        </Tabs>
+      </Box>
+      <TabPanel value={tabValue} index={UsersTab.Directory}>
+        <Stack>
+          <DataGrid
+            columns={identityCols}
+            rows={sessionData.identities.list}
+            {...dataGridCommonProps}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 100 } },
+              sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
+            }}
+            getRowHeight={() => 'auto'}
+          />
+          <TextField
+            label=" CSV list to import"
+            value={imports}
+            fullWidth
+            multiline
+            minRows={5}
+            maxRows={15}
+            helperText="Jira name,email,GitHub username,Jira ID"
+            placeholder="John Doe,jdoe@example.com,jdoe,qwerty123456\rJane Smith,jsmith@example.com,jsmith,asdfgh7890"
+            size="small"
+            onChange={e => {
+              setError('');
+              setImports(e.target.value);
+            }}
+            inputProps={{
+              style: {
+                fontFamily: 'Roboto Mono, monospace',
+                fontSize: '.8rem',
+                backgroundColor: grey[200],
+                padding: '5px',
+              },
+            }}
+            sx={{ mt: 5 }}
+          />
+          <Button
+            variant="contained"
+            disabled={navigation.state === 'submitting'}
+            sx={{ mt: 2, maxWidth: 150 }}
+            onClick={() => submit({ imports }, { method: 'post' })}
+          >
+            Import
+          </Button>
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+        </Stack>
+      </TabPanel>
+      <TabPanel value={tabValue} index={UsersTab.NeedsReview}>
+        <Typography sx={{ mb: 2 }}>
+          <em>We found activity for these accounts not in the directory.</em>
+        </Typography>
+        <DataGrid
+          columns={accountReviewCols}
+          rows={sessionData.accountsToReview}
+          {...dataGridCommonProps}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 100 } },
+            sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
+          }}
+          rowHeight={50}
+          autosizeOnMount
+        />
+      </TabPanel>
     </App>
   );
 }
