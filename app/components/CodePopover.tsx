@@ -1,6 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
+import { Link as RemixLink } from '@remix-run/react';
 import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
 import { formatJson, internalLinkSx } from '../utils/jsxUtils';
@@ -27,6 +28,7 @@ export default function CodePopover({
   if (!popover?.content) {
     return null;
   }
+
   const formattedContent = formatJson(contentOverride ?? popover.content);
   return (
     <Popover
@@ -75,9 +77,10 @@ export default function CodePopover({
           <LinkIt
             component={(filePath: string, key: number) => (
               <Link
+                component={RemixLink}
                 key={key}
                 sx={internalLinkSx}
-                href={'https://storage.cloud.google.com/' + filePath}
+                to={'/event/view/' + filePath}
                 target="_blank"
               >
                 {filePath}

@@ -1,6 +1,7 @@
 import pino from 'pino';
 import { sessionCookie } from '../cookies.server';
-import { auth, queryCustomerId } from '../firebase.server';
+import { auth } from '../firebase.server';
+import { queryCustomerId } from '../firestore.server/fetchers.server';
 import { DateRange, DateRangeValue } from './dateUtils';
 
 const logger = pino({ name: 'utils:session-cookie' });

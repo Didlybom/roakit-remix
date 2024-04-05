@@ -9,7 +9,8 @@ import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
 import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
-import { queryCustomerId, auth as serverAuth } from '../firebase.server';
+import { auth as serverAuth } from '../firebase.server';
+import { queryCustomerId } from '../firestore.server/fetchers.server';
 import { errMsg } from '../utils/errorUtils';
 
 const logger = pino({ name: 'route:login' });
