@@ -1,7 +1,8 @@
-import { LoaderFunctionArgs, redirect } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, json, redirect } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchEvent } from '../cloudstore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
+import { RoakitError, errMsg } from '../utils/errorUtils';
 
 const logger = pino({ name: 'route:event.view' });
 
@@ -11,14 +12,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    const event = await fetchEvent(params['*']!);
-    return new Response(event, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const eventJsonString = await fetchEvent(params['*']!);
+    return new Response(eventJsonString, { headers: { 'Content-Type': 'application/json' } });
   } catch (e) {
     logger.error(e);
-    throw e;
+    return json(
+      { error: true, message: errMsg(e, 'An error occurred') },
+      { status: e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500 }
+    );
   }
 };
