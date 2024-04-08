@@ -23,7 +23,7 @@ import {
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
-import { getSummary, getUrl } from '../schemas/activityFeed';
+import { getSummary, getSummaryAction, getUrl } from '../schemas/activityFeed';
 import { AccountData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 import { ellipsisSx } from './jsxUtils';
@@ -159,19 +159,23 @@ export const summaryColDef = (
           </IconButton>
         : <></>;
 
+      const summaryAction = getSummaryAction(params.value);
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      let commits = params.value.commits as { message: string; url?: string }[] | null;
-      if ((commits?.length ?? 0) < 2) {
-        commits = null;
-      }
+      const commits = params.value.commits as { message: string; url?: string }[] | null;
       return (
         <Stack direction="row">
           {link}
-          {comment || commits ?
+          {summaryAction || comment || commits ?
             <Stack sx={{ mt: '3px', minWidth: 0 }}>
               <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>
+              {summaryAction && (
+                <Typography title={summaryAction} fontSize="10px" sx={{ ...ellipsisSx }}>
+                  {summaryAction}
+                </Typography>
+              )}
               {comment && (
                 <Typography title={comment} fontSize="10px" sx={{ ...ellipsisSx }}>
                   {comment}
@@ -201,6 +205,11 @@ export const summaryColDef = (
                 >
                   {`and ${commits.length - 1} more ${pluralizeMemo('commit', commits.length - 1)}`}
                 </Link>
+              )}
+              {commits && commits.length === 1 && (
+                <Typography title={summaryAction} fontSize="10px" sx={{ ...ellipsisSx }}>
+                  {'Committed'}
+                </Typography>
               )}
             </Stack>
           : <Box title={summary} sx={{ ...ellipsisSx }}>

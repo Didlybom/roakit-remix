@@ -51,6 +51,139 @@ export const getSummary = (metadata: any) => {
   return '';
 };
 
+interface ChangeLog {
+  field: string;
+  oldValue: string;
+  newValue: string;
+}
+
+const transitionString = (prefix: string, changeLog: ChangeLog) =>
+  prefix + changeLog.oldValue + ' → ' + changeLog.newValue;
+
+export const getSummaryAction = (metadata: any) => {
+  try {
+    if (metadata?.issue) {
+      const actions: string[] = [];
+      (metadata?.changeLog as ChangeLog[]).forEach(changeLog => {
+        if (changeLog.field === 'status' && changeLog.oldValue && changeLog.newValue) {
+          actions.push('Status: ' + changeLog.oldValue + ' → ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'assignee' && changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Assignee: ', changeLog));
+        }
+        if (changeLog.field === 'assignee' && !changeLog.oldValue && changeLog.newValue) {
+          actions.push('Assignee: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'assignee' && changeLog.oldValue && !changeLog.newValue) {
+          actions.push('Unassigned: ' + changeLog.oldValue);
+        }
+        if (changeLog.field === 'labels' && changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Labels: ', changeLog));
+        }
+        if (changeLog.field === 'labels' && !changeLog.oldValue && changeLog.newValue) {
+          actions.push('Labeled: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'labels' && changeLog.oldValue && !changeLog.newValue) {
+          actions.push('Unlabeled: ' + changeLog.oldValue);
+        }
+        if (changeLog.field === 'Link' && changeLog.newValue) {
+          actions.push(changeLog.newValue); // "This issue relates to XXX"
+        }
+        if (changeLog.field === 'Domain' && changeLog.newValue) {
+          actions.push('Domain: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'Platform' && changeLog.newValue) {
+          actions.push('Platform: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'Epic Link' && changeLog.newValue) {
+          actions.push('Epic Link');
+        }
+        if (changeLog.field === 'Rank' && changeLog.newValue) {
+          actions.push(changeLog.newValue); // "Ranked higher"
+        }
+        // FIXME NURSA specific custom fields
+        if (changeLog.field === 'Start Date' && !changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Start  date: ', changeLog));
+        }
+        if (changeLog.field === 'Start date' && changeLog.newValue) {
+          actions.push('Start date: ' + changeLog.newValue);
+        }
+        if (
+          changeLog.field === 'Expected Delivery Date' &&
+          changeLog.oldValue &&
+          changeLog.newValue
+        ) {
+          actions.push(transitionString('Expected delivery date: ', changeLog));
+        }
+        if (
+          changeLog.field === 'Expected Delivery Date' &&
+          !changeLog.oldValue &&
+          changeLog.newValue
+        ) {
+          actions.push('Expected delivery date: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'Sprint' && changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Sprint: ', changeLog));
+        }
+        if (changeLog.field === 'Sprint' && !changeLog.oldValue && changeLog.newValue) {
+          actions.push('Sprint: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'Story Points' && changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Story Points: ', changeLog));
+        }
+        if (changeLog.field === 'Story Points' && !changeLog.oldValue && changeLog.newValue) {
+          actions.push('Story Points: ' + changeLog.newValue);
+        }
+        if (changeLog.field === 'summary') {
+          actions.push('Updated summary');
+        }
+        if (changeLog.field === 'description') {
+          actions.push('Updated description');
+        }
+      });
+      return actions.join(', ');
+    }
+    if (metadata?.codeAction) {
+      const codeAction = metadata.codeAction as string;
+      if (codeAction === 'opened') {
+        return 'PR opened';
+      }
+      if (codeAction === 'ready_for_review') {
+        return 'PR ready for review';
+      }
+      if (codeAction === 'review_requested') {
+        return 'PR review requested';
+      }
+      if (codeAction === 'submitted') {
+        return 'PR submitted';
+      }
+      if (codeAction === 'assigned') {
+        return 'PR assigned';
+      }
+      if (codeAction === 'resolved') {
+        return 'PR discussion resolved';
+      }
+      if (codeAction === 'edited') {
+        return 'PR edited';
+      }
+      if (codeAction === 'labeled') {
+        return 'PR labeled';
+      }
+      if (codeAction === 'closed') {
+        return 'PR closed';
+      }
+      if (codeAction === 'dismissed') {
+        return 'PR dismissed';
+      }
+      if (codeAction === 'created' && metadata.pullRequestComment) {
+        return 'PR commented';
+      }
+    }
+  } catch (e) {
+    return '';
+  }
+};
+
 export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } | null => {
   if (metadata?.issue?.uri) {
     return {
