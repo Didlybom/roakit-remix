@@ -373,7 +373,7 @@ export default function Dashboard() {
                               data: groupedActivities.topActors[action].map(a =>
                                 a.id === TOP_ACTORS_OTHERS_ID ?
                                   'All others'
-                                : actors[a.id].name ?? 'unknown'
+                                : actors[a.id]?.name ?? 'unknown'
                               ),
                               scaleType: 'band',
                             },
@@ -400,9 +400,7 @@ export default function Dashboard() {
                                 `/activity/user/${
                                   data.dataIndex === 10 ?
                                     '*'
-                                  : encodeURI(
-                                      groupedActivities.topActors[action][data.dataIndex].id
-                                    )
+                                  : encodeURI(groupedActivities.topActors[action][data.dataIndex].id)
                                 }#${action}`
                               );
                             }

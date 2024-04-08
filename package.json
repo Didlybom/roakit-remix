@@ -40,7 +40,7 @@
     "firebase-admin": "^12.0.0",
     "google-protobuf": "^3.21.2",
     "material-ui-confirm": "^3.0.12",
-    "pino": "^8.19.0",
+    "pino": "^8.20.0",
     "pluralize": "^8.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
