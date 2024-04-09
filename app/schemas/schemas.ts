@@ -142,12 +142,12 @@ export interface ActivityData {
   createdTimestamp: number;
   initiativeId: string;
   priority?: number;
-  metadata: unknown;
+  metadata?: unknown;
   note?: string;
   objectId?: string; // for debugging
 }
 
-export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id' | 'metadata'>>;
+export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id'>>;
 
 export interface ActivityCount {
   code: number;

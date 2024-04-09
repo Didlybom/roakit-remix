@@ -172,7 +172,11 @@ export const fetchAccountsToReview = async (customerId: number): Promise<Account
   }, retryProps('Retrying fetchAccountsToReview...'));
 };
 
-export const fetchActivities = async (customerId: number, startDate: number) => {
+export const fetchActivities = async (
+  customerId: number,
+  startDate: number,
+  includesMetadata = false
+) => {
   return await retry(async bail => {
     const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
       () =>
@@ -198,6 +202,8 @@ export const fetchActivities = async (customerId: number, startDate: number) => 
         createdTimestamp: props.data.createdTimestamp,
         initiativeId: props.data.initiative,
         priority: props.data.priority,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        ...(includesMetadata && { metadata: props.data.metadata }),
       });
     });
     return activities;

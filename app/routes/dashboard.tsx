@@ -49,7 +49,7 @@ const logger = pino({ name: 'route:dashboard' });
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
-// verify session data, load activities
+// verify session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -400,7 +400,9 @@ export default function Dashboard() {
                                 `/activity/user/${
                                   data.dataIndex === 10 ?
                                     '*'
-                                  : encodeURI(groupedActivities.topActors[action][data.dataIndex].id)
+                                  : encodeURI(
+                                      groupedActivities.topActors[action][data.dataIndex].id
+                                    )
                                 }#${action}`
                               );
                             }

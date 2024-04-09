@@ -2,11 +2,11 @@ import { withEmotionCache } from '@emotion/react';
 import {
   Alert,
   Box,
+  Link,
   Typography,
   unstable_useEnhancedEffect as useEnhancedEffect,
 } from '@mui/material';
 import {
-  Link,
   Links,
   LiveReload,
   Meta,
@@ -22,6 +22,7 @@ import clientConfig, { ClientEnv } from './client-env/client-env.server';
 import ClientStyleContext from './components/ClientStyleContext';
 import Layout from './components/Layout';
 import { errMsg } from './utils/errorUtils';
+import { internalLinkSx } from './utils/jsxUtils';
 import theme from './utils/theme';
 
 interface DocumentProps {
@@ -130,8 +131,15 @@ export function ErrorBoundary() {
         <Box sx={{ m: 4 }}>
           <Typography variant="h5">An error occurred!</Typography>
           <Typography sx={{ mt: 2 }}>
-            You can try to <Link to=".">refresh</Link>, or <Link to="/logout">logout</Link> and
-            login again.
+            You can try to{' '}
+            <Link onClick={() => window.location.reload()} sx={internalLinkSx}>
+              refresh
+            </Link>
+            , or{' '}
+            <Link href="/logout" sx={internalLinkSx}>
+              logout
+            </Link>{' '}
+            and login again.
           </Typography>
           <Alert severity="error" sx={{ mt: 4 }}>
             {message}
