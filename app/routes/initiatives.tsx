@@ -28,7 +28,6 @@ import { firestore } from '../firebase.server';
 import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
-import { parseCookie } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -57,44 +56,45 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { jwt } = await parseCookie(request);
-  if (!jwt) {
-    return redirect('/login');
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
   }
 
-  try {
-    const sessionData = await loadSession(request);
-    if (sessionData.redirect) {
-      return redirect(sessionData.redirect);
-    }
+  const formData = await request.formData();
 
-    const formData = await request.formData();
+  const appAction = await appActions(request, formData);
+  if (appAction) {
+    return appAction;
+  }
 
-    const appAction = await appActions(request, formData);
-    if (appAction) {
-      return appAction;
-    }
+  const initiativeId = formData.get('initiativeId')?.toString() ?? '';
 
-    const initiativeId = formData.get('initiativeId')?.toString() ?? '';
-
-    if (!initiativeId) {
-      return null;
-    }
-
-    if (request.method !== 'DELETE') {
-      const label = formData.get('label')?.toString() ?? '';
-      const doc = firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`);
-      await doc.set({ label }, { merge: true });
-    } else {
-      const doc = firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`);
-      await doc.delete();
-    }
-
+  if (!initiativeId) {
     return null;
-  } catch (e) {
-    logger.error(e);
-    return redirect('/logout');
   }
+
+  if (request.method !== 'DELETE') {
+    const label = formData.get('label')?.toString() ?? '';
+    const doc = firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`);
+    await doc.set({ label }, { merge: true });
+  } else {
+    const doc = firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`);
+    await doc.delete();
+
+    const docs = await firestore
+      .collection(`customers/${sessionData.customerId!}/activities/`)
+      .where('event', '==', 'workflow_run')
+      .get();
+    const batch = firestore.batch();
+
+    docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  }
+
+  return null;
 };
 
 export default function Initiatives() {

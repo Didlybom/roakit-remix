@@ -45,7 +45,7 @@ import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import FilterMenu from '../components/FilterMenu';
 import { firestore as firestoreClient } from '../firebase.client';
-import { firestore, auth as serverAuth } from '../firebase.server';
+import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchIdentities,
@@ -73,7 +73,6 @@ import {
 } from '../utils/dataGridUtils';
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
-import { parseCookie } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:activity.review' });
 
@@ -115,13 +114,13 @@ type ActivityRow = ActivityData & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { jwt } = await parseCookie(request);
-  if (!jwt) {
-    return redirect('/login');
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
   }
+
   try {
-    const token = await serverAuth.verifySessionCookie(jwt);
-    const customerId = token.customerId as string;
+    const customerId = sessionData.customerId;
 
     const formData = await request.formData();
 
@@ -134,7 +133,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (note) {
       const activityId = formData.get('activityId')?.toString() ?? '';
       await firestore
-        .doc('customers/' + customerId + '/activities/' + activityId)
+        .doc(`customers/${customerId!}/activities/${activityId}`)
         .update({ note: note === DELETE ? '' : note });
       return null;
     }
@@ -166,7 +165,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     //  update the initiative counters
     if (initiativeId !== UNSET_INITIATIVE_ID) {
-      await incrementInitiativeCounters(customerId, initiativeId, counters);
+      await incrementInitiativeCounters(customerId!, initiativeId, counters);
     }
     // FIXME decrement the activities that had an initiative and were changed
 

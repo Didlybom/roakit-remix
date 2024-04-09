@@ -58,7 +58,7 @@ export const updateInitiativeCounters = async (customerId: number, initiatives: 
 };
 
 export const incrementInitiativeCounters = async (
-  customerId: string,
+  customerId: number,
   initiativeId: string,
   counters: ActivityCount
 ) => {

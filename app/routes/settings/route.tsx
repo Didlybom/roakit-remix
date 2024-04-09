@@ -21,13 +21,12 @@ import { useEffect, useState } from 'react';
 import { appActions } from '../../appActions.server';
 import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
-import { firestore, auth as serverAuth } from '../../firebase.server';
+import { firestore } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
 import { bannedRecordSchema, feedSchema } from '../../schemas/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
-import { parseCookie } from '../../utils/sessionCookie.server';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
@@ -96,15 +95,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { jwt } = await parseCookie(request);
-  if (!jwt) {
-    return redirect('/login');
+  const sessionData = await loadSession(request);
+  if (sessionData.redirect) {
+    return redirect(sessionData.redirect);
   }
 
   try {
-    const token = await serverAuth.verifySessionCookie(jwt);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const customerId = token.customerId;
+    const customerId = sessionData.customerId;
 
     const formData = await request.formData();
 
@@ -117,19 +114,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (feedId) {
       const secret = formData.get('secret');
       if (secret) {
-        const doc = firestore.doc(`customers/${customerId}/feeds/${feedId}`);
+        const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({ secret });
       }
       const bannedEvents = formData.get('bannedEvents');
       if (bannedEvents) {
-        const doc = firestore.doc('customers/' + customerId + '/feeds/' + feedId);
+        const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({
           bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents as string)),
         });
       }
       const bannedAccounts = formData.get('bannedAccounts');
       if (bannedAccounts) {
-        const doc = firestore.doc(`customers/${customerId}/feeds/${feedId}`);
+        const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({
           bannedAccounts: bannedRecordSchema.parse(JSON.parse(bannedAccounts as string)),
         });
