@@ -9,6 +9,7 @@ import {
   Stack,
   Switch,
   TextField,
+  Typography,
 } from '@mui/material';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
@@ -17,7 +18,6 @@ import {
   fetchAccountMap,
   fetchActivities,
   fetchIdentities,
-  fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import {
@@ -42,9 +42,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
-    // retrieve initiatives and users
-    const [initiatives, accounts, identities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId!),
+    // retrieve  users
+    const [accounts, identities] = await Promise.all([
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -59,7 +58,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return {
       ...sessionData,
       activities: [...activities].map(([, activity]) => activity),
-      initiatives,
       actors,
       error: null,
     };
@@ -69,7 +67,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: errMsg(e, 'Failed to fetch activities'),
       activities: null,
       actors: null,
-      initiatives: {},
     };
   }
 };
@@ -84,10 +81,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!prompt) {
     throw Error('Empty prompt');
   }
+  const promptActivities = formData.get('promptActivities')?.toString() ?? '';
   const temperature = Number(formData.get('temperature') ?? 0) || undefined;
   const topK = Number(formData.get('topK') ?? 0) || undefined;
   const topP = Number(formData.get('topP') ?? 0) || undefined;
-  const result = await generateContent({ prompt, temperature, topK, topP });
+  const result = await generateContent({
+    prompt: prompt + '\n\n' + promptActivities,
+    temperature,
+    topK,
+    topP,
+  });
   return result;
 };
 
@@ -95,6 +98,7 @@ const buildActivityPrompt = (
   activities: Omit<ActivityData, 'id'>[] | null,
   actors: ActorMap | null,
   activityCount: number,
+  inclDates: boolean,
   inclActions: boolean,
   inclContributors: boolean
 ) => {
@@ -118,6 +122,7 @@ const buildActivityPrompt = (
 
     activityString +=
       summary +
+      (inclDates ? '\nDate: ' + new Date(activity.createdTimestamp).toLocaleString() : '') +
       (summaryAction ? '\nAction: ' + summaryAction : '') +
       (contributor ? '\nContributor: ' + contributor : '') +
       '\n\n';
@@ -131,6 +136,7 @@ export default function AIPlayground() {
   const sessionData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [activityCount, setActivityCount] = useState(30);
+  const [inclDates, setInclDates] = useState(true);
   const [inclActions, setInclActions] = useState(true);
   const [inclContributors, setInclContributors] = useState(true);
   const [prompt, setPrompt] = useState('');
@@ -140,12 +146,13 @@ export default function AIPlayground() {
       sessionData.activities,
       sessionData.actors,
       activityCount,
+      inclDates,
       inclActions,
       inclContributors
     );
-    setPrompt(`Summarize and classify these activities. Json output.\n\n${activities}`);
+    setPrompt(activities);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityCount, inclActions, inclContributors]); // sessionData must be omitted
+  }, [activityCount, inclDates, inclActions, inclContributors]); // sessionData must be omitted
 
   let output;
   const text = (actionData?.response.candidates[0]?.content.parts[0] as TextPart)?.text;
@@ -169,14 +176,27 @@ export default function AIPlayground() {
           <Box flex={1}>
             <TextField
               name="prompt"
-              label="Prompt"
+              label="Prompt 1/2"
+              defaultValue="Summarize and classify these activities."
+              multiline
+              fullWidth
+              minRows={3}
+              maxRows={3}
+              size="small"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              name="promptActivities"
+              label="Prompt 2/2"
               value={prompt}
               multiline
               fullWidth
               minRows={15}
               maxRows={15}
               size="small"
+              InputLabelProps={{ shrink: true }}
               onChange={e => setPrompt(e.target.value)}
+              sx={{ mt: 2 }}
             />
             <Box justifyContent="end" sx={{ display: 'flex', mt: 1, mb: 4 }}>
               <Button
@@ -211,35 +231,28 @@ export default function AIPlayground() {
               value={formatJson(actionData)}
             />
           </Box>
-          <Stack spacing={4}>
+          <Stack spacing={2} useFlexGap>
             <TextField
               type="number"
-              label="Activities"
+              label="Max Activities"
               size="small"
-              sx={{ width: '15ch' }}
+              sx={{ mt: 13, width: '15ch' }}
               value={activityCount}
               onChange={e => setActivityCount(+e.target.value)}
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  checked={inclActions}
-                  onChange={e => setInclActions(e.target.checked)}
-                />
-              }
-              label="Actions"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  checked={inclContributors}
-                  onChange={e => setInclContributors(e.target.checked)}
-                />
-              }
-              label="Contributors"
-            />
+            {[
+              { v: inclDates, s: setInclDates, l: 'Dates' },
+              { v: inclActions, s: setInclActions, l: 'Actions' },
+              { v: inclContributors, s: setInclContributors, l: 'Contributors' },
+            ].map((el, i) => (
+              <FormControlLabel
+                key={i}
+                control={
+                  <Switch size="small" checked={el.v} onChange={e => el.s(e.target.checked)} />
+                }
+                label={el.l}
+              />
+            ))}
             <Divider />
             <TextField
               name="temperature"
@@ -267,12 +280,14 @@ export default function AIPlayground() {
               size="small"
               sx={{ width: '15ch' }}
             />
-            <Link
+            <Typography
+              component={Link}
+              variant="caption"
               href="https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/design-multimodal-prompts#temperature"
               target="_blank"
             >
               Documentation
-            </Link>
+            </Typography>
           </Stack>
         </Stack>
       </Form>
