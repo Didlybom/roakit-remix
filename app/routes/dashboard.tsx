@@ -112,7 +112,7 @@ export default function Dashboard() {
   const { groupedActivities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
     activities: null,
-    actors: new Map(),
+    actors: null,
     initiatives: null,
   };
   const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
