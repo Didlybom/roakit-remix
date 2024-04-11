@@ -74,13 +74,13 @@ import {
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
 
-const logger = pino({ name: 'route:activity.review' });
+const logger = pino({ name: 'route:activity' });
 
 const MAX_BATCH = 500;
 const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
 const DELETE = '_DELETE_';
 
-export const meta = () => [{ title: 'Activity Review | ROAKIT' }];
+export const meta = () => [{ title: 'Activity | ROAKIT' }];
 
 // verify JWT, load initiatives and users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -463,7 +463,7 @@ export default function ActivityReview() {
   if (!activities) {
     return (
       <App
-        view="activity.review"
+        view="activity"
         isLoggedIn={true}
         isNavOpen={sessionData.isNavOpen}
         showProgress={true}
@@ -472,7 +472,7 @@ export default function ActivityReview() {
   }
   return (
     <App
-      view="activity.review"
+      view="activity"
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
       showProgress={loading}

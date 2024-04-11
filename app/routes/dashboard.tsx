@@ -98,7 +98,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       error: errMsg(e, 'Failed to fetch activity'),
       groupedActivities: null,
       activities: null,
-      actors: new Map(),
+      actors: null,
       initiatives: null,
     };
   }
@@ -156,8 +156,7 @@ export default function Dashboard() {
     } else {
       submit({}, { method: 'post' }); // ask server to load
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupedActivities]); // dateFilter must be omitted
+  }, [groupedActivities, submit]);
 
   useEffect(() => {
     setLoading(true);
@@ -431,7 +430,7 @@ export default function Dashboard() {
       showPulse={false}
     >
       {error && (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" sx={{ m: 3 }}>
           {error}
         </Alert>
       )}

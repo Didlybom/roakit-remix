@@ -17,7 +17,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   } catch (e) {
     logger.error(e);
     return json(
-      { error: true, message: errMsg(e, 'An error occurred') },
+      { error: { message: errMsg(e, 'An error occurred') } },
       { status: e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500 }
     );
   }

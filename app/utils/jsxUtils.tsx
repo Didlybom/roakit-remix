@@ -29,3 +29,6 @@ export const windowOpen = (event: MouseEvent, url: string) => {
 export const formatJson = (data: unknown) => JSON.stringify(data, undefined, 2);
 
 export const renderJson = (data: unknown) => <pre>{formatJson(data)}</pre>;
+
+export const randomNumber = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1) + min);

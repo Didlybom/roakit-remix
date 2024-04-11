@@ -1,7 +1,7 @@
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import GroupIcon from '@mui/icons-material/Group';
 import {
@@ -66,12 +66,12 @@ export default function NavDrawer({
             <ListItemText primary={'Dashboard'} />
           </ListItemButton>
         </ListItem>
-        <ListItem key="review" disablePadding>
-          <ListItemButton href="/activity/review" selected={view === 'activity.review'}>
+        <ListItem key="activity" disablePadding>
+          <ListItemButton href="/activity" selected={view === 'activity'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
-              <EditNoteIcon />
+              <FormatListBulletedIcon />
             </ListItemIcon>
-            <ListItemText primary={'Review'} />
+            <ListItemText primary={'All Activity'} />
           </ListItemButton>
         </ListItem>
       </List>

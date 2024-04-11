@@ -220,11 +220,11 @@ export const buildArtifactActionKey = (artifact: string, action: string) => {
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
-interface ActorActivityCount {
+export interface ActorActivityCount {
   id: string;
   count: number;
 }
-type TopActorsMap = Record<string, ActorActivityCount[]>;
+export type TopActorsMap = Record<string, ActorActivityCount[]>;
 
 interface Priority {
   id: number;
@@ -359,4 +359,43 @@ export const groupActivities = (activities: ActivityMap) => {
   });
 
   return { topActors, priorities, initiatives };
+};
+
+export const getTopActors = (activities: ActivityMap) => {
+  const topActors: TopActorsMap = {};
+
+  activities.forEach(activity => {
+    const { actorId, artifact, action } = activity;
+
+    if (actorId !== undefined) {
+      const topActorKey = buildArtifactActionKey(artifact, action);
+      if (topActors[topActorKey] === undefined) {
+        topActors[topActorKey] = [];
+      }
+      let topActor = topActors[topActorKey].find(a => a.id === actorId);
+      if (topActor === undefined) {
+        topActor = { id: actorId, count: 0 };
+        topActors[topActorKey].push(topActor);
+      }
+      topActor.count++;
+    }
+  });
+
+  Object.keys(topActors).forEach(action => {
+    const actors = topActors[action];
+    // sort top actors
+    actors.sort((a, b) => (a.count < b.count ? 1 : -1));
+    // keep top 10
+    // calculate count for the rest
+    let totalOthers = 0;
+    for (let i = 10; i < actors.length; i++) {
+      totalOthers += actors[i].count;
+    }
+    topActors[action] = actors.slice(0, 10);
+    if (totalOthers > 0) {
+      topActors[action].push({ id: TOP_ACTORS_OTHERS_ID, count: totalOthers });
+    }
+  });
+
+  return topActors;
 };

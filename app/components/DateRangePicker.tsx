@@ -25,9 +25,11 @@ const icons: Record<DateRange, JSX.Element> = {
 
 export default function DateRangePicker({
   dateRange,
+  onSelect,
   showProgress,
 }: {
   dateRange: DateRange;
+  onSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
 }) {
   const fetcher = useFetcher();
@@ -58,7 +60,7 @@ export default function DateRangePicker({
             selected={date === dateRange}
             onClick={() => {
               setMenuEl(null);
-              fetcher.submit({ dateRange: date }, { method: 'post' });
+              onSelect ? onSelect(date) : fetcher.submit({ dateRange: date }, { method: 'post' });
             }}
           >
             <ListItemIcon>{icons[date]}</ListItemIcon>

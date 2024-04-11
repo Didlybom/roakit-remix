@@ -20,18 +20,12 @@ import {
   fetchIdentities,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import {
-  getSummary,
-  getSummaryAction,
-  identifyAccounts,
-  identifyActivities,
-} from '../schemas/activityFeed';
-import { ActivityData, ActorMap } from '../schemas/schemas';
+import { identifyAccounts, identifyActivities } from '../schemas/activityFeed';
+import { DEFAULT_PROMPT, buildActivitySummaryPrompt } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { formatJson } from '../utils/jsxUtils';
-import { cloneArray } from '../utils/mapUtils';
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
 
 // load activities
@@ -94,55 +88,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return result;
 };
 
-const buildActivityPrompt = (
-  activities: Omit<ActivityData, 'id'>[] | null,
-  actors: ActorMap | null,
-  activityCount: number,
-  inclDates: boolean,
-  inclActions: boolean,
-  inclContributors: boolean
-) => {
-  if (!activities) {
-    return '';
-  }
-  const activityList = cloneArray(activities);
-  activityList.splice(activityCount);
-  let activityString = '';
-  activityList.forEach(activity => {
-    if (!activity.metadata) {
-      return;
-    }
-    const summary = getSummary(activity.metadata);
-    if (!summary) {
-      return;
-    }
-    const summaryAction = inclActions ? getSummaryAction(activity.metadata) : undefined;
-    const contributor =
-      inclContributors && actors ? actors[activity.actorId ?? '']?.name ?? undefined : undefined;
-
-    activityString +=
-      summary +
-      (inclDates ? '\nDate: ' + new Date(activity.createdTimestamp).toLocaleString() : '') +
-      (summaryAction ? '\nAction: ' + summaryAction : '') +
-      (contributor ? '\nContributor: ' + contributor : '') +
-      '\n\n';
-  });
-
-  return activityString;
-};
-
 export default function AIPlayground() {
   const navigation = useNavigation();
   const sessionData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [activityCount, setActivityCount] = useState(30);
+  const [activityCount, setActivityCount] = useState(100);
   const [inclDates, setInclDates] = useState(true);
   const [inclActions, setInclActions] = useState(true);
   const [inclContributors, setInclContributors] = useState(true);
   const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
-    const activities = buildActivityPrompt(
+    const activities = buildActivitySummaryPrompt(
       sessionData.activities,
       sessionData.actors,
       activityCount,
@@ -177,7 +134,7 @@ export default function AIPlayground() {
             <TextField
               name="prompt"
               label="Prompt 1/2"
-              defaultValue="Summarize and classify these activities."
+              defaultValue={DEFAULT_PROMPT}
               multiline
               fullWidth
               minRows={3}
@@ -240,17 +197,19 @@ export default function AIPlayground() {
               value={activityCount}
               onChange={e => setActivityCount(+e.target.value)}
             />
-            {[
-              { v: inclDates, s: setInclDates, l: 'Dates' },
-              { v: inclActions, s: setInclActions, l: 'Actions' },
-              { v: inclContributors, s: setInclContributors, l: 'Contributors' },
-            ].map((el, i) => (
+            {(
+              [
+                [inclDates, setInclDates, 'Dates'],
+                [inclActions, setInclActions, 'Actions'],
+                [inclContributors, setInclContributors, 'Contributors'],
+              ] as [boolean, (checked: boolean) => void, string][]
+            ).map(([value, set, label], i) => (
               <FormControlLabel
                 key={i}
                 control={
-                  <Switch size="small" checked={el.v} onChange={e => el.s(e.target.checked)} />
+                  <Switch size="small" checked={value} onChange={e => set(e.target.checked)} />
                 }
-                label={el.l}
+                label={label}
               />
             ))}
             <Divider />
