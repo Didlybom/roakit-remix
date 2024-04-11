@@ -147,15 +147,17 @@ export default function GitHubSettings({
         organization <code>owner</code>). You will need to create a new webhook for{' '}
         <strong>Roakit</strong> by clicking the <strong>Add webhook</strong> button in the upper
         right corner.
-        <List sx={{ listStyleType: 'disc', pl: 2 }}>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+        <List
+          sx={{ listStyleType: 'disc', pl: 2, '& .MuiListItem-root': { display: 'list-item' } }}
+        >
+          <ListItem disablePadding>
             <code>Payload URL</code> — copy the value from the field above
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             <code>Content type</code> — set this option to <code>application/json</code> to deliver
             to <strong>Roakit</strong> as JSON formatted text
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             <code>Secret</code> — a high entropy value shared with <strong>Roakit</strong> used to
             validate webhook deliveries; copy the value from the field above (don&apos;t forget to
             save it with <DoneIcon sx={{ verticalAlign: 'middle' }} />)

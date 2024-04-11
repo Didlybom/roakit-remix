@@ -82,12 +82,14 @@ export default function JiraSettings({
       <Typography component="div" sx={{ mt: 5 }}>
         In your <strong>Jira</strong> administration console, go to <strong>System WebHooks</strong>{' '}
         in the Advanced section and click the <strong>Create a Webhook</strong> button.
-        <List sx={{ listStyleType: 'disc', pl: 2 }}>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+        <List
+          sx={{ listStyleType: 'disc', pl: 2, '& .MuiListItem-root': { display: 'list-item' } }}
+        >
+          <ListItem disablePadding>
             In the form that is shown, enter the <code>Name</code>, <code>URL</code>,{' '}
             <code>Scope</code> and <code>Event</code> settings as indicated above.
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             To register the new webhook, click <strong>Create</strong>.
           </ListItem>
         </List>

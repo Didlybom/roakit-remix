@@ -162,27 +162,27 @@ export default function ConfluenceSettings({
         In your <strong>Confluence</strong> website, the administrator needs{' '}
         <code>Confluence Administrator</code> or <code>System Administrator</code> permissions to
         create the webhook using the values indicated above.
-        <List sx={{ listStyleType: 'disc', pl: 2 }}>
+        <List
+          sx={{ listStyleType: 'disc', pl: 2, '& .MuiListItem-root': { display: 'list-item' } }}
+        >
           <ListItem disablePadding sx={{ display: 'list-item' }}>
             Add a <code>Name</code> for the new webhook
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             Enter the <code>URL</code> of the <strong>Roakit</strong> service
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             Enter the <code>secret</code> for the <strong>Roakit</strong> service (don&apos;t forget
             to save it on this page with <DoneIcon sx={{ verticalAlign: 'middle' }} />)
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             Click <strong>Test connection</strong> to verify your connection
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
-            Choose the Events that should trigger the webhook
-          </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>Choose the Events that should trigger the webhook</ListItem>
+          <ListItem disablePadding>
             Select <code>Active</code> to enable the webhook
           </ListItem>
-          <ListItem disablePadding sx={{ display: 'list-item' }}>
+          <ListItem disablePadding>
             Click <strong>Save</strong>
           </ListItem>
         </List>
