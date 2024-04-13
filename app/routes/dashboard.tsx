@@ -23,7 +23,7 @@ import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import { appActions } from '../appActions.server';
+import { appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import {
   fetchAccountMap,
@@ -64,10 +64,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
+  const appAction = await appActions(request);
   if (appAction) {
     return appAction;
   }
@@ -85,7 +82,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // retrieve activities
     const startDate = dateFilterToStartDate(sessionData.dateFilter ?? DateRange.OneDay)!;
 
-    const activities = await fetchActivities(sessionData.customerId!, startDate);
+    const activities = await fetchActivities({ customerId: sessionData.customerId!, startDate });
     const groupedActivities = groupActivities(
       identifyActivities(activities, identities.accountMap)
     );
@@ -154,13 +151,13 @@ export default function Dashboard() {
     if (groupedActivities) {
       setLoading(false);
     } else {
-      submit({}, { method: 'post' }); // ask server to load
+      submit({}, postJsonOptions); // ask server to load
     }
   }, [groupedActivities, submit]);
 
   useEffect(() => {
     setLoading(true);
-    submit({}, { method: 'post' }); // ask server to load
+    submit({}, postJsonOptions); // ask server to load
   }, [dateFilter, submit]);
 
   useEffect(() => {
@@ -426,7 +423,7 @@ export default function Dashboard() {
       isLoggedIn={sessionData.isLoggedIn}
       dateRange={dateFilter}
       isNavOpen={sessionData.isNavOpen}
-      showProgress={loading || navigation.state === 'submitting'}
+      showProgress={loading || navigation.state !== 'idle'}
       showPulse={false}
     >
       {error && (

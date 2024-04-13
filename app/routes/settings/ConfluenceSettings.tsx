@@ -18,6 +18,7 @@ import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { postJsonOptions } from '../../appActions';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import BannedItems from './BannedItems.';
@@ -79,11 +80,11 @@ export default function ConfluenceSettings({
                   label="Secret"
                   value={secret}
                   onChange={e => setSecret(e.target.value)}
-                  disabled={navigation.state === 'submitting'}
+                  disabled={navigation.state !== 'idle'}
                   fullWidth
                   size="small"
                   InputProps={{
-                    ...(navigation.state !== 'submitting' && {
+                    ...(navigation.state === 'idle' && {
                       endAdornment: (
                         <Tooltip title="Regenerate a secret">
                           <IconButton onClick={() => setSecret(uuidv4())}>
@@ -100,7 +101,7 @@ export default function ConfluenceSettings({
               <Stack direction={'row'}>
                 {secret !== serverData.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () => handleCopy(secret))}
-                {navigation.state !== 'submitting' &&
+                {navigation.state === 'idle' &&
                   secret?.trim() &&
                   secret !== serverData.secret &&
                   actionIcon(
@@ -113,10 +114,10 @@ export default function ConfluenceSettings({
                           type: feedUtils.CONFLUENCE_FEED_TYPE,
                           secret: secret,
                         },
-                        { method: 'post' }
+                        postJsonOptions
                       )
                   )}
-                {navigation.state === 'submitting' && (
+                {navigation.state !== 'idle' && (
                   <Box sx={{ ml: '8px', mt: '3px' }}>
                     <CircularProgress size="20px" />
                   </Box>

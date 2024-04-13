@@ -39,7 +39,7 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
-import { appActions } from '../appActions.server';
+import { AppJsonRequest, appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
@@ -113,6 +113,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 type ActivityRow = ActivityData & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
+interface JsonRequest extends AppJsonRequest {
+  activityId?: string;
+  activities?: ActivityPayload;
+  initiativeId?: string;
+  initiativeCountersLastUpdated?: number;
+  note?: string;
+}
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -122,37 +130,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const customerId = sessionData.customerId;
 
-    const formData = await request.formData();
+    const jsonRequest = (await request.json()) as JsonRequest;
 
-    const appAction = await appActions(request, formData);
+    const appAction = await appActions(request, jsonRequest);
     if (appAction) {
       return appAction;
     }
 
-    const note = formData.get('note')?.toString() ?? '';
+    const note = jsonRequest.note;
     if (note) {
-      const activityId = formData.get('activityId')?.toString() ?? '';
+      const activityId = jsonRequest.activityId;
       await firestore
         .doc(`customers/${customerId!}/activities/${activityId}`)
         .update({ note: note === DELETE ? '' : note });
       return null;
     }
 
-    const activitiesJson = formData.get('activities')?.toString() ?? '';
-    const initiativeId = formData.get('initiativeId')?.toString() ?? '';
-    const initiativeCountersLastUpdated =
-      formData.get('initiativeCountersLastUpdated')?.toString() ?? '';
-    if (!activitiesJson || !initiativeId) {
+    const { activities, initiativeId, initiativeCountersLastUpdated } = jsonRequest;
+    if (!activities || !initiativeId) {
       return null;
     }
-    const activities = JSON.parse(activitiesJson) as ActivityPayload;
     const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0 };
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (
         initiativeId !== UNSET_INITIATIVE_ID &&
         initiativeCountersLastUpdated &&
-        activity.createdTimestamp < +initiativeCountersLastUpdated
+        activity.createdTimestamp < initiativeCountersLastUpdated
       ) {
         counters[activity.artifact]++;
       }
@@ -437,13 +441,11 @@ export default function ActivityReview() {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
                       sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
-                    activities: JSON.stringify(
-                      rowSelectionModel.map(id => {
-                        return { id, artifact: activities.find(a => a.id === id)!.artifact };
-                      }) as ActivityPayload
-                    ),
+                    activities: rowSelectionModel.map(id => {
+                      return { id, artifact: activities.find(a => a.id === id)!.artifact };
+                    }) as ActivityPayload,
                   },
-                  { method: 'post' }
+                  postJsonOptions
                 );
               }}
             >
@@ -535,20 +537,20 @@ export default function ActivityReview() {
                   initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
                     sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
-                  activities: JSON.stringify([
+                  activities: [
                     {
                       id: updatedRow.id,
                       artifact: updatedRow.artifact,
                       createdTimestamp: updatedRow.createdTimestamp,
                     },
-                  ] as ActivityPayload),
+                  ] as ActivityPayload,
                 },
-                { method: 'post' }
+                postJsonOptions
               );
             } else if (updatedRow.note !== oldRow.note) {
               fetcher.submit(
                 { activityId: updatedRow.id, note: updatedRow.note || DELETE },
-                { method: 'post' }
+                postJsonOptions
               );
             }
 

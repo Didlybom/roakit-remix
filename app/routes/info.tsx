@@ -2,7 +2,7 @@ import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';
-import { appActions } from '../appActions.server';
+import { appActions } from '../appActions';
 import App from '../components/App';
 import { loadSession } from '../utils/authUtils.server';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
@@ -18,13 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
-  if (appAction) {
-    return appAction;
-  }
+  return await appActions(request);
 };
 
 export default function Info() {

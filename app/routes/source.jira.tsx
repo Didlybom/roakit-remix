@@ -6,7 +6,7 @@ import { redirect } from '@remix-run/node';
 import { useLoaderData, useNavigation } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import { useEffect, useMemo, useState } from 'react';
-import { appActions } from '../appActions.server';
+import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
@@ -39,13 +39,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
-  if (appAction) {
-    return appAction;
-  }
+  return await appActions(request);
 };
 
 export default function Jira() {
@@ -202,7 +196,7 @@ export default function Jira() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
-      showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >
       <CodePopover popover={popover} onClose={() => setPopover(null)} />

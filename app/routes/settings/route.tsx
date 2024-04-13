@@ -18,7 +18,7 @@ import { redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
-import { appActions } from '../../appActions.server';
+import { AppJsonRequest, appActions } from '../../appActions';
 import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
 import { firestore } from '../../firebase.server';
@@ -94,6 +94,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+interface JsonRequest extends AppJsonRequest {
+  feedId?: number;
+  secret?: string;
+  bannedEvents?: string;
+  bannedAccounts?: string;
+}
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
@@ -103,32 +110,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const customerId = sessionData.customerId;
 
-    const formData = await request.formData();
+    const jsonRequest = (await request.json()) as JsonRequest;
 
-    const appAction = await appActions(request, formData);
+    const appAction = await appActions(request, jsonRequest);
     if (appAction) {
       return appAction;
     }
 
-    const feedId = formData.get('feedId')?.toString() ?? '';
+    const feedId = jsonRequest.feedId;
     if (feedId) {
-      const secret = formData.get('secret');
+      const secret = jsonRequest.secret;
       if (secret) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({ secret });
       }
-      const bannedEvents = formData.get('bannedEvents');
+      const bannedEvents = jsonRequest.bannedEvents;
       if (bannedEvents) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({
-          bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents as string)),
+          bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents)),
         });
       }
-      const bannedAccounts = formData.get('bannedAccounts');
+      const bannedAccounts = jsonRequest.bannedAccounts;
       if (bannedAccounts) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({
-          bannedAccounts: bannedRecordSchema.parse(JSON.parse(bannedAccounts as string)),
+          bannedAccounts: bannedRecordSchema.parse(JSON.parse(bannedAccounts)),
         });
       }
     }

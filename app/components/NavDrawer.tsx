@@ -1,9 +1,10 @@
+import BusinessIcon from '@mui/icons-material/Business';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import GroupIcon from '@mui/icons-material/Group';
+import HistoryIcon from '@mui/icons-material/History';
+import PeopleIcon from '@mui/icons-material/People';
 import {
   Box,
   Divider,
@@ -66,10 +67,18 @@ export default function NavDrawer({
             <ListItemText primary={'Dashboard'} />
           </ListItemButton>
         </ListItem>
+        <ListItem key="contributors" disablePadding>
+          <ListItemButton href="/activity/user/*" selected={view === 'activity.user'}>
+            <ListItemIcon sx={{ minWidth: '30px' }}>
+              <PeopleIcon />
+            </ListItemIcon>
+            <ListItemText primary={'By Contributor'} />
+          </ListItemButton>
+        </ListItem>
         <ListItem key="activity" disablePadding>
           <ListItemButton href="/activity" selected={view === 'activity'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
-              <FormatListBulletedIcon />
+              <HistoryIcon />
             </ListItemIcon>
             <ListItemText primary={'All Activity'} />
           </ListItemButton>
@@ -85,12 +94,12 @@ export default function NavDrawer({
             <ListItemText primary={'Initiatives'} />
           </ListItemButton>
         </ListItem>
-        <ListItem key="contributors" disablePadding>
+        <ListItem key="orgChart" disablePadding>
           <ListItemButton href="/users" selected={view === 'users'}>
             <ListItemIcon sx={{ minWidth: '30px' }}>
-              <GroupIcon fontSize="small" />
+              <BusinessIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary={'Contributors'} />
+            <ListItemText primary={'Directory'} />
           </ListItemButton>
         </ListItem>
       </List>

@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useFetcher } from '@remix-run/react';
 import { useState } from 'react';
+import { postJsonOptions } from '../appActions';
 import { DateRange, dateRangeLabels } from '../utils/dateUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
@@ -60,7 +61,7 @@ export default function DateRangePicker({
             selected={date === dateRange}
             onClick={() => {
               setMenuEl(null);
-              onSelect ? onSelect(date) : fetcher.submit({ dateRange: date }, { method: 'post' });
+              onSelect ? onSelect(date) : fetcher.submit({ dateRange: date }, postJsonOptions);
             }}
           >
             <ListItemIcon>{icons[date]}</ListItemIcon>

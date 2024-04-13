@@ -51,9 +51,9 @@ header.
 
       ...
 
-      const formData = await request.formData();
+      const jsonRequest = await request.json();
 
-      const appAction = await appActions(request, formData);
+      const appAction = await appActions(request, jsonRequest);
       if (appAction) {
        return appAction;
       }

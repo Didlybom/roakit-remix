@@ -19,6 +19,7 @@ import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { postJsonOptions } from '../../appActions';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import BannedItems from './BannedItems.';
@@ -76,11 +77,11 @@ export default function GitHubSettings({
                   label="Secret"
                   value={secret}
                   onChange={e => setSecret(e.target.value)}
-                  disabled={navigation.state === 'submitting'}
+                  disabled={navigation.state !== 'idle'}
                   fullWidth
                   size="small"
                   InputProps={{
-                    ...(navigation.state !== 'submitting' && {
+                    ...(navigation.state === 'idle' && {
                       endAdornment: (
                         <Tooltip title="Regenerate a secret">
                           <IconButton onClick={() => setSecret(uuidv4())}>
@@ -97,7 +98,7 @@ export default function GitHubSettings({
               <Stack direction={'row'}>
                 {secret !== serverData.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () => handleCopy(secret))}
-                {navigation.state !== 'submitting' &&
+                {navigation.state === 'idle' &&
                   secret?.trim() &&
                   secret !== serverData.secret &&
                   actionIcon(
@@ -110,10 +111,10 @@ export default function GitHubSettings({
                           type: feedUtils.GITHUB_FEED_TYPE,
                           secret: secret,
                         },
-                        { method: 'post' }
+                        postJsonOptions
                       )
                   )}
-                {navigation.state === 'submitting' && (
+                {navigation.state !== 'idle' && (
                   <Box sx={{ alignSelf: 'center', ml: '8px', mt: '3px' }}>
                     <CircularProgress size="20px" />
                   </Box>

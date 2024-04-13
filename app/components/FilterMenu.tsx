@@ -19,7 +19,7 @@ export default function FilterMenu<T extends string>({
   items: { value: T; label: string; color?: string }[];
   selectedValue: T;
   onChange: (e: SelectChangeEvent) => void;
-  sx: SxProps<Theme>;
+  sx?: SxProps<Theme>;
 }) {
   return (
     <Stack direction="row" spacing={2} alignItems="center" justifyContent="right" sx={sx}>

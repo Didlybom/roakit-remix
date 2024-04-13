@@ -22,7 +22,7 @@ import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { JSXElementConstructor, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { appActions } from '../appActions.server';
+import { AppJsonRequest, appActions, deleteJsonOptions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
 import { fetchInitiatives } from '../firestore.server/fetchers.server';
@@ -55,27 +55,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+interface JsonRequest extends AppJsonRequest {
+  initiativeId?: string;
+  label?: string;
+}
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
 
-  const formData = await request.formData();
+  const jsonRequest = (await request.json()) as JsonRequest;
 
-  const appAction = await appActions(request, formData);
+  const appAction = await appActions(request, jsonRequest);
   if (appAction) {
     return appAction;
   }
 
-  const initiativeId = formData.get('initiativeId')?.toString() ?? '';
-
+  const initiativeId = jsonRequest.initiativeId!;
   if (!initiativeId) {
     return null;
   }
 
   if (request.method !== 'DELETE') {
-    const label = formData.get('label')?.toString() ?? '';
+    const label = jsonRequest.label!;
     const doc = firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`);
     await doc.set({ label }, { merge: true });
   } else {
@@ -164,7 +168,7 @@ export default function Initiatives() {
 
   const handleDeleteClick = (id: GridRowId, initiativeId: string) => {
     setRows(rows.filter(row => row.id !== id));
-    fetcher.submit({ initiativeId }, { method: 'DELETE' });
+    fetcher.submit({ initiativeId }, deleteJsonOptions);
   };
 
   const columns: GridColDef[] = [
@@ -241,7 +245,7 @@ export default function Initiatives() {
             setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
             fetcher.submit(
               { initiativeId: updatedRow.key, label: updatedRow.label ?? '' },
-              { method: 'post' }
+              postJsonOptions
             );
             return updatedRow;
           }}

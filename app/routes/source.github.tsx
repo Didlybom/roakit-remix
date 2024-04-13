@@ -25,7 +25,7 @@ import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appActions } from '../appActions.server';
+import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import LinkifyJira from '../components/LinkifyJira';
@@ -76,13 +76,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
-  if (appAction) {
-    return appAction;
-  }
+  return await appActions(request);
 };
 
 export default function GitHub() {
@@ -383,7 +377,7 @@ export default function GitHub() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
-      showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >
       <Popover

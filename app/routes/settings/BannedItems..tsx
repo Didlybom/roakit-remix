@@ -3,6 +3,7 @@ import { Button, TextField } from '@mui/material';
 import grey from '@mui/material/colors/grey';
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useState } from 'react';
+import { postJsonOptions } from '../../appActions';
 import { bannedRecordSchema } from '../../schemas/schemas';
 import { formatJson } from '../../utils/jsxUtils';
 import { areRecordsEqual } from '../../utils/mapUtils';
@@ -47,7 +48,7 @@ export default function BannedItems({
         error={!!bannedItemsError}
         helperText={bannedItemsError}
         onChange={e => parseBannedEvents(e.target.value)}
-        disabled={navigation.state === 'submitting'}
+        disabled={navigation.state !== 'idle'}
         fullWidth
         multiline
         minRows={5}
@@ -74,7 +75,7 @@ export default function BannedItems({
                 type: feedType,
                 [storageKey]: JSON.stringify(bannedItems),
               },
-              { method: 'post' }
+              postJsonOptions
             )
           }
         >

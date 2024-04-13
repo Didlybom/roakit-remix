@@ -1,13 +1,29 @@
+import { SubmitOptions } from '@remix-run/react';
 import { json } from '@remix-run/server-runtime';
 import { sessionCookie } from './cookies.server';
 import { DateRangeValue } from './utils/dateUtils';
 import { parseCookie } from './utils/sessionCookie.server';
 
-export const appActions = async (request: Request, formData: FormData) => {
-  const isNavOpen = formData.get('isNavOpen');
-  if (isNavOpen !== null) {
+export const postJsonOptions: SubmitOptions = {
+  method: 'POST',
+  encType: 'application/json',
+};
+
+export const deleteJsonOptions: SubmitOptions = {
+  method: 'DELETE',
+  encType: 'application/json',
+};
+
+export interface AppJsonRequest {
+  app?: { isNavOpen?: boolean; dateRange?: DateRangeValue };
+}
+
+export const appActions = async (request: Request, jsonRequest?: AppJsonRequest) => {
+  const jsonReq = jsonRequest ?? ((await request.json()) as AppJsonRequest);
+  const isNavOpen = jsonReq.app?.isNavOpen;
+  if (isNavOpen != null) {
     const cookie = await parseCookie(request);
-    cookie.isNavOpen = isNavOpen === 'true';
+    cookie.isNavOpen = isNavOpen;
     return json(null, {
       headers: {
         'Set-Cookie': await sessionCookie.serialize(
@@ -18,10 +34,10 @@ export const appActions = async (request: Request, formData: FormData) => {
     });
   }
 
-  const dateRange = formData.get('dateRange');
-  if (dateRange !== null) {
+  const dateRange = jsonReq.app?.dateRange;
+  if (dateRange != null) {
     const cookie = await parseCookie(request);
-    cookie.dateRange = dateRange as DateRangeValue;
+    cookie.dateRange = dateRange;
     return json(null, {
       headers: {
         'Set-Cookie': await sessionCookie.serialize(

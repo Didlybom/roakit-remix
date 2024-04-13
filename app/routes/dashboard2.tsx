@@ -21,7 +21,7 @@ import Markdown from 'markdown-to-jsx';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import { appActions } from '../appActions.server';
+import { appActions } from '../appActions';
 import App from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
@@ -61,27 +61,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-// load activities
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
-  if (appAction) {
-    return appAction;
-  }
-
-  return null;
+  return await appActions(request);
 };
 
 export default function Dashboard() {
   const navigation = useNavigation();
-  const summaryFetcher = useFetcher({ key: 'summary' });
-  const topActorsFetcher = useFetcher({ key: 'topActors' });
+  const summaryFetcher = useFetcher();
+  const topActorsFetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
   const actors = sessionData.actors;
   const summaryResponse = summaryFetcher.data as SummaryResponse;
@@ -152,14 +143,16 @@ export default function Dashboard() {
               />
             </Tooltip>
             {summaryResponse?.summary ?
-              <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                {summaryResponse.summary}
-              </Markdown>
+              <Box fontSize="smaller">
+                <Markdown options={{ overrides: { a: { component: 'span' } } }}>
+                  {summaryResponse.summary}
+                </Markdown>
+              </Box>
             : <Stack spacing={1} sx={{ m: 2 }}>
                 {[1, 2, 3, 4, 5].map(i => (
                   <Skeleton
                     key={i}
-                    height="30px"
+                    height="25px"
                     width={randomNumber(20, 80) + '%'}
                     sx={{ ml: '-10px' }}
                   />
@@ -174,7 +167,7 @@ export default function Dashboard() {
         <Accordion variant="outlined" disableGutters defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Stack direction="row" alignItems="center">
-              {'Active Contributors'}
+              {'Contributors'}
               <Box onClick={e => e.stopPropagation()}>
                 <DateRangePicker
                   dateRange={contributorsDateFilter}
@@ -272,9 +265,9 @@ export default function Dashboard() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       showProgress={
-        navigation.state === 'submitting' ||
-        summaryFetcher.state === 'loading' ||
-        topActorsFetcher.state === 'loading'
+        navigation.state !== 'idle' ||
+        summaryFetcher.state !== 'idle' ||
+        topActorsFetcher.state !== 'idle'
       }
       showPulse={false}
     >

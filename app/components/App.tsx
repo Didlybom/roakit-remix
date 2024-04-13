@@ -1,6 +1,7 @@
 import { Box, styled } from '@mui/material';
 import { useFetcher } from '@remix-run/react';
 import { ReactNode } from 'react';
+import { AppJsonRequest, postJsonOptions } from '../appActions';
 import { DateRange } from '../utils/dateUtils';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
@@ -60,8 +61,10 @@ export default function App({
 }) {
   const fetcher = useFetcher();
   let isOpen = isLoggedIn ? isNavOpen ?? true : false;
-  if (fetcher.formData?.has('isNavOpen')) {
-    isOpen = fetcher.formData.get('isNavOpen') === 'true';
+  // optimistic UI optimization, the setting is stored via appActions.tsx
+  const jsonRequest = fetcher.json as AppJsonRequest;
+  if (jsonRequest?.app?.isNavOpen != null) {
+    isOpen = jsonRequest.app.isNavOpen;
   }
 
   return (
@@ -73,14 +76,14 @@ export default function App({
         showProgress={showProgress}
         navbarWidth={navbarWidth}
         navbarOpen={isOpen}
-        onNavBarOpen={() => fetcher.submit({ isNavOpen: true }, { method: 'post' })}
+        onNavBarOpen={() => fetcher.submit({ app: { isNavOpen: true } }, postJsonOptions)}
       />
       <NavDrawer
         view={view}
         width={navbarWidth}
         showPulse={showPulse}
         open={isOpen}
-        onClose={() => fetcher.submit({ isNavOpen: false }, { method: 'post' })}
+        onClose={() => fetcher.submit({ app: { isNavOpen: false } }, postJsonOptions)}
       />
       <Main open={isOpen}>
         <DrawerHeader />

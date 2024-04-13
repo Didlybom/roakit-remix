@@ -143,7 +143,7 @@ export default function Login() {
   }
 
   return (
-    <App view="login" isLoggedIn={false} showProgress={navigation.state === 'submitting'}>
+    <App view="login" isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
       <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
         <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
           <Form method="post" onSubmit={handleLogin}>
@@ -173,6 +173,7 @@ export default function Login() {
               startIcon={<GoogleIcon />}
               sx={{ width: '100%' }}
               onClick={handleSignInWithGoogle}
+              disabled={navigation.state !== 'idle'}
             >
               Sign in with Google
             </Button>
