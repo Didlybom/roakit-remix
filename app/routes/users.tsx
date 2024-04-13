@@ -1,4 +1,5 @@
 import DownloadIcon from '@mui/icons-material/Download';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import UploadIcon from '@mui/icons-material/Upload';
 import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import grey from '@mui/material/colors/grey';
@@ -14,11 +15,12 @@ import {
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
-import { appActions } from '../appActions.server';
+import { AppJsonRequest, appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import TabPanel from '../components/TabPanel';
 import { firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
+import JiraIcon from '../icons/Jira';
 import { IdentityData } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
@@ -48,20 +50,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+interface JsonRequest extends AppJsonRequest {
+  imports?: string;
+}
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
 
-  const formData = await request.formData();
+  const jsonRequest = (await request.json()) as JsonRequest;
 
-  const appAction = await appActions(request, formData);
+  const appAction = await appActions(request, jsonRequest);
   if (appAction) {
     return appAction;
   }
 
-  const imports = formData.get('imports')?.toString() ?? '';
+  const imports = jsonRequest.imports;
   if (imports) {
     const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
     const batch = firestore.batch();
@@ -137,8 +143,11 @@ export default function Users() {
             <Stack key={i}>
               <Stack direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
                 <Typography fontSize="small" color={!account.id ? 'error' : 'inherited'}>
-                  <strong>{account.type}: </strong>
-                  {account.id || '[no id]'}
+                  <Stack direction="row" alignItems={'center'}>
+                    {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
+                    {account.type === 'jira' && <JiraIcon />}
+                    <Box sx={{ ml: 1 }}> {account.id || 'no id'}</Box>
+                  </Stack>
                 </Typography>
                 {account.name && <Box>{account.name}</Box>}
                 <Link href={account.url} target="_blank" sx={{ cursor: 'pointer' }}>
@@ -184,7 +193,7 @@ export default function Users() {
     <App
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
-      showProgress={navigation.state === 'submitting'}
+      showProgress={navigation.state !== 'idle'}
       view="users"
     >
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
@@ -249,10 +258,10 @@ jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
           <Box flex={0}>
             <Button
               variant="contained"
-              disabled={navigation.state === 'submitting'}
+              disabled={navigation.state !== 'idle'}
               startIcon={<UploadIcon />}
               sx={{ mt: 2, textWrap: 'nowrap' }}
-              onClick={() => submit({ imports }, { method: 'post' })}
+              onClick={() => submit({ imports }, postJsonOptions)}
             >
               Import
             </Button>
