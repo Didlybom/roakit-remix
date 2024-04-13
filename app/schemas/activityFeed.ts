@@ -20,6 +20,7 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['code-unknown', { sortOrder: 10, label: 'Code [unknown]' }],
   ['codeOrg-created', { sortOrder: 11, label: 'Code organization creation' }],
   ['codeOrg-updated', { sortOrder: 12, label: 'Code organization update' }],
+  ['codeOrg-deleted', { sortOrder: 13, label: 'Code organization deletion' }],
 ]);
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
