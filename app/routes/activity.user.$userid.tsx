@@ -278,14 +278,7 @@ export default function UserActivity() {
     );
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    dateFilter,
-    sessionData.actors,
-    sessionData.customerId,
-    sessionData.userId,
-    sortAlphabetically,
-    actionFilter,
-  ]); // prevSortAlphabetically and prevActionFilter must be omitted
+  }, [dateFilter, sortAlphabetically, actionFilter]); // sessionData, prevSortAlphabetically and prevActionFilter must be omitted
 
   // Auto scrollers
   useEffect(() => {

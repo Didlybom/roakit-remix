@@ -298,7 +298,7 @@ export default function ActivityReview() {
     };
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionData.customerId, sessionData.accountMap, activityFilter, paginationModel]); // prevPaginationModel and boundaryDocs must be omitted
+  }, [activityFilter, paginationModel]); // sessionData, prevPaginationModel and boundaryDocs must be omitted
 
   const dataGridProps = {
     autosizeOnMount: true,
