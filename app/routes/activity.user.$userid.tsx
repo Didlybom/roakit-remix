@@ -4,6 +4,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
   Box,
+  Button,
   FormControlLabel,
   FormGroup,
   IconButton,
@@ -13,7 +14,6 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
@@ -23,7 +23,7 @@ import pino from 'pino';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import usePrevious from 'use-previous';
-import { appActions } from '../appActions.server';
+import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
@@ -34,6 +34,7 @@ import {
   fetchInitiativeMap,
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
+import JiraIcon from '../icons/Jira';
 import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../schemas/activityFeed';
 import { Artifact, IdentityAccountMap, TicketMap, activitySchema } from '../schemas/schemas';
 import { inferPriority } from '../utils/activityUtils';
@@ -127,6 +128,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       fetchIdentities(sessionData.customerId!),
       fetchTicketMap(sessionData.customerId!),
     ]);
+
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
     const userId = params.userid;
@@ -174,13 +176,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-
-  const formData = await request.formData();
-
-  const appAction = await appActions(request, formData);
-  if (appAction) {
-    return appAction;
-  }
+  return await appActions(request);
 };
 
 export default function UserActivity() {
@@ -345,18 +341,13 @@ export default function UserActivity() {
             sx={{ display: 'flex', mb: 1 }}
           >
             <PersonIcon sx={{ mr: 1 }} />
-            {actor?.name ?? 'Unknown user'}
-            {(actor?.urls?.length ?? 0) > 0 && (
-              <IconButton
-                component="a"
-                href={actor.urls![0].url} /* FIXME urls */
-                target="_blank"
-                color="primary"
-                sx={{ ml: 1 }}
-              >
-                <GitHubIcon fontSize="small" />
+            <Box sx={{ mr: 1 }}>{actor?.name ?? 'Unknown user'}</Box>
+            {actor?.urls?.map((url, i) => (
+              <IconButton key={i} component="a" href={url.url} target="_blank" color="primary">
+                {url.type === 'github' && <GitHubIcon fontSize="small" />}
+                {url.type === 'jira' && <JiraIcon fontSize="smaller" />}
               </IconButton>
-            )}
+            ))}
             {sessionData.userId === ALL && (
               <IconButton
                 component="a"
@@ -391,7 +382,7 @@ export default function UserActivity() {
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
-      showProgress={!gotSnapshot || navigation.state === 'submitting'}
+      showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >
       <CodePopover
@@ -447,17 +438,24 @@ export default function UserActivity() {
             </Box>
           )}
           <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <FilterMenu
-              sx={{ mb: 2 }}
-              selectedValue={actionFilter ?? ''}
-              items={[
-                { value: '', label: 'None', color: grey[500] },
-                ...[...artifactActions].map(([key, action]) => {
-                  return { value: key, label: action.label };
-                }),
-              ]}
-              onChange={e => navigate(e.target.value ? `#${e.target.value}` : '')}
-            />
+            <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
+              {sessionData.userId !== ALL && (
+                <Button variant="outlined" href="/activity/user/*">
+                  {'See all contributors'}
+                </Button>
+              )}
+              <Box flex={1} />
+              <FilterMenu
+                selectedValue={actionFilter ?? ''}
+                items={[
+                  { value: '', label: 'None', color: grey[500] },
+                  ...[...artifactActions].map(([key, action]) => {
+                    return { value: key, label: action.label };
+                  }),
+                ]}
+                onChange={e => navigate(e.target.value ? `#${e.target.value}` : '')}
+              />
+            </Stack>
             {grids}
           </Stack>
         </Stack>

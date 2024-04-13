@@ -253,15 +253,21 @@ export const identifyAccounts = (
       if (!identity) {
         return;
       }
-      actors[identityId] = {
-        name: identity.displayName ?? identityId,
-        email: identity.email,
-        urls: identity.accounts
-          ?.filter(a => a.url)
-          .map(a => {
-            return { type: a.type, url: a.url ?? '' };
-          }),
-      };
+      if (!actors[identityId]) {
+        actors[identityId] = {
+          name: identity.displayName ?? identityId,
+          email: identity.email,
+          urls: identity.accounts
+            ?.filter(a => a.url)
+            .map(a => {
+              return { type: a.type, url: a.url ?? '' };
+            }),
+        };
+      }
+      // add account url if identity doesn't have them
+      if (account.url && !actors[identityId].urls?.find(u => u.type === account.type)) {
+        actors[identityId].urls?.push({ type: account.type, url: account.url });
+      }
     } else {
       actors[accountId] = {
         name: account.name || accountId,
