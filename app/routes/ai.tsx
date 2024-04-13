@@ -1,4 +1,3 @@
-import { TextPart } from '@google-cloud/vertexai';
 import {
   Box,
   Button,
@@ -6,6 +5,7 @@ import {
   FormControlLabel,
   LinearProgress,
   Link,
+  Paper,
   Stack,
   Switch,
   TextField,
@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
+import Markdown from 'markdown-to-jsx';
 import { useEffect, useState } from 'react';
 import {
   fetchAccountMap,
@@ -21,7 +22,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts, identifyActivities } from '../schemas/activityFeed';
-import { DEFAULT_PROMPT, buildActivitySummaryPrompt } from '../utils/aiUtils';
+import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
@@ -45,7 +46,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // retrieve last day activities
     const startDate = dateFilterToStartDate(DateRange.OneDay)!;
     const activities = identifyActivities(
-      await fetchActivities(sessionData.customerId!, startDate, true /* incl metadata */),
+      await fetchActivities({
+        customerId: sessionData.customerId!,
+        startDate,
+        includesMetadata: true,
+      }),
       identities.accountMap
     );
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
@@ -111,21 +116,11 @@ export default function AIPlayground() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityCount, inclDates, inclActions, inclContributors]); // sessionData must be omitted
 
-  let output;
-  const text = (actionData?.response.candidates[0]?.content.parts[0] as TextPart)?.text;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    output =
-      actionData ?
-        formatJson(JSON.parse(text.replace('```json', '').replace('```', '')))
-      : undefined;
-  } catch (e) {
-    output = text;
-  }
+  const output = actionData ? getSummaryResult(actionData) : null;
 
   return (
     <>
-      {navigation.state === 'submitting' ?
+      {navigation.state !== 'idle' ?
         <LinearProgress sx={{ mb: '30px' }} />
       : <Box height="18px" />}
       <Form action="/ai" method="post">
@@ -140,6 +135,7 @@ export default function AIPlayground() {
               minRows={3}
               maxRows={3}
               size="small"
+              inputProps={{ style: { fontSize: 'smaller' } }}
               InputLabelProps={{ shrink: true }}
             />
             <TextField
@@ -151,40 +147,42 @@ export default function AIPlayground() {
               minRows={15}
               maxRows={15}
               size="small"
+              inputProps={{ style: { fontSize: 'smaller' } }}
               InputLabelProps={{ shrink: true }}
               onChange={e => setPrompt(e.target.value)}
               sx={{ mt: 2 }}
             />
             <Box justifyContent="end" sx={{ display: 'flex', mt: 1, mb: 4 }}>
-              <Button
-                variant="contained"
-                type="submit"
-                disabled={navigation.state === 'submitting'}
-              >
+              <Button variant="contained" type="submit" disabled={navigation.state !== 'idle'}>
                 {'Submit'}
               </Button>
             </Box>
-            <TextField
-              label="Output"
-              multiline
-              fullWidth
-              InputProps={{ readOnly: true }}
-              minRows={15}
-              maxRows={15}
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              value={output}
-            />
+            <Paper
+              variant="outlined"
+              sx={{
+                px: 2,
+                minHeight: '200px',
+                maxHeight: '500px',
+                overflowY: 'auto',
+              }}
+            >
+              <Box fontSize="smaller">
+                <Markdown options={{ overrides: { a: { component: 'span' } } }}>
+                  {output ?? ''}
+                </Markdown>
+              </Box>
+            </Paper>
             <TextField
               label="Raw Response"
               multiline
               fullWidth
-              InputProps={{ readOnly: true }}
-              minRows={5}
-              maxRows={5}
+              minRows={8}
+              maxRows={8}
               size="small"
+              inputProps={{ style: { fontSize: 'smaller' } }}
+              InputProps={{ readOnly: true }}
               InputLabelProps={{ shrink: true }}
-              sx={{ mt: 2 }}
+              sx={{ mt: 4 }}
               value={formatJson(actionData)}
             />
           </Box>
@@ -209,7 +207,7 @@ export default function AIPlayground() {
                 control={
                   <Switch size="small" checked={value} onChange={e => set(e.target.checked)} />
                 }
-                label={label}
+                label={<Box fontSize="small">{label}</Box>}
               />
             ))}
             <Divider />

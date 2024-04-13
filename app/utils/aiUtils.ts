@@ -1,9 +1,11 @@
+import { GenerateContentResult, TextPart } from '@google-cloud/vertexai';
 import { getSummary, getSummaryAction } from '../schemas/activityFeed';
 import { ActivityData, ActorMap } from '../schemas/schemas';
+import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
 export const DEFAULT_PROMPT =
-  'Summarize and classify these activities. Remove duplicates. Without introduction. Output markdown.';
+  'Output a categorized summary of these activities. Remove duplicates. Without title, introduction, notes and conclusion. Output markdown.';
 
 export const buildActivitySummaryPrompt = (
   activities: Omit<ActivityData, 'id'>[] | null,
@@ -46,4 +48,19 @@ export const buildActivitySummaryPrompt = (
   });
 
   return activitiesString;
+};
+
+export const getSummaryResult = (content: GenerateContentResult) => {
+  let summary = (content.response.candidates[0]?.content.parts[0] as TextPart)?.text;
+  try {
+    if (summary.startsWith('```json')) {
+      summary = formatJson(JSON.parse(summary.replace('```json', '').replace('```', '')));
+    }
+    if (summary.startsWith('```markdown')) {
+      summary = summary.replace('```markdown', '').replace('```', '');
+    }
+  } catch (e) {
+    /* empty */
+  }
+  return summary;
 };

@@ -172,20 +172,27 @@ export const fetchAccountsToReview = async (customerId: number): Promise<Account
   }, retryProps('Retrying fetchAccountsToReview...'));
 };
 
-export const fetchActivities = async (
-  customerId: number,
-  startDate: number,
-  includesMetadata = false
-) => {
+export const fetchActivities = async ({
+  customerId,
+  startDate,
+  endDate,
+  includesMetadata = false,
+}: {
+  customerId: number;
+  startDate: number;
+  endDate?: number;
+  includesMetadata?: boolean;
+}) => {
   return await retry(async bail => {
+    let query = firestore
+      .collection(`customers/${customerId}/activities`)
+      .orderBy('createdTimestamp')
+      .startAt(startDate);
+    if (endDate) {
+      query = query.endAt(endDate);
+    }
     const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
-      () =>
-        firestore
-          .collection(`customers/${customerId}/activities`)
-          .orderBy('createdTimestamp')
-          .startAt(startDate)
-          .limit(5000) // FIXME limit
-          .get(),
+      () => query.limit(5000).get(), // FIXME limit
       { metricsName: 'dashboard:getActivities' }
     );
     const activities: ActivityMap = new Map();

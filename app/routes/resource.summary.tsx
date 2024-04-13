@@ -1,4 +1,3 @@
-import { TextPart } from '@google-cloud/vertexai';
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
 import {
@@ -8,11 +7,10 @@ import {
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../schemas/activityFeed';
-import { DEFAULT_PROMPT, buildActivitySummaryPrompt } from '../utils/aiUtils';
+import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { formatJson } from '../utils/jsxUtils';
 const logger = pino({ name: 'route:event.view' });
 
 export interface SummaryResponse {
@@ -34,11 +32,11 @@ export const loader = async ({
       fetchIdentities(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    const activities = await fetchActivities(
-      sessionData.customerId!,
-      dateFilterToStartDate(DateRange.OneDay)!,
-      true // includes metadata
-    );
+    const activities = await fetchActivities({
+      customerId: sessionData.customerId!,
+      startDate: dateFilterToStartDate(DateRange.OneDay)!,
+      includesMetadata: true,
+    });
     const prompt =
       DEFAULT_PROMPT +
       '\n\n' +
@@ -54,14 +52,7 @@ export const loader = async ({
     if (!content) {
       return json({ error: { message: 'Summary failed. Empty response' } }, { status: 500 });
     }
-    let summary = (content.response.candidates[0]?.content.parts[0] as TextPart)?.text;
-    try {
-      if (summary.startsWith('``json')) {
-        summary = formatJson(JSON.parse(summary.replace('```json', '').replace('```', '')));
-      }
-    } catch (e) {
-      /* empty */
-    }
+    const summary = getSummaryResult(content);
     return json({ summary });
   } catch (e) {
     logger.error(e);

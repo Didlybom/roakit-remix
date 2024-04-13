@@ -38,7 +38,7 @@ export const loader = async ({
     if (!startDate) {
       return json({ error: { message: 'Invalid params' } }, { status: 400 });
     }
-    const activities = await fetchActivities(sessionData.customerId!, startDate);
+    const activities = await fetchActivities({ customerId: sessionData.customerId!, startDate });
     topActors = getTopActors(identifyActivities(activities, identities.accountMap));
     return json({ topActors });
   } catch (e) {
