@@ -116,8 +116,7 @@ export default function Users() {
       headerName: 'Name',
       minWidth: 250,
       renderCell: params => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const id = params.row.id as string;
+        const id = (params.row as IdentityData).id;
         return (
           <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
             {params.value}
@@ -168,8 +167,7 @@ export default function Users() {
       headerName: 'Name',
       minWidth: 250,
       renderCell: params => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        const id = params.row.id as string;
+        const id = (params.row as IdentityData).id;
         return (
           <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
             {params.value}

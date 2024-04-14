@@ -71,7 +71,7 @@ export const activitySchema = z.object({
   artifact: z.enum(ARTIFACTS),
   initiative: z.string(),
   priority: z.number().optional(),
-  metadata: z.any(),
+  metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata
   note: z.string().optional(),
   objectId: z.string().optional(), // for debugging
 });
@@ -133,6 +133,25 @@ export type TicketMap = Record<TicketData['key'], TicketData['priority']>;
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 
+export interface ActivityChangeLog {
+  field: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+export interface ActivityMetadata {
+  codeAction?: string;
+  issue?: { key: string; summary?: string; uri?: string };
+  attachment?: { filename: string; mimeType?: string };
+  sprint?: { name: string; state: string };
+  worklog?: unknown;
+  pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
+  pullRequestComment?: { body: string; uri?: string };
+  commits?: { message: string; url?: string }[];
+  comment?: { body: string };
+  changeLog?: ActivityChangeLog[];
+}
+
 export interface ActivityData {
   id: string;
   action: string;
@@ -142,7 +161,7 @@ export interface ActivityData {
   createdTimestamp: number;
   initiativeId: string;
   priority?: number;
-  metadata?: unknown;
+  metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging
 }

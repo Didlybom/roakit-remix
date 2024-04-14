@@ -34,9 +34,19 @@ import {
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../schemas/activityFeed';
-import { Artifact, IdentityAccountMap, TicketMap, activitySchema } from '../schemas/schemas';
-import { inferPriority } from '../utils/activityUtils';
+import {
+  artifactActions,
+  buildArtifactActionKey,
+  identifyAccounts,
+  inferPriority,
+} from '../schemas/activityFeed';
+import {
+  ActivityMetadata,
+  Artifact,
+  IdentityAccountMap,
+  TicketMap,
+  activitySchema,
+} from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -90,7 +100,7 @@ const userActivityRows = (
     }
     let priority = props.data.priority;
     if (priority === undefined || priority === -1) {
-      priority = inferPriority(tickets, props.data.metadata);
+      priority = inferPriority(tickets, props.data.metadata as ActivityMetadata);
     }
     const row: UserActivityRow = {
       id: doc.id,
@@ -100,7 +110,6 @@ const userActivityRows = (
       artifact: props.data.artifact,
       initiativeId: props.data.initiative,
       priority,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: props.data.metadata,
       actorId:
         props.data.actorAccountId ?

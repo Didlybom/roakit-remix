@@ -1,5 +1,5 @@
 // A config read from the server that root.tsx can use to hand off to the browser in a <script>
-// See https://remix.run/docs/en/1.19.3/guides/envvars#browser-environment-variables
+// See https://remix.run/docs/en/main/guides/envvars
 
 import defaultConfig from './default-config';
 import productionConfig from './production-config';

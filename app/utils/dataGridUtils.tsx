@@ -13,6 +13,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import grey from '@mui/material/colors/grey';
 import {
   GridActionsCellItem,
   GridColDef,
@@ -24,7 +25,7 @@ import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
 import { getSummary, getSummaryAction, getUrl } from '../schemas/activityFeed';
-import { AccountData } from '../schemas/schemas';
+import { AccountData, ActivityData, ActivityMetadata } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 import { ellipsisSx } from './jsxUtils';
 import theme, { priorityColors, priorityLabels } from './theme';
@@ -87,15 +88,14 @@ export const actionColDef = (colDef?: GridColDef) => {
     headerName: 'Action',
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const event = params.row.event as string;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const codeAction = params.row.metadata?.codeAction as string;
+      const activity = params.row as ActivityData;
+      const event = activity.event;
+      const codeAction = activity.metadata?.codeAction;
       return !event ? action : (
           <Stack sx={{ mt: '3px' }}>
             <Typography
               fontSize="small"
-              color={action === 'unknown' ? theme.palette.grey[400] : undefined}
+              color={action === 'unknown' ? grey[400] : undefined}
               lineHeight={1}
             >
               {action}
@@ -141,10 +141,10 @@ export const summaryColDef = (
     minWidth: 150,
     flex: 1,
     renderCell: params => {
-      const summary = getSummary(params.value);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-      const comment = params.value.comment?.body as string;
-      const url = getUrl(params.value);
+      const metadata = params.value as ActivityMetadata;
+      const summary = getSummary(metadata);
+      const comment = metadata.comment?.body;
+      const url = getUrl(metadata);
       const link =
         url ?
           <IconButton
@@ -159,10 +159,9 @@ export const summaryColDef = (
           </IconButton>
         : <></>;
 
-      const summaryAction = getSummaryAction(params.value);
+      const summaryAction = getSummaryAction(metadata);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const commits = params.value.commits as { message: string; url?: string }[] | null;
+      const commits = metadata.commits as { message: string; url?: string }[] | null;
       return (
         <Stack direction="row">
           {link}
@@ -232,12 +231,12 @@ export const metadataActionsColDef = (
     type: 'actions',
     cellClassName: 'actions',
     getActions: params => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const metadata = params.row.metadata;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      metadata.activityId = params.row.id as string;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      metadata.storageId = params.row.objectId as string;
+      const activity = params.row as ActivityData;
+      const metadata = {
+        ...activity.metadata,
+        activityId: activity.id,
+        storageId: activity.objectId,
+      };
       return [
         <GridActionsCellItem
           key={1}

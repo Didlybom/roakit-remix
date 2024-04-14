@@ -1,10 +1,14 @@
+import { findJiraTickets } from '../utils/stringUtils';
 import {
   AccountMap,
+  ActivityChangeLog,
   ActivityCount,
   ActivityMap,
+  ActivityMetadata,
   ActorMap,
   IdentityAccountMap,
   IdentityData,
+  TicketMap,
 } from './schemas';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
@@ -23,9 +27,37 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-deleted', { sortOrder: 13, label: 'Code organization deletion' }],
 ]);
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export const getSummary = (metadata: any) => {
+const findPriority = (str: string, tickets: TicketMap) => {
+  for (const ticket of findJiraTickets(str)) {
+    if (tickets[ticket]) {
+      return tickets[ticket];
+    }
+  }
+  return undefined;
+};
+
+export const inferPriority = (tickets: TicketMap, metadata: ActivityMetadata) => {
+  const pullRequestRef = metadata.pullRequest?.ref;
+  if (pullRequestRef) {
+    const priority = findPriority(pullRequestRef, tickets);
+    if (priority) {
+      return priority;
+    }
+  }
+  const commits = metadata.commits as { message: string }[];
+  if (commits) {
+    for (const commit of commits) {
+      const priority = findPriority(commit.message, tickets);
+      if (priority) {
+        return priority;
+      }
+    }
+  }
+
+  return -1;
+};
+
+export const getSummary = (metadata: ActivityMetadata) => {
   if (metadata?.issue) {
     return metadata.issue.key + ' ' + metadata.issue.summary;
   }
@@ -44,28 +76,22 @@ export const getSummary = (metadata: any) => {
     return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
   }
   if (metadata?.pullRequestComment) {
-    return metadata.pullRequestComment.body as string;
+    return metadata.pullRequestComment.body;
   }
   if (metadata?.commits?.length) {
-    return metadata.commits[0].message as string;
+    return metadata.commits[0].message;
   }
   return '';
 };
 
-interface ChangeLog {
-  field: string;
-  oldValue: string;
-  newValue: string;
-}
-
-const transitionString = (prefix: string, changeLog: ChangeLog) =>
+const transitionString = (prefix: string, changeLog: ActivityChangeLog) =>
   prefix + changeLog.oldValue + ' → ' + changeLog.newValue;
 
-export const getSummaryAction = (metadata: any) => {
+export const getSummaryAction = (metadata: ActivityMetadata) => {
   try {
     if (metadata?.issue) {
       const actions: string[] = [];
-      (metadata?.changeLog as ChangeLog[]).forEach(changeLog => {
+      metadata.changeLog?.forEach(changeLog => {
         if (changeLog.field === 'status' && changeLog.oldValue && changeLog.newValue) {
           actions.push('Status: ' + changeLog.oldValue + ' → ' + changeLog.newValue);
         }
@@ -145,7 +171,7 @@ export const getSummaryAction = (metadata: any) => {
       return actions.join(', ');
     }
     if (metadata?.codeAction) {
-      const codeAction = metadata.codeAction as string;
+      const codeAction = metadata.codeAction;
       if (codeAction === 'opened') {
         return 'PR opened';
       }
@@ -185,35 +211,35 @@ export const getSummaryAction = (metadata: any) => {
   }
 };
 
-export const getUrl = (metadata: any): { url: string; type: 'jira' | 'github' } | null => {
+export const getUrl = (
+  metadata: ActivityMetadata
+): { url: string; type: 'jira' | 'github' } | null => {
   if (metadata?.issue?.uri) {
     return {
-      url: `${(metadata.issue.uri as string).split('rest')[0]}browse/${metadata.issue.key}`,
+      url: `${metadata.issue.uri.split('rest')[0]}browse/${metadata.issue.key}`,
       type: 'jira',
     };
   }
   if (metadata?.pullRequest?.uri) {
     return {
-      url: metadata.pullRequest.uri as string,
+      url: metadata.pullRequest.uri,
       type: 'github',
     };
   }
   if (metadata?.pullRequestComment?.uri) {
     return {
-      url: metadata.pullRequestComment.uri as string,
+      url: metadata.pullRequestComment.uri,
       type: 'github',
     };
   }
   if (metadata?.commits?.length) {
     return {
-      url: metadata.commits[0].url as string,
+      url: metadata.commits[0].url!,
       type: 'github',
     };
   }
   return null;
 };
-/* eslint-enable @typescript-eslint/no-unsafe-member-access */
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export const buildArtifactActionKey = (artifact: string, action: string) => {
   return artifact + '-' + action;

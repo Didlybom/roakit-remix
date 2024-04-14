@@ -5,6 +5,7 @@ import {
   AccountData,
   AccountMap,
   ActivityMap,
+  ActivityMetadata,
   IdentityAccountMap,
   IdentityData,
   InitiativeData,
@@ -209,8 +210,7 @@ export const fetchActivities = async ({
         createdTimestamp: props.data.createdTimestamp,
         initiativeId: props.data.initiative,
         priority: props.data.priority,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        ...(includesMetadata && { metadata: props.data.metadata }),
+        ...(includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
       });
     });
     return activities;

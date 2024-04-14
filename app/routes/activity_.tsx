@@ -52,15 +52,15 @@ import {
   fetchTicketMap,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
-import { identifyAccounts } from '../schemas/activityFeed';
+import { identifyAccounts, inferPriority } from '../schemas/activityFeed';
 import {
   AccountData,
   ActivityCount,
   ActivityData,
+  ActivityMetadata,
   Artifact,
   activitySchema,
 } from '../schemas/schemas';
-import { inferPriority } from '../utils/activityUtils';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -258,7 +258,7 @@ export default function ActivityReview() {
           }
           let priority = fields.data.priority;
           if (priority === undefined || priority === -1) {
-            priority = inferPriority(sessionData.tickets, fields.data.metadata);
+            priority = inferPriority(sessionData.tickets, fields.data.metadata as ActivityMetadata);
           }
           activityData.push({
             id: activity.id,
@@ -272,8 +272,7 @@ export default function ActivityReview() {
             createdTimestamp: fields.data.createdTimestamp,
             priority,
             initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            metadata: fields.data.metadata,
+            metadata: fields.data.metadata as ActivityMetadata,
             note: fields.data.note,
             objectId: fields.data.objectId, // for debugging
           });
