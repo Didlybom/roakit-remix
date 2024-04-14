@@ -15,14 +15,13 @@ import {
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { grey } from '@mui/material/colors';
 import { BarChart } from '@mui/x-charts';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import Markdown from 'markdown-to-jsx';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import { appActions } from '../appActions';
 import App from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
@@ -60,14 +59,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       actors: null,
     };
   }
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return await appActions(request);
 };
 
 export default function Dashboard() {

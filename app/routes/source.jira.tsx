@@ -1,12 +1,11 @@
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData, useNavigation } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import { useEffect, useMemo, useState } from 'react';
-import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
@@ -34,19 +33,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return sessionData;
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return await appActions(request);
-};
-
 export default function Jira() {
   const sessionData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [view, setView] = useState<View>(View.IssueCreated);
-  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
+  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const [popover, setPopover] = useState<CodePopoverContent | null>(null);
   const [error, setError] = useState('');
 
@@ -196,6 +187,7 @@ export default function Jira() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >

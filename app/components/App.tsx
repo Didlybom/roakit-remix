@@ -1,8 +1,7 @@
 import { Box, styled } from '@mui/material';
-import { useFetcher } from '@remix-run/react';
-import { ReactNode } from 'react';
-import { AppJsonRequest, postJsonOptions } from '../appActions';
+import { ReactNode, useState } from 'react';
 import { DateRange } from '../utils/dateUtils';
+import { postJson } from '../utils/httpUtils';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
 import DrawerHeader from './NavDrawerHeader';
@@ -46,6 +45,7 @@ export default function App({
   isLoggedIn,
   view,
   dateRange,
+  onDateRangeSelect,
   showProgress,
   showPulse,
   isNavOpen,
@@ -54,18 +54,18 @@ export default function App({
   isLoggedIn: boolean;
   view: View;
   dateRange?: DateRange;
+  onDateRangeSelect?: (dateRange: DateRange) => void;
   showProgress?: boolean;
   showPulse?: boolean;
   isNavOpen?: boolean;
   children?: ReactNode;
 }) {
-  const fetcher = useFetcher();
-  let isOpen = isLoggedIn ? isNavOpen ?? true : false;
-  // optimistic UI optimization, the setting is stored via appActions.tsx
-  const jsonRequest = fetcher.json as AppJsonRequest;
-  if (jsonRequest?.app?.isNavOpen != null) {
-    isOpen = jsonRequest.app.isNavOpen;
-  }
+  const [isOpen, setIsOpen] = useState(isLoggedIn ? isNavOpen ?? true : false);
+
+  const toggleNavBar = async (isNavOpen: boolean) => {
+    setIsOpen(isNavOpen);
+    await postJson('/set-cookie', { isNavOpen });
+  };
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -73,17 +73,18 @@ export default function App({
         isLoggedIn={isLoggedIn}
         view={view}
         dateRange={dateRange}
+        onDateRangeSelect={onDateRangeSelect}
         showProgress={showProgress}
         navbarWidth={navbarWidth}
         navbarOpen={isOpen}
-        onNavBarOpen={() => fetcher.submit({ app: { isNavOpen: true } }, postJsonOptions)}
+        onNavBarOpen={() => toggleNavBar(true)}
       />
       <NavDrawer
         view={view}
         width={navbarWidth}
         showPulse={showPulse}
         open={isOpen}
-        onClose={() => fetcher.submit({ app: { isNavOpen: false } }, postJsonOptions)}
+        onClose={() => toggleNavBar(false)}
       />
       <Main open={isOpen}>
         <DrawerHeader />

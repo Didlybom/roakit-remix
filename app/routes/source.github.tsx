@@ -18,14 +18,13 @@ import {
   Typography,
 } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { useLoaderData, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import LinkifyJira from '../components/LinkifyJira';
@@ -71,19 +70,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return sessionData;
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return await appActions(request);
-};
-
 export default function GitHub() {
   const sessionData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
-  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
+  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.All);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -377,6 +368,7 @@ export default function GitHub() {
       isLoggedIn={sessionData.isLoggedIn}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >

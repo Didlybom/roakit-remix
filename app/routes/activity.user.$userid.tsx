@@ -16,14 +16,13 @@ import {
 } from '@mui/material';
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import { useLoaderData, useLocation, useNavigate, useNavigation } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import pino from 'pino';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import usePrevious from 'use-previous';
-import { appActions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
@@ -171,14 +170,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return await appActions(request);
-};
-
 export default function UserActivity() {
   const sessionData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
@@ -187,7 +178,7 @@ export default function UserActivity() {
   const isHydrated = useHydrated();
   const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
   const prevActionFilter = usePrevious(actionFilter);
-  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
+  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const prevSortAlphabetically = usePrevious(sortAlphabetically);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
@@ -375,6 +366,7 @@ export default function UserActivity() {
       isLoggedIn={true}
       isNavOpen={sessionData.isNavOpen}
       dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
       showPulse={true}
     >

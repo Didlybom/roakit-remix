@@ -1,24 +1,14 @@
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';
-import { appActions } from '../appActions';
 import App from '../components/App';
-import { loadSession } from '../utils/authUtils.server';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Version Info | ROAKIT' }];
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
   return await getSessionData(request);
-};
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return await appActions(request);
 };
 
 export default function Info() {

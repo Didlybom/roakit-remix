@@ -15,7 +15,6 @@ import {
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
-import { AppJsonRequest, appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import TabPanel from '../components/TabPanel';
 import { firestore } from '../firebase.server';
@@ -24,6 +23,7 @@ import JiraIcon from '../icons/Jira';
 import { IdentityData } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
+import { postJsonOptions } from '../utils/httpUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:identities' });
@@ -50,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest extends AppJsonRequest {
+interface JsonRequest {
   imports?: string;
 }
 
@@ -61,11 +61,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const jsonRequest = (await request.json()) as JsonRequest;
-
-  const appAction = await appActions(request, jsonRequest);
-  if (appAction) {
-    return appAction;
-  }
 
   const imports = jsonRequest.imports;
   if (imports) {

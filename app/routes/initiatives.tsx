@@ -22,12 +22,12 @@ import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { JSXElementConstructor, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { AppJsonRequest, appActions, deleteJsonOptions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
 import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
+import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -55,7 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest extends AppJsonRequest {
+interface JsonRequest {
   initiativeId?: string;
   label?: string;
 }
@@ -67,11 +67,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const jsonRequest = (await request.json()) as JsonRequest;
-
-  const appAction = await appActions(request, jsonRequest);
-  if (appAction) {
-    return appAction;
-  }
 
   const initiativeId = jsonRequest.initiativeId!;
   if (!initiativeId) {

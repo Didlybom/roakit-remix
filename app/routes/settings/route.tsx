@@ -18,7 +18,6 @@ import { redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
-import { AppJsonRequest, appActions } from '../../appActions';
 import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
 import { firestore } from '../../firebase.server';
@@ -94,7 +93,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest extends AppJsonRequest {
+interface JsonRequest {
   feedId?: number;
   secret?: string;
   bannedEvents?: string;
@@ -111,11 +110,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const customerId = sessionData.customerId;
 
     const jsonRequest = (await request.json()) as JsonRequest;
-
-    const appAction = await appActions(request, jsonRequest);
-    if (appAction) {
-      return appAction;
-    }
 
     const feedId = jsonRequest.feedId;
     if (feedId) {

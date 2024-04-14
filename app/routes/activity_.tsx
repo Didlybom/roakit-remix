@@ -39,7 +39,6 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import usePrevious from 'use-previous';
-import { AppJsonRequest, appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
@@ -72,6 +71,7 @@ import {
   summaryColDef,
 } from '../utils/dataGridUtils';
 import { ParseError, errMsg } from '../utils/errorUtils';
+import { postJsonOptions } from '../utils/httpUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:activity' });
@@ -113,7 +113,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 type ActivityRow = ActivityData & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
-interface JsonRequest extends AppJsonRequest {
+interface JsonRequest {
   activityId?: string;
   activities?: ActivityPayload;
   initiativeId?: string;
@@ -131,11 +131,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const customerId = sessionData.customerId;
 
     const jsonRequest = (await request.json()) as JsonRequest;
-
-    const appAction = await appActions(request, jsonRequest);
-    if (appAction) {
-      return appAction;
-    }
 
     const note = jsonRequest.note;
     if (note) {

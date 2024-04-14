@@ -23,7 +23,6 @@ import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import { appActions, postJsonOptions } from '../appActions';
 import App from '../components/App';
 import {
   fetchAccountMap,
@@ -42,6 +41,7 @@ import {
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, dateRangeLabels } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, windowOpen } from '../utils/jsxUtils';
 import { priorityColors, priorityLabels } from '../utils/theme';
 
@@ -58,16 +58,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { ...sessionData, loading: true };
 };
 
-// load activities
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-  const appAction = await appActions(request);
-  if (appAction) {
-    return appAction;
-  }
+
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
@@ -112,7 +108,7 @@ export default function Dashboard() {
     actors: null,
     initiatives: null,
   };
-  const dateFilter = sessionData.dateFilter ?? DateRange.OneDay;
+  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const dateRangeLabel = dateRangeLabels[dateFilter];
   const [loading, setLoading] = useState(true);
 
@@ -422,6 +418,7 @@ export default function Dashboard() {
       view="dashboard"
       isLoggedIn={sessionData.isLoggedIn}
       dateRange={dateFilter}
+      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       isNavOpen={sessionData.isNavOpen}
       showProgress={loading || navigation.state !== 'idle'}
       showPulse={false}

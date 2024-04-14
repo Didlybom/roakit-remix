@@ -1,6 +1,5 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DateRangeIcon from '@mui/icons-material/DateRange';
 import TodayIcon from '@mui/icons-material/Today';
@@ -13,10 +12,9 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
-import { useFetcher } from '@remix-run/react';
 import { useState } from 'react';
-import { postJsonOptions } from '../appActions';
 import { DateRange, dateRangeLabels } from '../utils/dateUtils';
+import { postJson } from '../utils/httpUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
   [DateRange.TwoWeeks]: <CalendarMonthIcon fontSize="small" />,
@@ -30,11 +28,16 @@ export default function DateRangePicker({
   showProgress,
 }: {
   dateRange: DateRange;
-  onSelect?: (dateRange: DateRange) => void;
+  onSelect: (dateRange: DateRange) => void;
   showProgress?: boolean;
 }) {
-  const fetcher = useFetcher();
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
+
+  const onDateClick = async (dateRange: DateRange) => {
+    setMenuEl(null);
+    onSelect(dateRange);
+    await postJson('/set-cookie', { dateRange });
+  };
 
   return (
     <Box sx={{ mx: 2 }}>
@@ -59,10 +62,7 @@ export default function DateRangePicker({
             key={i}
             value={date}
             selected={date === dateRange}
-            onClick={() => {
-              setMenuEl(null);
-              onSelect ? onSelect(date) : fetcher.submit({ dateRange: date }, postJsonOptions);
-            }}
+            onClick={() => onDateClick(date)}
           >
             <ListItemIcon>{icons[date]}</ListItemIcon>
             <ListItemText>{dateRangeLabels[date]}</ListItemText>
