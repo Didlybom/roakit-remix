@@ -3,7 +3,6 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import HistoryIcon from '@mui/icons-material/History';
 import PeopleIcon from '@mui/icons-material/People';
 import {
   Box,
@@ -16,11 +15,30 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  SvgIconTypeMap,
 } from '@mui/material';
+import { OverridableComponent } from '@mui/material/OverridableComponent';
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
+
+const listItem = (
+  view: View,
+  url: string,
+  Icon: OverridableComponent<SvgIconTypeMap>,
+  label: string,
+  currentView: View
+) => (
+  <ListItem key={view} disablePadding>
+    <ListItemButton href={url} selected={currentView === view}>
+      <ListItemIcon sx={{ minWidth: '30px' }}>
+        <Icon fontSize="small" />
+      </ListItemIcon>
+      <ListItemText primary={label} />
+    </ListItemButton>
+  </ListItem>
+);
 
 export default function NavDrawer({
   view,
@@ -59,69 +77,20 @@ export default function NavDrawer({
       </DrawerHeader>
       <Divider />
       <List>
-        <ListItem key="dashboard" disablePadding>
-          <ListItemButton href="/dashboard" selected={view === 'dashboard'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <DashboardIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary={'Dashboard'} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem key="contributors" disablePadding>
-          <ListItemButton href="/activity/user/*" selected={view === 'activity.user'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <PeopleIcon />
-            </ListItemIcon>
-            <ListItemText primary={'By Contributor'} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem key="activity" disablePadding>
-          <ListItemButton href="/activity" selected={view === 'activity'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <HistoryIcon />
-            </ListItemIcon>
-            <ListItemText primary={'All Activity'} />
-          </ListItemButton>
-        </ListItem>
+        {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
+        {listItem('activity.user', '/activity/user/*', PeopleIcon, 'By Contributor', view)}
+        {listItem('activity', '/activity', PeopleIcon, 'All Activity', view)}
       </List>
       <Divider />
       <List>
-        <ListItem key="initiatives" disablePadding>
-          <ListItemButton href="/initiatives" selected={view === 'initiatives'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <BusinessCenterIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary={'Initiatives'} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem key="orgChart" disablePadding>
-          <ListItemButton href="/users" selected={view === 'users'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <BusinessIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary={'Directory'} />
-          </ListItemButton>
-        </ListItem>
+        {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
+        {listItem('users', '/users', BusinessIcon, 'Directory', view)}
       </List>
       <Divider />
       <List>
         <ListSubheader color="primary">Real-time atomic data</ListSubheader>
-        <ListItem key="github" disablePadding>
-          <ListItemButton href="/source/github" selected={view === 'github'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <GitHubIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary={'GitHub feed'} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem key="jira" disablePadding>
-          <ListItemButton href="/source/jira" selected={view === 'jira'}>
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              <JiraIcon />
-            </ListItemIcon>
-            <ListItemText primary={'Jira feed'} />
-          </ListItemButton>
-        </ListItem>
+        {listItem('github', '/source/github', GitHubIcon, 'GitHub feed', view)}
+        {listItem('jira', '/source/jira', JiraIcon, 'Jira feed', view)}
       </List>
     </Drawer>
   );

@@ -1,6 +1,6 @@
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import PeopleIcon from '@mui/icons-material/People';
 import {
   Alert,
   Box,
@@ -17,6 +17,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import grey from '@mui/material/colors/grey';
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
@@ -44,7 +45,6 @@ import { DateRange, dateFilterToStartDate, formatMonthDay } from '../utils/dateU
 import { errMsg } from '../utils/errorUtils';
 import { disabledNotOpaqueSx, ellipsisSx, internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { caseInsensitiveSort, removeSpaces } from '../utils/stringUtils';
-import theme from '../utils/theme';
 
 enum ActivityView {
   All,
@@ -386,9 +386,17 @@ export default function GitHub() {
       <Stack sx={{ mt: 3 }}>
         <Stack direction="row" spacing={2} sx={{ ml: 2, mb: 1 }}>
           {[
-            { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon /> },
-            { viewBy: ActivityView.Author, label: 'By Author', icon: <SupervisorAccountIcon /> },
-            { viewBy: ActivityView.All, label: 'By GitHub Action', icon: <GitHubIcon /> },
+            { viewBy: ActivityView.Jira, label: 'By Jira', icon: <JiraIcon fontSize="small" /> },
+            {
+              viewBy: ActivityView.Author,
+              label: 'By Author',
+              icon: <PeopleIcon fontSize="small" />,
+            },
+            {
+              viewBy: ActivityView.All,
+              label: 'By GitHub Action',
+              icon: <GitHubIcon fontSize="small" />,
+            },
           ].map((p, i) => (
             <Chip
               key={i}
@@ -432,7 +440,7 @@ export default function GitHub() {
                   <Stack direction="row">
                     <Box sx={{ position: 'relative' }}>
                       <Box width="50px" sx={{ mt: 1, writingMode: 'vertical-rl' }}>
-                        <Typography color={theme.palette.grey[500]} variant="h6">
+                        <Typography color={grey[500]} variant="h6">
                           {jira}
                         </Typography>
                       </Box>
@@ -476,7 +484,7 @@ export default function GitHub() {
               {sortedAuthors.map(author => (
                 <Box id={authorElementId(author)} key={author} sx={{ m: 2 }}>
                   <Stack direction="row" alignItems="center">
-                    <Typography color={theme.palette.grey[500]} variant="h6">
+                    <Typography color={grey[500]} variant="h6">
                       {author}
                     </Typography>
                     {rowsByAuthor?.[author]?.url && (

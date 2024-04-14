@@ -1,11 +1,11 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
+import grey from '@mui/material/colors/grey';
 import { Link as RemixLink } from '@remix-run/react';
 import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
 import { formatJson, internalLinkSx } from '../utils/jsxUtils';
-import theme from '../utils/theme';
 
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const OBJECTID_REGEXP = /(?<="storageId": ")(.*)(?=")/;
@@ -58,7 +58,7 @@ export default function CodePopover({
         component="pre"
         fontSize="small"
         fontFamily="Roboto Mono, monospace"
-        color={theme.palette.grey[700]}
+        color={grey[700]}
         sx={{ p: 2, overflowX: 'auto', minWidth: '150px', minHeight: '70px' }}
       >
         <LinkIt

@@ -338,7 +338,7 @@ export default function UserActivity() {
             {actor?.urls?.map((url, i) => (
               <IconButton key={i} component="a" href={url.url} target="_blank" color="primary">
                 {url.type === 'github' && <GitHubIcon fontSize="small" />}
-                {url.type === 'jira' && <JiraIcon fontSize="smaller" />}
+                {url.type === 'jira' && <JiraIcon fontSize="small" />}
               </IconButton>
             ))}
             {sessionData.userId === ALL && (

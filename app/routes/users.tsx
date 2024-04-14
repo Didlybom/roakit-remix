@@ -139,7 +139,11 @@ export default function Users() {
                 <Typography fontSize="small" color={!account.id ? 'error' : 'inherited'}>
                   <Stack direction="row" alignItems={'center'}>
                     {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
-                    {account.type === 'jira' && <JiraIcon />}
+                    {account.type === 'jira' && (
+                      <Box component="span" sx={{ fontSize: '10px' }}>
+                        <JiraIcon />
+                      </Box>
+                    )}
                     <Box sx={{ ml: 1 }}> {account.id || 'no id'}</Box>
                   </Stack>
                 </Typography>

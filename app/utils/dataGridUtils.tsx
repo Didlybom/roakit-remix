@@ -117,11 +117,7 @@ export const priorityColDef = (colDef?: GridColDef) => {
     renderCell: params => {
       const priority = params.value as number;
       return (
-        <Typography
-          component="span"
-          fontSize="small"
-          color={priorityColors[priority] ?? theme.palette.grey[400]}
-        >
+        <Typography component="span" fontSize="small" color={priorityColors[priority] ?? grey[400]}>
           {priorityLabels[priority] ?? 'unknown'}
         </Typography>
       );
@@ -154,7 +150,7 @@ export const summaryColDef = (
             sx={{ mr: '4px' }}
           >
             {url.type === 'jira' ?
-              <JiraIcon fontSize="18px" color={theme.palette.primary.main} />
+              <JiraIcon fontSize="small" color={theme.palette.primary.main} />
             : <GitHubIcon fontSize="small" color="primary" />}
           </IconButton>
         : <></>;
