@@ -1,9 +1,12 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
-import { ARTIFACTS, ActivityCount, Artifact, InitiativeMap } from '../schemas/schemas';
+import { ARTIFACTS, ActivityCount, Artifact, InitiativeRecord } from '../schemas/schemas';
 import { ONE_HOUR } from '../utils/dateUtils';
 
-export const updateInitiativeCounters = async (customerId: number, initiatives: InitiativeMap) => {
+export const updateInitiativeCounters = async (
+  customerId: number,
+  initiatives: InitiativeRecord
+) => {
   const now = Date.now();
   const oneHourAgo = now - ONE_HOUR;
   const flatCounters: {

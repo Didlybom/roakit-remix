@@ -17,16 +17,19 @@ import {
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
-import { useLoaderData, useLocation, useNavigate, useNavigation } from '@remix-run/react';
-import firebase from 'firebase/compat/app';
+import {
+  useFetcher,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useNavigation,
+} from '@remix-run/react';
 import pino from 'pino';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHydrated } from 'remix-utils/use-hydrated';
-import usePrevious from 'use-previous';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
-import { firestore as firestoreClient } from '../firebase.client';
 import {
   fetchAccountMap,
   fetchIdentities,
@@ -41,11 +44,10 @@ import {
   inferPriority,
 } from '../schemas/activityFeed';
 import {
-  ActivityMetadata,
+  AccountToIdentityRecord,
+  ActivityRecord,
   Artifact,
-  IdentityAccountMap,
-  TicketMap,
-  activitySchema,
+  TicketRecord,
 } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import {
@@ -56,11 +58,11 @@ import {
   priorityColDef,
   summaryColDef,
 } from '../utils/dataGridUtils';
-import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { ParseError, errMsg } from '../utils/errorUtils';
+import { DateRange } from '../utils/dateUtils';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
+import { ActivityResponse } from './fetcher.activities.$daterange.$userid';
 
 const logger = pino({ name: 'route:activity.user' });
 
@@ -88,34 +90,31 @@ interface UserActivityRow {
 }
 
 const userActivityRows = (
-  snapshot: firebase.firestore.QuerySnapshot,
-  tickets: TicketMap,
-  accountMap: IdentityAccountMap
+  snapshot: ActivityRecord,
+  tickets: TicketRecord,
+  accountMap: AccountToIdentityRecord
 ): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
-  snapshot.forEach(doc => {
-    const props = activitySchema.safeParse(doc.data());
-    if (!props.success) {
-      throw new ParseError('Failed to parse activities. ' + props.error.message);
-    }
-    let priority = props.data.priority;
-    if (priority === undefined || priority === -1) {
-      priority = inferPriority(tickets, props.data.metadata as ActivityMetadata);
+  Object.keys(snapshot).forEach(activityId => {
+    const activity = snapshot[activityId];
+    let priority = activity.priority;
+    if (priority == null || priority === -1) {
+      priority = activity.metadata ? inferPriority(tickets, activity.metadata) : -1;
     }
     const row: UserActivityRow = {
-      id: doc.id,
-      date: new Date(props.data.createdTimestamp),
-      action: props.data.action,
-      event: props.data.event,
-      artifact: props.data.artifact,
-      initiativeId: props.data.initiative,
+      id: activityId,
+      date: new Date(activity.createdTimestamp),
+      action: activity.action,
+      event: activity.event,
+      artifact: activity.artifact,
+      initiativeId: activity.initiativeId,
       priority,
-      metadata: props.data.metadata,
+      metadata: activity.metadata,
       actorId:
-        props.data.actorAccountId ?
-          accountMap[props.data.actorAccountId] ?? props.data.actorAccountId // resolve identity
+        activity.actorId ?
+          accountMap[activity.actorId] ?? activity.actorId // resolve identity
         : undefined,
-      objectId: props.data.objectId, // for debugging
+      objectId: activity.objectId,
     };
     rows.push(row);
   });
@@ -185,17 +184,17 @@ export default function UserActivity() {
   const navigate = useNavigate();
   const location = useLocation();
   const isHydrated = useHydrated();
+  const activitiesFetcher = useFetcher();
+  const activityResponse = activitiesFetcher.data as ActivityResponse;
   const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
-  const prevActionFilter = usePrevious(actionFilter);
   const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
-  const prevSortAlphabetically = usePrevious(sortAlphabetically);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
+  const [showOnlyActor, setShowOnlyActor] = useState<string | undefined>(undefined);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
-  const [error, setError] = useState('');
 
   const [gotSnapshot, setGotSnapshot] = useState(false);
   const snapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
@@ -203,82 +202,62 @@ export default function UserActivity() {
 
   const actorElementId = (actor: string) => `ACTOR-${removeSpaces(actor)}`;
 
-  // Firestore listener
+  const sortAndSetUserActivities = useCallback(() => {
+    if (snapshot.current) {
+      const filteredSnapshot: { key: string; values: UserActivityRow[] }[] = [];
+      if (actionFilter) {
+        snapshot.current.forEach(user => {
+          const values = user.values.filter(
+            a => buildArtifactActionKey(a.artifact, a.action) === actionFilter
+          );
+          if (values.length > 0) {
+            filteredSnapshot.push({ key: user.key, values });
+          }
+        });
+      }
+      setActivities(
+        sortMap(actionFilter ? filteredSnapshot : snapshot.current, (a, b) =>
+          sortAlphabetically ?
+            caseInsensitiveCompare(
+              sessionData.actors[a.key]?.name ?? '',
+              sessionData.actors[b.key]?.name ?? ''
+            )
+          : b.count - a.count
+        )
+      );
+    }
+  }, [sessionData.actors, actionFilter, sortAlphabetically]);
+
+  const setRows = useCallback(
+    (querySnapshot: ActivityRecord) => {
+      snapshot.current = groupByArray(
+        userActivityRows(querySnapshot, sessionData.tickets, sessionData.accountMap),
+        'actorId'
+      );
+      sortAndSetUserActivities();
+      setGotSnapshot(true);
+    },
+    [sessionData.accountMap, sessionData.tickets, sortAndSetUserActivities]
+  );
+
+  // load activities
   useEffect(() => {
-    const sortAndSetUserActivities = () => {
-      if (snapshot.current) {
-        const filteredSnapshot: { key: string; values: UserActivityRow[] }[] = [];
-        if (actionFilter) {
-          snapshot.current.forEach(user => {
-            const values = user.values.filter(
-              a => buildArtifactActionKey(a.artifact, a.action) === actionFilter
-            );
-            if (values.length > 0) {
-              filteredSnapshot.push({ key: user.key, values });
-            }
-          });
-        }
-        setActivities(
-          sortMap(actionFilter ? filteredSnapshot : snapshot.current, (a, b) =>
-            sortAlphabetically ?
-              caseInsensitiveCompare(
-                sessionData.actors[a.key]?.name ?? '',
-                sessionData.actors[b.key]?.name ?? ''
-              )
-            : b.count - a.count
-          )
-        );
-      }
-    };
-
-    const setRows = (querySnapshot: firebase.firestore.QuerySnapshot) => {
-      try {
-        snapshot.current = groupByArray(
-          userActivityRows(querySnapshot, sessionData.tickets, sessionData.accountMap),
-          'actorId'
-        );
-        sortAndSetUserActivities();
-        setGotSnapshot(true);
-      } catch (e: unknown) {
-        setError(errMsg(e, 'Error parsing user activities'));
-      }
-    };
-
-    if (!dateFilter || !sessionData.userId) {
-      return;
-    }
-
-    if (
-      (sortAlphabetically !== prevSortAlphabetically || actionFilter !== prevActionFilter) &&
-      snapshot.current
-    ) {
-      // just re-filter and re-sort
-      return sortAndSetUserActivities();
-    }
-
-    setError('');
     setGotSnapshot(false);
-    const startDate = dateFilterToStartDate(dateFilter);
-    const query =
-      sessionData.userId === ALL ?
-        firestoreClient
-          .collection(`customers/${sessionData.customerId}/activities/`)
-          .orderBy('createdTimestamp')
-          .startAt(startDate)
-          .limit(5000) // FIXME limit
-      : firestoreClient
-          .collection(`customers/${sessionData.customerId}/activities/`)
-          .where('actorAccountId', 'in', sessionData.activityUserIds)
-          .orderBy('createdTimestamp')
-          .startAt(startDate)
-          .limit(1000); // FIXME limit
-    const unsubscribe = query.onSnapshot(
-      snapshot => setRows(snapshot),
-      error => setError(error.message)
-    );
-    return unsubscribe;
+    const userIds = sessionData.userId === ALL ? ALL : sessionData.activityUserIds.join(',');
+    activitiesFetcher.load(`/fetcher/activities/${dateFilter}/${userIds}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFilter, sortAlphabetically, actionFilter]); // sessionData, prevSortAlphabetically and prevActionFilter must be omitted
+  }, [dateFilter]);
+
+  useEffect(() => {
+    setGotSnapshot(false);
+    if (activityResponse?.activities) {
+      setRows(activityResponse.activities);
+    }
+  }, [activityResponse?.activities, setRows]);
+
+  useEffect(() => {
+    sortAndSetUserActivities();
+  }, [actionFilter, sortAlphabetically, sortAndSetUserActivities]);
 
   // Auto scrollers
   useEffect(() => {
@@ -322,52 +301,55 @@ export default function UserActivity() {
     [sessionData.initiatives]
   );
 
-  const grids = [...activities].map(([actorId, rows], i) => {
-    const actor = sessionData.actors[actorId];
-    return (
-      !!rows.length && (
-        <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
-          <Typography
-            variant="h6"
-            alignItems="center"
-            color={grey[600]}
-            sx={{ display: 'flex', mb: 1 }}
-          >
-            <PersonIcon sx={{ mr: 1 }} />
-            <Box sx={{ mr: 1 }}>{actor?.name ?? 'Unknown user'}</Box>
-            {actor?.urls?.map((url, i) => (
-              <IconButton key={i} component="a" href={url.url} target="_blank" color="primary">
-                {url.type === 'github' && <GitHubIcon fontSize="small" />}
-                {url.type === 'jira' && <JiraIcon fontSize="small" />}
-              </IconButton>
-            ))}
-            {sessionData.userId === ALL && (
-              <IconButton
-                component="a"
-                href={`/activity/user/${encodeURI(actorId)}`}
-                sx={{ ml: 1 }}
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Typography>
-          <DataGrid
-            columns={columns}
-            rows={rows}
-            {...dataGridCommonProps}
-            rowHeight={50}
-            slots={{
-              noRowsOverlay: () => (
-                <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-                  No activity for these dates
-                </Box>
-              ),
-            }}
-          />
-        </Stack>
-      )
-    );
-  });
+  const grids = [...activities]
+    .filter(([actorId]) => !showOnlyActor || actorId === showOnlyActor)
+    .filter((_, i) => showOnlyActor || i <= 9)
+    .map(([actorId, rows], i) => {
+      const actor = sessionData.actors[actorId];
+      return (
+        !!rows.length && (
+          <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
+            <Typography
+              variant="h6"
+              alignItems="center"
+              color={grey[600]}
+              sx={{ display: 'flex', mb: 1 }}
+            >
+              <PersonIcon sx={{ mr: 1 }} />
+              <Box sx={{ mr: 1 }}>{actor?.name ?? 'Unknown user'}</Box>
+              {actor?.urls?.map((url, i) => (
+                <IconButton key={i} component="a" href={url.url} target="_blank" color="primary">
+                  {url.type === 'github' && <GitHubIcon fontSize="small" />}
+                  {url.type === 'jira' && <JiraIcon fontSize="small" />}
+                </IconButton>
+              ))}
+              {sessionData.userId === ALL && (
+                <IconButton
+                  component="a"
+                  href={`/activity/user/${encodeURI(actorId)}`}
+                  sx={{ ml: 1 }}
+                >
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Typography>
+            <DataGrid
+              columns={columns}
+              rows={rows}
+              {...dataGridCommonProps}
+              rowHeight={50}
+              slots={{
+                noRowsOverlay: () => (
+                  <Box height="75px" display="flex" alignItems="center" justifyContent="center">
+                    No activity for these dates
+                  </Box>
+                ),
+              }}
+            />
+          </Stack>
+        )
+      );
+    });
 
   return (
     <App
@@ -377,7 +359,6 @@ export default function UserActivity() {
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
-      showPulse={true}
     >
       <CodePopover
         popover={codePopover}
@@ -420,8 +401,17 @@ export default function UserActivity() {
                     )}
                   </FormGroup>
                   {[...activities.keys()].map((actorId, i) => (
-                    <Box key={i}>
-                      <Link sx={internalLinkSx} onClick={() => setScrollToActor(actorId)}>
+                    <Box key={i} sx={{ mb: i === 9 ? 2 : undefined }}>
+                      <Link
+                        sx={internalLinkSx}
+                        onClick={() => {
+                          if (i <= 9 && !showOnlyActor) {
+                            setScrollToActor(actorId);
+                          } else {
+                            setShowOnlyActor(actorId);
+                          }
+                        }}
+                      >
                         {sessionData.actors[actorId]?.name ?? 'Unknown'}
                       </Link>
                       {` (${activities.get(actorId)?.length ?? 0})`}
@@ -453,9 +443,9 @@ export default function UserActivity() {
             {grids}
           </Stack>
         </Stack>
-        {error && (
-          <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
-            {error}
+        {activityResponse?.error?.message && (
+          <Alert severity="error" sx={{ mb: 1 }}>
+            {activityResponse.error.message}
           </Alert>
         )}
       </Stack>

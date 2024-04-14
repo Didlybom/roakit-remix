@@ -20,13 +20,13 @@ export const loader = async ({
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return json(
-      { error: { message: 'Fetching top contributors failed. Invalid session' } },
+      { error: { message: 'Fetching top contributors failed. Invalid session.' } },
       { status: 401 }
     );
   }
   if (!params.daterange) {
     return json(
-      { error: { message: 'Fetching top contributors failed. Invalid params' } },
+      { error: { message: 'Fetching top contributors failed. Invalid params.' } },
       { status: 400 }
     );
   }
@@ -36,7 +36,7 @@ export const loader = async ({
     const startDate = dateFilterToStartDate(params.daterange as DateRange);
     if (!startDate) {
       return json(
-        { error: { message: 'Fetching top contributors failed. Invalid params' } },
+        { error: { message: 'Fetching top contributors failed. Invalid params.' } },
         { status: 400 }
       );
     }

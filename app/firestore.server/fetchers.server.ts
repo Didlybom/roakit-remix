@@ -4,13 +4,13 @@ import { firestore } from '../firebase.server';
 import {
   AccountData,
   AccountMap,
+  AccountToIdentityRecord,
   ActivityMap,
   ActivityMetadata,
-  IdentityAccountMap,
   IdentityData,
   InitiativeData,
-  InitiativeMap,
-  TicketMap,
+  InitiativeRecord,
+  TicketRecord,
   accountSchema,
   accountToReviewSchema,
   activitySchema,
@@ -68,9 +68,9 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
   }, retryProps('Retrying fetchInitiatives...'));
 };
 
-export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeMap> => {
+export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
   return await retry(async () => {
-    const initiatives: InitiativeMap = {};
+    const initiatives: InitiativeRecord = {};
     (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
       initiative => {
         const data = initiativeSchema.parse(initiative.data());
@@ -90,10 +90,10 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
 
 export const fetchIdentities = async (
   customerId: number
-): Promise<{ list: IdentityData[]; accountMap: IdentityAccountMap }> => {
+): Promise<{ list: IdentityData[]; accountMap: AccountToIdentityRecord }> => {
   return await retry(async () => {
     const identities: IdentityData[] = [];
-    const accountMap: IdentityAccountMap = {};
+    const accountMap: AccountToIdentityRecord = {};
     (await firestore.collection(`customers/${customerId}/identities`).get()).forEach(identity => {
       const data = identitySchema.parse(identity.data());
       identities.push({
@@ -117,9 +117,9 @@ export const fetchIdentities = async (
   }, retryProps('Retrying fetchIdentities...'));
 };
 
-export const fetchTicketMap = async (customerId: number): Promise<TicketMap> => {
+export const fetchTicketMap = async (customerId: number): Promise<TicketRecord> => {
   return await retry(async () => {
-    const tickets: TicketMap = {};
+    const tickets: TicketRecord = {};
     (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
       const data = ticketSchema.parse(ticket.data());
       tickets[ticket.id] = data.priority;
@@ -177,24 +177,29 @@ export const fetchActivities = async ({
   customerId,
   startDate,
   endDate,
+  userIds,
   includesMetadata = false,
 }: {
   customerId: number;
   startDate: number;
   endDate?: number;
+  userIds?: string[];
   includesMetadata?: boolean;
 }) => {
   return await retry(async bail => {
-    let query = firestore
-      .collection(`customers/${customerId}/activities`)
-      .orderBy('createdTimestamp')
-      .startAt(startDate);
+    let query =
+      userIds ?
+        firestore
+          .collection(`customers/${customerId}/activities`)
+          .where('actorAccountId', 'in', userIds)
+      : firestore.collection(`customers/${customerId}/activities`);
+    query = query.orderBy('createdTimestamp').startAt(startDate);
     if (endDate) {
       query = query.endAt(endDate);
     }
     const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
-      () => query.limit(5000).get(), // FIXME limit
-      { metricsName: 'dashboard:getActivities' }
+      () => query.limit(15000).get(), // FIXME limit
+      { metricsName: 'fetcher:getActivities' }
     );
     const activities: ActivityMap = new Map();
     activityDocs.forEach(activity => {
@@ -211,6 +216,7 @@ export const fetchActivities = async ({
         initiativeId: props.data.initiative,
         priority: props.data.priority,
         ...(includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
+        objectId: props.data.objectId, // for debugging
       });
     });
     return activities;

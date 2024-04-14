@@ -1,6 +1,6 @@
 import { GenerateContentResult, TextPart } from '@google-cloud/vertexai';
 import { getSummary, getSummaryAction } from '../schemas/activityFeed';
-import { ActivityData, ActorMap } from '../schemas/schemas';
+import { ActivityData, ActorRecord } from '../schemas/schemas';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
@@ -9,7 +9,7 @@ export const DEFAULT_PROMPT =
 
 export const buildActivitySummaryPrompt = (
   activities: Omit<ActivityData, 'id'>[] | null,
-  actors: ActorMap | null,
+  actors: ActorRecord | null,
   activityCount: number,
   inclDates: boolean,
   inclActions: boolean,

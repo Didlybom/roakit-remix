@@ -1,14 +1,14 @@
 import { findJiraTickets } from '../utils/stringUtils';
 import {
   AccountMap,
+  AccountToIdentityRecord,
   ActivityChangeLog,
   ActivityCount,
   ActivityMap,
   ActivityMetadata,
-  ActorMap,
-  IdentityAccountMap,
+  ActorRecord,
   IdentityData,
-  TicketMap,
+  TicketRecord,
 } from './schemas';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
@@ -27,7 +27,7 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-deleted', { sortOrder: 13, label: 'Code organization deletion' }],
 ]);
 
-const findPriority = (str: string, tickets: TicketMap) => {
+const findPriority = (str: string, tickets: TicketRecord) => {
   for (const ticket of findJiraTickets(str)) {
     if (tickets[ticket]) {
       return tickets[ticket];
@@ -36,7 +36,7 @@ const findPriority = (str: string, tickets: TicketMap) => {
   return undefined;
 };
 
-export const inferPriority = (tickets: TicketMap, metadata: ActivityMetadata) => {
+export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata) => {
   const pullRequestRef = metadata.pullRequest?.ref;
   if (pullRequestRef) {
     const priority = findPriority(pullRequestRef, tickets);
@@ -269,9 +269,9 @@ interface Initiative {
 export const identifyAccounts = (
   accounts: AccountMap,
   identities: IdentityData[],
-  identityAccountMap: IdentityAccountMap
+  identityAccountMap: AccountToIdentityRecord
 ) => {
-  const actors: ActorMap = {};
+  const actors: ActorRecord = {};
 
   accounts.forEach((account, accountId) => {
     const identityId = identityAccountMap[accountId];
@@ -306,7 +306,10 @@ export const identifyAccounts = (
   return actors;
 };
 
-export const identifyActivities = (activities: ActivityMap, accountMap: IdentityAccountMap) => {
+export const identifyActivities = (
+  activities: ActivityMap,
+  accountMap: AccountToIdentityRecord
+) => {
   activities.forEach(activity => {
     if (activity.actorId && accountMap[activity.actorId]) {
       activity.actorId = accountMap[activity.actorId];

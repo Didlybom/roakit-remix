@@ -85,7 +85,7 @@ export interface InitiativeData {
   countersLastUpdated: number;
 }
 
-export type InitiativeMap = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
+export type InitiativeRecord = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
 
 export interface AccountData {
   id: string;
@@ -102,7 +102,7 @@ export interface IdentityData {
   accounts: { feedId: number; type: string; id?: AccountData['id']; name?: string; url?: string }[];
 }
 
-export type IdentityAccountMap = Record<AccountData['id'], IdentityData['id']>;
+export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
 
 export const displayName = (id: IdentityData) => id.displayName || id.email || id.id;
 
@@ -112,7 +112,7 @@ export interface ActorData {
   email?: string;
   urls?: { type: string; url: string }[];
 }
-export type ActorMap = Record<ActorData['id'], Omit<ActorData, 'id'>>;
+export type ActorRecord = Record<ActorData['id'], Omit<ActorData, 'id'>>;
 
 export interface TicketData {
   key: string;
@@ -129,7 +129,7 @@ export interface TicketData {
   lastUpdatedTimestamp?: number;
 }
 
-export type TicketMap = Record<TicketData['key'], TicketData['priority']>;
+export type TicketRecord = Record<TicketData['key'], TicketData['priority']>;
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 
@@ -167,6 +167,7 @@ export interface ActivityData {
 }
 
 export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id'>>;
+export type ActivityRecord = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
 
 export interface ActivityCount {
   code: number;
