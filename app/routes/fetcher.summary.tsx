@@ -11,7 +11,8 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-const logger = pino({ name: 'route:event.view' });
+
+const logger = pino({ name: 'route:fetcher.summary' });
 
 export interface SummaryResponse {
   error?: { message: string };

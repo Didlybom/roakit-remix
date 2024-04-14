@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import { grey } from '@mui/material/colors';
 import { BarChart } from '@mui/x-charts';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
@@ -30,8 +31,8 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { ellipsisSx, randomNumber, windowOpen } from '../utils/jsxUtils';
-import { SummaryResponse } from './resource.summary';
-import { TopActorsResponse } from './resource.top-contributors.$daterange';
+import { SummaryResponse } from './fetcher.summary';
+import { TopActorsResponse } from './fetcher.top-contributors.$daterange';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -105,21 +106,16 @@ export default function Dashboard() {
   // load top actors
   useEffect(() => {
     if (!topActorsFetcher.data && topActorsFetcher.state !== 'loading') {
-      topActorsFetcher.load('/resource/top-contributors/ ' + DateRange.OneDay);
+      topActorsFetcher.load(`/fetcher/top-contributors/${DateRange.OneDay}`);
     }
   }, [topActorsFetcher]);
 
   // load summary
   useEffect(() => {
     if (!summaryFetcher.data && summaryFetcher.state !== 'loading') {
-      summaryFetcher.load('/resource/summary');
+      summaryFetcher.load('/fetcher/summary');
     }
   }, [summaryFetcher]);
-
-  useEffect(() => {
-    topActorsFetcher.load('/resource/top-contributors/' + contributorsDateFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contributorsDateFilter]);
 
   const widgets = (
     <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
@@ -139,7 +135,7 @@ export default function Dashboard() {
             <Tooltip title="AI powered">
               <AutoAwesomeIcon
                 fontSize="small"
-                sx={{ position: 'absolute', margin: '20px', top: 0, right: 0 }}
+                sx={{ color: grey[400], position: 'absolute', margin: '20px', top: 0, right: 0 }}
               />
             </Tooltip>
             {summaryResponse?.summary ?
@@ -171,7 +167,10 @@ export default function Dashboard() {
               <Box onClick={e => e.stopPropagation()}>
                 <DateRangePicker
                   dateRange={contributorsDateFilter}
-                  onSelect={dateRange => setContributorsDateFilter(dateRange)}
+                  onSelect={dateRange => {
+                    setContributorsDateFilter(dateRange);
+                    topActorsFetcher.load(`/fetcher/top-contributors/${dateRange}`);
+                  }}
                 />
               </Box>
             </Stack>

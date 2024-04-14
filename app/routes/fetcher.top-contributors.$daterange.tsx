@@ -6,7 +6,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 
-const logger = pino({ name: 'route:event.view' });
+const logger = pino({ name: 'route:fetcher.top-contributors' });
 
 export interface TopActorsResponse {
   error?: { message: string };
@@ -33,10 +33,12 @@ export const loader = async ({
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     let topActors = null;
-    const dateRange = params.daterange as DateRange;
-    const startDate = dateFilterToStartDate(dateRange);
+    const startDate = dateFilterToStartDate(params.daterange as DateRange);
     if (!startDate) {
-      return json({ error: { message: 'Invalid params' } }, { status: 400 });
+      return json(
+        { error: { message: 'Fetching top contributors failed. Invalid params' } },
+        { status: 400 }
+      );
     }
     const activities = await fetchActivities({ customerId: sessionData.customerId!, startDate });
     topActors = getTopActors(identifyActivities(activities, identities.accountMap));
