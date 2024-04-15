@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
 import { formatJson, internalLinkSx } from '../utils/jsxUtils';
 
-const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
-const OBJECTID_REGEXP = /(?<="storageId": ")(.*)(?=")/;
+const ACTIVITYID_REGEXP = /(?<="id": ")(.*)(?=")/;
+const OBJECTID_REGEXP = /(?<="objectId": ")(.*)(?=")/;
 
 export interface CodePopoverContent {
   element: HTMLElement;

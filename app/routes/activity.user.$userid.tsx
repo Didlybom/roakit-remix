@@ -326,7 +326,10 @@ export default function UserActivity() {
               {sessionData.userId === ALL && (
                 <IconButton
                   component="a"
-                  href={`/activity/user/${encodeURI(actorId)}`}
+                  href={
+                    `/activity/user/${encodeURI(actorId)}` +
+                    (actionFilter ? `#${actionFilter}` : '')
+                  }
                   sx={{ ml: 1 }}
                 >
                   <OpenInNewIcon fontSize="small" />
@@ -424,7 +427,10 @@ export default function UserActivity() {
           <Stack sx={{ flex: 1, minWidth: 0 }}>
             <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
               {sessionData.userId !== ALL && (
-                <Button variant="outlined" href="/activity/user/*">
+                <Button
+                  variant="outlined"
+                  href={'/activity/user/*' + (actionFilter ? `#${actionFilter}` : '')}
+                >
                   {'See all contributors'}
                 </Button>
               )}

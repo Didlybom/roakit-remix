@@ -137,8 +137,9 @@ export const summaryColDef = (
     minWidth: 150,
     flex: 1,
     renderCell: params => {
+      const activity = params.row as ActivityData;
       const metadata = params.value as ActivityMetadata;
-      const summary = getSummary(metadata);
+      const summary = getSummary(activity);
       const comment = metadata.comment?.body;
       const url = getUrl(metadata);
       const link =
@@ -220,25 +221,19 @@ export const summaryColDef = (
 
 export const metadataActionsColDef = (
   colDef: Omit<GridColDef, 'field'>,
-  onClick: (element: HTMLElement, metadata: unknown) => void
+  onClick: (element: HTMLElement, data: unknown) => void
 ) => {
   return {
     field: 'actions',
     type: 'actions',
     cellClassName: 'actions',
     getActions: params => {
-      const activity = params.row as ActivityData;
-      const metadata = {
-        ...activity.metadata,
-        activityId: activity.id,
-        storageId: activity.objectId,
-      };
       return [
         <GridActionsCellItem
           key={1}
           icon={<DataObjectIcon />}
           label="View metadata"
-          onClick={e => onClick(e.currentTarget, metadata)}
+          onClick={e => onClick(e.currentTarget, params.row)}
         />,
       ];
     },

@@ -4,6 +4,7 @@ import {
   AccountToIdentityRecord,
   ActivityChangeLog,
   ActivityCount,
+  ActivityData,
   ActivityMap,
   ActivityMetadata,
   ActorRecord,
@@ -57,7 +58,8 @@ export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata)
   return -1;
 };
 
-export const getSummary = (metadata: ActivityMetadata) => {
+export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
+  const metadata = activity.metadata;
   if (metadata?.issue) {
     return metadata.issue.key + ' ' + metadata.issue.summary;
   }
@@ -80,6 +82,15 @@ export const getSummary = (metadata: ActivityMetadata) => {
   }
   if (metadata?.commits?.length) {
     return metadata.commits[0].message;
+  }
+  if (activity.event === 'organization') {
+    return 'Organization';
+  }
+  if (activity.event === 'repository') {
+    return 'Repository';
+  }
+  if (activity.event === 'repository_ruleset') {
+    return 'Repository ruleset';
   }
   return '';
 };
@@ -170,7 +181,7 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
       });
       return actions.join(', ');
     }
-    if (metadata?.codeAction) {
+    if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
       if (codeAction === 'opened') {
         return 'PR opened';
@@ -205,6 +216,12 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
       if (codeAction === 'created' && metadata.pullRequestComment) {
         return 'PR commented';
       }
+    }
+    if (metadata?.codeAction === 'member_invited') {
+      return 'Member invited';
+    }
+    if (metadata?.codeAction === 'edited') {
+      return 'Edited';
     }
   } catch (e) {
     return '';

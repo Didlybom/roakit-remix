@@ -215,6 +215,7 @@ export const fetchActivities = async ({
         createdTimestamp: props.data.createdTimestamp,
         initiativeId: props.data.initiative,
         priority: props.data.priority,
+        event: props.data.event,
         ...(includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
         objectId: props.data.objectId, // for debugging
       });

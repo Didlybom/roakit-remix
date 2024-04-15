@@ -26,7 +26,7 @@ export const buildActivitySummaryPrompt = (
     if (!activity.metadata) {
       return;
     }
-    const summary = getSummary(activity.metadata);
+    const summary = getSummary(activity);
     if (!summary || summary.startsWith('Attached')) {
       return;
     }
