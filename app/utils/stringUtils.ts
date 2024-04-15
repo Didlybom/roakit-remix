@@ -35,3 +35,6 @@ export const removeSpaces = (data: string): string => data.replace(/\s/g, '');
 
 export const capitalizeAndUseSpaces = (data?: string) =>
   !data ? '' : (data.charAt(0).toUpperCase() + data.slice(1)).replace(/_/g, ' ');
+
+export const sortAndFormatRecord = <T>(data: Record<string, T>) =>
+  JSON.stringify(data, Object.keys(data).sort(), 2);

@@ -1,4 +1,4 @@
-import { cloneArray, groupBy, groupByAndSort } from '../../app/utils/mapUtils';
+import { areRecordsEqual, cloneArray, groupBy, groupByAndSort } from '../../app/utils/mapUtils';
 
 const data = [
   { k: 'a', v: 'a1' },
@@ -43,4 +43,12 @@ test('groupByAndSort', () => {
     ['b', [{ v: 'b1' }, { v: 'b2' }]],
     ['a', [{ v: 'a1' }, { v: 'a2' }, { v: 'a3' }]],
   ]);
+});
+
+test('areRecordsEqual', () => {
+  const rec1: Record<string, boolean> = { a: true, c: false, d: true, b: true };
+  const rec2: Record<string, boolean> = { c: false, a: true, d: true, b: true };
+  const rec3: Record<string, boolean> = { a: true };
+  expect(areRecordsEqual(rec1, rec2)).toBe(true);
+  expect(areRecordsEqual(rec1, rec3)).toBe(false);
 });

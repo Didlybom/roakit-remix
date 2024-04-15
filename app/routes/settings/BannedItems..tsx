@@ -5,8 +5,8 @@ import { useNavigation, useSubmit } from '@remix-run/react';
 import { useState } from 'react';
 import { bannedRecordSchema } from '../../schemas/schemas';
 import { postJsonOptions } from '../../utils/httpUtils';
-import { formatJson } from '../../utils/jsxUtils';
 import { areRecordsEqual } from '../../utils/mapUtils';
+import { sortAndFormatRecord } from '../../utils/stringUtils';
 
 export default function BannedItems({
   storedBannedItems,
@@ -24,7 +24,7 @@ export default function BannedItems({
   const navigation = useNavigation();
   const submit = useSubmit();
   const [bannedItems, setBannedItems] = useState<Record<string, boolean>>(storedBannedItems ?? {});
-  const [bannedItemsAsString, setBannedItemsAsString] = useState(formatJson(bannedItems));
+  const [bannedItemsAsString, setBannedItemsAsString] = useState(sortAndFormatRecord(bannedItems));
   const [bannedItemsError, setBannedItemsError] = useState('');
 
   const parseBannedEvents = (value: string) => {
