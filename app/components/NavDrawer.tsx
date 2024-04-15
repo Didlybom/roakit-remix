@@ -3,7 +3,8 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import PeopleIcon from '@mui/icons-material/People';
+import HistoryIcon from '@mui/icons-material/History';
+import SubjectIcon from '@mui/icons-material/Subject';
 import {
   Box,
   Divider,
@@ -35,7 +36,7 @@ const listItem = (
       <ListItemIcon sx={{ minWidth: '30px' }}>
         <Icon fontSize="small" />
       </ListItemIcon>
-      <ListItemText primary={label} />
+      <ListItemText primary={label} primaryTypographyProps={{ fontSize: 'smaller' }} />
     </ListItemButton>
   </ListItem>
 );
@@ -78,17 +79,18 @@ export default function NavDrawer({
       <Divider />
       <List>
         {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
-        {listItem('activity.user', '/activity/user/*', PeopleIcon, 'By Contributor', view)}
-        {listItem('activity', '/activity', PeopleIcon, 'All Activity', view)}
+        {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Recent Activity', view)}
+        {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
       </List>
       <Divider />
       <List>
+        <ListSubheader>Administration</ListSubheader>
         {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
         {listItem('users', '/users', BusinessIcon, 'Directory', view)}
       </List>
       <Divider />
-      <List>
-        <ListSubheader color="primary">Real-time atomic data</ListSubheader>
+      <List sx={{ opacity: 0.6 }}>
+        <ListSubheader>Real-time ingestion</ListSubheader>
         {listItem('github', '/source/github', GitHubIcon, 'GitHub feed', view)}
         {listItem('jira', '/source/jira', JiraIcon, 'Jira feed', view)}
       </List>
