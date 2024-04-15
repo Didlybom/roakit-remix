@@ -92,6 +92,9 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
   if (activity.event === 'repository_ruleset') {
     return 'Repository ruleset';
   }
+  if (activity.event === 'project_created') {
+    return 'Project created';
+  }
   return '';
 };
 

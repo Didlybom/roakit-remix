@@ -5,7 +5,7 @@
 
 import { defineSecret } from 'firebase-functions/params';
 import { onRequest } from 'firebase-functions/v2/https';
-import { createRequestHandler } from 'remix-google-cloud-functions';
+import { createRequestHandler } from './remixAdapter';
 
 const firebaseServiceAccount = defineSecret('FIREBASE_SERVICE_ACCOUNT');
 const clientIdKey = defineSecret('CLIENT_ID_KEY');
