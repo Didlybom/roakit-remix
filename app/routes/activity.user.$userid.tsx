@@ -323,7 +323,7 @@ export default function UserActivity() {
                   {url.type === 'jira' && <JiraIcon fontSize="small" />}
                 </IconButton>
               ))}
-              {sessionData.userId === ALL && (
+              {sessionData.userId === ALL && actorId && (
                 <IconButton
                   component="a"
                   href={
