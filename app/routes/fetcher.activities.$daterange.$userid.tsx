@@ -5,6 +5,7 @@ import { ActivityRecord } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
+import { jsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.activities' });
 
@@ -49,7 +50,7 @@ export const loader = async ({
     [...activities].forEach(([id, activity]) => {
       activityRecord[id] = activity;
     });
-    return json({ activities: activityRecord });
+    return jsonResponse({ activities: activityRecord });
   } catch (e) {
     logger.error(e);
     return json(

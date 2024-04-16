@@ -3,6 +3,7 @@ import pino from 'pino';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../utils/feedUtils';
+import { contentLength } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:users.csv' });
 
@@ -26,6 +27,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': 'attachment;filename="ROAKIT_identities_' + date + '.csv"',
+        'Content-Length': `${contentLength(csv)}`,
       },
     });
   } catch (e) {

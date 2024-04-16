@@ -5,6 +5,7 @@ import { TopActorsMap, getTopActors, identifyActivities } from '../schemas/activ
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
+import { jsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.top-contributors' });
 
@@ -42,7 +43,7 @@ export const loader = async ({
     }
     const activities = await fetchActivities({ customerId: sessionData.customerId!, startDate });
     topActors = getTopActors(identifyActivities(activities, identities.accountMap));
-    return json({ topActors });
+    return jsonResponse({ topActors });
   } catch (e) {
     logger.error(e);
     return json(

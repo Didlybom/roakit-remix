@@ -11,6 +11,7 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
+import { jsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.summary' });
 
@@ -54,7 +55,7 @@ export const loader = async ({
       return json({ error: { message: 'Summary failed. Empty response' } }, { status: 500 });
     }
     const summary = getSummaryResult(content);
-    return json({ summary });
+    return jsonResponse({ summary });
   } catch (e) {
     logger.error(e);
     return json(
