@@ -1,6 +1,6 @@
 /**
  * See https://github.com/penx/remix-google-cloud-functions
- * Ported to latest packages and added gzip compression
+ * Ported to latest packages
  */
 
 import type {
@@ -103,15 +103,7 @@ async function sendRemixResponse(res: GcfResponse, nodeResponse: Response): Prom
   }
 
   if (nodeResponse.body) {
-    if (nodeResponse.headers.get('Content-Encoding')) {
-      await writeReadableStreamToWritable(nodeResponse.body, res);
-    } else {
-      res.append('Content-Encoding', 'gzip');
-      await writeReadableStreamToWritable(
-        nodeResponse.body.pipeThrough(new CompressionStream('gzip')),
-        res
-      );
-    }
+    await writeReadableStreamToWritable(nodeResponse.body, res);
   } else {
     res.end();
   }

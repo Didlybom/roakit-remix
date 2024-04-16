@@ -3,6 +3,7 @@
  * See https://firebase.google.com/docs/functions
  */
 
+import compression from 'compression';
 import { defineSecret } from 'firebase-functions/params';
 import { onRequest } from 'firebase-functions/v2/https';
 import { createRequestHandler } from './remixAdapter';
@@ -16,9 +17,12 @@ const remixApp = onRequest(
     region: 'us-west1',
     secrets: [firebaseServiceAccount, clientIdKey],
   },
-  createRequestHandler({
-    build: require('../build/remix.js'),
-  })
+  (req, res) => {
+    // gcloud doesn't compress for us
+    compression()(req, res, () =>
+      createRequestHandler({ build: require('../build/remix.js') })(req, res)
+    );
+  }
 );
 
 module.exports = { remixApp };
