@@ -95,7 +95,6 @@ const userActivityRows = (
 ): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
   Object.keys(snapshot).forEach(activityId => {
-    console.log('asd');
     const activity = snapshot[activityId];
     let priority = activity.priority;
     if (priority == null || priority === -1) {
@@ -240,7 +239,6 @@ export default function UserActivity() {
   );
 
   useEffect(() => {
-    console.log('adsasd');
     setActionFilter(location.hash?.slice(1) ?? '');
   }, [location.hash]);
 
