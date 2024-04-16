@@ -35,6 +35,7 @@ export const formatRelative = (date: Date) =>
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',
   OneWeek = 'OneWeek',
+  TwoDays = 'TwoDays',
   OneDay = 'OneDay',
 }
 export type DateRangeValue = DateRange.TwoWeeks | DateRange.OneWeek | DateRange.OneDay;
@@ -42,6 +43,7 @@ export type DateRangeValue = DateRange.TwoWeeks | DateRange.OneWeek | DateRange.
 export const dateRangeLabels: Record<DateRange, string> = {
   [DateRange.TwoWeeks]: 'Last 14 days',
   [DateRange.OneWeek]: 'Last 7 days',
+  [DateRange.TwoDays]: 'Last 48 hours',
   [DateRange.OneDay]: 'Last 24 hours',
 };
 
@@ -52,6 +54,8 @@ export const dateFilterToStartDate = (dateFilter: DateRange) => {
       return now - 14 * ONE_DAY;
     case DateRange.OneWeek:
       return now - 7 * ONE_DAY;
+    case DateRange.TwoDays:
+      return now - 2 * ONE_DAY;
     case DateRange.OneDay:
       return now - ONE_DAY;
     default:

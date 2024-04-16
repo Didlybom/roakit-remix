@@ -17,15 +17,15 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['task-updated', { sortOrder: 2, label: 'Task update' }],
   ['task-deleted', { sortOrder: 3, label: 'Task deletion' }],
   ['task-disabled', { sortOrder: 4, label: 'Task disable' }],
-  ['taskOrg-created', { sortOrder: 5, label: 'Task organization creation' }],
-  ['taskOrg-updated', { sortOrder: 6, label: 'Task organization update' }],
+  ['taskOrg-created', { sortOrder: 5, label: 'Task org. creation' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. update' }],
   ['code-created', { sortOrder: 7, label: 'Code creation' }],
   ['code-updated', { sortOrder: 8, label: 'Code update' }],
   ['code-deleted', { sortOrder: 9, label: 'Code deletion' }],
   ['code-unknown', { sortOrder: 10, label: 'Code [unknown]' }],
-  ['codeOrg-created', { sortOrder: 11, label: 'Code organization creation' }],
-  ['codeOrg-updated', { sortOrder: 12, label: 'Code organization update' }],
-  ['codeOrg-deleted', { sortOrder: 13, label: 'Code organization deletion' }],
+  ['codeOrg-created', { sortOrder: 11, label: 'Code org. creation' }],
+  ['codeOrg-updated', { sortOrder: 12, label: 'Code org. update' }],
+  ['codeOrg-deleted', { sortOrder: 13, label: 'Code org. deletion' }],
 ]);
 
 const findPriority = (str: string, tickets: TicketRecord) => {

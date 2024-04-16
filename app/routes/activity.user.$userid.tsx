@@ -1,6 +1,5 @@
 import GitHubIcon from '@mui/icons-material/GitHub';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import PersonIcon from '@mui/icons-material/Person';
 import {
   Alert,
   Box,
@@ -14,6 +13,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import grey from '@mui/material/colors/grey';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
@@ -26,7 +26,6 @@ import {
 } from '@remix-run/react';
 import pino from 'pino';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useHydrated } from 'remix-utils/use-hydrated';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
@@ -96,6 +95,7 @@ const userActivityRows = (
 ): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
   Object.keys(snapshot).forEach(activityId => {
+    console.log('asd');
     const activity = snapshot[activityId];
     let priority = activity.priority;
     if (priority == null || priority === -1) {
@@ -183,10 +183,9 @@ export default function UserActivity() {
   const navigation = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
-  const isHydrated = useHydrated();
   const activitiesFetcher = useFetcher();
   const activityResponse = activitiesFetcher.data as ActivityResponse;
-  const actionFilter = isHydrated && location.hash ? location.hash.slice(1) : '';
+  const [actionFilter, setActionFilter] = useState(''); // see effect with location.hash dependency below
   const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
@@ -239,6 +238,11 @@ export default function UserActivity() {
     },
     [sessionData.accountMap, sessionData.tickets, sortAndSetUserActivities]
   );
+
+  useEffect(() => {
+    console.log('adsasd');
+    setActionFilter(location.hash?.slice(1) ?? '');
+  }, [location.hash]);
 
   // load activities
   useEffect(() => {
@@ -315,12 +319,18 @@ export default function UserActivity() {
               color={grey[600]}
               sx={{ display: 'flex', mb: 1 }}
             >
-              <PersonIcon sx={{ mr: 1 }} />
-              <Box sx={{ mr: 1 }}>{actor?.name ?? 'Unknown user'}</Box>
+              <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
               {actor?.urls?.map((url, i) => (
-                <IconButton key={i} component="a" href={url.url} target="_blank" color="primary">
-                  {url.type === 'github' && <GitHubIcon fontSize="small" />}
-                  {url.type === 'jira' && <JiraIcon fontSize="small" />}
+                <IconButton
+                  key={i}
+                  component="a"
+                  href={url.url}
+                  target="_blank"
+                  size="small"
+                  color="primary"
+                >
+                  {url.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                  {url.type === 'jira' && <JiraIcon width={15} height={15} />}
                 </IconButton>
               ))}
               {sessionData.userId === ALL && actorId && (
@@ -330,7 +340,7 @@ export default function UserActivity() {
                     `/activity/user/${encodeURI(actorId)}` +
                     (actionFilter ? `#${actionFilter}` : '')
                   }
-                  sx={{ ml: 1 }}
+                  size="small"
                 >
                   <OpenInNewIcon fontSize="small" />
                 </IconButton>
@@ -425,27 +435,46 @@ export default function UserActivity() {
             </Box>
           )}
           <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <Stack direction="row" alignItems="center" sx={{ mb: 2 }}>
-              {sessionData.userId !== ALL && (
-                <Button
-                  variant="outlined"
-                  href={'/activity/user/*' + (actionFilter ? `#${actionFilter}` : '')}
-                >
-                  {'See all contributors'}
-                </Button>
-              )}
-              <Box flex={1} />
-              <FilterMenu
-                selectedValue={actionFilter ?? ''}
-                items={[
-                  { value: '', label: 'None', color: grey[500] },
-                  ...[...artifactActions].map(([key, action]) => {
-                    return { value: key, label: action.label };
-                  }),
-                ]}
-                onChange={e => navigate(e.target.value ? `#${e.target.value}` : '')}
-              />
-            </Stack>
+            <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+              <Grid>
+                {sessionData.userId !== ALL && (
+                  <Button
+                    variant="outlined"
+                    href={'/activity/user/*' + (actionFilter ? `#${actionFilter}` : '')}
+                    sx={{ textWrap: 'nowrap' }}
+                  >
+                    {'See all contributors'}
+                  </Button>
+                )}
+              </Grid>
+              <Grid flex={1}>
+                <FilterMenu
+                  selectedValue={actionFilter ?? ''}
+                  items={[
+                    { value: '', label: 'None', color: grey[500] },
+                    ...[...artifactActions].map(([key, action]) => {
+                      return { value: key, label: action.label };
+                    }),
+                  ]}
+                  onChange={
+                    e => {
+                      if (e.target.value) {
+                        navigate({ hash: e.target.value });
+                      } else {
+                        history.pushState(
+                          '',
+                          document.title,
+                          window.location.pathname + window.location.search
+                        ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate, it causes the page to reload
+                        setActionFilter('');
+                      }
+                    }
+                    //  navigate({ hash: e.target.value ? `#${e.target.value}` : undefined })
+                  }
+                  sx={{ justifyContent: 'right' }}
+                />
+              </Grid>
+            </Grid>
             {grids}
           </Stack>
         </Stack>

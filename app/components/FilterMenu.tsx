@@ -22,7 +22,7 @@ export default function FilterMenu<T extends string>({
   sx?: SxProps<Theme>;
 }) {
   return (
-    <Stack direction="row" spacing={2} alignItems="center" justifyContent="right" sx={sx}>
+    <Stack direction="row" spacing={1} alignItems="center" sx={sx}>
       <FilterListIcon />
       <FormControl size="small">
         <InputLabel>Filter</InputLabel>
@@ -30,7 +30,7 @@ export default function FilterMenu<T extends string>({
           id="activity-filter"
           value={selectedValue}
           label="Filter"
-          sx={{ minWidth: '250px' }}
+          sx={{ minWidth: 120 }}
           onChange={onChange}
         >
           {items.map((item, i) => (

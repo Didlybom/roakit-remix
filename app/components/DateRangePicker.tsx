@@ -19,6 +19,7 @@ import { postJson } from '../utils/httpUtils';
 const icons: Record<DateRange, JSX.Element> = {
   [DateRange.TwoWeeks]: <CalendarMonthIcon fontSize="small" />,
   [DateRange.OneWeek]: <DateRangeIcon fontSize="small" />,
+  [DateRange.TwoDays]: <TodayIcon fontSize="small" />,
   [DateRange.OneDay]: <TodayIcon fontSize="small" />,
 };
 
