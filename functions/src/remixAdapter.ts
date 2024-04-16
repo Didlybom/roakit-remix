@@ -43,10 +43,9 @@ export function createRequestHandler({
   return async (req: GcfRequest, res: GcfResponse) => {
     try {
       const request = createRemixRequest(req, res);
-      const loadContext =
-        typeof getLoadContext === 'function' ? getLoadContext(req, res) : undefined;
+      const loadContext = getLoadContext ? getLoadContext(req, res) : undefined;
 
-      const response = await handleRequest(request, loadContext); // as NodeResponse;
+      const response = await handleRequest(request, loadContext);
 
       await sendRemixResponse(res, response);
     } catch (error) {
