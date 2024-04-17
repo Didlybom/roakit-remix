@@ -20,12 +20,13 @@ export const postJson = async (action: string, body: unknown) => {
 
 export const contentLength = (data: string) => Buffer.byteLength(data, 'utf8');
 
-export const jsonResponse = (data: unknown) => {
+export const jsonResponse = (data: unknown, options?: { calcContentLength?: boolean }) => {
   const jsonString = JSON.stringify(data);
   return new Response(jsonString, {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Content-Length': `${contentLength(jsonString)}`,
+      // for perf reason, .length is good enough (typically used by server to decide to compress if < 1k)
+      'Content-Length': `${options?.calcContentLength ? contentLength(jsonString) : jsonString.length}`,
     },
   });
 };
