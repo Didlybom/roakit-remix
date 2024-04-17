@@ -442,7 +442,7 @@ export default function UserActivity() {
             </Box>
           )}
           <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 1 }}>
               <Grid>
                 {sessionData.userId !== ALL && (
                   <Button

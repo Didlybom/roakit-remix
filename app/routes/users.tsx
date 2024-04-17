@@ -138,7 +138,11 @@ export default function Users() {
           return (
             <Stack key={i}>
               <Stack direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
-                <Typography fontSize="small" color={!account.id ? 'error' : 'inherited'}>
+                <Typography
+                  component="div"
+                  fontSize="small"
+                  color={!account.id ? 'error' : 'inherited'}
+                >
                   <Stack direction="row" alignItems={'center'}>
                     {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
                     {account.type === 'jira' && (
