@@ -1,5 +1,4 @@
-import CloseIcon from '@mui/icons-material/Close';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { Close as CloseIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { Link as RemixLink } from '@remix-run/react';
@@ -45,7 +44,7 @@ export default function CodePopover({
     >
       <Stack direction="row" sx={{ m: 1, position: 'absolute', top: 2, right: 0 }}>
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
-          <ContentCopyIcon />
+          <CopyIcon />
         </IconButton>
         <IconButton
           onClick={() => {
