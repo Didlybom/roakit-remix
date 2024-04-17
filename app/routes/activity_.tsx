@@ -291,6 +291,7 @@ export default function ActivityReview() {
         setError(errMsg(e, 'Failed to fetch activities'));
       }
     };
+
     void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityFilter, paginationModel]); // sessionData, prevPaginationModel and boundaryDocs must be omitted
@@ -527,12 +528,12 @@ export default function ActivityReview() {
           {...dataGridProps}
           rowCount={rowTotal}
           paginationModel={paginationModel}
-          onPaginationModelChange={paginationModel => {
-            if (prevPaginationModel && prevPaginationModel.pageSize !== paginationModel.pageSize) {
-              setPaginationModel({ pageSize: paginationModel.pageSize, page: 0 });
+          onPaginationModelChange={newPaginationModel => {
+            if (paginationModel && paginationModel.pageSize !== newPaginationModel.pageSize) {
+              setPaginationModel({ pageSize: newPaginationModel.pageSize, page: 0 });
               setBoundaryDocs(null);
             } else {
-              setPaginationModel(paginationModel);
+              setPaginationModel(newPaginationModel);
             }
           }}
           slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
