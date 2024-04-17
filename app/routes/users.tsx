@@ -1,8 +1,10 @@
-import DownloadIcon from '@mui/icons-material/Download';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import UploadIcon from '@mui/icons-material/Upload';
+import {
+  Download as DownloadIcon,
+  GitHub as GitHubIcon,
+  Upload as UploadIcon,
+} from '@mui/icons-material';
 import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
-import grey from '@mui/material/colors/grey';
+import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
   Link as RemixLink,

@@ -1,6 +1,8 @@
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import {
+  Add as AddIcon,
+  DeleteOutlined as DeleteIcon,
+  ReportProblem as ReportProblemIcon,
+} from '@mui/icons-material';
 import { Alert, Box, Button, Stack } from '@mui/material';
 import {
   DataGrid,

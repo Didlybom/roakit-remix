@@ -1,6 +1,8 @@
-import DataObjectIcon from '@mui/icons-material/DataObject';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import PeopleIcon from '@mui/icons-material/People';
+import {
+  DataObject as DataObjectIcon,
+  GitHub as GitHubIcon,
+  People as PeopleIcon,
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -17,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import grey from '@mui/material/colors/grey';
+import { grey } from '@mui/material/colors';
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
@@ -290,7 +292,7 @@ export default function GitHub() {
         )
         .orderBy('eventTimestamp')
         .startAt(startDate)
-        .limit(1000); // FIXME limit
+        .limit(500); // FIXME limit
       unsubscribe[type] = query.onSnapshot(
         snapshot => setRows(type, snapshot),
         error => setError(error.message)

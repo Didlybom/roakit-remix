@@ -1,4 +1,4 @@
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import { Unstable_Grid2 as Grid } from '@mui/material';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';

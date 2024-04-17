@@ -1,4 +1,4 @@
-import DataObjectIcon from '@mui/icons-material/DataObject';
+import { DataObject as DataObjectIcon } from '@mui/icons-material';
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
@@ -172,7 +172,7 @@ export default function Jira() {
         )
         .orderBy('eventTimestamp')
         .startAt(startDate)
-        .limit(1000); // FIXME limit
+        .limit(500); // FIXME limit
       unsubscribe[type] = query.onSnapshot(
         snapshot => setRows(type, snapshot),
         error => setError(error.message)

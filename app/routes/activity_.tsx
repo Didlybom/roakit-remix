@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   FormControl,
+  Unstable_Grid2 as Grid,
   InputLabel,
   Link,
   MenuItem,
@@ -11,7 +12,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 import { grey } from '@mui/material/colors';
 import {
   GridColDef,
@@ -22,6 +22,7 @@ import {
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
+import { usePrevious } from '@uidotdev/usehooks';
 import {
   QueryDocumentSnapshot,
   collection,
@@ -39,7 +40,6 @@ import {
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
-import usePrevious from 'use-previous';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';

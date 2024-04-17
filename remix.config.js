@@ -9,6 +9,5 @@ module.exports = {
   assetsBuildDirectory: 'public/build',
   publicPath: '/',
   serverDependenciesToBundle: 'all',
-  serverMinify: true,
   serverBuildPath: 'functions/build/remix.js',
 };

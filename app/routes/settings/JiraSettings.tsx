@@ -1,6 +1,14 @@
-import CopyIcon from '@mui/icons-material/ContentCopy';
-import { Box, Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import { ContentCopy as CopyIcon } from '@mui/icons-material';
+import {
+  Box,
+  Unstable_Grid2 as Grid,
+  Link,
+  List,
+  ListItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { SettingsData } from '../../schemas/schemas';
 import * as feedUtils from '../../utils/feedUtils';
 import BannedItems from './BannedItems.';

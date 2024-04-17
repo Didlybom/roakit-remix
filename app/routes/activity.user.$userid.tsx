@@ -1,11 +1,11 @@
-import GitHubIcon from '@mui/icons-material/GitHub';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
   Button,
   FormControlLabel,
   FormGroup,
+  Unstable_Grid2 as Grid,
   IconButton,
   Link,
   Popover,
@@ -13,7 +13,6 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
 import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
@@ -400,6 +399,7 @@ export default function UserActivity() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={sessionData.customerId}
+        options={{ linkifyBuckets: true }}
       />
       <Popover
         id={popover?.element ? 'popover' : undefined}

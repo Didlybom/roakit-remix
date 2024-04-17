@@ -1,14 +1,14 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Alert,
+  Unstable_Grid2 as Grid,
   Paper,
   Stack,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import {
   BarChart,
   ChartsAxisContentProps,

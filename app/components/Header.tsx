@@ -1,7 +1,9 @@
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import MenuIcon from '@mui/icons-material/Menu';
-import SettingsIcon from '@mui/icons-material/Settings';
+import {
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  Menu as MenuIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material';
 import {
   AppBar,
   AppBarProps,

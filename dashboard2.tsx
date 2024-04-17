@@ -45,8 +45,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     // retrieve users
     const [accounts, identities] = await Promise.all([
-      fetchAccountMap(sessionData.customerId!),
-      fetchIdentities(sessionData.customerId!),
+      fetchAccountMap(sessionData.customerId),
+      fetchIdentities(sessionData.customerId),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return { ...sessionData, actors, error: null };

@@ -1,10 +1,12 @@
-import BusinessIcon from '@mui/icons-material/Business';
-import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import HistoryIcon from '@mui/icons-material/History';
-import SubjectIcon from '@mui/icons-material/Subject';
+import {
+  BusinessCenter as BusinessCenterIcon,
+  Business as BusinessIcon,
+  ChevronLeft as ChevronLeftIcon,
+  Dashboard as DashboardIcon,
+  GitHub as GitHubIcon,
+  History as HistoryIcon,
+  Subject as SubjectIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Divider,

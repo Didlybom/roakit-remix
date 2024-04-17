@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
-import grey from '@mui/material/colors/grey';
+import { grey } from '@mui/material/colors';
 import { Link as RemixLink } from '@remix-run/react';
 import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
@@ -19,10 +19,12 @@ export default function CodePopover({
   popover,
   onClose,
   customerId,
+  options,
 }: {
   popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
+  options?: { linkifyBuckets?: boolean };
 }) {
   const [contentOverride, setContentOverride] = useState<unknown>(null);
   if (!popover?.content) {
@@ -61,36 +63,38 @@ export default function CodePopover({
         color={grey[700]}
         sx={{ p: 2, overflowX: 'auto', minWidth: '150px', minHeight: '70px' }}
       >
-        <LinkIt
-          component={(activityId: string, key: number) => (
-            <Link
-              key={key}
-              sx={internalLinkSx}
-              href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/${activityId}`}
-              target="_blank"
-            >
-              {activityId}
-            </Link>
-          )}
-          regex={ACTIVITYID_REGEXP}
-        >
+        {options?.linkifyBuckets ?
           <LinkIt
-            component={(filePath: string, key: number) => (
+            component={(activityId: string, key: number) => (
               <Link
-                component={RemixLink}
                 key={key}
                 sx={internalLinkSx}
-                to={'/event/view/' + filePath}
+                href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/${activityId}`}
                 target="_blank"
               >
-                {filePath}
+                {activityId}
               </Link>
             )}
-            regex={OBJECTID_REGEXP}
+            regex={ACTIVITYID_REGEXP}
           >
-            {formattedContent}
+            <LinkIt
+              component={(filePath: string, key: number) => (
+                <Link
+                  component={RemixLink}
+                  key={key}
+                  sx={internalLinkSx}
+                  to={'/event/view/' + filePath}
+                  target="_blank"
+                >
+                  {filePath}
+                </Link>
+              )}
+              regex={OBJECTID_REGEXP}
+            >
+              {formattedContent}
+            </LinkIt>
           </LinkIt>
-        </LinkIt>
+        : formattedContent}
       </Typography>
     </Popover>
   );

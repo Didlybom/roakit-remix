@@ -1,8 +1,10 @@
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import DateRangeIcon from '@mui/icons-material/DateRange';
-import TodayIcon from '@mui/icons-material/Today';
+import {
+  ArrowDropDown as ArrowDropDownIcon,
+  ArrowDropUp as ArrowDropUpIcon,
+  CalendarMonth as LargeDateRangeIcon,
+  DateRange as MediumDateRangeIcon,
+  Today as SmallDateRangeIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -17,10 +19,10 @@ import { DateRange, dateRangeLabels } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
-  [DateRange.TwoWeeks]: <CalendarMonthIcon fontSize="small" />,
-  [DateRange.OneWeek]: <DateRangeIcon fontSize="small" />,
-  [DateRange.TwoDays]: <TodayIcon fontSize="small" />,
-  [DateRange.OneDay]: <TodayIcon fontSize="small" />,
+  [DateRange.TwoWeeks]: <LargeDateRangeIcon fontSize="small" />,
+  [DateRange.OneWeek]: <MediumDateRangeIcon fontSize="small" />,
+  [DateRange.TwoDays]: <SmallDateRangeIcon fontSize="small" />,
+  [DateRange.OneDay]: <SmallDateRangeIcon fontSize="small" />,
 };
 
 export default function DateRangePicker({

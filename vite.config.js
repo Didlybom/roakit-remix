@@ -1,21 +1,24 @@
 import { vitePlugin as remix } from '@remix-run/dev';
+import { installGlobals } from '@remix-run/node';
 import { defineConfig } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
+
+installGlobals();
 
 export default defineConfig({
+  server: {
+    port: 3000,
+  },
   plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    tsconfigPaths(),
     remix({
-      devServerPort: 8002,
-      // TODO: when mui has esm support, remove this (default is esm)
-      // check it https://github.com/mui/material-ui/issues/30671
-      serverModuleFormat: 'cjs',
-      // for deployment to GCP
       appDirectory: 'app',
       assetsBuildDirectory: 'public/build',
       publicPath: '/',
-      serverDependenciesToBundle: 'all',
-      serverMinify: true,
       buildDirectory: 'functions/build/',
       serverBuildFile: 'remix.js',
+      serverDependenciesToBundle: 'all',
     }),
   ],
 });

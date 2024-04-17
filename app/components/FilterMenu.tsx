@@ -1,4 +1,4 @@
-import FilterListIcon from '@mui/icons-material/FilterList';
+import { FilterList as FilterListIcon } from '@mui/icons-material';
 import {
   FormControl,
   InputLabel,

@@ -1,5 +1,4 @@
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
+import { Unstable_Grid2 as Grid, Typography } from '@mui/material';
 import { grey, indigo } from '@mui/material/colors';
 import theme from '../utils/theme';
 

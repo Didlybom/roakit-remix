@@ -1,10 +1,13 @@
-import CopyIcon from '@mui/icons-material/ContentCopy';
-import DoneIcon from '@mui/icons-material/Done';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import {
+  ContentCopy as CopyIcon,
+  Done as DoneIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
   CircularProgress,
+  Unstable_Grid2 as Grid,
   IconButton,
   Link,
   List,
@@ -14,7 +17,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
 import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
