@@ -198,7 +198,7 @@ export const fetchActivities = async ({
       query = query.endAt(endDate);
     }
     const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
-      () => query.limit(15000).get(), // FIXME limit
+      () => query.limit(20000).get(), // FIXME limit
       { metricsName: 'fetcher:getActivities' }
     );
     const activities: ActivityMap = new Map();

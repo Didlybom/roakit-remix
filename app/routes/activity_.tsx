@@ -9,9 +9,10 @@ import {
   Popover,
   Select,
   Stack,
+  Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import grey from '@mui/material/colors/grey';
+import Grid from '@mui/material/Unstable_Grid2';
+import { grey } from '@mui/material/colors';
 import {
   GridColDef,
   GridDensity,
@@ -495,20 +496,31 @@ export default function ActivityReview() {
             {error}
           </Alert>
         )}
-        <FilterMenu
-          sx={{ mb: 3 }}
-          selectedValue={activityFilter}
-          items={[
-            { value: '', label: 'None', color: grey[500] },
-            { value: 'withoutInitiative', label: 'Without initiatives' },
-            { value: 'withInitiative', label: 'With initiatives' },
-          ]}
-          onChange={e => {
-            setPaginationModel({ ...paginationModel, page: 0 });
-            setBoundaryDocs(null);
-            setActivityFilter(e.target.value as ShowActivity);
-          }}
-        />
+        <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Grid>
+            {!!rowTotal && (
+              <Typography variant="subtitle2">
+                {rowTotal.toLocaleString()} {pluralize('activity', rowTotal)}
+              </Typography>
+            )}
+          </Grid>
+          <Grid flex={1}>
+            <FilterMenu
+              sx={{ justifyContent: 'right' }}
+              selectedValue={activityFilter}
+              items={[
+                { value: '', label: 'None', color: grey[500] },
+                { value: 'withoutInitiative', label: 'Without initiatives' },
+                { value: 'withInitiative', label: 'With initiatives' },
+              ]}
+              onChange={e => {
+                setPaginationModel({ ...paginationModel, page: 0 });
+                setBoundaryDocs(null);
+                setActivityFilter(e.target.value as ShowActivity);
+              }}
+            />
+          </Grid>
+        </Grid>
         <DataGridWithSingleClickEditing
           columns={columns}
           rows={activities}

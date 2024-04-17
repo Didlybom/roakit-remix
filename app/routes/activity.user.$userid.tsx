@@ -13,8 +13,8 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2/Grid2';
-import grey from '@mui/material/colors/grey';
+import Grid from '@mui/material/Unstable_Grid2';
+import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import {
@@ -25,6 +25,7 @@ import {
   useNavigation,
 } from '@remix-run/react';
 import pino from 'pino';
+import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
@@ -303,6 +304,30 @@ export default function UserActivity() {
     [sessionData.initiatives]
   );
 
+  let activityCount = 0;
+
+  const actorList = [...activities.keys()].map((actorId, i) => {
+    const actorActivityCount = activities.get(actorId)?.length ?? 0;
+    activityCount += actorActivityCount;
+    return (
+      <Box key={i} sx={{ mb: i === 9 ? 2 : undefined }}>
+        <Link
+          sx={internalLinkSx}
+          onClick={() => {
+            if (i <= 9 && !showOnlyActor) {
+              setScrollToActor(actorId);
+            } else {
+              setShowOnlyActor(actorId);
+            }
+          }}
+        >
+          {sessionData.actors[actorId]?.name ?? 'Unknown'}
+        </Link>
+        {` (${actorActivityCount})`}
+      </Box>
+    );
+  });
+
   const grids = [...activities]
     .filter(([actorId]) => !showOnlyActor || actorId === showOnlyActor)
     .filter((_, i) => showOnlyActor || i <= 9)
@@ -411,23 +436,7 @@ export default function UserActivity() {
                       />
                     )}
                   </FormGroup>
-                  {[...activities.keys()].map((actorId, i) => (
-                    <Box key={i} sx={{ mb: i === 9 ? 2 : undefined }}>
-                      <Link
-                        sx={internalLinkSx}
-                        onClick={() => {
-                          if (i <= 9 && !showOnlyActor) {
-                            setScrollToActor(actorId);
-                          } else {
-                            setShowOnlyActor(actorId);
-                          }
-                        }}
-                      >
-                        {sessionData.actors[actorId]?.name ?? 'Unknown'}
-                      </Link>
-                      {` (${activities.get(actorId)?.length ?? 0})`}
-                    </Box>
-                  ))}
+                  {actorList}
                 </Box>
               </Box>
             </Box>
@@ -454,25 +463,29 @@ export default function UserActivity() {
                       return { value: key, label: action.label };
                     }),
                   ]}
-                  onChange={
-                    e => {
-                      if (e.target.value) {
-                        navigate({ hash: e.target.value });
-                      } else {
-                        history.pushState(
-                          '',
-                          document.title,
-                          window.location.pathname + window.location.search
-                        ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate, it causes the page to reload
-                        setActionFilter('');
-                      }
+                  onChange={e => {
+                    if (e.target.value) {
+                      navigate({ hash: e.target.value });
+                    } else {
+                      history.pushState(
+                        '',
+                        document.title,
+                        window.location.pathname + window.location.search
+                      ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate, it causes the page to reload
+                      setActionFilter('');
                     }
-                    //  navigate({ hash: e.target.value ? `#${e.target.value}` : undefined })
-                  }
+                  }}
                   sx={{ justifyContent: 'right' }}
                 />
               </Grid>
             </Grid>
+            <Box sx={{ display: 'flex' }} justifyContent="right">
+              {!!activityCount && (
+                <Typography variant="subtitle2">
+                  {activityCount.toLocaleString()} {pluralize('activity', activityCount)}
+                </Typography>
+              )}
+            </Box>
             {grids}
           </Stack>
         </Stack>
