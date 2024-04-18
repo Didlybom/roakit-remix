@@ -55,8 +55,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
-  return { ...sessionData, loading: true };
+  return sessionData;
 };
+
+interface JsonRequest {
+  dateFilter: DateRange;
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
@@ -75,8 +79,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
     const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
+    const jsonRequest = (await request.json()) as JsonRequest;
+
     // retrieve activities
-    const startDate = dateFilterToStartDate(sessionData.dateFilter ?? DateRange.OneDay)!;
+    const startDate = dateFilterToStartDate(
+      jsonRequest.dateFilter ?? sessionData.dateFilter ?? DateRange.OneDay
+    )!;
 
     const activities = await fetchActivities({
       customerId: sessionData.customerId!,
@@ -151,21 +159,14 @@ export default function Dashboard() {
     if (groupedActivities) {
       setLoading(false);
     } else {
-      submit({}, postJsonOptions); // ask server to load
+      submit({}, postJsonOptions); // ask server to do the initial load
     }
   }, [groupedActivities, submit]);
 
   useEffect(() => {
     setLoading(true);
-    submit({}, postJsonOptions); // ask server to load
+    submit({ dateFilter }, postJsonOptions); // ask server to reload with new dates
   }, [dateFilter, submit]);
-
-  useEffect(() => {
-    // happens for a dev hot reload
-    if (sessionData.loading) {
-      setLoading(true);
-    }
-  }, [sessionData.loading]);
 
   const ContributorsByInitiativeTooltipContent = (props: ChartsAxisContentProps) => {
     return initiatives ?
@@ -179,7 +180,15 @@ export default function Dashboard() {
   const widgets =
     !groupedActivities ?
       <></>
-    : <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>
+    : <Stack
+        spacing={3}
+        sx={{
+          mx: 3,
+          mt: 2,
+          mb: 3,
+          opacity: navigation.state !== 'idle' ? 0.5 : undefined,
+        }}
+      >
         <Grid container spacing={5} sx={{ m: 3 }}>
           {!!groupedActivities.initiatives.length && (
             <Grid>
