@@ -10,16 +10,18 @@ export const DEFAULT_PROMPT =
 export const buildActivitySummaryPrompt = (
   activities: Omit<ActivityData, 'id'>[] | null,
   actors: ActorRecord | null,
-  activityCount: number,
-  inclDates: boolean,
-  inclActions: boolean,
-  inclContributors: boolean
+  options: {
+    activityCount: number;
+    inclDates: boolean;
+    inclActions: boolean;
+    inclContributors: boolean;
+  }
 ) => {
   if (!activities) {
     return '';
   }
   const activityList = cloneArray(activities);
-  activityList.splice(activityCount);
+  activityList.splice(options.activityCount);
   let activitiesString = '';
   const dedupe = new Set<string>();
   activityList.forEach(activity => {
@@ -30,9 +32,11 @@ export const buildActivitySummaryPrompt = (
     if (!summary || summary.startsWith('Attached')) {
       return;
     }
-    const summaryAction = inclActions ? getSummaryAction(activity.metadata) : undefined;
+    const summaryAction = options.inclActions ? getSummaryAction(activity.metadata) : undefined;
     const contributor =
-      inclContributors && actors ? actors[activity.actorId ?? '']?.name ?? undefined : undefined;
+      options.inclContributors && actors ?
+        actors[activity.actorId ?? '']?.name ?? undefined
+      : undefined;
 
     const activityStringDedupe = summary + (summaryAction ?? '') + (contributor ?? '');
 
@@ -40,7 +44,9 @@ export const buildActivitySummaryPrompt = (
       dedupe.add(activityStringDedupe);
       activitiesString +=
         summary +
-        (inclDates ? '\nDate: ' + new Date(activity.createdTimestamp).toLocaleString() : '') +
+        (options.inclDates ?
+          '\nDate: ' + new Date(activity.createdTimestamp).toLocaleString()
+        : '') +
         (summaryAction ? '\nAction: ' + summaryAction : '') +
         (contributor ? '\nContributor: ' + contributor : '') +
         '\n---\n';

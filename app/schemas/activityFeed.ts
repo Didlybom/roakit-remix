@@ -29,7 +29,10 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
 ]);
 
 // return the first ticket referenced from metadata fields
-export const findTicket = (metadata: ActivityMetadata) => {
+export const findTicket = (metadata?: ActivityMetadata) => {
+  if (!metadata) {
+    return undefined;
+  }
   const pullRequestRef = metadata.pullRequest?.ref;
   if (pullRequestRef) {
     const tickets = findJiraTickets(pullRequestRef);

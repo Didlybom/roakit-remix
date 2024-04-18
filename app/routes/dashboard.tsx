@@ -78,7 +78,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // retrieve activities
     const startDate = dateFilterToStartDate(sessionData.dateFilter ?? DateRange.OneDay)!;
 
-    const activities = await fetchActivities({ customerId: sessionData.customerId!, startDate });
+    const activities = await fetchActivities({
+      customerId: sessionData.customerId!,
+      startDate,
+      options: { findPriority: true },
+    });
     const groupedActivities = groupActivities(
       identifyActivities(activities, identities.accountMap)
     );

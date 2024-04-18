@@ -3,6 +3,7 @@ import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
+import { findTicket } from '../schemas/activityFeed';
 import {
   AccountData,
   AccountMap,
@@ -31,7 +32,7 @@ const logger = pino({ name: 'firestore:fetchers' });
 const retryProps = (message: string) => {
   return {
     // see https://github.com/tim-kos/node-retry#api
-    retries: 2,
+    retries: 1,
     factor: 2,
     minTimeout: 500,
     onRetry: (e: unknown) => logger.warn(e, message),
@@ -143,6 +144,17 @@ export const fetchTicketPriorities = async (
   customerId: number,
   ticketIds: string[]
 ): Promise<TicketRecord> => {
+  const cacheKey = makeTicketsCacheKey(customerId);
+  const cache: TicketRecord | undefined = ticketsCache.get(cacheKey);
+  const fromCache: TicketRecord = {};
+  if (cache) {
+    ticketIds.forEach((ticketId, i) => {
+      if (cache[ticketId]) {
+        fromCache[ticketId] = cache[ticketId];
+        ticketIds.splice(i, 1);
+      }
+    });
+  }
   return await retry(async () => {
     const tickets: TicketRecord = {};
     const batches = [];
@@ -163,7 +175,10 @@ export const fetchTicketPriorities = async (
       );
     }
     await Promise.all(batches);
-    return tickets;
+
+    ticketsCache.set(cacheKey, { ...cache, ...tickets });
+
+    return { ...tickets, ...fromCache };
   }, retryProps('Retrying fetchTickets...'));
 };
 
@@ -217,14 +232,17 @@ export const fetchActivities = async ({
   startDate,
   endDate,
   userIds,
-  includesMetadata = false,
+  options,
 }: {
   customerId: number;
   startDate: number;
   endDate?: number;
   userIds?: string[];
-  includesMetadata?: boolean;
+  options?: { includesMetadata?: boolean; findPriority?: boolean };
 }) => {
+  if (userIds?.length ?? 0 > 30) {
+    throw Error('fetchActivities: max userIds length is 30');
+  }
   return await retry(async bail => {
     let query =
       userIds ?
@@ -241,11 +259,22 @@ export const fetchActivities = async ({
       { metricsName: 'fetcher:getActivities' }
     );
     const activities: ActivityMap = new Map();
+    const ticketPrioritiesToFetch = new Set<string>();
+    const activityTickets = new Map<string, string>();
     activityDocs.forEach(activity => {
       const props = activitySchema.safeParse(activity.data());
       if (!props.success) {
         bail(new ParseError('Failed to parse activities. ' + props.error.message));
         return emptyActivity; // not used, bail() will throw
+      }
+      const priority = props.data.priority;
+      if ((!priority || priority === -1) && options?.findPriority) {
+        // will find priority from metadata for activities missing one
+        const ticket = findTicket(props.data.metadata as ActivityMetadata);
+        if (ticket) {
+          ticketPrioritiesToFetch.add(ticket);
+          activityTickets.set(activity.id, ticket);
+        }
       }
       activities.set(activity.id, {
         action: props.data.action,
@@ -253,12 +282,22 @@ export const fetchActivities = async ({
         artifact: props.data.artifact,
         createdTimestamp: props.data.createdTimestamp,
         initiativeId: props.data.initiative,
-        priority: props.data.priority,
+        priority, // see overwrite below
         event: props.data.event,
-        ...(includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
+        ...(options?.includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
         objectId: props.data.objectId, // for debugging
       });
     });
+    if (ticketPrioritiesToFetch.size > 0) {
+      const tickets = await fetchTicketPriorities(customerId, [...ticketPrioritiesToFetch]);
+      activityTickets.forEach((activityTicket, activityId) => {
+        // add the found priority to the activity
+        const activity = activities.get(activityId);
+        if (activity) {
+          activity.priority = tickets[activityTicket];
+        }
+      });
+    }
     return activities;
   }, retryProps('Retrying fetchActivities...'));
 };

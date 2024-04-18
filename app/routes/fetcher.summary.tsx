@@ -37,7 +37,7 @@ export const loader = async ({
     const activities = await fetchActivities({
       customerId: sessionData.customerId!,
       startDate: dateFilterToStartDate(DateRange.OneDay)!,
-      includesMetadata: true,
+      options: { includesMetadata: true },
     });
     const prompt =
       DEFAULT_PROMPT +
@@ -45,10 +45,7 @@ export const loader = async ({
       buildActivitySummaryPrompt(
         [...activities].map(([, activity]) => activity),
         actors,
-        100,
-        true,
-        true,
-        true
+        { activityCount: 100, inclDates: true, inclActions: true, inclContributors: true }
       );
     const content = await generateContent({ prompt });
     if (!content) {

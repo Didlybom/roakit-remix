@@ -49,7 +49,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       await fetchActivities({
         customerId: sessionData.customerId!,
         startDate,
-        includesMetadata: true,
+        options: { includesMetadata: true },
       }),
       identities.accountMap
     );
@@ -104,14 +104,12 @@ export default function AIPlayground() {
   const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
-    const activities = buildActivitySummaryPrompt(
-      sessionData.activities,
-      sessionData.actors,
+    const activities = buildActivitySummaryPrompt(sessionData.activities, sessionData.actors, {
       activityCount,
       inclDates,
       inclActions,
-      inclContributors
-    );
+      inclContributors,
+    });
     setPrompt(activities);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityCount, inclDates, inclActions, inclContributors]); // sessionData must be omitted
