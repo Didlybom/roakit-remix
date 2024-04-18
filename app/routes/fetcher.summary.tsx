@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
 import {
   fetchAccountMap,
@@ -11,12 +11,12 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { jsonResponse } from '../utils/httpUtils';
+import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.summary' });
 
 export interface SummaryResponse {
-  error?: { message: string };
+  error?: ErrorField;
   summary?: string;
 }
 
@@ -25,7 +25,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<SummaryResponse>> => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
-    return json({ error: { message: 'Summary failed. Invalid session' } }, { status: 401 });
+    return errorJsonResponse('Summary failed. Invalid session', 401);
   }
   try {
     // retrieve initiatives and users
@@ -52,15 +52,15 @@ export const loader = async ({
       );
     const content = await generateContent({ prompt });
     if (!content) {
-      return json({ error: { message: 'Summary failed. Empty response' } }, { status: 500 });
+      return errorJsonResponse('Summary failed. Empty response', 500);
     }
     const summary = getSummaryResult(content);
     return jsonResponse({ summary });
   } catch (e) {
     logger.error(e);
-    return json(
-      { error: { message: errMsg(e, 'Summary failed') } },
-      { status: e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500 }
+    return errorJsonResponse(
+      errMsg(e, 'Summary failed'),
+      e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500
     );
   }
 };

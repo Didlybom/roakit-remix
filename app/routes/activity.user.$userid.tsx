@@ -33,21 +33,10 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
-  fetchTicketMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import {
-  artifactActions,
-  buildArtifactActionKey,
-  identifyAccounts,
-  inferPriority,
-} from '../schemas/activityFeed';
-import {
-  AccountToIdentityRecord,
-  ActivityRecord,
-  Artifact,
-  TicketRecord,
-} from '../schemas/schemas';
+import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../schemas/activityFeed';
+import { AccountToIdentityRecord, ActivityRecord, Artifact } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -90,16 +79,11 @@ interface UserActivityRow {
 
 const userActivityRows = (
   snapshot: ActivityRecord,
-  tickets: TicketRecord,
   accountMap: AccountToIdentityRecord
 ): UserActivityRow[] => {
   const rows: UserActivityRow[] = [];
   Object.keys(snapshot).forEach(activityId => {
     const activity = snapshot[activityId];
-    let priority = activity.priority;
-    if (priority == null || priority === -1) {
-      priority = activity.metadata ? inferPriority(tickets, activity.metadata) : -1;
-    }
     const row: UserActivityRow = {
       id: activityId,
       date: new Date(activity.createdTimestamp),
@@ -107,7 +91,7 @@ const userActivityRows = (
       event: activity.event,
       artifact: activity.artifact,
       initiativeId: activity.initiativeId,
-      priority,
+      priority: activity.priority,
       metadata: activity.metadata,
       actorId:
         activity.actorId ?
@@ -127,12 +111,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
   try {
-    // retrieve initiatives, tickets, and users
-    const [initiatives, accounts, identities, tickets] = await Promise.all([
+    // retrieve initiatives and users
+    const [initiatives, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
-      fetchTicketMap(sessionData.customerId!),
     ]);
 
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
@@ -167,7 +150,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userId,
       activityUserIds,
       initiatives,
-      tickets,
       actors,
       accountMap: identities.accountMap,
     };
@@ -193,7 +175,6 @@ export default function UserActivity() {
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
-
   const [gotSnapshot, setGotSnapshot] = useState(false);
   const snapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
   const [activities, setActivities] = useState<Map<string, UserActivityRow[]>>(new Map());
@@ -229,13 +210,13 @@ export default function UserActivity() {
   const setRows = useCallback(
     (querySnapshot: ActivityRecord) => {
       snapshot.current = groupByArray(
-        userActivityRows(querySnapshot, sessionData.tickets, sessionData.accountMap),
+        userActivityRows(querySnapshot, sessionData.accountMap),
         'actorId'
       );
       sortAndSetUserActivities();
       setGotSnapshot(true);
     },
-    [sessionData.accountMap, sessionData.tickets, sortAndSetUserActivities]
+    [sessionData.accountMap, sortAndSetUserActivities]
   );
 
   useEffect(() => {
@@ -249,6 +230,12 @@ export default function UserActivity() {
     activitiesFetcher.load(`/fetcher/activities/${dateFilter}/${userIds}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
+
+  useEffect(() => {
+    if (activityResponse?.error?.status === 401) {
+      navigate('/login');
+    }
+  }, [activityResponse?.error, navigate]);
 
   useEffect(() => {
     setGotSnapshot(false);
@@ -471,7 +458,7 @@ export default function UserActivity() {
                         '',
                         document.title,
                         window.location.pathname + window.location.search
-                      ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate, it causes the page to reload
+                      ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate without a #, it causes the page to reload
                       setActionFilter('');
                     }
                   }}

@@ -50,7 +50,7 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
-  fetchTicketMap,
+  fetchTicketPriorityMap,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { identifyAccounts, inferPriority } from '../schemas/activityFeed';
@@ -95,7 +95,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
-      fetchTicketMap(sessionData.customerId!),
+      fetchTicketPriorityMap(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
@@ -480,6 +480,7 @@ export default function ActivityReview() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={sessionData.customerId}
+        options={{ linkifyBuckets: true }}
       />
       <Popover
         id={popover?.element ? 'popover' : undefined}

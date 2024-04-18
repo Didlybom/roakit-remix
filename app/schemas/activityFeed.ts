@@ -28,34 +28,33 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-deleted', { sortOrder: 13, label: 'Code org. deletion' }],
 ]);
 
-const findPriority = (str: string, tickets: TicketRecord) => {
-  for (const ticket of findJiraTickets(str)) {
-    if (tickets[ticket]) {
-      return tickets[ticket];
+// return the first ticket referenced from metadata fields
+export const findTicket = (metadata: ActivityMetadata) => {
+  const pullRequestRef = metadata.pullRequest?.ref;
+  if (pullRequestRef) {
+    const tickets = findJiraTickets(pullRequestRef);
+    if (tickets) {
+      return tickets[0];
+    }
+  }
+  const commits = metadata.commits;
+  if (commits) {
+    for (const commit of commits) {
+      const tickets = findJiraTickets(commit.message);
+      if (tickets) {
+        return tickets[0];
+      }
     }
   }
   return undefined;
 };
 
 export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata) => {
-  const pullRequestRef = metadata.pullRequest?.ref;
-  if (pullRequestRef) {
-    const priority = findPriority(pullRequestRef, tickets);
-    if (priority) {
-      return priority;
-    }
+  const ticket = findTicket(metadata);
+  if (!ticket) {
+    return -1;
   }
-  const commits = metadata.commits as { message: string }[];
-  if (commits) {
-    for (const commit of commits) {
-      const priority = findPriority(commit.message, tickets);
-      if (priority) {
-        return priority;
-      }
-    }
-  }
-
-  return -1;
+  return tickets[ticket] ?? -1;
 };
 
 export const getSummary = (activity: Omit<ActivityData, 'id'>) => {

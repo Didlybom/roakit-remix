@@ -1,4 +1,4 @@
-import { SubmitOptions } from '@remix-run/react';
+import { SubmitOptions, json } from '@remix-run/react';
 
 export const postJsonOptions: SubmitOptions = {
   method: 'POST',
@@ -30,3 +30,11 @@ export const jsonResponse = (data: unknown, options?: { calcContentLength?: bool
     },
   });
 };
+
+export interface ErrorField {
+  message: string;
+  status?: number;
+}
+
+export const errorJsonResponse = (message: string, status: number) =>
+  json({ error: { message, status } as ErrorField }, { status });

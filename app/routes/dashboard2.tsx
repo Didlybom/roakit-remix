@@ -15,7 +15,7 @@ import {
 import { grey } from '@mui/material/colors';
 import { BarChart } from '@mui/x-charts';
 import { LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
+import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import Markdown from 'markdown-to-jsx';
 import pino from 'pino';
@@ -62,6 +62,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Dashboard() {
   const navigation = useNavigation();
+  const navigate = useNavigate();
   const summaryFetcher = useFetcher();
   const topActorsFetcher = useFetcher();
   const sessionData = useLoaderData<typeof loader>();
@@ -106,6 +107,12 @@ export default function Dashboard() {
       summaryFetcher.load('/fetcher/summary');
     }
   }, [summaryFetcher]);
+
+  useEffect(() => {
+    if (summaryResponse?.error?.status === 401 || topActorsResponse?.error?.status === 401) {
+      navigate('/login');
+    }
+  }, [topActorsResponse?.error, summaryResponse?.error, navigate]);
 
   const widgets = (
     <Stack spacing={3} sx={{ mx: 3, mt: 2, mb: 3 }}>

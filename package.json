@@ -40,6 +40,7 @@
     "google-protobuf": "^3.21.2",
     "markdown-to-jsx": "^7.4.7",
     "material-ui-confirm": "^3.0.12",
+    "node-cache": "^5.1.2",
     "pino": "^8.20.0",
     "pluralize": "^8.0.0",
     "react": "^18.2.0",

@@ -1,16 +1,17 @@
-import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
-import { fetchActivities } from '../firestore.server/fetchers.server';
+import { fetchActivities, fetchTicketPriorities } from '../firestore.server/fetchers.server';
+import { findTicket } from '../schemas/activityFeed';
 import { ActivityRecord } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { jsonResponse } from '../utils/httpUtils';
+import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.activities' });
 
 export interface ActivityResponse {
-  error?: { message: string };
+  error?: ErrorField;
   activities?: ActivityRecord;
 }
 
@@ -20,24 +21,15 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<ActivityResponse>> => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
-    return json(
-      { error: { message: 'Fetching activities failed. Invalid session.' } },
-      { status: 401 }
-    );
+    return errorJsonResponse('Fetching activities failed. Invalid session.', 401);
   }
   if (!params.daterange || !params.userid) {
-    return json(
-      { error: { message: 'Fetching activities failed. Invalid params.' } },
-      { status: 400 }
-    );
+    return errorJsonResponse('Fetching activities failed. Invalid params.', 400);
   }
   try {
     const startDate = dateFilterToStartDate(params.daterange as DateRange);
     if (!startDate) {
-      return json(
-        { error: { message: 'Fetching activities failed. Invalid params.' } },
-        { status: 400 }
-      );
+      return errorJsonResponse('Fetching activities failed. Invalid params.', 400);
     }
     const userIds = params.userid === '*' ? undefined : params.userid.split(',');
     const activities = await fetchActivities({
@@ -47,15 +39,35 @@ export const loader = async ({
       includesMetadata: true,
     });
     const activityRecord: ActivityRecord = {};
-    [...activities].forEach(([id, activity]) => {
-      activityRecord[id] = activity;
+
+    const ticketIdsToFetch = new Set<string>();
+    const activityTickets = new Map<string, string>();
+    [...activities].forEach(([activityId, activity]) => {
+      activityRecord[activityId] = activity;
+
+      // find priority from metadata for activities missing one
+      if ((!activity.priority || activity.priority === -1) && activity.metadata) {
+        const ticket = findTicket(activity.metadata);
+        if (ticket) {
+          ticketIdsToFetch.add(ticket);
+          activityTickets.set(activityId, ticket);
+        }
+      }
     });
+    if (ticketIdsToFetch.size > 0) {
+      const tickets = await fetchTicketPriorities(sessionData.customerId!, [...ticketIdsToFetch]);
+      activityTickets.forEach((activityTicket, activityId) => {
+        // add the found priority to the activity
+        activityRecord[activityId].priority = tickets[activityTicket];
+      });
+    }
+
     return jsonResponse({ activities: activityRecord });
   } catch (e) {
     logger.error(e);
-    return json(
-      { error: { message: errMsg(e, 'Fetching activities failed') } },
-      { status: e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500 }
+    return errorJsonResponse(
+      errMsg(e, 'Fetching activities failed'),
+      e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500
     );
   }
 };

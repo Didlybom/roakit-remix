@@ -1,4 +1,6 @@
 import retry from 'async-retry';
+import { FieldPath } from 'firebase-admin/firestore';
+import NodeCache from 'node-cache';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
 import {
@@ -35,6 +37,9 @@ const retryProps = (message: string) => {
     onRetry: (e: unknown) => logger.warn(e, message),
   };
 };
+
+const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
+const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
 
 export const queryCustomerId = async (email: string) => {
   const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
@@ -117,15 +122,49 @@ export const fetchIdentities = async (
   }, retryProps('Retrying fetchIdentities...'));
 };
 
-export const fetchTicketMap = async (customerId: number): Promise<TicketRecord> => {
+export const fetchTicketPriorityMap = async (customerId: number): Promise<TicketRecord> => {
+  const cacheKey = makeTicketsCacheKey(customerId);
+  const cached: TicketRecord | undefined = ticketsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
   return await retry(async () => {
     const tickets: TicketRecord = {};
     (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
       const data = ticketSchema.parse(ticket.data());
       tickets[ticket.id] = data.priority;
     });
+    ticketsCache.set(cacheKey, tickets);
     return tickets;
   }, retryProps('Retrying fetchTicketsMap...'));
+};
+
+export const fetchTicketPriorities = async (
+  customerId: number,
+  ticketIds: string[]
+): Promise<TicketRecord> => {
+  return await retry(async () => {
+    const tickets: TicketRecord = {};
+    const batches = [];
+    while (ticketIds.length) {
+      // firestore supports up to 30 IN comparisons at a time
+      const batch = ticketIds.splice(0, 30);
+      batches.push(
+        firestore
+          .collection(`customers/${customerId}/tickets`)
+          .where(FieldPath.documentId(), 'in', [...batch])
+          .get()
+          .then(result =>
+            result.docs.map(ticket => {
+              const data = ticketSchema.parse(ticket.data());
+              tickets[ticket.id] = data.priority;
+            })
+          )
+      );
+    }
+    await Promise.all(batches);
+    return tickets;
+  }, retryProps('Retrying fetchTickets...'));
 };
 
 export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {
