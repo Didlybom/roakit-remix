@@ -13,7 +13,7 @@ const clientIdKey = defineSecret('CLIENT_ID_KEY');
 
 const remixApp = onRequest(
   {
-    memory: '512MiB',
+    memory: '1GiB',
     region: 'us-west1',
     secrets: [firebaseServiceAccount, clientIdKey],
   },
