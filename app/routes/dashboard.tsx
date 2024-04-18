@@ -186,7 +186,7 @@ export default function Dashboard() {
           mx: 3,
           mt: 2,
           mb: 3,
-          opacity: navigation.state !== 'idle' ? 0.5 : undefined,
+          opacity: navigation.state === 'submitting' ? 0.5 : undefined,
         }}
       >
         <Grid container spacing={5} sx={{ m: 3 }}>
@@ -198,13 +198,11 @@ export default function Dashboard() {
                   series={[
                     {
                       id: 'effort-by-initiative',
-                      data: groupedActivities.initiatives.map(initiative => {
-                        return {
-                          id: initiative.id,
-                          value: initiative.effort,
-                          label: initiatives[initiative.id].label,
-                        };
-                      }),
+                      data: groupedActivities.initiatives.map(initiative => ({
+                        id: initiative.id,
+                        value: initiative.effort,
+                        label: initiatives[initiative.id].label,
+                      })),
                       arcLabel: item => `${item.id}`,
                       outerRadius: 100,
                       innerRadius: 30,
@@ -235,9 +233,10 @@ export default function Dashboard() {
                       id: 'activity-by-priority',
                       valueFormatter: item =>
                         `${item.value} ${pluralizeMemo('activity', item.value)}`,
-                      data: groupedActivities.priorities.map(p => {
-                        return { value: p.count, ...priorityDefs[p.id] };
-                      }),
+                      data: groupedActivities.priorities.map(p => ({
+                        value: p.count,
+                        ...priorityDefs[p.id],
+                      })),
                       outerRadius: 100,
                     },
                   ]}

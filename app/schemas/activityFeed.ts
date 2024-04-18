@@ -308,9 +308,7 @@ export const identifyAccounts = (
           email: identity.email,
           urls: identity.accounts
             ?.filter(a => a.url)
-            .map(a => {
-              return { type: a.type, url: a.url ?? '' };
-            }),
+            .map(a => ({ type: a.type, url: a.url ?? '' })),
         };
       }
       // add account url if identity doesn't have them
@@ -395,9 +393,7 @@ export const groupActivities = (activities: ActivityMap) => {
     }
   });
   initiatives = initiatives
-    .map(i => {
-      return { id: i.id, count: i.count, actorCount: i.actorIds!.size, effort: i.effort };
-    })
+    .map(i => ({ id: i.id, count: i.count, actorCount: i.actorIds!.size, effort: i.effort }))
     .sort((a, b) => a.id.localeCompare(b.id));
 
   Object.keys(topActors).forEach(action => {

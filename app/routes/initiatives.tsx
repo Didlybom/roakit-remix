@@ -105,9 +105,11 @@ export default function Initiatives() {
   const sessionData = useLoaderData<typeof loader>();
 
   const [rows, setRows] = useState<InitiativeRow[]>(
-    sessionData.initiatives.map(initiative => {
-      return { id: uuidv4(), key: initiative.id, label: initiative.label };
-    })
+    sessionData.initiatives.map(initiative => ({
+      id: uuidv4(),
+      key: initiative.id,
+      label: initiative.label,
+    }))
   );
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
 

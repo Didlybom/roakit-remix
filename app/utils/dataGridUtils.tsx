@@ -52,8 +52,8 @@ export const dataGridCommonProps = {
   },
 };
 
-export const dateColdDef = (colDef?: GridColDef) => {
-  return {
+export const dateColdDef = (colDef?: GridColDef) =>
+  ({
     headerName: 'Date',
     type: 'dateTime',
     valueFormatter: (value: Date) => formatRelative(value),
@@ -63,11 +63,10 @@ export const dateColdDef = (colDef?: GridColDef) => {
       </Tooltip>
     ),
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;
 
-export const actorColdDef = (colDef?: GridColDef) => {
-  return {
+export const actorColdDef = (colDef?: GridColDef) =>
+  ({
     headerName: 'Author',
     sortComparator: (a: AccountData, b: AccountData) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
@@ -80,11 +79,10 @@ export const actorColdDef = (colDef?: GridColDef) => {
         );
     },
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;
 
-export const actionColDef = (colDef?: GridColDef) => {
-  return {
+export const actionColDef = (colDef?: GridColDef) =>
+  ({
     headerName: 'Action',
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
@@ -107,11 +105,10 @@ export const actionColDef = (colDef?: GridColDef) => {
         );
     },
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;
 
-export const priorityColDef = (colDef?: GridColDef) => {
-  return {
+export const priorityColDef = (colDef?: GridColDef) =>
+  ({
     headerName: 'Priority',
     sortComparator: (a: number, b: number) => (b ?? 999) - (a ?? 999),
     renderCell: params => {
@@ -123,16 +120,15 @@ export const priorityColDef = (colDef?: GridColDef) => {
       );
     },
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;
 
 const pluralizeMemo = memoize(pluralize);
 
 export const summaryColDef = (
   colDef?: GridColDef,
   setPopover?: (element: HTMLElement, content: JSX.Element) => void
-) => {
-  return {
+) =>
+  ({
     headerName: 'Summary',
     minWidth: 150,
     flex: 1,
@@ -216,14 +212,13 @@ export const summaryColDef = (
       );
     },
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;
 
 export const metadataActionsColDef = (
   colDef: Omit<GridColDef, 'field'>,
   onClick: (element: HTMLElement, data: unknown) => void
-) => {
-  return {
+) =>
+  ({
     field: 'actions',
     type: 'actions',
     cellClassName: 'actions',
@@ -238,5 +233,4 @@ export const metadataActionsColDef = (
       ];
     },
     ...colDef,
-  } as GridColDef;
-};
+  }) as GridColDef;

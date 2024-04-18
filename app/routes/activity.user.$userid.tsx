@@ -326,7 +326,7 @@ export default function UserActivity() {
               variant="h6"
               alignItems="center"
               color={grey[600]}
-              sx={{ display: 'flex', mb: 1 }}
+              sx={{ fontSize: '1.1rem', display: 'flex', mb: 1 }}
             >
               <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
               {actor?.urls?.map((url, i) => (
@@ -351,7 +351,7 @@ export default function UserActivity() {
                   }
                   size="small"
                 >
-                  <OpenInNewIcon fontSize="small" />
+                  <OpenInNewIcon sx={{ width: 15, height: 15 }} />
                 </IconButton>
               )}
             </Typography>
@@ -405,7 +405,7 @@ export default function UserActivity() {
               <Box sx={{ position: 'relative' }}>
                 <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
-                    {activities.size > 0 && gotSnapshot && (
+                    {activities.size > 0 && (
                       <FormControlLabel
                         control={
                           <Switch
@@ -446,9 +446,10 @@ export default function UserActivity() {
                   selectedValue={actionFilter ?? ''}
                   items={[
                     { value: '', label: 'None', color: grey[500] },
-                    ...[...artifactActions].map(([key, action]) => {
-                      return { value: key, label: action.label };
-                    }),
+                    ...[...artifactActions].map(([key, action]) => ({
+                      value: key,
+                      label: action.label,
+                    })),
                   ]}
                   onChange={e => {
                     if (e.target.value) {

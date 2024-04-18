@@ -29,16 +29,18 @@ import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
 
-const retryProps = (message: string) => {
-  return {
-    // see https://github.com/tim-kos/node-retry#api
-    retries: 1,
-    factor: 2,
-    minTimeout: 500,
-    onRetry: (e: unknown) => logger.warn(e, message),
-  };
-};
+const retryProps = (message: string) => ({
+  // see https://github.com/tim-kos/node-retry#api
+  retries: 1,
+  factor: 2,
+  minTimeout: 500,
+  onRetry: (e: unknown) => logger.warn(e, message),
+});
 
+interface TicketCache {
+  tickets: TicketRecord;
+  hasAllTickets?: boolean;
+}
 const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
 const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
 
@@ -125,9 +127,10 @@ export const fetchIdentities = async (
 
 export const fetchTicketPriorityMap = async (customerId: number): Promise<TicketRecord> => {
   const cacheKey = makeTicketsCacheKey(customerId);
-  const cached: TicketRecord | undefined = ticketsCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  const cache: TicketCache | undefined = ticketsCache.get(cacheKey);
+  if (cache?.hasAllTickets) {
+    // hasAllTickets is false when fetchTicketPriorities() cached tickets, and the cache was empty
+    return cache.tickets;
   }
   return await retry(async () => {
     const tickets: TicketRecord = {};
@@ -135,7 +138,7 @@ export const fetchTicketPriorityMap = async (customerId: number): Promise<Ticket
       const data = ticketSchema.parse(ticket.data());
       tickets[ticket.id] = data.priority;
     });
-    ticketsCache.set(cacheKey, tickets);
+    ticketsCache.set(cacheKey, { tickets, hasAllTickets: true });
     return tickets;
   }, retryProps('Retrying fetchTicketsMap...'));
 };
@@ -145,16 +148,17 @@ export const fetchTicketPriorities = async (
   ticketIds: string[]
 ): Promise<TicketRecord> => {
   const cacheKey = makeTicketsCacheKey(customerId);
-  const cache: TicketRecord | undefined = ticketsCache.get(cacheKey);
+  const cache: TicketCache | undefined = ticketsCache.get(cacheKey);
   const fromCache: TicketRecord = {};
   if (cache) {
     ticketIds.forEach((ticketId, i) => {
-      if (cache[ticketId]) {
-        fromCache[ticketId] = cache[ticketId];
-        ticketIds.splice(i, 1);
+      if (cache.tickets[ticketId]) {
+        fromCache[ticketId] = cache.tickets[ticketId]; // we'll add it to the response at the end
+        ticketIds.splice(i, 1); // we have it form cache already
       }
     });
   }
+
   return await retry(async () => {
     const tickets: TicketRecord = {};
     const batches = [];
@@ -176,7 +180,8 @@ export const fetchTicketPriorities = async (
     }
     await Promise.all(batches);
 
-    ticketsCache.set(cacheKey, { ...cache, ...tickets });
+    // add to the cache freshly found tickets
+    ticketsCache.set(cacheKey, { tickets: { ...cache?.tickets, ...tickets } });
 
     return { ...tickets, ...fromCache };
   }, retryProps('Retrying fetchTickets...'));

@@ -5,15 +5,13 @@ import { RoakitError } from '../utils/errorUtils';
 
 const logger = pino({ name: 'cloudstore:fetchers' });
 
-const retryProps = (message: string) => {
-  return {
-    // see https://github.com/tim-kos/node-retry#api
-    retries: 1,
-    factor: 2,
-    minTimeout: 500,
-    onRetry: (e: unknown) => logger.warn(e, message),
-  };
-};
+const retryProps = (message: string) => ({
+  // see https://github.com/tim-kos/node-retry#api
+  retries: 1,
+  factor: 2,
+  minTimeout: 500,
+  onRetry: (e: unknown) => logger.warn(e, message),
+});
 
 export const fetchEvent = async (pathName: string): Promise<string> => {
   const [bucketName, fileName] = pathName.split(/\/(.*)/s);

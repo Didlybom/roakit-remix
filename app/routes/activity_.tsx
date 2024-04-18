@@ -437,9 +437,10 @@ export default function ActivityReview() {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
                       sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
-                    activities: rowSelectionModel.map(id => {
-                      return { id, artifact: activities.find(a => a.id === id)!.artifact };
-                    }) as ActivityPayload,
+                    activities: rowSelectionModel.map(id => ({
+                      id,
+                      artifact: activities.find(a => a.id === id)!.artifact,
+                    })) as ActivityPayload,
                   },
                   postJsonOptions
                 );
