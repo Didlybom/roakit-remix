@@ -24,8 +24,8 @@ import {
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
-import { getSummary, getSummaryAction, getUrl } from '../schemas/activityFeed';
-import { AccountData, ActivityData, ActivityMetadata } from '../schemas/schemas';
+import { findTicket, getSummary, getSummaryAction, getUrl } from '../schemas/activityFeed';
+import { AccountData, ActivityData } from '../schemas/schemas';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 import { ellipsisSx } from './jsxUtils';
 import theme, { priorityColors, priorityLabels } from './theme';
@@ -132,12 +132,15 @@ export const summaryColDef = (
     headerName: 'Summary',
     minWidth: 150,
     flex: 1,
+    valueGetter: (_, row) => {
+      const activity = row as ActivityData;
+      return findTicket(activity.metadata) ?? getSummary(activity);
+    },
     renderCell: params => {
       const activity = params.row as ActivityData;
-      const metadata = params.value as ActivityMetadata;
       const summary = getSummary(activity);
-      const comment = metadata.comment?.body;
-      const url = getUrl(metadata);
+      const comment = activity.metadata?.comment?.body;
+      const url = activity.metadata ? getUrl(activity.metadata) : undefined;
       const link =
         url ?
           <IconButton
@@ -152,9 +155,9 @@ export const summaryColDef = (
           </IconButton>
         : <></>;
 
-      const summaryAction = getSummaryAction(metadata);
+      const summaryAction = activity.metadata ? getSummaryAction(activity.metadata) : undefined;
 
-      const commits = metadata.commits as { message: string; url?: string }[] | null;
+      const commits = activity.metadata?.commits;
       return (
         <Stack direction="row">
           {link}

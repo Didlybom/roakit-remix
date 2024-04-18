@@ -318,7 +318,6 @@ export default function ActivityReview() {
     () => [
       dateColdDef({
         field: 'createdTimestamp',
-        sortable: false,
         valueGetter: (value: number) => new Date(value),
       }),
       actorColdDef({
@@ -327,10 +326,10 @@ export default function ActivityReview() {
         valueGetter: (_, row) => {
           const fields = row as ActivityData;
           return fields.actorId ?
-              {
+              ({
                 id: fields.actorId,
                 name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
-              }
+              } as AccountData)
             : '';
         },
         renderCell: params => {
@@ -345,17 +344,11 @@ export default function ActivityReview() {
             </Link>
           );
         },
-        sortable: false,
       }),
-      actionColDef({ field: 'action', sortable: false }),
-      { field: 'artifact', headerName: 'Artifact', sortable: false },
-      priorityColDef({ field: 'priority', sortable: false }),
-      summaryColDef({ field: 'metadata', sortable: false }, (element, content) =>
-        setPopover({ element, content })
-      ),
-      metadataActionsColDef({}, (element, metadata) =>
-        setCodePopover({ element, content: metadata })
-      ),
+      actionColDef({ field: 'action' }),
+      { field: 'artifact', headerName: 'Artifact' },
+      priorityColDef({ field: 'priority' }),
+      summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
       {
         field: 'initiativeId',
         headerName: 'Initiative',
@@ -369,7 +362,6 @@ export default function ActivityReview() {
           }),
         ],
         editable: true,
-        sortable: false,
         renderCell: params =>
           params.value !== UNSET_INITIATIVE_ID ?
             <Box sx={{ cursor: 'pointer' }}>
@@ -389,6 +381,9 @@ export default function ActivityReview() {
           </Box>
         ),
       },
+      metadataActionsColDef({}, (element, metadata) =>
+        setCodePopover({ element, content: metadata })
+      ),
     ],
     [sessionData.actors, sessionData.initiatives]
   );
