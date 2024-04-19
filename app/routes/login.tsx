@@ -1,4 +1,4 @@
-import GoogleIcon from '@mui/icons-material/Google';
+import { Google as GoogleIcon } from '@mui/icons-material';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';

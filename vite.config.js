@@ -6,9 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 installGlobals();
 
 export default defineConfig({
-  server: {
-    port: 3000,
-  },
+  server: { port: 3000 },
   plugins: [
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     tsconfigPaths(),
@@ -21,4 +19,7 @@ export default defineConfig({
       serverDependenciesToBundle: 'all',
     }),
   ],
+  ssr: {
+    noExternal: ['@mui/utils', '@mui/x-charts'], // see https://github.com/mui/mui-x/issues/11016#issuecomment-2037404367
+  },
 });
