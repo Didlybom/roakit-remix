@@ -21,6 +21,7 @@ import {
   SvgIconTypeMap,
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
+import { grey } from '@mui/material/colors';
 import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
@@ -86,13 +87,17 @@ export default function NavDrawer({
       </List>
       <Divider />
       <List>
-        <ListSubheader>Administration</ListSubheader>
+        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+          Administration
+        </ListSubheader>
         {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
         {listItem('users', '/users', BusinessIcon, 'Directory', view)}
       </List>
       <Divider />
-      <List sx={{ opacity: 0.6 }}>
-        <ListSubheader>Real-time ingestion</ListSubheader>
+      <List sx={{ opacity: 0.4 }}>
+        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px' }}>
+          Real-time ingestion
+        </ListSubheader>
         {listItem('github', '/source/github', GitHubIcon, 'GitHub feed', view)}
         {listItem('jira', '/source/jira', JiraIcon, 'Jira feed', view)}
       </List>

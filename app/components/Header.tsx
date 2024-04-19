@@ -74,12 +74,8 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'flex' } }}>
-          ROAKIT
-        </Typography>
-        <Typography variant="h6" sx={{ display: { xs: 'flex', sm: 'none' } }}>
-          RKT
-        </Typography>
+        <Typography sx={{ display: { xs: 'none', sm: 'flex' } }}>ROAKIT</Typography>
+        <Typography sx={{ display: { xs: 'flex', sm: 'none' } }}>RKT</Typography>
         {view !== 'login' && view !== 'logout' && (
           <>
             <Box sx={{ flex: 1, ml: 2 }}>
