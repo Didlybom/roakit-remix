@@ -245,7 +245,7 @@ export const fetchActivities = async ({
   userIds?: string[];
   options?: { includesMetadata?: boolean; findPriority?: boolean };
 }) => {
-  if (userIds?.length ?? 0 > 30) {
+  if (userIds && userIds.length > 30) {
     throw Error('fetchActivities: max userIds length is 30');
   }
   return await retry(async bail => {
