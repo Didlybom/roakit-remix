@@ -84,6 +84,10 @@ export const actorColdDef = (colDef?: GridColDef) =>
 export const actionColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Action',
+    valueGetter: (value, row) => {
+      const activity = row as ActivityData;
+      return `${activity.artifact} ${value as string}`;
+    },
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
       const activity = params.row as ActivityData;
@@ -98,7 +102,12 @@ export const actionColDef = (colDef?: GridColDef) =>
             >
               {action}
             </Typography>
-            <Typography variant="caption" fontSize="10px">
+            <Typography
+              title={`${event} ${codeAction ?? ''}`}
+              variant="caption"
+              fontSize="10px"
+              sx={ellipsisSx}
+            >
               {event} {codeAction}
             </Typography>
           </Stack>
@@ -130,7 +139,7 @@ export const summaryColDef = (
 ) =>
   ({
     headerName: 'Summary',
-    minWidth: 150,
+    minWidth: 300,
     flex: 1,
     valueGetter: (_, row) => {
       const activity = row as ActivityData;

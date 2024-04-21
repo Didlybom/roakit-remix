@@ -270,7 +270,6 @@ export default function UserActivity() {
     () => [
       dateColdDef({ field: 'date' }),
       actionColDef({ field: 'action' }),
-      { field: 'artifact', headerName: 'Artifact' },
       priorityColDef({ field: 'priority' }),
       {
         field: 'initiativeId',

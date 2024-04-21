@@ -18,6 +18,7 @@ import {
   GridDensity,
   GridFeatureMode,
   GridRowSelectionModel,
+  GridSortDirection,
   GridToolbarContainer,
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
@@ -312,6 +313,7 @@ export default function ActivityReview() {
     checkboxSelection: true,
     paginationMode: 'server' as GridFeatureMode,
     pageSizeOptions: [25, 50, 100],
+    sortingOrder: ['asc', 'desc'] as GridSortDirection[],
   };
 
   const columns = useMemo<GridColDef[]>(
@@ -346,13 +348,12 @@ export default function ActivityReview() {
         },
       }),
       actionColDef({ field: 'action' }),
-      { field: 'artifact', headerName: 'Artifact' },
       priorityColDef({ field: 'priority' }),
       summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
       {
         field: 'initiativeId',
         headerName: 'Initiative',
-        minWidth: 150,
+        minWidth: 100,
         type: 'singleSelect',
         valueOptions: [
           { value: UNSET_INITIATIVE_ID, label: '[unset]' },
@@ -372,7 +373,7 @@ export default function ActivityReview() {
       {
         field: 'note',
         headerName: 'Note',
-        minWidth: 150,
+        minWidth: 100,
         editable: true,
         sortable: false,
         renderCell: params => (
