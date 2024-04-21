@@ -11,12 +11,12 @@ export default defineConfig({
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     tsconfigPaths(),
     remix({
+      serverModuleFormat: 'cjs',
       appDirectory: 'app',
       assetsBuildDirectory: 'public/build',
       publicPath: '/',
       buildDirectory: 'functions/build/',
       serverBuildFile: 'remix.js',
-      serverDependenciesToBundle: 'all',
     }),
   ],
   ssr: {

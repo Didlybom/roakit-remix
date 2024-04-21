@@ -20,7 +20,7 @@ const remixApp = onRequest(
   (req, res) => {
     // gcloud doesn't compress for us
     compression()(req, res, () =>
-      createRequestHandler({ build: require('../build/remix.js') })(req, res)
+      createRequestHandler({ build: require('../build/server/remix.js') })(req, res)
     );
   }
 );
