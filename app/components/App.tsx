@@ -12,6 +12,7 @@ export type View =
   | 'dashboard'
   | 'activity'
   | 'activity.user'
+  | 'summary.user'
   | 'github'
   | 'jira'
   | 'initiatives'

@@ -121,7 +121,7 @@ export default function AIPlayground() {
       {navigation.state !== 'idle' ?
         <LinearProgress sx={{ mb: '30px' }} />
       : <Box height="18px" />}
-      <Form action="/ai" method="post">
+      <Form method="post">
         <Stack direction="row" spacing={4} sx={{ m: 2 }}>
           <Box flex={1}>
             <TextField

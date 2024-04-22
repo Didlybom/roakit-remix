@@ -29,7 +29,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { ellipsisSx, randomNumber, windowOpen } from '../utils/jsxUtils';
-import { SummaryResponse } from './fetcher.summary';
+import { SummaryResponse } from './fetcher.summary.$userid';
 import { TopActorsResponse } from './fetcher.top-contributors.$daterange';
 
 const logger = pino({ name: 'route:dashboard' });
@@ -94,19 +94,12 @@ export default function Dashboard() {
     </Typography>
   );
 
-  // load top actors
+  // load top actors and summary
   useEffect(() => {
-    if (!topActorsFetcher.data && topActorsFetcher.state !== 'loading') {
-      topActorsFetcher.load(`/fetcher/top-contributors/${DateRange.OneDay}`);
-    }
-  }, [topActorsFetcher]);
-
-  // load summary
-  useEffect(() => {
-    if (!summaryFetcher.data && summaryFetcher.state !== 'loading') {
-      summaryFetcher.load('/fetcher/summary');
-    }
-  }, [summaryFetcher]);
+    topActorsFetcher.load(`/fetcher/top-contributors/${DateRange.OneDay}`);
+    summaryFetcher.load('/fetcher/summary/*');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (summaryResponse?.error?.status === 401 || topActorsResponse?.error?.status === 401) {

@@ -12,6 +12,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
+import { getAllPossibleActivityUserIds } from '../utils/identityUtils';
 
 const logger = pino({ name: 'route:fetcher.summary' });
 
@@ -21,6 +22,7 @@ export interface SummaryResponse {
 }
 
 export const loader = async ({
+  params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<SummaryResponse>> => {
   const sessionData = await loadSession(request);
@@ -28,17 +30,29 @@ export const loader = async ({
     return errorJsonResponse('Summary failed. Invalid session', 401);
   }
   try {
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('start') ? +searchParams.get('start')! : undefined;
+    const endDate = searchParams.get('end') ? +searchParams.get('end')! : undefined;
+    const userId = params.userid;
+
     // retrieve initiatives and users
     const [accounts, identities] = await Promise.all([
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
+    const userIds =
+      userId && userId !== '*' ?
+        getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap)
+      : [];
     const activities = await fetchActivities({
       customerId: sessionData.customerId!,
-      startDate: dateFilterToStartDate(DateRange.OneDay)!,
+      startDate: startDate ?? dateFilterToStartDate(DateRange.OneDay)!,
+      endDate,
+      userIds,
       options: { includesMetadata: true },
     });
+
     const prompt =
       DEFAULT_PROMPT +
       '\n\n' +
@@ -47,11 +61,13 @@ export const loader = async ({
         actors,
         { activityCount: 100, inclDates: true, inclActions: true, inclContributors: true }
       );
+
     const content = await generateContent({ prompt });
     if (!content) {
       return errorJsonResponse('Summary failed. Empty response', 500);
     }
     const summary = getSummaryResult(content);
+
     return jsonResponse({ summary });
   } catch (e) {
     logger.error(e);

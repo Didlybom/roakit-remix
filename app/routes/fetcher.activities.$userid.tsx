@@ -3,7 +3,6 @@ import pino from 'pino';
 import { fetchActivities } from '../firestore.server/fetchers.server';
 import { ActivityRecord } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
 
@@ -22,18 +21,21 @@ export const loader = async ({
   if (sessionData.redirect) {
     return errorJsonResponse('Fetching activities failed. Invalid session.', 401);
   }
-  if (!params.daterange || !params.userid) {
+  if (!params.userid) {
     return errorJsonResponse('Fetching activities failed. Invalid params.', 400);
   }
   try {
-    const startDate = dateFilterToStartDate(params.daterange as DateRange);
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('start') ? +searchParams.get('start')! : undefined;
     if (!startDate) {
       return errorJsonResponse('Fetching activities failed. Invalid params.', 400);
     }
+    const endDate = searchParams.get('end') ? +searchParams.get('end')! : undefined;
     const userIds = params.userid === '*' ? undefined : params.userid.split(',');
     const activities = await fetchActivities({
       customerId: sessionData.customerId!,
       startDate,
+      endDate,
       userIds,
       options: { includesMetadata: true, findPriority: true },
     });

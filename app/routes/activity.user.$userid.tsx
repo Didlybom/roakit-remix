@@ -46,11 +46,12 @@ import {
   priorityColDef,
   summaryColDef,
 } from '../utils/dataGridUtils';
-import { DateRange } from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
+import { getAllPossibleActivityUserIds } from '../utils/identityUtils';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
-import { ActivityResponse } from './fetcher.activities.$daterange.$userid';
+import { ActivityResponse } from './fetcher.activities.$userid';
 
 const logger = pino({ name: 'route:activity.user' });
 
@@ -117,33 +118,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
-
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
     const userId = params.userid;
-
-    // all user ids candidate as activity keys (activities can use both identityIds and accountIds)
-    const activityUserIds: string[] = [];
-    if (userId && userId !== ALL) {
-      const userIds = new Set([userId]);
-      let identityId: string;
-      if (identities.accountMap[userId]) {
-        // if params.userId is not an identity, add the identity
-        identityId = identities.accountMap[userId];
-        userIds.add(identityId);
-      } else {
-        identityId = userId;
-      }
-      // add the other accounts for the identity
-      identities.list
-        .filter(identity => identity.id === identityId)
-        .flatMap(identity => identity.accounts)
-        .map(account => account.id)
-        .filter(accountId => accountId !== undefined)
-        .forEach(accountId => userIds.add(accountId!));
-
-      activityUserIds.push(...userIds);
-    }
+    const activityUserIds =
+      userId && userId !== ALL ?
+        getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap)
+      : [];
 
     return {
       ...sessionData,
@@ -227,7 +208,9 @@ export default function UserActivity() {
   useEffect(() => {
     setGotSnapshot(false);
     const userIds = sessionData.userId === ALL ? ALL : sessionData.activityUserIds.join(',');
-    activitiesFetcher.load(`/fetcher/activities/${dateFilter}/${userIds}`);
+    activitiesFetcher.load(
+      `/fetcher/activities/${userIds}?start=${dateFilterToStartDate(dateFilter)!}`
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
 

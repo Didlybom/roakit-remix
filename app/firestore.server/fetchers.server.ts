@@ -250,7 +250,7 @@ export const fetchActivities = async ({
   }
   return await retry(async bail => {
     let query =
-      userIds ?
+      userIds?.length ?
         firestore
           .collection(`customers/${customerId}/activities`)
           .where('actorAccountId', 'in', userIds)
