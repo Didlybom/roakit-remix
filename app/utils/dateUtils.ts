@@ -1,5 +1,6 @@
-import { formatRelative as formatRelativeFn } from 'date-fns/formatRelative';
-import { FormatRelativeToken, enUS } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 
 export const ONE_HOUR = 60 * 60 * 1000;
 export const ONE_DAY = 24 * ONE_HOUR;
@@ -15,22 +16,7 @@ export const formatMonthDayTime = (date: Date) =>
 export const formatMonthDay = (date: Date) =>
   date.toLocaleDateString('en-us', { month: 'short', day: 'numeric' });
 
-const formatRelativeLocale = {
-  lastWeek: "'Last' eeee",
-  yesterday: "'Yesterday'",
-  today: "'Today'",
-  tomorrow: "'Tomorrow'",
-  nextWeek: "'Next week'",
-  other: 'P',
-};
-
-const relativeLocale = {
-  ...enUS,
-  formatRelative: (token: FormatRelativeToken) => formatRelativeLocale[token],
-};
-
-export const formatRelative = (date: Date) =>
-  formatRelativeFn(date, new Date(), { locale: relativeLocale, weekStartsOn: 1 /* Monday */ });
+export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',

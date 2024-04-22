@@ -15,7 +15,7 @@
     "local:vite": "cross-env remix vite:dev --manual",
     "local:vite:prod": "cross-env ROAKIT_ENV=production remix vite:dev --manual",
     "deploy:vite": "npm run build:vite && firebase use default && npm run firebase:deploy",
-    "deploy.prod": "npm run build:vite && firebase use prod && npm run firebase:deploy",
+    "deploy:vite:prod": "npm run build:vite && firebase use prod && npm run firebase:deploy",
     "firebase:deploy": "firebase deploy --only hosting,functions:remixApp,firestore:indexes,firestore:rules",
     "emulator:start": "firebase use default && firebase emulators:start --inspect-functions --only functions:remixApp",
     "tsc": "tsc",
@@ -31,12 +31,14 @@
     "@mui/material": "^5.15.15",
     "@mui/x-charts": "^7.3.0",
     "@mui/x-data-grid": "^7.3.0",
+    "@mui/x-date-pickers": "^7.2.0",
     "@remix-run/node": "^2.8.1",
     "@remix-run/react": "^2.8.1",
     "@remix-run/server-runtime": "^2.8.1",
     "@uidotdev/usehooks": "^2.4.1",
     "async-retry": "^1.3.3",
     "date-fns": "^3.6.0",
+    "dayjs": "^1.11.10",
     "fast-memoize": "^2.5.2",
     "firebase": "^10.11.0",
     "firebase-admin": "^12.1.0",
@@ -50,7 +52,7 @@
     "react-dom": "^18.2.0",
     "react-linkify-it": "^1.0.8",
     "uuid": "^9.0.1",
-    "zod": "^3.22.5"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@mui/icons-material": "^5.15.15",
