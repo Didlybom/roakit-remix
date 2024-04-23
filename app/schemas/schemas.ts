@@ -58,7 +58,7 @@ export const ticketSchema = z.object({
   project: z
     .object({ id: z.string(), key: z.string(), name: z.string(), uri: z.string().optional() })
     .optional(),
-  lastLastUpdatedTimestamp: z.number().optional(),
+  lastUpdatedTimestamp: z.number().optional(),
 });
 
 export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
@@ -74,6 +74,13 @@ export const activitySchema = z.object({
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata
   note: z.string().optional(),
   objectId: z.string().optional(), // for debugging
+});
+
+export const summarySchema = z.object({
+  aiSummary: z.string(),
+  userSummary: z.string().optional(),
+  createdTimestamp: z.number().optional(),
+  lastUpdatedTimestamp: z.number().optional(),
 });
 
 export interface InitiativeData {

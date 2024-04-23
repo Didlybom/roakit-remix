@@ -27,7 +27,10 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { formatJson } from '../utils/jsxUtils';
+
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
+
+export const shouldRevalidate = () => false;
 
 // load activities
 export const loader = async ({ request }: LoaderFunctionArgs) => {

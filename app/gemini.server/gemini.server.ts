@@ -18,13 +18,13 @@ export const generateContent = async ({
   const vertexAI = new VertexAI({ project: projectId, location: 'us-west1' });
   const model = vertexAI.getGenerativeModel({
     model: 'gemini-1.0-pro',
-    generation_config: {
+    generationConfig: {
       ...(temperature && { temperature }),
       ...(topP && { top_p: topP }),
       ...(topK && { top_k: topK }),
     },
   });
   const result = await model.generateContent(prompt);
-  result?.response.candidates.forEach(candidate => delete candidate.safetyRatings);
+  result?.response.candidates?.forEach(candidate => delete candidate.safetyRatings);
   return result;
 };

@@ -80,3 +80,38 @@ export const incrementInitiativeCounters = async (
     { merge: true }
   );
 };
+
+export const upsertSummary = async (
+  customerId: number,
+  date: string /* YYYYMMDD */,
+  {
+    identityId,
+    aiSummary,
+    userSummary,
+  }: {
+    identityId: string;
+    aiSummary: string;
+    userSummary: string;
+  }
+) => {
+  const coll = firestore.collection(`customers/${customerId}/summaries/${date}/instances`);
+  const existing = await coll.where('identityId', '==', identityId).get();
+  if (existing.size > 1) {
+    throw Error('Found more than one summary');
+  }
+  const now = Date.now();
+  if (existing.size === 0) {
+    await coll.add({
+      aiSummary,
+      userSummary,
+      identityId,
+      createdTimestamp: now,
+      lastUpdatedTimestamp: now,
+    });
+  } else {
+    await existing.docs[0].ref.set(
+      { aiSummary, userSummary, lastUpdatedTimestamp: now },
+      { merge: true }
+    );
+  }
+};

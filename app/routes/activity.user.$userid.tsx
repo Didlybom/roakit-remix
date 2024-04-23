@@ -47,7 +47,7 @@ import {
   summaryColDef,
 } from '../utils/dataGridUtils';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { getAllPossibleActivityUserIds } from '../utils/identityUtils';
+import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';

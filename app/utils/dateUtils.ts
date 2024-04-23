@@ -1,5 +1,8 @@
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(localizedFormat);
 dayjs.extend(relativeTime);
 
 export const ONE_HOUR = 60 * 60 * 1000;
@@ -15,8 +18,6 @@ export const formatMonthDayTime = (date: Date) =>
 
 export const formatMonthDay = (date: Date) =>
   date.toLocaleDateString('en-us', { month: 'short', day: 'numeric' });
-
-export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',
@@ -48,3 +49,7 @@ export const dateFilterToStartDate = (dateFilter: DateRange) => {
       return null;
   }
 };
+
+export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
+
+export const formatDayLocal = (date: Dayjs | null) => date?.format('LL') ?? null;

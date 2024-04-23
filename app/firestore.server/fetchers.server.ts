@@ -21,6 +21,7 @@ import {
   emptyActivity,
   identitySchema,
   initiativeSchema,
+  summarySchema,
   ticketSchema,
 } from '../schemas/schemas';
 import { ParseError } from '../utils/errorUtils';
@@ -306,3 +307,31 @@ export const fetchActivities = async ({
     return activities;
   }, retryProps('Retrying fetchActivities...'));
 };
+
+export const fetchSummary = async (
+  customerId: number,
+  identityId: string,
+  date: string /*  yyyymmdd */
+): Promise<{ aiSummary: string; userSummary?: string } | undefined> =>
+  await retry(async bail => {
+    const snapshot = await firestore
+      .collection(`customers/${customerId}/summaries/${date}/instances`)
+      .where('identityId', '==', identityId)
+      .get();
+    if (snapshot.size === 0) {
+      return undefined;
+    }
+    if (snapshot.size > 1) {
+      bail(
+        new Error(
+          `Found more than one summary for customer ${customerId}, user ${identityId} on ${date}`
+        )
+      );
+    }
+    const props = summarySchema.safeParse(snapshot.docs[0].data());
+    if (!props.success) {
+      bail(new ParseError('Failed to parse summary. ' + props.error.message));
+      return undefined; // not used, bail() will throw
+    }
+    return { aiSummary: props.data.aiSummary, userSummary: props.data.userSummary };
+  }, retryProps('Retrying fetchSummary...'));

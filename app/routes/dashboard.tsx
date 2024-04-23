@@ -49,6 +49,8 @@ const logger = pino({ name: 'route:dashboard' });
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
+export const shouldRevalidate = () => false;
+
 // verify session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);

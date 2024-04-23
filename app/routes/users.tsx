@@ -1,9 +1,21 @@
 import {
   Download as DownloadIcon,
   GitHub as GitHubIcon,
+  OpenInNew as OpenInNewIcon,
   Upload as UploadIcon,
 } from '@mui/icons-material';
-import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  Link,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
@@ -116,13 +128,26 @@ export default function Users() {
     {
       field: 'displayName',
       headerName: 'Name',
-      minWidth: 250,
+      minWidth: 200,
       renderCell: params => {
         const id = (params.row as IdentityData).id;
         return (
           <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
             {params.value}
           </Link>
+        );
+      },
+    },
+    {
+      field: 'summary-ui',
+      headerName: 'Summary UI',
+      minWidth: 60,
+      renderCell: params => {
+        const id = (params.row as IdentityData).id;
+        return (
+          <IconButton href={`/summary/user/${encodeURI(id)}`} title="Summary UI" size="small">
+            <OpenInNewIcon fontSize="small" />
+          </IconButton>
         );
       },
     },

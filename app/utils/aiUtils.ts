@@ -1,4 +1,4 @@
-import { GenerateContentResult, TextPart } from '@google-cloud/vertexai';
+import { GenerateContentResult } from '@google-cloud/vertexai';
 import { getSummary, getSummaryAction } from '../schemas/activityFeed';
 import { ActivityData, ActorRecord } from '../schemas/schemas';
 import { formatJson } from './jsxUtils';
@@ -57,7 +57,8 @@ export const buildActivitySummaryPrompt = (
 };
 
 export const getSummaryResult = (content: GenerateContentResult) => {
-  let summary = (content.response.candidates[0]?.content.parts[0] as TextPart)?.text;
+  let summary =
+    content.response.candidates ? content.response.candidates[0].content.parts[0].text ?? '' : '';
   try {
     if (summary.startsWith('```json')) {
       summary = formatJson(JSON.parse(summary.replace('```json', '').replace('```', '')));

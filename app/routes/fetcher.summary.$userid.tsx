@@ -12,7 +12,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
-import { getAllPossibleActivityUserIds } from '../utils/identityUtils';
+import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 
 const logger = pino({ name: 'route:fetcher.summary' });
 
