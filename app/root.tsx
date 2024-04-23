@@ -86,14 +86,13 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
   );
 });
 
-// https://remix.run/docs/en/main/route/component
 // https://remix.run/docs/en/main/file-conventions/routes
 export default function App() {
   const clientEnv = useLoaderData<typeof loader>();
   return (
     <Document>
       <script
-        // see https://remix.run/docs/en/1.19.3/guides/envvars#browser-environment-variables
+        // see https://remix.run/docs/en/main/guides/envvars
         dangerouslySetInnerHTML={{
           __html: `window.ROAKIT_ENV = ${JSON.stringify(clientEnv)}`,
         }}
