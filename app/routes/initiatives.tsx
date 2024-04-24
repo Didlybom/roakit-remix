@@ -101,11 +101,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Initiatives() {
   const fetcher = useFetcher();
   const confirm = useConfirm();
-
-  const sessionData = useLoaderData<typeof loader>();
-
+  const loaderData = useLoaderData<typeof loader>();
   const [rows, setRows] = useState<InitiativeRow[]>(
-    sessionData.initiatives.map(initiative => ({
+    loaderData.initiatives.map(initiative => ({
       id: uuidv4(),
       key: initiative.id,
       label: initiative.label,
@@ -214,7 +212,7 @@ export default function Initiatives() {
   ];
 
   return (
-    <App isLoggedIn={true} view="initiatives" isNavOpen={sessionData.isNavOpen}>
+    <App isLoggedIn={true} view="initiatives" isNavOpen={loaderData.isNavOpen}>
       <Stack sx={{ m: 3 }}>
         <DataGrid
           columns={columns}

@@ -106,7 +106,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Users() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -220,7 +220,7 @@ export default function Users() {
   return (
     <App
       isLoggedIn={true}
-      isNavOpen={sessionData.isNavOpen}
+      isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle'}
       view="users"
     >
@@ -238,7 +238,7 @@ export default function Users() {
         <Stack>
           <DataGrid
             columns={identityCols}
-            rows={sessionData.identities.list}
+            rows={loaderData.identities.list}
             {...dataGridCommonProps}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
@@ -307,7 +307,7 @@ jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
         </Typography>
         <DataGrid
           columns={accountReviewCols}
-          rows={sessionData.accountsToReview}
+          rows={loaderData.accountsToReview}
           {...dataGridCommonProps}
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },

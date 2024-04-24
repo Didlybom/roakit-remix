@@ -12,10 +12,10 @@ export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionDa
 };
 
 export default function Info() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
 
   return (
-    <App view="info" isLoggedIn={sessionData.isLoggedIn} isNavOpen={sessionData.isNavOpen}>
+    <App view="info" isLoggedIn={loaderData.isLoggedIn} isNavOpen={loaderData.isNavOpen}>
       <Grid container spacing={2} sx={{ display: 'flex', flex: 1, minWidth: 0, m: 4 }}>
         <Grid>
           <Grid>
@@ -36,10 +36,10 @@ export default function Info() {
         </Grid>
         <Grid>
           <Grid>{packageJson.version}</Grid>
-          <Grid>{sessionData.email}</Grid>
-          <Grid>{sessionData.customerId}</Grid>
-          <Grid>{sessionData.dateFilter}</Grid>
-          <Grid>{`${sessionData.isNavOpen}`}</Grid>
+          <Grid>{loaderData.email}</Grid>
+          <Grid>{loaderData.customerId}</Grid>
+          <Grid>{loaderData.dateFilter}</Grid>
+          <Grid>{`${loaderData.isNavOpen}`}</Grid>
         </Grid>
       </Grid>
     </App>

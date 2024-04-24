@@ -34,10 +34,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function Jira() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [view, setView] = useState<View>(View.IssueCreated);
-  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
+  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const [popover, setPopover] = useState<CodePopoverContent | null>(null);
   const [error, setError] = useState('');
 
@@ -168,7 +168,7 @@ export default function Jira() {
       const startDate = dateFilterToStartDate(dateFilter);
       const query = firestoreClient
         .collection(
-          `customers/${sessionData.customerId}/feeds/2/events/${type}/instances` // FIXME feedId
+          `customers/${loaderData.customerId}/feeds/2/events/${type}/instances` // FIXME feedId
         )
         .orderBy('eventTimestamp')
         .startAt(startDate)
@@ -179,13 +179,13 @@ export default function Jira() {
       );
     });
     return () => Object.keys(unsubscribe).forEach(k => unsubscribe[k]());
-  }, [dateFilter, sessionData.customerId]);
+  }, [dateFilter, loaderData.customerId]);
 
   return (
     <App
       view="jira"
-      isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={sessionData.isNavOpen}
+      isLoggedIn={loaderData.isLoggedIn}
+      isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}

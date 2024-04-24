@@ -73,10 +73,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function GitHub() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const [view, setView] = useState<EventTab>(EventTab.PullRequest);
-  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
+  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const [showBy, setShowBy] = useState<ActivityView>(ActivityView.All);
   const [scrollToAuthor, setScrollToAuthor] = useState<string | undefined>(undefined);
   const [scrollToJira, setScrollToJira] = useState<string | undefined>(undefined);
@@ -288,7 +288,7 @@ export default function GitHub() {
       const startDate = dateFilterToStartDate(dateFilter);
       const query = firestoreClient
         .collection(
-          `customers/${sessionData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
+          `customers/${loaderData.customerId}/feeds/1/events/${type}/instances` // FIXME feedId
         )
         .orderBy('eventTimestamp')
         .startAt(startDate)
@@ -299,7 +299,7 @@ export default function GitHub() {
       );
     });
     return () => Object.keys(unsubscribe).forEach(k => unsubscribe[k]());
-  }, [dateFilter, sessionData.customerId]);
+  }, [dateFilter, loaderData.customerId]);
 
   // Auto scrollers
   useEffect(() => {
@@ -367,8 +367,8 @@ export default function GitHub() {
   return (
     <App
       view="github"
-      isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={sessionData.isNavOpen}
+      isLoggedIn={loaderData.isLoggedIn}
+      isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}

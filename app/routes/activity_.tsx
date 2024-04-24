@@ -181,7 +181,7 @@ type ShowActivity = '' | 'withInitiative' | 'withoutInitiative';
 
 export default function ActivityReview() {
   const fetcher = useFetcher();
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const [activities, setActivities] = useState<ActivityRow[] | null>(null);
   const [activityFilter, setActivityFilter] = useState<ShowActivity>('');
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
@@ -207,7 +207,7 @@ export default function ActivityReview() {
       try {
         const activitiesCollection = collection(
           firestoreClient,
-          `customers/${sessionData.customerId}/activities`
+          `customers/${loaderData.customerId}/activities`
         );
         const activityQuery =
           activityFilter === '' ?
@@ -260,7 +260,7 @@ export default function ActivityReview() {
           }
           let priority = fields.data.priority;
           if (priority === undefined || priority === -1) {
-            priority = inferPriority(sessionData.tickets, fields.data.metadata as ActivityMetadata);
+            priority = inferPriority(loaderData.tickets, fields.data.metadata as ActivityMetadata);
           }
           activityData.push({
             id: activity.id,
@@ -268,7 +268,7 @@ export default function ActivityReview() {
             event: fields.data.event,
             actorId:
               fields.data.actorAccountId ?
-                sessionData.accountMap[fields.data.actorAccountId] ?? fields.data.actorAccountId // resolve identity
+                loaderData.accountMap[fields.data.actorAccountId] ?? fields.data.actorAccountId // resolve identity
               : undefined,
             artifact: fields.data.artifact,
             createdTimestamp: fields.data.createdTimestamp,
@@ -330,7 +330,7 @@ export default function ActivityReview() {
           return fields.actorId ?
               ({
                 id: fields.actorId,
-                name: sessionData.actors[fields.actorId]?.name ?? 'unknown',
+                name: loaderData.actors[fields.actorId]?.name ?? 'unknown',
               } as AccountData)
             : '';
         },
@@ -357,8 +357,8 @@ export default function ActivityReview() {
         type: 'singleSelect',
         valueOptions: [
           { value: UNSET_INITIATIVE_ID, label: '[unset]' },
-          ...Object.keys(sessionData.initiatives).map(initiativeId => {
-            const initiative = sessionData.initiatives[initiativeId];
+          ...Object.keys(loaderData.initiatives).map(initiativeId => {
+            const initiative = loaderData.initiatives[initiativeId];
             return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
           }),
         ],
@@ -366,7 +366,7 @@ export default function ActivityReview() {
         renderCell: params =>
           params.value !== UNSET_INITIATIVE_ID ?
             <Box sx={{ cursor: 'pointer' }}>
-              {sessionData.initiatives[params.value as string]?.label ?? 'unknown'}
+              {loaderData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
           : <Box sx={{ cursor: 'pointer' }}>{'...'}</Box>,
       },
@@ -386,7 +386,7 @@ export default function ActivityReview() {
         setCodePopover({ element, content: metadata })
       ),
     ],
-    [sessionData.actors, sessionData.initiatives]
+    [loaderData.actors, loaderData.initiatives]
   );
 
   function BulkToolbar() {
@@ -406,9 +406,9 @@ export default function ActivityReview() {
                 onChange={e => setBulkInitiative(e.target.value)}
                 sx={{ minWidth: '250px' }}
               >
-                {Object.keys(sessionData.initiatives).map(initiativeId => (
+                {Object.keys(loaderData.initiatives).map(initiativeId => (
                   <MenuItem key={initiativeId} value={initiativeId}>
-                    {`[${initiativeId}] ${sessionData.initiatives[initiativeId].label}`}
+                    {`[${initiativeId}] ${loaderData.initiatives[initiativeId].label}`}
                   </MenuItem>
                 ))}
               </Select>
@@ -432,7 +432,7 @@ export default function ActivityReview() {
                   {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
-                      sessionData.initiatives[bulkInitiative]?.countersLastUpdated,
+                      loaderData.initiatives[bulkInitiative]?.countersLastUpdated,
                     activities: rowSelectionModel.map(id => ({
                       id,
                       artifact: activities.find(a => a.id === id)!.artifact,
@@ -457,26 +457,21 @@ export default function ActivityReview() {
 
   if (!activities) {
     return (
-      <App
-        view="activity"
-        isLoggedIn={true}
-        isNavOpen={sessionData.isNavOpen}
-        showProgress={true}
-      />
+      <App view="activity" isLoggedIn={true} isNavOpen={loaderData.isNavOpen} showProgress={true} />
     );
   }
   return (
     <App
       view="activity"
       isLoggedIn={true}
-      isNavOpen={sessionData.isNavOpen}
+      isNavOpen={loaderData.isNavOpen}
       showProgress={loading}
       showPulse={false}
     >
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}
-        customerId={sessionData.customerId}
+        customerId={loaderData.customerId}
         options={{ linkifyBuckets: true }}
       />
       <Popover
@@ -541,7 +536,7 @@ export default function ActivityReview() {
                 {
                   initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
-                    sessionData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
+                    loaderData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
                   activities: [
                     {
                       id: updatedRow.id,

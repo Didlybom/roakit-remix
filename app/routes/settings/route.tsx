@@ -157,7 +157,7 @@ export const screenshotThumbSx: SxProps = {
 };
 
 export default function Settings() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [tabValue, setTabValue] = useState(0);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
@@ -179,7 +179,7 @@ export default function Settings() {
   }, [actionData]);
 
   return (
-    <App view="settings" isNavOpen={sessionData.isNavOpen} isLoggedIn={true}>
+    <App view="settings" isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
       <GlobalStyles
         styles={{
           code: {
@@ -248,21 +248,21 @@ export default function Settings() {
           </Box>
           <TabPanel value={tabValue} index={FeedTab.Jira}>
             <JiraSettings
-              settingsData={sessionData}
+              settingsData={loaderData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />
           </TabPanel>
           <TabPanel value={tabValue} index={FeedTab.GitHub}>
             <GitHubSettings
-              settingsData={sessionData}
+              settingsData={loaderData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />
           </TabPanel>
           <TabPanel value={tabValue} index={FeedTab.Confluence}>
             <ConfluenceSettings
-              settingsData={sessionData}
+              settingsData={loaderData}
               handleCopy={handleCopy}
               setPopover={setPopover}
             />

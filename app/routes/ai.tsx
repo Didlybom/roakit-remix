@@ -98,7 +98,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function AIPlayground() {
   const navigation = useNavigation();
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [activityCount, setActivityCount] = useState(100);
   const [inclDates, setInclDates] = useState(true);
@@ -107,7 +107,7 @@ export default function AIPlayground() {
   const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
-    const activities = buildActivitySummaryPrompt(sessionData.activities, sessionData.actors, {
+    const activities = buildActivitySummaryPrompt(loaderData.activities, loaderData.actors, {
       activityCount,
       inclDates,
       inclActions,

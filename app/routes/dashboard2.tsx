@@ -67,8 +67,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const summaryFetcher = useFetcher();
   const topActorsFetcher = useFetcher();
-  const sessionData = useLoaderData<typeof loader>();
-  const actors = sessionData.actors;
+  const loaderData = useLoaderData<typeof loader>();
+  const actors = loaderData.actors;
   const summaryResponse = summaryFetcher.data as SummaryResponse;
   const topActorsResponse = topActorsFetcher.data as TopActorsResponse;
   const [contributorsDateFilter, setContributorsDateFilter] = useState(DateRange.OneDay);
@@ -253,8 +253,8 @@ export default function Dashboard() {
   return (
     <App
       view="dashboard"
-      isLoggedIn={sessionData.isLoggedIn}
-      isNavOpen={sessionData.isNavOpen}
+      isLoggedIn={loaderData.isLoggedIn}
+      isNavOpen={loaderData.isNavOpen}
       showProgress={
         navigation.state !== 'idle' ||
         summaryFetcher.state !== 'idle' ||
@@ -262,9 +262,9 @@ export default function Dashboard() {
       }
       showPulse={false}
     >
-      {sessionData?.error && (
+      {loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
-          {sessionData?.error}
+          {loaderData?.error}
         </Alert>
       )}
       {summaryResponse?.error?.message && (

@@ -141,14 +141,14 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 };
 
 export default function UserActivity() {
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
   const activitiesFetcher = useFetcher();
   const activityResponse = activitiesFetcher.data as ActivityResponse;
   const [actionFilter, setActionFilter] = useState(''); // see effect with location.hash dependency below
-  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
+  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
   const [showOnlyActor, setShowOnlyActor] = useState<string | undefined>(undefined);
@@ -179,25 +179,25 @@ export default function UserActivity() {
         sortMap(actionFilter ? filteredSnapshot : snapshot.current, (a, b) =>
           sortAlphabetically ?
             caseInsensitiveCompare(
-              sessionData.actors[a.key]?.name ?? '',
-              sessionData.actors[b.key]?.name ?? ''
+              loaderData.actors[a.key]?.name ?? '',
+              loaderData.actors[b.key]?.name ?? ''
             )
           : b.count - a.count
         )
       );
     }
-  }, [sessionData.actors, actionFilter, sortAlphabetically]);
+  }, [loaderData.actors, actionFilter, sortAlphabetically]);
 
   const setRows = useCallback(
     (querySnapshot: ActivityRecord) => {
       snapshot.current = groupByArray(
-        userActivityRows(querySnapshot, sessionData.accountMap),
+        userActivityRows(querySnapshot, loaderData.accountMap),
         'actorId'
       );
       sortAndSetUserActivities();
       setGotSnapshot(true);
     },
-    [sessionData.accountMap, sortAndSetUserActivities]
+    [loaderData.accountMap, sortAndSetUserActivities]
   );
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function UserActivity() {
   // load activities
   useEffect(() => {
     setGotSnapshot(false);
-    const userIds = sessionData.userId === ALL ? ALL : sessionData.activityUserIds.join(',');
+    const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
     activitiesFetcher.load(
       `/fetcher/activities/${userIds}?start=${dateFilterToStartDate(dateFilter)!}`
     );
@@ -260,7 +260,7 @@ export default function UserActivity() {
         renderCell: params => {
           const initiativeId = params.value as string;
           return initiativeId ?
-              <Box title={sessionData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
+              <Box title={loaderData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
             : <Box color={grey[400]}>unset</Box>;
         },
       },
@@ -269,7 +269,7 @@ export default function UserActivity() {
         setCodePopover({ element, content: metadata })
       ),
     ],
-    [sessionData.initiatives]
+    [loaderData.initiatives]
   );
 
   let activityCount = 0;
@@ -289,7 +289,7 @@ export default function UserActivity() {
             }
           }}
         >
-          {sessionData.actors[actorId]?.name ?? 'Unknown'}
+          {loaderData.actors[actorId]?.name ?? 'Unknown'}
         </Link>
         {` (${actorActivityCount})`}
       </Box>
@@ -300,7 +300,7 @@ export default function UserActivity() {
     .filter(([actorId]) => !showOnlyActor || actorId === showOnlyActor)
     .filter((_, i) => showOnlyActor || i <= 9)
     .map(([actorId, rows], i) => {
-      const actor = sessionData.actors[actorId];
+      const actor = loaderData.actors[actorId];
       return (
         !!rows.length && (
           <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
@@ -324,7 +324,7 @@ export default function UserActivity() {
                   {url.type === 'jira' && <JiraIcon width={15} height={15} />}
                 </IconButton>
               ))}
-              {sessionData.userId === ALL && actorId && (
+              {loaderData.userId === ALL && actorId && (
                 <IconButton
                   component="a"
                   href={
@@ -359,7 +359,7 @@ export default function UserActivity() {
     <App
       view="activity.user"
       isLoggedIn={true}
-      isNavOpen={sessionData.isNavOpen}
+      isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
@@ -367,7 +367,7 @@ export default function UserActivity() {
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}
-        customerId={sessionData.customerId}
+        customerId={loaderData.customerId}
         options={{ linkifyBuckets: true }}
       />
       <Popover
@@ -382,7 +382,7 @@ export default function UserActivity() {
       </Popover>
       <Stack sx={{ m: 3 }}>
         <Stack direction="row">
-          {sessionData.userId === ALL && (
+          {loaderData.userId === ALL && (
             <Box sx={{ display: 'flex', mr: 2 }}>
               <Box sx={{ position: 'relative' }}>
                 <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
@@ -413,7 +413,7 @@ export default function UserActivity() {
           <Stack sx={{ flex: 1, minWidth: 0 }}>
             <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 1 }}>
               <Grid>
-                {sessionData.userId !== ALL && (
+                {loaderData.userId !== ALL && (
                   <Button
                     variant="outlined"
                     href={'/activity/user/*' + (actionFilter ? `#${actionFilter}` : '')}

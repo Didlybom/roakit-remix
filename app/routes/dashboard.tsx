@@ -114,7 +114,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dashboard() {
   const navigation = useNavigation();
   const submit = useSubmit();
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const data = useActionData<typeof action>();
   const { groupedActivities, actors, initiatives, error } = data ?? {
     groupedActivities: null,
@@ -122,7 +122,7 @@ export default function Dashboard() {
     actors: null,
     initiatives: null,
   };
-  const [dateFilter, setDateFilter] = useState(sessionData.dateFilter ?? DateRange.OneDay);
+  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const dateRangeLabel = dateRangeLabels[dateFilter];
   const [loading, setLoading] = useState(true);
 
@@ -430,10 +430,10 @@ export default function Dashboard() {
   return (
     <App
       view="dashboard"
-      isLoggedIn={sessionData.isLoggedIn}
+      isLoggedIn={loaderData.isLoggedIn}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      isNavOpen={sessionData.isNavOpen}
+      isNavOpen={loaderData.isNavOpen}
       showProgress={loading || navigation.state !== 'idle'}
       showPulse={false}
     >
