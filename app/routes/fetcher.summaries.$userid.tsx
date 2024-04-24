@@ -13,6 +13,8 @@ export interface SummariesResponse {
   userSummary?: string;
 }
 
+export const shouldRevalidate = () => false;
+
 export const loader = async ({
   params,
   request,
@@ -30,7 +32,7 @@ export const loader = async ({
     return errorJsonResponse('Fetching summaries failed. Invalid params.', 400);
   }
   try {
-    return jsonResponse(await fetchSummary(sessionData.customerId!, params.userid, day));
+    return jsonResponse((await fetchSummary(sessionData.customerId!, params.userid, day)) ?? {});
   } catch (e) {
     logger.error(e);
     return errorJsonResponse(

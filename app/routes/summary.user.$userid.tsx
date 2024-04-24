@@ -1,5 +1,24 @@
-import { AutoAwesome as AutoAwesomeIcon } from '@mui/icons-material';
-import { Alert, Box, Button, Paper, Snackbar, Stack, TextField } from '@mui/material';
+import {
+  AutoAwesome as AutoAwesomeIcon,
+  Done as DoneIcon,
+  Person as PersonIcon,
+} from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Pagination,
+  Paper,
+  Snackbar,
+  Stack,
+  Step,
+  StepContent,
+  StepLabel,
+  Stepper,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -8,7 +27,6 @@ import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from '@
 import dayjs, { Dayjs } from 'dayjs';
 import Markdown from 'markdown-to-jsx';
 import { useEffect, useState } from 'react';
-import { useDeepCompareEffectNoCheck } from 'use-deep-compare-effect';
 import App from '../components/App';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
@@ -48,7 +66,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         error: 'User has no identity',
         userId,
         activityUserIds: null,
-        activities: null,
         actors: null,
       };
     }
@@ -122,21 +139,24 @@ export default function Summary() {
   const activitiesResponse = activitiesFetcher.data as ActivityResponse;
   const summaryFetcher = useFetcher();
   const summaryResponse = summaryFetcher.data as SummariesResponse;
-  const sessionData = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [day, setDay] = useState<Dayjs | null>(dayjs().subtract(1, 'days'));
   const [activitiesText, setActivitiesText] = useState('');
-  const [aiSummaryText, setAiSummaryText] = useState('');
+  const [aiSummaryTexts, setAiSummaryTexts] = useState<string[]>([]);
   const [userSummaryText, setUserSummaryText] = useState('');
+  const [aiSummaryPage, setAiSummaryPage] = useState(1);
   const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+
+  const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
   // load activities and existing summary
   useEffect(() => {
     if (day) {
       activitiesFetcher.load(
-        `/fetcher/activities/${sessionData.activityUserIds?.join(',')}?start=${day.startOf('day').valueOf()}&end=${day.endOf('day').valueOf()}`
+        `/fetcher/activities/${loaderData.activityUserIds?.join(',')}?start=${day.startOf('day').valueOf()}&end=${day.endOf('day').valueOf()}`
       );
-      summaryFetcher.load(`/fetcher/summaries/${sessionData.userId}?day=${day.format('YYYYMMDD')}`);
+      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?day=${day.format('YYYYMMDD')}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day]);
@@ -149,11 +169,20 @@ export default function Summary() {
       setShowSavedConfirmation(true);
     }
     if (actionData.status === 'generated') {
-      setAiSummaryText(actionData.aiSummary ? getSummaryResult(actionData.aiSummary) : '');
+      if (!aiSummaryTexts[aiSummaryTexts.length - 1]) {
+        setAiSummaryTexts([actionData.aiSummary ? getSummaryResult(actionData.aiSummary) : '']);
+      } else {
+        setAiSummaryPage(aiSummaryTexts.length + 1);
+        setAiSummaryTexts([
+          ...aiSummaryTexts,
+          actionData.aiSummary ? getSummaryResult(actionData.aiSummary) : '',
+        ]);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actionData]);
 
-  useDeepCompareEffectNoCheck(() => {
+  useEffect(() => {
     if (!activitiesResponse?.activities) {
       return;
     }
@@ -161,7 +190,7 @@ export default function Summary() {
       Object.keys(activitiesResponse.activities).map(
         activityId => activitiesResponse.activities![activityId]
       ),
-      sessionData.actors,
+      loaderData.actors,
       {
         activityCount: 300, // FIXME summary activity count
         inclDates: false,
@@ -174,7 +203,7 @@ export default function Summary() {
   }, [activitiesResponse?.activities]); // sessionData must be omitted
 
   useEffect(() => {
-    setAiSummaryText(summaryResponse?.aiSummary ?? '');
+    setAiSummaryTexts([summaryResponse?.aiSummary ?? '']);
     setUserSummaryText(summaryResponse?.userSummary ?? '');
   }, [summaryResponse?.aiSummary, summaryResponse?.userSummary]);
 
@@ -182,12 +211,12 @@ export default function Summary() {
     <App
       view="summary.user"
       isLoggedIn={true}
-      isNavOpen={sessionData.isNavOpen}
+      isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle' || activitiesFetcher.state !== 'idle'}
     >
-      {sessionData?.error && (
+      {loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
-          {sessionData?.error}
+          {loaderData?.error}
         </Alert>
       )}
       {activitiesResponse?.error?.message && (
@@ -208,101 +237,146 @@ export default function Summary() {
           message={'Saved'}
         />
         <Stack direction="row" spacing={4} sx={{ m: 3, mt: 4 }}>
-          <Box flex={1}>
-            <Stack direction="row" spacing={2}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <StaticDatePicker
-                  disableFuture={true}
-                  slots={{ toolbar: undefined }}
-                  slotProps={{ actionBar: { actions: [] }, toolbar: undefined }}
-                  value={day}
-                  onChange={newValue => setDay(newValue)}
-                />
-              </LocalizationProvider>
-              <input type="hidden" name="day" value={day?.format('YYYYMMDD')} />
-              <TextField
-                name="activitiesText"
-                label={'Activities to summarize for ' + formatDayLocal(day)}
-                value={activitiesText}
-                disabled={activitiesFetcher.state !== 'idle'}
-                multiline
-                fullWidth
-                minRows={15}
-                maxRows={15}
-                size="small"
-                inputProps={{ sx: { mt: 1, fontSize: 'smaller' } }}
-                InputLabelProps={{ shrink: true }}
-                onChange={e => setActivitiesText(e.target.value)}
-                sx={{ mt: 3 }}
+          <Stack>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <StaticDatePicker
+                disableFuture={true}
+                slots={{ toolbar: undefined }}
+                slotProps={{ actionBar: { actions: [] }, toolbar: undefined }}
+                value={day}
+                onChange={newValue => setDay(newValue)}
               />
-            </Stack>
-            <Box justifyContent="end" sx={{ display: 'flex', mt: 1, mb: 4 }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                type="submit"
-                name={BUTTON_AI}
-                value="ai"
-                disabled={navigation.state !== 'idle' || !activitiesText}
-                title="You can invoke AI multiple times and keep the best output"
-                endIcon={<AutoAwesomeIcon />}
-              >
-                {'Summarize'}
-              </Button>
-            </Box>
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                minHeight: '200px',
-                maxHeight: '500px',
-                overflowY: 'auto',
-                my: 4,
-              }}
-            >
-              <Box
-                fontSize="smaller"
-                sx={{ minHeight: 200, opacity: aiSummaryText ? undefined : 0.5 }}
-              >
-                <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                  {aiSummaryText ||
-                    'Click Summarize to generate a summary using Artificial Intelligence'}
-                </Markdown>
-                <input type="hidden" name="aiSummary" value={aiSummaryText} />
+            </LocalizationProvider>
+            <Stack spacing={1} sx={{ ml: 3 }}>
+              <Box sx={{ fontWeight: 500 }}>Activities for...</Box>
+              <Box>
+                <Chip
+                  icon={<PersonIcon fontSize="small" />}
+                  label={
+                    loaderData.actors && loaderData.userId ?
+                      loaderData.actors[loaderData.userId]?.name
+                    : 'Unknown user'
+                  }
+                />
               </Box>
-            </Paper>
-            <TextField
-              name="userSummary"
-              label="Your input"
-              placeholder="Natural Intelligence"
-              value={userSummaryText}
-              multiline
-              fullWidth
-              minRows={3}
-              maxRows={3}
-              size="small"
-              inputProps={{ style: { fontSize: 'smaller' } }}
-              InputLabelProps={{ shrink: true }}
-              onChange={e => setUserSummaryText(e.target.value)}
-            />
-            <Box justifyContent="end" sx={{ display: 'flex', my: 2 }}>
-              <Button
-                variant="contained"
-                type="submit"
-                name={BUTTON_SAVE}
-                value="save"
-                title="Save the AI summary and your input"
-                disabled={
-                  navigation.state !== 'idle' ||
-                  !activitiesText ||
-                  //   !aiSummaryFormatted ||
-                  !!sessionData?.error
-                }
-              >
-                {'Save'}
-              </Button>
-            </Box>
-          </Box>
+            </Stack>
+          </Stack>
+          <input type="hidden" name="day" value={day?.format('YYYYMMDD')} />
+          <Stack flex={1} spacing={2}>
+            <Stepper orientation="vertical">
+              <Step active>
+                <StepLabel>Select a day, review and edit activities</StepLabel>
+                <StepContent>
+                  <TextField
+                    name="activitiesText"
+                    label={'Activities for ' + formatDayLocal(day)}
+                    value={activitiesText}
+                    disabled={activitiesFetcher.state !== 'idle'}
+                    multiline
+                    fullWidth
+                    minRows={15}
+                    maxRows={15}
+                    size="small"
+                    inputProps={{ sx: { mt: 1, fontSize: 'smaller' } }}
+                    InputLabelProps={{ shrink: true }}
+                    onChange={e => setActivitiesText(e.target.value)}
+                    sx={{ mt: 3 }}
+                  />
+                </StepContent>
+              </Step>
+              <Step active={!!activitiesText}>
+                <StepLabel>Summarize activities with AI</StepLabel>
+                <StepContent>
+                  <Box sx={{ mt: 2, mb: 4 }}>
+                    <Button
+                      variant="contained"
+                      type="submit"
+                      name={BUTTON_AI}
+                      value="ai"
+                      disabled={navigation.state !== 'idle' || !activitiesText}
+                      title="You can invoke AI multiple times and keep the best output"
+                      endIcon={<AutoAwesomeIcon />}
+                    >
+                      {hasAiSummary ? 'Generate another summary' : 'Generate summary'}
+                    </Button>
+                  </Box>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      mt: 4,
+                      minHeight: '200px',
+                      maxHeight: '500px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {aiSummaryTexts
+                      .filter((_, i) => aiSummaryTexts.length < 2 || aiSummaryPage === i + 1)
+                      .map((aiSummaryText, i) => (
+                        <Box
+                          key={i}
+                          fontSize="smaller"
+                          sx={{ minHeight: 200, opacity: aiSummaryText ? undefined : 0.5 }}
+                        >
+                          <Markdown options={{ overrides: { a: { component: 'span' } } }}>
+                            {aiSummaryText || 'AI summary will appear here.'}
+                          </Markdown>
+                        </Box>
+                      ))}
+                  </Paper>
+                  {aiSummaryTexts.length > 1 && (
+                    <Stack direction="row" alignItems="center" spacing={2} sx={{ mt: 2 }}>
+                      <Pagination
+                        count={aiSummaryTexts.length}
+                        page={aiSummaryPage}
+                        onChange={(_, page) => setAiSummaryPage(page)}
+                      />
+                      <Typography variant="caption">Choose which AI summary to save</Typography>
+                    </Stack>
+                  )}
+                  <input type="hidden" name="aiSummary" value={aiSummaryTexts[aiSummaryPage - 1]} />
+                </StepContent>
+              </Step>
+              <Step active={hasAiSummary}>
+                <StepLabel>Add your input and save the summaries</StepLabel>
+                <StepContent>
+                  <TextField
+                    name="userSummary"
+                    label="Your input"
+                    placeholder="Natural Intelligence"
+                    value={userSummaryText}
+                    multiline
+                    fullWidth
+                    minRows={3}
+                    maxRows={3}
+                    size="small"
+                    inputProps={{ style: { fontSize: 'smaller' } }}
+                    InputLabelProps={{ shrink: true }}
+                    onChange={e => setUserSummaryText(e.target.value)}
+                    sx={{ mt: 3 }}
+                  />
+                  <Box sx={{ my: 2 }}>
+                    <Button
+                      variant="contained"
+                      type="submit"
+                      name={BUTTON_SAVE}
+                      value="save"
+                      title="Save the AI summary and your input"
+                      disabled={
+                        navigation.state !== 'idle' ||
+                        !activitiesText ||
+                        !hasAiSummary ||
+                        !!loaderData?.error
+                      }
+                      endIcon={<DoneIcon />}
+                    >
+                      {'Save summaries'}
+                    </Button>
+                  </Box>
+                </StepContent>
+              </Step>
+            </Stepper>
+          </Stack>
         </Stack>
       </Form>
     </App>
