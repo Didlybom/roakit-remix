@@ -13,6 +13,8 @@ export interface ActivityResponse {
   activities?: ActivityRecord;
 }
 
+export const shouldRevalidate = () => false;
+
 export const loader = async ({
   params,
   request,

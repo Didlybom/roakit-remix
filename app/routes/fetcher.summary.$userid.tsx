@@ -21,6 +21,8 @@ export interface SummaryResponse {
   summary?: string;
 }
 
+export const shouldRevalidate = () => false;
+
 export const loader = async ({
   params,
   request,

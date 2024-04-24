@@ -14,6 +14,8 @@ export interface TopActorsResponse {
   topActors?: TopActorsMap;
 }
 
+export const shouldRevalidate = () => false;
+
 export const loader = async ({
   params,
   request,
