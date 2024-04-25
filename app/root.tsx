@@ -30,6 +30,8 @@ interface DocumentProps {
   title?: string;
 }
 
+export const shouldRevalidate = () => false;
+
 // Set up client config
 export function loader(): ClientEnv {
   return clientConfig;
