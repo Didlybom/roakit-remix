@@ -53,3 +53,5 @@ export const dateFilterToStartDate = (dateFilter: DateRange) => {
 export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
 export const formatDayLocal = (date: Dayjs | null) => date?.format('LL') ?? null;
+
+export const formatYYYYMMDD = (date: Dayjs | null) => date?.format('YYYYMMDD') ?? null;

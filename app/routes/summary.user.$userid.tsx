@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Chip,
+  Unstable_Grid2 as Grid,
   Pagination,
   Paper,
   Snackbar,
@@ -23,7 +24,13 @@ import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
-import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
+import {
+  useActionData,
+  useFetcher,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+} from '@remix-run/react';
 import dayjs, { Dayjs } from 'dayjs';
 import Markdown from 'markdown-to-jsx';
 import { useEffect, useState } from 'react';
@@ -34,8 +41,9 @@ import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../schemas/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
-import { formatDayLocal } from '../utils/dateUtils';
+import { formatDayLocal, formatYYYYMMDD } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { ActivityResponse } from './fetcher.activities.$userid';
 import { SummariesResponse } from './fetcher.summaries.$userid';
@@ -94,8 +102,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
-const BUTTON_AI = 'button-ai';
-const BUTTON_SAVE = 'button-save';
+interface JsonRequest {
+  activitiesText?: string;
+  day?: string;
+  aiSummary?: string;
+  userSummary?: string;
+}
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
@@ -103,38 +115,38 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     return redirect(sessionData.redirect);
   }
 
-  const formData = await request.formData();
+  const jsonRequest = (await request.json()) as JsonRequest;
 
-  if (formData.get(BUTTON_AI)) {
-    const promptActivities = formData.get('activitiesText')?.toString() ?? '';
-    if (!promptActivities) {
-      throw Error('Empty prompt');
-    }
+  // invoke AI
+  if (jsonRequest.activitiesText) {
     return {
-      aiSummary: await generateContent({ prompt: DEFAULT_PROMPT + '\n\n' + promptActivities }),
+      aiSummary: await generateContent({
+        prompt: DEFAULT_PROMPT + '\n\n' + jsonRequest.activitiesText,
+      }),
       status: 'generated',
     };
   }
 
-  if (formData.get(BUTTON_SAVE)) {
+  // save summaries
+  if (jsonRequest.day && jsonRequest.aiSummary) {
     const identityId = params.userid;
     if (!identityId) {
       throw 'Identity required';
     }
-    const day = formData.get('day')?.toString() ?? '';
-    if (!day) {
-      throw 'Date required';
-    }
-    const aiSummary = formData.get('aiSummary')?.toString() ?? '';
-    const userSummary = formData.get('userSummary')?.toString() ?? '';
-
-    await upsertSummary(sessionData.customerId!, day, { identityId, aiSummary, userSummary });
+    await upsertSummary(sessionData.customerId!, jsonRequest.day, {
+      identityId,
+      aiSummary: jsonRequest.aiSummary,
+      userSummary: jsonRequest.userSummary ?? '',
+    });
     return { aiSummary: null, status: 'saved' };
   }
+
+  return { aiSummary: null, status: null };
 };
 
 export default function Summary() {
   const navigation = useNavigation();
+  const submit = useSubmit();
   const activitiesFetcher = useFetcher();
   const activitiesResponse = activitiesFetcher.data as ActivityResponse;
   const summaryFetcher = useFetcher();
@@ -156,7 +168,7 @@ export default function Summary() {
       activitiesFetcher.load(
         `/fetcher/activities/${loaderData.activityUserIds?.join(',')}?start=${day.startOf('day').valueOf()}&end=${day.endOf('day').valueOf()}`
       );
-      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?day=${day.format('YYYYMMDD')}`);
+      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?day=${formatYYYYMMDD(day)}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day]);
@@ -202,9 +214,11 @@ export default function Summary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activitiesResponse?.activities]); // sessionData must be omitted
 
+  // loaded existing data from server
   useEffect(() => {
     setAiSummaryTexts([summaryResponse?.aiSummary ?? '']);
     setUserSummaryText(summaryResponse?.userSummary ?? '');
+    setAiSummaryPage(1);
   }, [summaryResponse?.aiSummary, summaryResponse?.userSummary]);
 
   return (
@@ -224,20 +238,20 @@ export default function Summary() {
           {activitiesResponse.error.message}
         </Alert>
       )}
-      <Form method="post">
-        <Snackbar
-          open={showSavedConfirmation}
-          autoHideDuration={3000}
-          onClose={(_, reason?: string) => {
-            if (reason === 'clickaway') {
-              return;
-            }
-            setShowSavedConfirmation(false);
-          }}
-          message={'Saved'}
-        />
-        <Stack direction="row" spacing={4} sx={{ m: 3, mt: 4 }}>
-          <Stack>
+      <Snackbar
+        open={showSavedConfirmation}
+        autoHideDuration={3000}
+        onClose={(_, reason?: string) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setShowSavedConfirmation(false);
+        }}
+        message={'Saved'}
+      />
+      <Grid container columns={2} sx={{ m: 3, mt: 4 }}>
+        <Grid>
+          <Stack sx={{ mb: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <StaticDatePicker
                 disableFuture={true}
@@ -261,8 +275,9 @@ export default function Summary() {
               </Box>
             </Stack>
           </Stack>
-          <input type="hidden" name="day" value={day?.format('YYYYMMDD')} />
-          <Stack flex={1} spacing={2}>
+        </Grid>
+        <Grid flex={1}>
+          <Stack spacing={2} sx={{ ml: 2 }}>
             <Stepper orientation="vertical">
               <Step active>
                 <StepLabel>Select a day, review and edit activities</StepLabel>
@@ -290,12 +305,11 @@ export default function Summary() {
                   <Box sx={{ mt: 2, mb: 4 }}>
                     <Button
                       variant="contained"
-                      type="submit"
-                      name={BUTTON_AI}
                       value="ai"
                       disabled={navigation.state !== 'idle' || !activitiesText}
                       title="You can invoke AI multiple times and keep the best output"
                       endIcon={<AutoAwesomeIcon />}
+                      onClick={() => submit({ activitiesText }, postJsonOptions)}
                     >
                       {hasAiSummary ? 'Generate another summary' : 'Generate summary'}
                     </Button>
@@ -358,8 +372,6 @@ export default function Summary() {
                   <Box sx={{ my: 2 }}>
                     <Button
                       variant="contained"
-                      type="submit"
-                      name={BUTTON_SAVE}
                       value="save"
                       title="Save the AI summary and your input"
                       disabled={
@@ -369,6 +381,16 @@ export default function Summary() {
                         !!loaderData?.error
                       }
                       endIcon={<DoneIcon />}
+                      onClick={() =>
+                        submit(
+                          {
+                            day: formatYYYYMMDD(day),
+                            aiSummary: aiSummaryTexts[aiSummaryPage - 1],
+                            userSummary: userSummaryText,
+                          },
+                          postJsonOptions
+                        )
+                      }
                     >
                       {'Save summaries'}
                     </Button>
@@ -377,8 +399,8 @@ export default function Summary() {
               </Step>
             </Stepper>
           </Stack>
-        </Stack>
-      </Form>
+        </Grid>
+      </Grid>
     </App>
   );
 }
