@@ -37,6 +37,7 @@ export const accountToReviewSchema = z.object({
 export const identitySchema = z.object({
   email: z.string().optional(),
   displayName: z.string().optional(),
+  managerId: z.string().optional(),
   accounts: z
     .object({
       feedId: z.number(),
@@ -106,6 +107,7 @@ export interface IdentityData {
   id: string;
   email?: string;
   displayName?: string;
+  managerId?: string;
   accounts: { feedId: number; type: string; id?: AccountData['id']; name?: string; url?: string }[];
 }
 

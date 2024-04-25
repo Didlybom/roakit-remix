@@ -20,16 +20,18 @@ import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
   Link as RemixLink,
+  ShouldRevalidateFunction,
   redirect,
   useActionData,
   useLoaderData,
   useNavigation,
   useSubmit,
 } from '@remix-run/react';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
+import { ActionFunctionArgs, LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import App from '../components/App';
+import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import TabPanel from '../components/TabPanel';
 import { firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
@@ -37,14 +39,20 @@ import JiraIcon from '../icons/Jira';
 import { IdentityData } from '../schemas/schemas';
 import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
+import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:identities' });
 
 const MAX_IMPORT = 500;
+const UNSET_MANAGER_ID = '_UNSET_MANAGER_';
 
 export const meta = () => [{ title: 'Contributors Admin | ROAKIT' }];
+
+export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => {
+  return (actionResult as ActionResponse)?.status === 'imported';
+};
 
 // verify JWT, load identities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -65,10 +73,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 interface JsonRequest {
+  identityId?: string;
+  managerId?: string;
   imports?: string;
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+interface ActionResponse {
+  status?: 'imported' | 'userUpdated';
+  error?: string;
+}
+
+export const action = async ({
+  request,
+}: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
@@ -76,15 +93,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const jsonRequest = (await request.json()) as JsonRequest;
 
-  const imports = jsonRequest.imports;
-  if (imports) {
+  // update manager
+  if (jsonRequest.identityId) {
+    try {
+      await firestore
+        .doc(`customers/${sessionData.customerId!}/identities/${jsonRequest.identityId}`)
+        .update({
+          managerId: jsonRequest.managerId === UNSET_MANAGER_ID ? '' : jsonRequest.managerId,
+        });
+      return { status: 'userUpdated' };
+    } catch (e) {
+      return { error: errMsg(e, 'Failed to save user') };
+    }
+  }
+
+  // import
+  if (jsonRequest.imports) {
     const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
     const batch = firestore.batch();
 
-    const accounts = imports.split(/\r|\n/);
+    const accounts = jsonRequest.imports.split(/\r|\n/);
 
     if (accounts.length > MAX_IMPORT) {
-      return { error: `You cannot import more than ${MAX_IMPORT} accounts at a time` };
+      return {
+        error: `You cannot import more than ${MAX_IMPORT} accounts at a time`,
+        status: 'imported',
+      };
     }
     const dateCreated = Date.now();
     for (const account of accounts) {
@@ -100,9 +134,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
     await batch.commit(); // up to 500 operations
+    return { status: 'imported' };
   }
 
-  return null;
+  return {};
 };
 
 export default function Users() {
@@ -111,106 +146,145 @@ export default function Users() {
   const submit = useSubmit();
   const navigation = useNavigation();
   const [tabValue, setTabValue] = useState(0);
+  const [identities, setIdentities] = useState(loaderData.identities.list);
   const [imports, setImports] = useState('');
 
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setIdentities(loaderData.identities.list);
+  }, [loaderData.identities.list]);
+
+  useEffect(() => {
     setError(actionData?.error ?? '');
   }, [actionData?.error]);
 
-  const identityCols: GridColDef[] = [
-    {
-      field: 'id',
-      headerName: 'ROAKIT ID',
-      minWidth: 200,
-    },
-    {
-      field: 'displayName',
-      headerName: 'Name',
-      minWidth: 200,
-      renderCell: params => {
-        const id = (params.row as IdentityData).id;
-        return (
-          <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
-            {params.value}
-          </Link>
-        );
-      },
-    },
-    {
-      field: 'summary-ui',
-      headerName: 'Summary UI',
-      minWidth: 60,
-      renderCell: params => {
-        const id = (params.row as IdentityData).id;
-        return (
-          <IconButton href={`/summary/user/${encodeURI(id)}`} title="Summary UI" size="small">
-            <OpenInNewIcon fontSize="small" />
-          </IconButton>
-        );
-      },
-    },
-    { field: 'email', headerName: 'Email', minWidth: 250 },
-    {
-      field: 'accounts',
-      headerName: 'Accounts',
-      minWidth: 200,
-      flex: 1,
-      sortable: false,
-      renderCell: params => {
-        return (params.value as IdentityData['accounts']).map((account, i) => {
+  const identityCols = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: 'displayName',
+        headerName: 'Name',
+        minWidth: 200,
+        renderCell: params => {
+          const id = (params.row as IdentityData).id;
           return (
-            <Stack key={i}>
-              <Stack direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
-                <Typography
-                  component="div"
-                  fontSize="small"
-                  color={!account.id ? 'error' : 'inherited'}
-                >
-                  <Stack direction="row" alignItems={'center'}>
-                    {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
-                    {account.type === 'jira' && (
-                      <Box component="span" sx={{ fontSize: '10px' }}>
-                        <JiraIcon />
-                      </Box>
-                    )}
-                    <Box sx={{ ml: 1 }}> {account.id || 'no id'}</Box>
-                  </Stack>
-                </Typography>
-                {account.name && <Box>{account.name}</Box>}
-                <Link href={account.url} target="_blank" sx={{ cursor: 'pointer' }}>
-                  {account.url}
-                </Link>
-              </Stack>
-            </Stack>
+            <Link
+              href={`/activity/user/${encodeURI(id)}`}
+              title="View activity"
+              sx={internalLinkSx}
+            >
+              {params.value}
+            </Link>
           );
-        });
+        },
       },
-    },
-  ];
+      {
+        field: 'summary-ui',
+        headerName: 'Summary UI',
+        minWidth: 60,
+        renderCell: params => {
+          const id = (params.row as IdentityData).id;
+          return (
+            <IconButton href={`/summary/user/${encodeURI(id)}`} title="Summary UI" size="small">
+              <OpenInNewIcon fontSize="small" />
+            </IconButton>
+          );
+        },
+      },
+      { field: 'email', headerName: 'Email', minWidth: 250 },
+      {
+        field: 'accounts',
+        headerName: 'Accounts',
+        minWidth: 200,
+        flex: 1,
+        sortable: false,
+        renderCell: params => {
+          return (params.value as IdentityData['accounts']).map((account, i) => {
+            return (
+              <Stack key={i}>
+                <Stack direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
+                  <Typography
+                    component="div"
+                    fontSize="small"
+                    color={!account.id ? 'error' : 'inherited'}
+                  >
+                    <Stack direction="row" alignItems={'center'}>
+                      {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
+                      {account.type === 'jira' && (
+                        <Box component="span" sx={{ fontSize: '10px' }}>
+                          <JiraIcon />
+                        </Box>
+                      )}
+                      <Box sx={{ ml: 1 }}> {account.id || 'no id'}</Box>
+                    </Stack>
+                  </Typography>
+                  {account.name && <Box>{account.name}</Box>}
+                  <Link href={account.url} target="_blank" sx={{ cursor: 'pointer' }}>
+                    {account.url}
+                  </Link>
+                </Stack>
+              </Stack>
+            );
+          });
+        },
+      },
+      {
+        field: 'managerId',
+        headerName: 'Team',
+        minWidth: 200,
+        type: 'singleSelect',
+        valueOptions: params => [
+          { value: UNSET_MANAGER_ID, label: '[unset]' },
+          ...loaderData.identities.list
+            .filter(i => i.id !== (params.row as IdentityData).id)
+            .map(identity => ({ value: identity.id, label: identity.displayName })),
+        ],
+        editable: true,
+        renderCell: params =>
+          params.value && params.value !== UNSET_MANAGER_ID ?
+            <Box sx={{ cursor: 'pointer' }}>
+              {loaderData.identities.list.find(i => i.id === params.value)?.displayName ??
+                'unknown'}
+            </Box>
+          : <Box sx={{ cursor: 'pointer' }}>{'...'}</Box>,
+      },
+      {
+        field: 'id',
+        headerName: 'Roakit ID',
+        minWidth: 200,
+      },
+    ],
+    [loaderData.identities]
+  );
 
-  const accountReviewCols: GridColDef[] = [
-    {
-      field: 'id',
-      headerName: 'Account ID',
-      minWidth: 200,
-    },
-    { field: 'type', headerName: 'Source', minWidth: 80 },
-    {
-      field: 'name',
-      headerName: 'Name',
-      minWidth: 250,
-      renderCell: params => {
-        const id = (params.row as IdentityData).id;
-        return (
-          <Link href={`/activity/user/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
-            {params.value}
-          </Link>
-        );
+  const accountReviewCols = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: 'id',
+        headerName: 'Account ID',
+        minWidth: 200,
       },
-    },
-  ];
+      { field: 'type', headerName: 'Source', minWidth: 80 },
+      {
+        field: 'name',
+        headerName: 'Name',
+        minWidth: 250,
+        renderCell: params => {
+          const id = (params.row as IdentityData).id;
+          return (
+            <Link
+              href={`/activity/user/${encodeURI(id)}`}
+              title="View activity"
+              sx={internalLinkSx}
+            >
+              {params.value}
+            </Link>
+          );
+        },
+      },
+    ],
+    []
+  );
 
   enum UsersTab {
     Directory,
@@ -236,15 +310,39 @@ export default function Users() {
       </Box>
       <TabPanel value={tabValue} index={UsersTab.Directory}>
         <Stack>
-          <DataGrid
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <DataGridWithSingleClickEditing
             columns={identityCols}
-            rows={loaderData.identities.list}
+            rows={identities.map(identity => ({
+              ...identity,
+              managerId: identity.managerId ?? UNSET_MANAGER_ID,
+            }))}
             {...dataGridCommonProps}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
             }}
             getRowHeight={() => 'auto'}
+            processRowUpdate={(updatedRow: IdentityData, oldRow: IdentityData) => {
+              if (updatedRow.managerId !== oldRow.managerId) {
+                setIdentities(
+                  identities.map(identity =>
+                    identity.id === updatedRow.id ?
+                      { ...identity, managerId: updatedRow.managerId }
+                    : identity
+                  )
+                );
+                submit(
+                  { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
+                  postJsonOptions
+                );
+              }
+              return updatedRow;
+            }}
           />
           <Box>
             <Button
@@ -265,9 +363,9 @@ export default function Users() {
             multiline
             minRows={5}
             maxRows={15}
-            helperText="email,Jira ID,Jira name,GitHub username"
-            placeholder="jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe
-jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
+            helperText="manager ID,email,Jira ID,Jira name,GitHub username"
+            placeholder="x7jfRAz1sSko911234,jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe
+,jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
             size="small"
             onChange={e => {
               setError('');
@@ -282,7 +380,7 @@ jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
               },
             }}
             sx={{ mt: 5 }}
-          />{' '}
+          />
           <Box flex={0}>
             <Button
               variant="contained"
@@ -294,11 +392,6 @@ jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
               Import
             </Button>
           </Box>
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
         </Stack>
       </TabPanel>
       <TabPanel value={tabValue} index={UsersTab.NeedsReview}>

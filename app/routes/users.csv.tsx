@@ -14,8 +14,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
-    let csv = 'email,jiraID,jiraName,githubUsername\n';
+    let csv = 'ID,managerID,email,jiraID,jiraName,githubUsername\n';
     identities.list.forEach(identity => {
+      csv += identity.id + ',' + (identity.managerId ?? '') + ',';
       csv += (identity.email ?? '') + ',';
       const jiraAccount = identity.accounts.find(account => account.type === JIRA_FEED_TYPE);
       const githubAccount = identity.accounts.find(account => account.type === GITHUB_FEED_TYPE);

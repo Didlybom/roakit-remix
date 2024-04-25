@@ -109,6 +109,7 @@ export const fetchIdentities = async (
         id: identity.id,
         email: data.email,
         displayName: data.displayName,
+        managerId: data.managerId,
         accounts: data.accounts ?? [],
       });
       data.accounts?.forEach(account => {
