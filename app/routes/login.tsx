@@ -3,7 +3,12 @@ import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useFetcher, useNavigation, useSubmit } from '@remix-run/react';
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  browserPopupRedirectResolver,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from 'firebase/auth';
 import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
@@ -112,7 +117,11 @@ export default function Login() {
     try {
       const googleAuthProvider = new GoogleAuthProvider();
       // await signInWithRedirect(clientAuth, googleAuthProvider);
-      const credential = await signInWithPopup(clientAuth, googleAuthProvider);
+      const credential = await signInWithPopup(
+        clientAuth,
+        googleAuthProvider,
+        browserPopupRedirectResolver
+      );
       const idToken = await credential.user.getIdToken();
       submit({ idToken }, { method: 'post' }); // hand over to server action
     } catch (e) {
