@@ -97,6 +97,8 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
   }, retryProps('Retrying fetchInitiativeMap...'));
 };
 
+const findIdentity = (identities: IdentityData[], id: string) => identities.find(i => i.id === id)!;
+
 export const fetchIdentities = async (
   customerId: number
 ): Promise<{ list: IdentityData[]; accountMap: AccountToIdentityRecord }> => {
@@ -112,6 +114,7 @@ export const fetchIdentities = async (
         managerId: data.managerId,
         accounts: data.accounts ?? [],
       });
+      // map accounts to identities
       data.accounts?.forEach(account => {
         if (account.id) {
           accountMap[account.id] = identity.id;
@@ -119,6 +122,17 @@ export const fetchIdentities = async (
           accountMap[account.name] = identity.id;
         }
       });
+    });
+    // add the report member ids
+    identities.forEach(identity => {
+      identity.reportIds = identities
+        .filter(report => report.managerId === identity.id)
+        .map(i => i.id)
+        .sort((a, b) =>
+          (findIdentity(identities, a).displayName ?? '').localeCompare(
+            findIdentity(identities, b).displayName ?? ''
+          )
+        );
     });
     return {
       list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
@@ -247,24 +261,41 @@ export const fetchActivities = async ({
   userIds?: string[];
   options?: { includesMetadata?: boolean; findPriority?: boolean };
 }) => {
-  if (userIds && userIds.length > 30) {
-    throw Error('fetchActivities: max userIds length is 30');
-  }
   return await retry(async bail => {
-    let query =
-      userIds?.length ?
-        firestore
+    const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+    if (!userIds) {
+      let query = firestore
+        .collection(`customers/${customerId}/activities`)
+        .orderBy('createdTimestamp')
+        .startAt(startDate)
+        .limit(20000); // FIXME limit
+      if (endDate) {
+        query = query.endAt(endDate);
+      }
+      batches.push(query.get());
+    } else {
+      while (userIds.length) {
+        // firestore supports up to 30 IN comparisons at a time
+        const batch = userIds.splice(0, 30);
+        let query = firestore
           .collection(`customers/${customerId}/activities`)
-          .where('actorAccountId', 'in', userIds)
-      : firestore.collection(`customers/${customerId}/activities`);
-    query = query.orderBy('createdTimestamp').startAt(startDate);
-    if (endDate) {
-      query = query.endAt(endDate);
+          .where('actorAccountId', 'in', [...batch])
+          .orderBy('createdTimestamp')
+          .startAt(startDate)
+          .limit(20000); // FIXME limit
+        if (endDate) {
+          query = query.endAt(endDate);
+        }
+        batches.push(query.get());
+      }
     }
-    const activityDocs = await withMetricsAsync<FirebaseFirestore.QuerySnapshot>(
-      () => query.limit(20000).get(), // FIXME limit
-      { metricsName: 'fetcher:getActivities' }
-    );
+
+    const activityDocs = (
+      await withMetricsAsync(() => Promise.all(batches), {
+        metricsName: 'fetcher:getActivities',
+      })
+    ).flatMap(a => a.docs);
+
     const activities: ActivityMap = new Map();
     const ticketPrioritiesToFetch = new Set<string>();
     const activityTickets = new Map<string, string>();
@@ -312,11 +343,11 @@ export const fetchActivities = async ({
 export const fetchSummary = async (
   customerId: number,
   identityId: string,
-  date: string /*  yyyymmdd */
+  day: string /* YYYYMMDD */
 ): Promise<{ aiSummary: string; userSummary?: string } | undefined> =>
   await retry(async bail => {
     const snapshot = await firestore
-      .collection(`customers/${customerId}/summaries/${date}/instances`)
+      .collection(`customers/${customerId}/summaries/${day}/instances`)
       .where('identityId', '==', identityId)
       .get();
     if (snapshot.size === 0) {
@@ -325,7 +356,7 @@ export const fetchSummary = async (
     if (snapshot.size > 1) {
       bail(
         new Error(
-          `Found more than one summary for customer ${customerId}, user ${identityId} on ${date}`
+          `Found more than one summary for customer ${customerId}, user ${identityId} on ${day}`
         )
       );
     }

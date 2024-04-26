@@ -311,19 +311,21 @@ export default function UserActivity() {
               sx={{ fontSize: '1.1rem', display: 'flex', mb: 1 }}
             >
               <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
-              {actor?.urls?.map((url, i) => (
-                <IconButton
-                  key={i}
-                  component="a"
-                  href={url.url}
-                  target="_blank"
-                  size="small"
-                  color="primary"
-                >
-                  {url.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
-                  {url.type === 'jira' && <JiraIcon width={15} height={15} />}
-                </IconButton>
-              ))}
+              {actor?.accounts
+                ?.filter(account => account.url)
+                .map((account, i) => (
+                  <IconButton
+                    key={i}
+                    component="a"
+                    href={account.url}
+                    target="_blank"
+                    size="small"
+                    color="primary"
+                  >
+                    {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                    {account.type === 'jira' && <JiraIcon width={15} height={15} />}
+                  </IconButton>
+                ))}
               {loaderData.userId === ALL && actorId && (
                 <IconButton
                   component="a"

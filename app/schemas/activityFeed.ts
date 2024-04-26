@@ -306,16 +306,16 @@ export const identifyAccounts = (
         actors[identityId] = {
           name: identity.displayName ?? identityId,
           email: identity.email,
-          urls: identity.accounts
-            ?.filter(a => a.url)
-            .map(a => ({ type: a.type, url: a.url ?? '' })),
+          accounts: identity.accounts.map(a => ({ id: a.id, type: a.type, url: a.url })),
         };
       }
-      // add account url if identity doesn't have them
-      if (account.url && !actors[identityId].urls?.find(u => u.type === account.type)) {
-        actors[identityId].urls?.push({ type: account.type, url: account.url });
+      // add account url if identity doesn't have it
+      const identityAccount = actors[identityId].accounts?.find(a => a.id === accountId);
+      if (identityAccount && !identityAccount?.url) {
+        identityAccount.url = account.url;
       }
     } else {
+      // no identity, use the accountId as key
       actors[accountId] = {
         name: account.name || accountId,
         ...(account.url && { urls: [{ type: account.type, url: account.url }] }),

@@ -20,38 +20,46 @@ export const buildActivitySummaryPrompt = (
   if (!activities) {
     return '';
   }
+
   const activityList = cloneArray(activities);
   activityList.splice(options.activityCount);
   let activitiesString = '';
   const dedupe = new Set<string>();
-  activityList.forEach(activity => {
-    if (!activity.metadata) {
-      return;
-    }
-    const summary = getSummary(activity);
-    if (!summary || summary.startsWith('Attached')) {
-      return;
-    }
-    const summaryAction = options.inclActions ? getSummaryAction(activity.metadata) : undefined;
-    const contributor =
-      options.inclContributors && actors ?
-        actors[activity.actorId ?? '']?.name ?? undefined
-      : undefined;
+  activityList
+    .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
+    .forEach(activity => {
+      if (!activity.metadata) {
+        return;
+      }
+      const summary = getSummary(activity);
+      // filter out uninteresting activities FIXME
+      if (!summary || summary.startsWith('Attached')) {
+        return;
+      }
+      const summaryAction = options.inclActions ? getSummaryAction(activity.metadata) : undefined;
+      const contributor =
+        options.inclContributors && actors && activity.actorId ?
+          (
+            actors[activity.actorId] ??
+            Object.values(actors).find(actor =>
+              actor.accounts?.flatMap(acct => acct.id).includes(activity.actorId!)
+            )
+          )?.name ?? undefined
+        : undefined;
 
-    const activityStringDedupe = summary + (summaryAction ?? '') + (contributor ?? '');
-
-    if (!dedupe.has(activityStringDedupe)) {
-      dedupe.add(activityStringDedupe);
-      activitiesString +=
-        summary +
-        (options.inclDates ?
-          '\nDate: ' + new Date(activity.createdTimestamp).toLocaleString()
-        : '') +
-        (summaryAction ? '\nAction: ' + summaryAction : '') +
-        (contributor ? '\nContributor: ' + contributor : '') +
-        '\n---\n';
-    }
-  });
+      const activityStringDedupe = summary + (summaryAction ?? '') + (contributor ?? '');
+      if (!dedupe.has(activityStringDedupe)) {
+        dedupe.add(activityStringDedupe);
+        activitiesString +=
+          summary +
+          (options.inclDates ?
+            `\nDate: ${new Date(activity.createdTimestamp).toLocaleString()}`
+          : '') +
+          (summaryAction ? `\nAction: ${summaryAction}` : '') +
+          (contributor ? `\nContributor: ${contributor}` : '') +
+          '\n---\n';
+      }
+    });
 
   return activitiesString;
 };

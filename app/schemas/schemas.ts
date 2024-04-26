@@ -42,7 +42,7 @@ export const identitySchema = z.object({
     .object({
       feedId: z.number(),
       type: z.string(),
-      id: z.string().optional(),
+      id: z.string(),
       name: z.string().optional(),
       url: z.string().optional(),
     })
@@ -108,7 +108,8 @@ export interface IdentityData {
   email?: string;
   displayName?: string;
   managerId?: string;
-  accounts: { feedId: number; type: string; id?: AccountData['id']; name?: string; url?: string }[];
+  reportIds?: string[];
+  accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
 }
 
 export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
@@ -119,7 +120,7 @@ export interface ActorData {
   id: string;
   name: string;
   email?: string;
-  urls?: { type: string; url: string }[];
+  accounts?: { id: string; type: string; url?: string }[];
 }
 export type ActorRecord = Record<ActorData['id'], Omit<ActorData, 'id'>>;
 

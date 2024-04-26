@@ -42,9 +42,9 @@ import { identifyAccounts } from '../schemas/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMMDD } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
+import { SessionData } from '../utils/sessionCookie.server';
 import { ActivityResponse } from './fetcher.activities.$userid';
 import { SummariesResponse } from './fetcher.summaries.$userid';
 
@@ -54,6 +54,15 @@ export const shouldRevalidate = () => false;
 
 // load activities
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+  const errorResponse = (sessionData: SessionData, error: string) => ({
+    ...sessionData,
+    error,
+    userId: null,
+    reportIds: null,
+    activityUserIds: null,
+    actors: null,
+  });
+
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
@@ -67,38 +76,29 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     const userId = params.userid;
 
-    // this route requires an identity
-    if (!identities.list.find(identity => identity.id === userId)) {
-      return {
-        ...sessionData,
-        error: 'User has no identity',
-        userId,
-        activityUserIds: null,
-        actors: null,
-      };
+    const userIdentity = identities.list.find(identity => identity.id === userId);
+    if (!userIdentity) {
+      return errorResponse(sessionData, 'User has no identity');
     }
-
-    const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
     const activityUserIds =
       userId ? getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap) : [];
+    userIdentity.reportIds?.forEach(reportId => {
+      activityUserIds.push(
+        ...getAllPossibleActivityUserIds(reportId, identities.list, identities.accountMap)
+      );
+    });
 
     return {
       ...sessionData,
       userId,
       activityUserIds,
-      actors,
+      reportIds: userIdentity.reportIds,
+      actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       error: null,
     };
   } catch (e) {
-    return {
-      ...sessionData,
-      error: errMsg(e, 'Failed to fetch activities'),
-      userId: null,
-      activityUserIds: null,
-      activities: null,
-      actors: null,
-    };
+    return errorResponse(sessionData, 'Failed to fetch activities');
   }
 };
 
@@ -199,15 +199,13 @@ export default function Summary() {
       return;
     }
     const activitiesPrompt = buildActivitySummaryPrompt(
-      Object.keys(activitiesResponse.activities).map(
-        activityId => activitiesResponse.activities![activityId]
-      ),
+      Object.values(activitiesResponse.activities),
       loaderData.actors,
       {
         activityCount: 300, // FIXME summary activity count
         inclDates: false,
         inclActions: true,
-        inclContributors: false,
+        inclContributors: !!loaderData.reportIds && loaderData.reportIds.length > 0,
       }
     );
     setActivitiesText(activitiesPrompt);
@@ -262,21 +260,31 @@ export default function Summary() {
               />
             </LocalizationProvider>
             <Stack spacing={1} sx={{ ml: 3 }}>
-              <Box sx={{ fontWeight: 500 }}>Activities for...</Box>
-              <Box>
-                <Chip
-                  icon={<PersonIcon fontSize="small" />}
-                  label={
-                    loaderData.actors && loaderData.userId ?
-                      loaderData.actors[loaderData.userId]?.name
-                    : 'Unknown user'
-                  }
-                />
-              </Box>
+              {loaderData.actors && loaderData.userId && (
+                <>
+                  <Box sx={{ fontWeight: 500 }}>Activities for...</Box>
+                  <Box sx={{ pb: 1 }}>
+                    <Chip
+                      size="small"
+                      icon={<PersonIcon fontSize="small" />}
+                      label={loaderData.actors[loaderData.userId]?.name ?? 'Unknown'}
+                    />
+                  </Box>
+                  {loaderData.reportIds?.map(reportId => (
+                    <Box key={reportId} sx={{ pl: 2 }}>
+                      <Chip
+                        size="small"
+                        icon={<PersonIcon fontSize="small" />}
+                        label={loaderData.actors[reportId]?.name ?? 'Unknown'}
+                      />
+                    </Box>
+                  ))}
+                </>
+              )}
             </Stack>
           </Stack>
         </Grid>
-        <Grid flex={1}>
+        <Grid flex={1} minWidth={300}>
           <Stack spacing={2} sx={{ ml: 2 }}>
             <Stepper orientation="vertical">
               <Step active>
