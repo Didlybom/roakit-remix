@@ -19,8 +19,10 @@ import {
   Stepper,
   TextField,
   Typography,
+  styled,
 } from '@mui/material';
-import { StaticDatePicker } from '@mui/x-date-pickers';
+import { grey } from '@mui/material/colors';
+import { PickersDay, PickersDayProps, StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
@@ -144,6 +146,22 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   return { aiSummary: null, status: null };
 };
 
+const HighlightedDay = styled(PickersDay)(() => ({
+  backgroundColor: grey[200],
+  color: 'black',
+}));
+
+type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?: string[] };
+
+const ActivityDay = (props: PickerDayWithHighlights) => {
+  const { highlightedDays = [], day, selected, ...other } = props;
+  if (highlightedDays.includes(formatYYYYMMDD(day)!)) {
+    return <HighlightedDay {...other} day={day} />;
+  } else {
+    return <PickersDay {...other} day={day} selected={selected} />;
+  }
+};
+
 export default function Summary() {
   const navigation = useNavigation();
   const submit = useSubmit();
@@ -154,6 +172,7 @@ export default function Summary() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [day, setDay] = useState<Dayjs | null>(dayjs().subtract(1, 'days'));
+  const [highlightedDays, setHighlightedDays] = useState([]);
   const [activitiesText, setActivitiesText] = useState('');
   const [aiSummaryTexts, setAiSummaryTexts] = useState<string[]>([]);
   const [userSummaryText, setUserSummaryText] = useState('');
@@ -253,8 +272,12 @@ export default function Summary() {
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <StaticDatePicker
                 disableFuture={true}
-                slots={{ toolbar: undefined }}
-                slotProps={{ actionBar: { actions: [] }, toolbar: undefined }}
+                slots={{ toolbar: undefined, day: ActivityDay }}
+                slotProps={{
+                  actionBar: { actions: [] },
+                  toolbar: undefined,
+                  day: { highlightedDays },
+                }}
                 value={day}
                 onChange={newValue => setDay(newValue)}
               />

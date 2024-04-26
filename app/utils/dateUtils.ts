@@ -1,9 +1,9 @@
 import dayjs, { Dayjs } from 'dayjs';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import localizedFormatPlugin from 'dayjs/plugin/localizedFormat';
+import relativeTimePlugin from 'dayjs/plugin/relativeTime';
 
-dayjs.extend(localizedFormat);
-dayjs.extend(relativeTime);
+dayjs.extend(localizedFormatPlugin);
+dayjs.extend(relativeTimePlugin);
 
 export const ONE_HOUR = 60 * 60 * 1000;
 export const ONE_DAY = 24 * ONE_HOUR;
@@ -55,3 +55,10 @@ export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 export const formatDayLocal = (date: Dayjs | null) => date?.format('LL') ?? null;
 
 export const formatYYYYMMDD = (date: Dayjs | null) => date?.format('YYYYMMDD') ?? null;
+
+export const daysInMonth = (date: Dayjs | null) =>
+  date ?
+    Array.from({ length: date.daysInMonth() }, (_, i) =>
+      formatYYYYMMDD(date.startOf('month').add(i, 'days'))
+    )
+  : null;
