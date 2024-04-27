@@ -1,6 +1,7 @@
 import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
-import { fetchSummary } from '../firestore.server/fetchers.server';
+import { fetchSummaries } from '../firestore.server/fetchers.server';
+import { Summaries } from '../schemas/summaries';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
@@ -9,8 +10,7 @@ const logger = pino({ name: 'route:fetcher.top-contributors' });
 
 export interface SummariesResponse {
   error?: ErrorField;
-  aiSummary?: string;
-  userSummary?: string;
+  summaries?: Summaries;
 }
 
 export const shouldRevalidate = () => false;
@@ -27,12 +27,15 @@ export const loader = async ({
     return errorJsonResponse('Fetching summaries failed. Invalid params.', 400);
   }
   const { searchParams } = new URL(request.url);
-  const day = searchParams.get('day');
-  if (!day) {
+  const day = searchParams.get('day') ?? undefined;
+  const month = searchParams.get('month') ?? undefined;
+  if ((!day && !month) || (day && month)) {
     return errorJsonResponse('Fetching summaries failed. Invalid params.', 400);
   }
   try {
-    return jsonResponse((await fetchSummary(sessionData.customerId!, params.userid, day)) ?? {});
+    return jsonResponse({
+      summaries: await fetchSummaries(sessionData.customerId!, params.userid, { day, month }),
+    });
   } catch (e) {
     logger.error(e);
     return errorJsonResponse(

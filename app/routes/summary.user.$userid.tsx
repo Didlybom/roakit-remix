@@ -43,7 +43,7 @@ import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../schemas/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
-import { formatDayLocal, formatYYYYMMDD } from '../utils/dateUtils';
+import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { SessionData } from '../utils/sessionCookie.server';
@@ -155,7 +155,7 @@ type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?
 
 const ActivityDay = (props: PickerDayWithHighlights) => {
   const { highlightedDays = [], day, selected, ...other } = props;
-  if (highlightedDays.includes(formatYYYYMMDD(day)!)) {
+  if (!selected && highlightedDays.includes(formatYYYYMMDD(day))) {
     return <HighlightedDay {...other} day={day} />;
   } else {
     return <PickersDay {...other} day={day} selected={selected} />;
@@ -171,8 +171,8 @@ export default function Summary() {
   const summaryResponse = summaryFetcher.data as SummariesResponse;
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [day, setDay] = useState<Dayjs | null>(dayjs().subtract(1, 'days'));
-  const [highlightedDays, setHighlightedDays] = useState([]);
+  const [day, setDay] = useState<Dayjs>(dayjs().subtract(1, 'days'));
+  const [highlightedDays, setHighlightedDays] = useState<string[]>([]);
   const [activitiesText, setActivitiesText] = useState('');
   const [aiSummaryTexts, setAiSummaryTexts] = useState<string[]>([]);
   const [userSummaryText, setUserSummaryText] = useState('');
@@ -187,7 +187,8 @@ export default function Summary() {
       activitiesFetcher.load(
         `/fetcher/activities/${loaderData.activityUserIds?.join(',')}?start=${day.startOf('day').valueOf()}&end=${day.endOf('day').valueOf()}`
       );
-      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?day=${formatYYYYMMDD(day)}`);
+      // FIXME optimize don't always refetch for the month
+      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(day)}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day]);
@@ -233,10 +234,14 @@ export default function Summary() {
 
   // loaded existing data from server
   useEffect(() => {
-    setAiSummaryTexts([summaryResponse?.aiSummary ?? '']);
-    setUserSummaryText(summaryResponse?.userSummary ?? '');
+    const daySummary =
+      summaryResponse?.summaries ? summaryResponse.summaries[formatYYYYMMDD(day)] : undefined;
+    setAiSummaryTexts([daySummary?.aiSummary ?? '']);
+    setUserSummaryText(daySummary?.userSummary ?? '');
     setAiSummaryPage(1);
-  }, [summaryResponse?.aiSummary, summaryResponse?.userSummary]);
+    setHighlightedDays(summaryResponse?.summaries ? Object.keys(summaryResponse?.summaries) : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryResponse?.summaries]);
 
   return (
     <App
@@ -276,10 +281,14 @@ export default function Summary() {
                 slotProps={{
                   actionBar: { actions: [] },
                   toolbar: undefined,
-                  day: { highlightedDays },
+                  day: { highlightedDays } as PickerDayWithHighlights,
                 }}
                 value={day}
-                onChange={newValue => setDay(newValue)}
+                onChange={day => {
+                  if (day) {
+                    setDay(day);
+                  }
+                }}
               />
             </LocalizationProvider>
             <Stack spacing={1} sx={{ ml: 3 }}>

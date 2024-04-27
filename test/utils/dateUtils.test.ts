@@ -2,37 +2,7 @@ import dayjs from 'dayjs';
 import { daysInMonth } from '../../app/utils/dateUtils';
 
 test('daysInMonth', () => {
-  const day = dayjs('20200205');
-  const result = daysInMonth(day);
-  expect(result).toEqual([
-    '20200201',
-    '20200202',
-    '20200203',
-    '20200204',
-    '20200205',
-    '20200206',
-    '20200207',
-    '20200208',
-    '20200209',
-    '20200210',
-    '20200211',
-    '20200212',
-    '20200213',
-    '20200214',
-    '20200215',
-    '20200216',
-    '20200217',
-    '20200218',
-    '20200219',
-    '20200220',
-    '20200221',
-    '20200222',
-    '20200223',
-    '20200224',
-    '20200225',
-    '20200226',
-    '20200227',
-    '20200228',
-    '20200229',
-  ]);
+  const expected = [...Array(29).keys()].map(k => '202002' + ('0' + (k + 1)).slice(-2));
+  expect(daysInMonth(dayjs('20200201'))).toEqual(expected);
+  expect(daysInMonth(dayjs('202002'))).toEqual(expected);
 });

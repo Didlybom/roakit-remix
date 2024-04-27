@@ -1,4 +1,5 @@
 import retry from 'async-retry';
+import dayjs from 'dayjs';
 import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
@@ -24,6 +25,8 @@ import {
   summarySchema,
   ticketSchema,
 } from '../schemas/schemas';
+import { Summaries } from '../schemas/summaries';
+import { daysInMonth } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
 import { FEED_TYPES } from '../utils/feedUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
@@ -340,30 +343,46 @@ export const fetchActivities = async ({
   }, retryProps('Retrying fetchActivities...'));
 };
 
-export const fetchSummary = async (
+export const fetchSummaries = async (
   customerId: number,
   identityId: string,
-  day: string /* YYYYMMDD */
-): Promise<{ aiSummary: string; userSummary?: string } | undefined> =>
-  await retry(async bail => {
-    const snapshot = await firestore
-      .collection(`customers/${customerId}/summaries/${day}/instances`)
-      .where('identityId', '==', identityId)
-      .get();
-    if (snapshot.size === 0) {
+  date: { day?: string /* YYYYMMDD */; month?: string /* YYYYMM */ }
+): Promise<Summaries | undefined> => {
+  if ((!date.day && !date.month) || (date.day && date.month)) {
+    throw Error('Day xor month required');
+  }
+  const summaries: Summaries = {};
+  const documents = await retry(async () => {
+    const days = date.day ? [date.day] : daysInMonth(dayjs(date.month));
+    return await Promise.all(
+      days.map(async day => {
+        return {
+          day,
+          snapshot: await firestore
+            .collection(`customers/${customerId}/summaries/${day}/instances`)
+            .where('identityId', '==', identityId)
+            .get(),
+        };
+      })
+    );
+  }, retryProps('Retrying fetchSummaries...'));
+  documents.forEach(document => {
+    if (document.snapshot.size === 0) {
       return undefined;
     }
-    if (snapshot.size > 1) {
-      bail(
-        new Error(
-          `Found more than one summary for customer ${customerId}, user ${identityId} on ${day}`
-        )
+    if (document.snapshot.size > 1) {
+      throw Error(
+        `Found more than one summary for customer ${customerId}, user ${identityId} on ${document.day}`
       );
     }
-    const props = summarySchema.safeParse(snapshot.docs[0].data());
+    const props = summarySchema.safeParse(document.snapshot.docs[0].data());
     if (!props.success) {
-      bail(new ParseError('Failed to parse summary. ' + props.error.message));
-      return undefined; // not used, bail() will throw
+      throw new ParseError('Failed to parse summary. ' + props.error.message);
     }
-    return { aiSummary: props.data.aiSummary, userSummary: props.data.userSummary };
-  }, retryProps('Retrying fetchSummary...'));
+    summaries[document.day] = {
+      aiSummary: props.data.aiSummary,
+      userSummary: props.data.userSummary,
+    };
+  });
+  return summaries;
+};

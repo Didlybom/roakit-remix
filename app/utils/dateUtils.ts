@@ -52,13 +52,18 @@ export const dateFilterToStartDate = (dateFilter: DateRange) => {
 
 export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
-export const formatDayLocal = (date: Dayjs | null) => date?.format('LL') ?? null;
+export const formatDayLocal = (date: Dayjs) => date?.format('LL') ?? null;
 
-export const formatYYYYMMDD = (date: Dayjs | null) => date?.format('YYYYMMDD') ?? null;
+export const formatYYYYMMDD = (date: Dayjs) => date?.format('YYYYMMDD') ?? null;
+export const formatYYYYMM = (date: Dayjs) => date?.format('YYYYMM') ?? null;
 
-export const daysInMonth = (date: Dayjs | null) =>
-  date ?
-    Array.from({ length: date.daysInMonth() }, (_, i) =>
-      formatYYYYMMDD(date.startOf('month').add(i, 'days'))
-    )
-  : null;
+/**
+ * Returns the days in month, formatted as YYYYMMDD,
+ * excluding future days
+ */
+export const daysInMonth = (date: Dayjs) => {
+  const today = formatYYYYMMDD(dayjs());
+  return [...Array(date.daysInMonth()).keys()]
+    .map(i => formatYYYYMMDD(date.startOf('month').add(i, 'days')))
+    .filter(d => d <= today);
+};
