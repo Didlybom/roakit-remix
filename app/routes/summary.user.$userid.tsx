@@ -2,6 +2,7 @@ import {
   AutoAwesome as AutoAwesomeIcon,
   Done as DoneIcon,
   Person as PersonIcon,
+  Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -9,6 +10,7 @@ import {
   Button,
   Chip,
   Unstable_Grid2 as Grid,
+  Link,
   Pagination,
   Paper,
   Snackbar,
@@ -271,7 +273,7 @@ export default function Summary() {
         }}
         message={'Saved'}
       />
-      <Grid container columns={2} sx={{ m: 3, mt: 4 }}>
+      <Grid container columns={2} sx={{ m: 3 }}>
         <Grid>
           <Stack sx={{ mb: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -329,8 +331,8 @@ export default function Summary() {
                     disabled={activitiesFetcher.state !== 'idle'}
                     multiline
                     fullWidth
-                    minRows={15}
-                    maxRows={15}
+                    minRows={12}
+                    maxRows={12}
                     size="small"
                     inputProps={{ sx: { mt: 1, fontSize: 'smaller' } }}
                     InputLabelProps={{ shrink: true }}
@@ -340,7 +342,7 @@ export default function Summary() {
                 </StepContent>
               </Step>
               <Step active={!!activitiesText}>
-                <StepLabel>Summarize activities with AI</StepLabel>
+                <StepLabel>Summarize activities with AI assistance</StepLabel>
                 <StepContent>
                   <Box sx={{ mt: 2, mb: 4 }}>
                     <Button
@@ -370,11 +372,58 @@ export default function Summary() {
                         <Box
                           key={i}
                           fontSize="smaller"
-                          sx={{ minHeight: 200, opacity: aiSummaryText ? undefined : 0.5 }}
+                          sx={{ opacity: aiSummaryText ? undefined : 0.5 }}
                         >
-                          <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                            {aiSummaryText || 'AI summary will appear here.'}
-                          </Markdown>
+                          <Stack direction="row" spacing={3} sx={{ my: 1, maxHeight: 300 }}>
+                            <Stack flex={0.5}>
+                              <TextField
+                                label="AI Summary"
+                                value={aiSummaryText}
+                                placeholder="AI summary will appear here."
+                                disabled={!aiSummaryText}
+                                multiline
+                                fullWidth
+                                minRows={12}
+                                maxRows={12}
+                                size="small"
+                                inputProps={{ style: { fontSize: 'smaller' } }}
+                                InputLabelProps={{ shrink: true }}
+                                onChange={e =>
+                                  setAiSummaryTexts(
+                                    aiSummaryTexts.map((existing, j) =>
+                                      i === j ? e.target.value : existing
+                                    )
+                                  )
+                                }
+                              />
+                              <Typography
+                                component={Link}
+                                variant="caption"
+                                href="https://www.markdownguide.org/cheat-sheet/"
+                                target="_blank"
+                              >
+                                Markdown format
+                              </Typography>
+                            </Stack>
+                            <Stack flex={0.5} sx={{ maxHeight: 300, opacity: 0.5 }}>
+                              {aiSummaryText && (
+                                <Stack sx={{ mt: -1 }}>
+                                  <Box>
+                                    <Chip
+                                      variant="outlined"
+                                      size="small"
+                                      icon={<PreviewIcon fontSize="small" />}
+                                      sx={{ border: 'none' }}
+                                      label={'AI Summary Preview'}
+                                    />
+                                  </Box>
+                                  <Markdown options={{ overrides: { a: { component: 'span' } } }}>
+                                    {aiSummaryText}
+                                  </Markdown>
+                                </Stack>
+                              )}
+                            </Stack>
+                          </Stack>
                         </Box>
                       ))}
                   </Paper>
