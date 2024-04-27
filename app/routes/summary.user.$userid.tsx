@@ -366,15 +366,17 @@ export default function Summary() {
                       overflowY: 'auto',
                     }}
                   >
-                    {aiSummaryTexts
-                      .filter((_, i) => aiSummaryTexts.length < 2 || aiSummaryPage === i + 1)
-                      .map((aiSummaryText, i) => (
+                    {aiSummaryTexts.map((aiSummaryText, i) => {
+                      if (aiSummaryTexts.length > 1 && aiSummaryPage !== i + 1) {
+                        return null;
+                      }
+                      return (
                         <Box
                           key={i}
                           fontSize="smaller"
                           sx={{ opacity: aiSummaryText ? undefined : 0.5 }}
                         >
-                          <Stack direction="row" spacing={3} sx={{ my: 1, maxHeight: 300 }}>
+                          <Stack direction="row" spacing={3} sx={{ my: 1 }}>
                             <Stack flex={0.5}>
                               <TextField
                                 label="AI Summary"
@@ -405,27 +407,36 @@ export default function Summary() {
                                 Markdown format
                               </Typography>
                             </Stack>
-                            <Stack flex={0.5} sx={{ maxHeight: 300, opacity: 0.5 }}>
+                            <Stack flex={0.5} sx={{ opacity: 0.5, position: 'relative' }}>
                               {aiSummaryText && (
-                                <Stack sx={{ mt: -1 }}>
+                                <>
+                                  <Box sx={{ maxHeight: 300, overflow: 'scroll' }}>
+                                    <Markdown options={{ overrides: { a: { component: 'span' } } }}>
+                                      {aiSummaryText}
+                                    </Markdown>
+                                  </Box>
                                   <Box>
                                     <Chip
                                       variant="outlined"
                                       size="small"
                                       icon={<PreviewIcon fontSize="small" />}
-                                      sx={{ border: 'none' }}
-                                      label={'AI Summary Preview'}
+                                      sx={{
+                                        border: 'none',
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 0,
+                                        opacity: 0.4,
+                                      }}
+                                      label={'Preview'}
                                     />
                                   </Box>
-                                  <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                                    {aiSummaryText}
-                                  </Markdown>
-                                </Stack>
+                                </>
                               )}
                             </Stack>
                           </Stack>
                         </Box>
-                      ))}
+                      );
+                    })}
                   </Paper>
                   {aiSummaryTexts.length > 1 && (
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ mt: 2 }}>
