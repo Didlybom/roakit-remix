@@ -29,7 +29,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { ellipsisSx, randomNumber, windowOpen } from '../utils/jsxUtils';
-import { SummaryResponse } from './fetcher.summary.$userid';
+import { SummaryResponse } from './fetcher.ai.summary.$userid';
 import { TopActorsResponse } from './fetcher.top-contributors.$daterange';
 
 const logger = pino({ name: 'route:dashboard' });
@@ -99,7 +99,7 @@ export default function Dashboard() {
   // load top actors and summary
   useEffect(() => {
     topActorsFetcher.load(`/fetcher/top-contributors/${DateRange.OneDay}`);
-    summaryFetcher.load('/fetcher/summary/*');
+    summaryFetcher.load('/fetcher/ai/summary/*');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
