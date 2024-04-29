@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import App from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
-import { TOP_ACTORS_OTHERS_ID, artifactActions, identifyAccounts } from '../schemas/activityFeed';
+import { TOP_ACTORS_OTHERS_ID, artifactActions, identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';

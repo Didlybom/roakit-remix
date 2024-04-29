@@ -1,7 +1,7 @@
 import firebase from 'firebase/compat/app';
 import { z } from 'zod';
 import { ParseError } from '../utils/errorUtils';
-import { AccountData } from './schemas';
+import type { AccountData } from './types';
 
 const zuser = z.object({ accountId: z.string(), displayName: z.string() });
 

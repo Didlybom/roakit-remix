@@ -1,5 +1,5 @@
 import { findJiraTickets } from '../utils/stringUtils';
-import {
+import type {
   AccountMap,
   AccountToIdentityRecord,
   ActivityChangeLog,
@@ -10,7 +10,7 @@ import {
   ActorRecord,
   IdentityData,
   TicketRecord,
-} from './schemas';
+} from './types';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
   ['task-created', { sortOrder: 1, label: 'Task creation' }],

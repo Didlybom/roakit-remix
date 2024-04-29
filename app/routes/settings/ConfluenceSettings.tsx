@@ -20,7 +20,7 @@ import {
 import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { SettingsData } from '../../schemas/schemas';
+import type { SettingsData } from '../../types/types';
 import * as feedUtils from '../../utils/feedUtils';
 import { postJsonOptions } from '../../utils/httpUtils';
 import BannedItems from './BannedItems.';

@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
-import { ARTIFACTS, ActivityCount, Artifact, InitiativeRecord } from '../schemas/schemas';
+import { ARTIFACTS } from '../types/schemas';
+import type { ActivityCount, Artifact, InitiativeRecord } from '../types/types';
 import { ONE_HOUR } from '../utils/dateUtils';
 
 export const updateInitiativeCounters = async (

@@ -37,7 +37,7 @@ import {
   groupActivities,
   identifyAccounts,
   identifyActivities,
-} from '../schemas/activityFeed';
+} from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, dateRangeLabels } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';

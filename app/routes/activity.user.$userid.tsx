@@ -35,8 +35,8 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../schemas/activityFeed';
-import { AccountToIdentityRecord, ActivityRecord, Artifact } from '../schemas/schemas';
+import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
+import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,

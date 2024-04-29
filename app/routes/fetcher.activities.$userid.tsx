@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchActivities } from '../firestore.server/fetchers.server';
-import { ActivityRecord } from '../schemas/schemas';
+import type { ActivityRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';

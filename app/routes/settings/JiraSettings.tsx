@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { SettingsData } from '../../schemas/schemas';
+import type { SettingsData } from '../../types/types';
 import * as feedUtils from '../../utils/feedUtils';
 import BannedItems from './BannedItems.';
 import jiraImage from './images/jira-webhook.png';

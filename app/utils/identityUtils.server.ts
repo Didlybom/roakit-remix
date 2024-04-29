@@ -1,4 +1,4 @@
-import { AccountToIdentityRecord, IdentityData } from '../schemas/schemas';
+import type { AccountToIdentityRecord, IdentityData } from '../types/types';
 
 /**
  *  Returns all user ids candidate as activity keys (activities can use both identityIds and accountIds)
@@ -23,7 +23,7 @@ export const getAllPossibleActivityUserIds = (
     .flatMap(identity => identity.accounts)
     .map(account => account.id)
     .filter(accountId => accountId !== undefined)
-    .forEach(accountId => userIds.add(accountId!));
+    .forEach(accountId => userIds.add(accountId));
 
   return [...userIds];
 };

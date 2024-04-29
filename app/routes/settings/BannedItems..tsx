@@ -3,7 +3,7 @@ import { Button, TextField } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useState } from 'react';
-import { bannedRecordSchema } from '../../schemas/schemas';
+import { bannedRecordSchema } from '../../types/schemas';
 import { postJsonOptions } from '../../utils/httpUtils';
 import { areRecordsEqual } from '../../utils/mapUtils';
 import { sortAndFormatRecord } from '../../utils/stringUtils';

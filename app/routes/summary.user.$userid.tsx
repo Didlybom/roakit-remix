@@ -42,7 +42,7 @@ import App from '../components/App';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { identifyAccounts } from '../schemas/activityFeed';
+import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
@@ -148,17 +148,14 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   return { aiSummary: null, status: null };
 };
 
-const HighlightedDay = styled(PickersDay)(() => ({
-  backgroundColor: grey[200],
-  color: 'black',
-}));
+const HighlightedPickersDay = styled(PickersDay)(() => ({ backgroundColor: grey[200] }));
 
 type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?: string[] };
 
 const ActivityDay = (props: PickerDayWithHighlights) => {
   const { highlightedDays = [], day, selected, ...other } = props;
   if (!selected && highlightedDays.includes(formatYYYYMMDD(day))) {
-    return <HighlightedDay {...other} day={day} />;
+    return <HighlightedPickersDay {...other} day={day} />;
   } else {
     return <PickersDay {...other} day={day} selected={selected} />;
   }

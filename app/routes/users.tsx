@@ -36,7 +36,7 @@ import TabPanel from '../components/TabPanel';
 import { firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import { IdentityData } from '../schemas/schemas';
+import type { IdentityData } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';

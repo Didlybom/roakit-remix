@@ -1,6 +1,6 @@
 import { GenerateContentResult } from '@google-cloud/vertexai';
-import { getSummary, getSummaryAction } from '../schemas/activityFeed';
-import { ActivityData, ActorRecord } from '../schemas/schemas';
+import { getSummary, getSummaryAction } from '../types/activityFeed';
+import type { ActivityData, ActorRecord } from '../types/types';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 

@@ -2,7 +2,7 @@ import firebase from 'firebase/compat/app';
 import { z } from 'zod';
 import { ParseError } from '../utils/errorUtils';
 import { capitalizeAndUseSpaces, findJiraProjects } from '../utils/stringUtils';
-import { AccountData } from './schemas';
+import type { AccountData } from './types';
 
 const zuser = z.object({ login: z.string(), html_url: z.string() });
 

@@ -54,15 +54,15 @@ import {
   fetchTicketPriorityMap,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
-import { identifyAccounts, inferPriority } from '../schemas/activityFeed';
-import {
+import { identifyAccounts, inferPriority } from '../types/activityFeed';
+import { activitySchema } from '../types/schemas';
+import type {
   AccountData,
   ActivityCount,
   ActivityData,
   ActivityMetadata,
   Artifact,
-  activitySchema,
-} from '../schemas/schemas';
+} from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,

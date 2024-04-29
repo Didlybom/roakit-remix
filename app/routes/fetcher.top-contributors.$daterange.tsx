@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchActivities, fetchIdentities } from '../firestore.server/fetchers.server';
-import { TopActorsMap, getTopActors, identifyActivities } from '../schemas/activityFeed';
+import { TopActorsMap, getTopActors, identifyActivities } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';

@@ -22,7 +22,7 @@ import App from '../../components/App';
 import TabPanel from '../../components/TabPanel';
 import { firestore } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
-import { bannedRecordSchema, feedSchema } from '../../schemas/schemas';
+import { bannedRecordSchema, feedSchema } from '../../types/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';

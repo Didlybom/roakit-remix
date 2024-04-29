@@ -24,8 +24,8 @@ import {
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import JiraIcon from '../icons/Jira';
-import { findTicket, getSummary, getSummaryAction, getUrl } from '../schemas/activityFeed';
-import { AccountData, ActivityData } from '../schemas/schemas';
+import { findTicket, getSummary, getSummaryAction, getUrl } from '../types/activityFeed';
+import type { AccountData, ActivityData } from '../types/types';
 import { formatMonthDayTime, formatRelative } from './dateUtils';
 import { ellipsisSx } from './jsxUtils';
 import theme, { priorityColors, priorityLabels } from './theme';

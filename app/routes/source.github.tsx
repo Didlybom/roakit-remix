@@ -40,7 +40,7 @@ import {
   gitHubRows,
   rowsByAuthor,
   rowsByJira,
-} from '../schemas/githubFeed';
+} from '../types/githubFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { actorColdDef, dataGridCommonProps, dateColdDef } from '../utils/dataGridUtils';
 import { DateRange, dateFilterToStartDate, formatMonthDay } from '../utils/dateUtils';
