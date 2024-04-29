@@ -6,6 +6,7 @@ import {
   GitHub as GitHubIcon,
   History as HistoryIcon,
   Subject as SubjectIcon,
+  Summarize as SummarizeIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -84,6 +85,7 @@ export default function NavDrawer({
         {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
         {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Recent Activity', view)}
         {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
+        {listItem('summary.user', '/summaries', SummarizeIcon, 'Summaries', view)}
       </List>
       <Divider />
       <List>
