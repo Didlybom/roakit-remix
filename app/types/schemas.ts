@@ -78,8 +78,10 @@ export const activitySchema = z.object({
 });
 
 export const summarySchema = z.object({
-  aiSummary: z.string(),
+  aiSummary: z.string().optional(),
   userSummary: z.string().optional(),
+  aiTeamSummary: z.string().optional(),
+  userTeamSummary: z.string().optional(),
   createdTimestamp: z.number().optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });

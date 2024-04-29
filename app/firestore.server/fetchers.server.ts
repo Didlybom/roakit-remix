@@ -6,18 +6,18 @@ import pino from 'pino';
 import { firestore } from '../firebase.server';
 import { findTicket } from '../types/activityFeed';
 import * as from from '../types/schemas';
-import { Summaries } from '../types/summaries';
 import { displayName, emptyActivity } from '../types/typeUtils';
-import {
-  type AccountData,
-  type AccountMap,
-  type AccountToIdentityRecord,
-  type ActivityMap,
-  type ActivityMetadata,
-  type IdentityData,
-  type InitiativeData,
-  type InitiativeRecord,
-  type TicketRecord,
+import type {
+  AccountData,
+  AccountMap,
+  AccountToIdentityRecord,
+  ActivityMap,
+  ActivityMetadata,
+  IdentityData,
+  InitiativeData,
+  InitiativeRecord,
+  Summaries,
+  TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
@@ -375,6 +375,8 @@ export const fetchSummaries = async (
     summaries[document.day] = {
       aiSummary: props.data.aiSummary,
       userSummary: props.data.userSummary,
+      aiTeamSummary: props.data.aiTeamSummary,
+      userTeamSummary: props.data.userTeamSummary,
     };
   });
   return summaries;

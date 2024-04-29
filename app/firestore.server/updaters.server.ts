@@ -87,10 +87,12 @@ export const upsertSummary = async (
   date: string /* YYYYMMDD */,
   {
     identityId,
+    isTeam,
     aiSummary,
     userSummary,
   }: {
     identityId: string;
+    isTeam: boolean;
     aiSummary: string;
     userSummary: string;
   }
@@ -103,15 +105,21 @@ export const upsertSummary = async (
   const now = Date.now();
   if (existing.size === 0) {
     await coll.add({
-      aiSummary,
-      userSummary,
+      ...(isTeam ?
+        { aiTeamSummary: aiSummary, userTeamSummary: userSummary }
+      : { aiSummary, userSummary }),
       identityId,
       createdTimestamp: now,
       lastUpdatedTimestamp: now,
     });
   } else {
     await existing.docs[0].ref.set(
-      { aiSummary, userSummary, lastUpdatedTimestamp: now },
+      {
+        ...(isTeam ?
+          { aiTeamSummary: aiSummary, userTeamSummary: userSummary }
+        : { aiSummary, userSummary }),
+        lastUpdatedTimestamp: now,
+      },
       { merge: true }
     );
   }

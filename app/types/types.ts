@@ -109,3 +109,8 @@ export interface SettingsData {
   }[];
   initiatives: InitiativeData[];
 }
+
+export type Summaries = Record<
+  string,
+  { aiSummary: string; userSummary?: string; aiTeamSummary?: string; userTeamSummary?: string }
+>;

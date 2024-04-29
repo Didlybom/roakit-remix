@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   Chip,
+  FormControlLabel,
   Unstable_Grid2 as Grid,
   Link,
   Pagination,
@@ -19,6 +20,7 @@ import {
   StepContent,
   StepLabel,
   Stepper,
+  Switch,
   TextField,
   Typography,
   styled,
@@ -35,6 +37,7 @@ import {
   useNavigation,
   useSubmit,
 } from '@remix-run/react';
+import { usePrevious } from '@uidotdev/usehooks';
 import dayjs, { Dayjs } from 'dayjs';
 import Markdown from 'markdown-to-jsx';
 import { useEffect, useState } from 'react';
@@ -62,8 +65,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     ...sessionData,
     error,
     userId: null,
+    userIds: null,
+    teamUserIds: null,
     reportIds: null,
-    activityUserIds: null,
     actors: null,
   });
 
@@ -85,10 +89,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       return errorResponse(sessionData, 'User has no identity');
     }
 
-    const activityUserIds =
+    const userIds =
       userId ? getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap) : [];
+    const teamUserIds: string[] = [];
     userIdentity.reportIds?.forEach(reportId => {
-      activityUserIds.push(
+      teamUserIds.push(
         ...getAllPossibleActivityUserIds(reportId, identities.list, identities.accountMap)
       );
     });
@@ -96,7 +101,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return {
       ...sessionData,
       userId,
-      activityUserIds,
+      userIds,
+      teamUserIds,
       reportIds: userIdentity.reportIds,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       error: null,
@@ -109,6 +115,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 interface JsonRequest {
   activitiesText?: string;
   day?: string;
+  isTeam: boolean;
   aiSummary?: string;
   userSummary?: string;
 }
@@ -139,6 +146,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     }
     await upsertSummary(sessionData.customerId!, jsonRequest.day, {
       identityId,
+      isTeam: jsonRequest.isTeam,
       aiSummary: jsonRequest.aiSummary,
       userSummary: jsonRequest.userSummary ?? '',
     });
@@ -165,13 +173,16 @@ export default function Summary() {
   const navigation = useNavigation();
   const submit = useSubmit();
   const activitiesFetcher = useFetcher();
-  const activitiesResponse = activitiesFetcher.data as ActivityResponse;
+  const fetchedActivities = activitiesFetcher.data as ActivityResponse;
   const summaryFetcher = useFetcher();
-  const summaryResponse = summaryFetcher.data as SummariesResponse;
+  const fetchedSummaries = summaryFetcher.data as SummariesResponse;
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [day, setDay] = useState<Dayjs>(dayjs().subtract(1, 'days'));
+  const [selectedDay, setSelectedDay] = useState<Dayjs>(dayjs().subtract(1, 'days'));
+  const previousSelectedDay = usePrevious(selectedDay);
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs>(selectedDay);
   const [highlightedDays, setHighlightedDays] = useState<string[]>([]);
+  const [showTeam, setShowTeam] = useState(false);
   const [activitiesText, setActivitiesText] = useState('');
   const [aiSummaryTexts, setAiSummaryTexts] = useState<string[]>([]);
   const [userSummaryText, setUserSummaryText] = useState('');
@@ -182,21 +193,34 @@ export default function Summary() {
 
   // load activities and existing summary
   useEffect(() => {
-    if (day) {
+    if (selectedDay) {
       activitiesFetcher.load(
-        `/fetcher/activities/${loaderData.activityUserIds?.join(',')}?start=${day.startOf('day').valueOf()}&end=${day.endOf('day').valueOf()}`
+        `/fetcher/activities/${(showTeam ? loaderData.teamUserIds : loaderData.userIds)?.join(',')}?start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
       );
-      // FIXME optimize don't always refetch for the month
-      summaryFetcher.load(`/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(day)}`);
+      if (
+        !previousSelectedDay ||
+        selectedDay.month() !== selectedMonth.month() ||
+        selectedDay.year() !== selectedMonth.year()
+      ) {
+        // load the summaries (for the month, to be able tyo highlight days with summaries on the calendar)
+        summaryFetcher.load(
+          `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedDay)}`
+        );
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day]);
+  }, [selectedDay, selectedMonth, showTeam]); // previousDay and loaderData must be omitted
 
+  // handle save results and AI results
   useEffect(() => {
     if (!actionData) {
       return;
     }
     if (actionData.status === 'saved') {
+      // refresh summary from server (could be optimized by putting the fetcher response in a state, updated on click on Save)
+      summaryFetcher.load(
+        `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedDay)}`
+      );
       setShowSavedConfirmation(true);
     }
     if (actionData.status === 'generated') {
@@ -211,36 +235,38 @@ export default function Summary() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actionData]);
+  }, [actionData]); // selectedDay can be omitted
 
+  // handle fetched activities
   useEffect(() => {
-    if (!activitiesResponse?.activities) {
+    if (!fetchedActivities?.activities) {
       return;
     }
     const activitiesPrompt = buildActivitySummaryPrompt(
-      Object.values(activitiesResponse.activities),
+      Object.values(fetchedActivities.activities),
       loaderData.actors,
       {
         activityCount: 300, // FIXME summary activity count
         inclDates: false,
         inclActions: true,
-        inclContributors: !!loaderData.reportIds && loaderData.reportIds.length > 0,
+        inclContributors: showTeam,
       }
     );
     setActivitiesText(activitiesPrompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activitiesResponse?.activities]); // sessionData must be omitted
+  }, [fetchedActivities?.activities]); // loaderData and showTeam must be omitted
 
-  // loaded existing data from server
+  // handle fetched existing summaries
   useEffect(() => {
     const daySummary =
-      summaryResponse?.summaries ? summaryResponse.summaries[formatYYYYMMDD(day)] : undefined;
-    setAiSummaryTexts([daySummary?.aiSummary ?? '']);
-    setUserSummaryText(daySummary?.userSummary ?? '');
+      fetchedSummaries?.summaries ?
+        fetchedSummaries.summaries[formatYYYYMMDD(selectedDay)]
+      : undefined;
+    setAiSummaryTexts([(showTeam ? daySummary?.aiTeamSummary : daySummary?.aiSummary) ?? '']);
+    setUserSummaryText((showTeam ? daySummary?.userTeamSummary : daySummary?.userSummary) ?? '');
     setAiSummaryPage(1);
-    setHighlightedDays(summaryResponse?.summaries ? Object.keys(summaryResponse?.summaries) : []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summaryResponse?.summaries]);
+    setHighlightedDays(fetchedSummaries?.summaries ? Object.keys(fetchedSummaries?.summaries) : []);
+  }, [fetchedSummaries?.summaries, selectedDay, showTeam]);
 
   return (
     <App
@@ -254,9 +280,9 @@ export default function Summary() {
           {loaderData?.error}
         </Alert>
       )}
-      {activitiesResponse?.error?.message && (
+      {fetchedActivities?.error?.message && (
         <Alert severity="error" sx={{ m: 3 }}>
-          {activitiesResponse.error.message}
+          {fetchedActivities.error.message}
         </Alert>
       )}
       <Snackbar
@@ -282,37 +308,60 @@ export default function Summary() {
                   toolbar: undefined,
                   day: { highlightedDays } as PickerDayWithHighlights,
                 }}
-                value={day}
+                value={selectedDay}
                 onChange={day => {
                   if (day) {
-                    setDay(day);
+                    setSelectedDay(day);
                   }
                 }}
+                onMonthChange={setSelectedMonth}
               />
             </LocalizationProvider>
-            <Stack spacing={1} sx={{ ml: 3 }}>
-              {loaderData.actors && loaderData.userId && (
-                <>
-                  <Box sx={{ fontWeight: 500 }}>Activities for...</Box>
-                  <Box sx={{ pb: 1 }}>
+            {loaderData.actors && loaderData.userId && (
+              <Stack spacing={1} sx={{ ml: 3 }}>
+                <Typography fontWeight={500}>Activities for…</Typography>
+                <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
+                  <Chip
+                    size="small"
+                    icon={<PersonIcon fontSize="small" />}
+                    label={loaderData.actors[loaderData.userId]?.name ?? 'Unknown'}
+                  />
+                </Box>
+                {!!loaderData.reportIds?.length && (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showTeam}
+                        onChange={e => {
+                          setShowTeam(e.target.checked);
+                          setActivitiesText('');
+                          setAiSummaryTexts([]);
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography fontSize="small" fontWeight={500}>
+                        Team
+                      </Typography>
+                    }
+                  />
+                )}
+                {loaderData.reportIds?.map(reportId => (
+                  <Link
+                    href={`/summary/user/${encodeURI(reportId)}`}
+                    target="_blank"
+                    key={reportId}
+                    sx={{ opacity: showTeam ? undefined : 0.3 }}
+                  >
                     <Chip
                       size="small"
                       icon={<PersonIcon fontSize="small" />}
-                      label={loaderData.actors[loaderData.userId]?.name ?? 'Unknown'}
+                      label={loaderData.actors[reportId]?.name ?? 'Unknown'}
                     />
-                  </Box>
-                  {loaderData.reportIds?.map(reportId => (
-                    <Box key={reportId} sx={{ pl: 2 }}>
-                      <Chip
-                        size="small"
-                        icon={<PersonIcon fontSize="small" />}
-                        label={loaderData.actors[reportId]?.name ?? 'Unknown'}
-                      />
-                    </Box>
-                  ))}
-                </>
-              )}
-            </Stack>
+                  </Link>
+                ))}
+              </Stack>
+            )}
           </Stack>
         </Grid>
         <Grid flex={1} minWidth={300}>
@@ -323,7 +372,7 @@ export default function Summary() {
                 <StepContent>
                   <TextField
                     name="activitiesText"
-                    label={'Activities for ' + formatDayLocal(day)}
+                    label={'Activities for ' + formatDayLocal(selectedDay)}
                     value={activitiesText}
                     disabled={activitiesFetcher.state !== 'idle'}
                     multiline
@@ -338,7 +387,7 @@ export default function Summary() {
                   />
                 </StepContent>
               </Step>
-              <Step active={!!activitiesText}>
+              <Step active={Boolean(activitiesText || aiSummaryTexts)}>
                 <StepLabel>Summarize activities with AI assistance</StepLabel>
                 <StepContent>
                   <Box sx={{ mt: 2, mb: 4 }}>
@@ -379,7 +428,7 @@ export default function Summary() {
                                 label="AI Summary"
                                 value={aiSummaryText}
                                 placeholder="AI summary will appear here."
-                                disabled={!aiSummaryText}
+                                // disabled={!aiSummaryText}
                                 multiline
                                 fullWidth
                                 minRows={12}
@@ -445,10 +494,9 @@ export default function Summary() {
                       <Typography variant="caption">Choose which AI summary to save</Typography>
                     </Stack>
                   )}
-                  <input type="hidden" name="aiSummary" value={aiSummaryTexts[aiSummaryPage - 1]} />
                 </StepContent>
               </Step>
-              <Step active={hasAiSummary}>
+              <Step active={Boolean(activitiesText || userSummaryText)}>
                 <StepLabel>Add your input and save the summaries</StepLabel>
                 <StepContent>
                   <TextField
@@ -473,15 +521,15 @@ export default function Summary() {
                       title="Save the AI summary and your input"
                       disabled={
                         navigation.state !== 'idle' ||
-                        !activitiesText ||
-                        !hasAiSummary ||
+                        (!hasAiSummary && !userSummaryText) ||
                         !!loaderData?.error
                       }
                       endIcon={<DoneIcon />}
                       onClick={() =>
                         submit(
                           {
-                            day: formatYYYYMMDD(day),
+                            day: formatYYYYMMDD(selectedDay),
+                            isTeam: showTeam,
                             aiSummary: aiSummaryTexts[aiSummaryPage - 1],
                             userSummary: userSummaryText,
                           },

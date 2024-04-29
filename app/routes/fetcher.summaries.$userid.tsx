@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchSummaries } from '../firestore.server/fetchers.server';
-import { Summaries } from '../types/summaries';
+import type { Summaries } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
