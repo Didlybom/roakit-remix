@@ -10,7 +10,7 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.3.0",
+    "@google-cloud/functions-framework": "^3.4.0",
     "@remix-run/node": "^2.9.1",
     "compression": "^1.7.4",
     "firebase-admin": "^12.1.0",
@@ -18,8 +18,8 @@
   },
   "devDependencies": {
     "@types/compression": "^1.7.5",
-    "@typescript-eslint/eslint-plugin": "^7.7.1",
-    "@typescript-eslint/parser": "^7.7.1",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
     "eslint": "^8.57.0",
     "typescript": "^5.4.5"
   },
