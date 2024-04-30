@@ -4,17 +4,15 @@ import { redirect } from '@remix-run/node';
 import { useSubmit } from '@remix-run/react';
 import { useEffect } from 'react';
 import App from '../components/App';
-import { sessionCookie } from '../cookies.server';
 import { auth } from '../firebase.client';
+import { sessionCookie } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Logout | ROAKIT' }];
 
 export const action = async () => {
   return redirect('/', {
     headers: {
-      'Set-Cookie': await sessionCookie.serialize('', {
-        expires: new Date(0),
-      }),
+      'Set-Cookie': await sessionCookie.serialize('', { expires: new Date(0) }),
     },
   });
 };

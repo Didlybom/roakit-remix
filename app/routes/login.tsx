@@ -12,11 +12,12 @@ import {
 import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
-import { sessionCookie } from '../cookies.server';
 import { auth as clientAuth } from '../firebase.client';
 import { auth as serverAuth } from '../firebase.server';
 import { queryCustomerId } from '../firestore.server/fetchers.server';
+import { ONE_DAY } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { sessionCookie } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:login' });
 
@@ -42,7 +43,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const jwt = await serverAuth.createSessionCookie(idToken, {
     // 1 day - can be up to 2 weeks, see matching cookie expiration below
-    expiresIn: 60 * 60 * 24 * 1 * 1000,
+    expiresIn: ONE_DAY,
   });
   const now = new Date();
   const expires = new Date(now.setDate(now.getDate() + 1)); // 1 day, matching JWT expiration above

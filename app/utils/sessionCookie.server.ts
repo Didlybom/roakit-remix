@@ -1,5 +1,5 @@
+import { createCookie } from '@remix-run/node';
 import pino from 'pino';
-import { sessionCookie } from '../cookies.server';
 import { auth } from '../firebase.server';
 import { queryCustomerId } from '../firestore.server/fetchers.server';
 import { DateRange, DateRangeValue } from './dateUtils';
@@ -22,14 +22,15 @@ export interface CookieData {
   dateRange?: DateRangeValue;
 }
 
+export const sessionCookie = createCookie('__session', {
+  // WARNING: Firebase Hosting + Cloud Functions strip any cookie not named __session  https://stackoverflow.com/a/44935288
+  secrets: ['roakit cookie secret'],
+  path: '/',
+});
+
 export const parseCookie = async (request: Request) => {
   const cookie = (await sessionCookie.parse(request.headers.get('Cookie'))) as CookieData;
   return cookie ?? { jwt: null };
-};
-
-export const getCookieExpiration = async (request: Request) => {
-  const cookie = (await sessionCookie.parse(request.headers.get('Cookie'))) as string;
-  return (cookie as CookieData) ?? { jwt: null };
 };
 
 export const getSessionData = async (request: Request): Promise<SessionData> => {
