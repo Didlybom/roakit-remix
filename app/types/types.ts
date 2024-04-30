@@ -110,7 +110,12 @@ export interface SettingsData {
   initiatives: InitiativeData[];
 }
 
-export type Summaries = Record<
-  string,
-  { aiSummary: string; userSummary?: string; aiTeamSummary?: string; userTeamSummary?: string }
->;
+export interface Summary {
+  identityId?: string;
+  aiSummary?: string;
+  userSummary?: string;
+  aiTeamSummary?: string;
+  userTeamSummary?: string;
+}
+
+export type DaySummaries = Record<string, Summary>;

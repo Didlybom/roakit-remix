@@ -40,6 +40,7 @@ import {
 import { usePrevious } from '@uidotdev/usehooks';
 import dayjs, { Dayjs } from 'dayjs';
 import Markdown from 'markdown-to-jsx';
+import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
@@ -55,11 +56,13 @@ import { SessionData } from '../utils/sessionCookie.server';
 import { ActivityResponse } from './fetcher.activities.$userid';
 import { SummariesResponse } from './fetcher.summaries.$userid';
 
+const logger = pino({ name: 'route:summary.user' });
+
 export const meta = () => [{ title: 'Team Summary | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
-// load activities
+// verify JWT, load users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const errorResponse = (sessionData: SessionData, error: string) => ({
     ...sessionData,
@@ -108,7 +111,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       error: null,
     };
   } catch (e) {
-    return errorResponse(sessionData, 'Failed to fetch activities');
+    logger.error(e);
+    return errorResponse(sessionData, 'Failed to fetch users');
   }
 };
 
@@ -273,7 +277,11 @@ export default function Summary() {
       view="summary.user"
       isLoggedIn={true}
       isNavOpen={loaderData.isNavOpen}
-      showProgress={navigation.state !== 'idle' || activitiesFetcher.state !== 'idle'}
+      showProgress={
+        navigation.state !== 'idle' ||
+        activitiesFetcher.state !== 'idle' ||
+        summaryFetcher.state !== 'idle'
+      }
     >
       {loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
@@ -283,6 +291,11 @@ export default function Summary() {
       {fetchedActivities?.error?.message && (
         <Alert severity="error" sx={{ m: 3 }}>
           {fetchedActivities.error.message}
+        </Alert>
+      )}
+      {fetchedSummaries?.error?.message && (
+        <Alert severity="error" sx={{ m: 3 }}>
+          {fetchedSummaries.error.message}
         </Alert>
       )}
       <Snackbar
@@ -387,7 +400,7 @@ export default function Summary() {
                   />
                 </StepContent>
               </Step>
-              <Step active={Boolean(activitiesText || aiSummaryTexts)}>
+              <Step active>
                 <StepLabel>Summarize activities with AI assistance</StepLabel>
                 <StepContent>
                   <Box sx={{ mt: 2, mb: 4 }}>
@@ -496,7 +509,7 @@ export default function Summary() {
                   )}
                 </StepContent>
               </Step>
-              <Step active={Boolean(activitiesText || userSummaryText)}>
+              <Step active>
                 <StepLabel>Add your input and save the summaries</StepLabel>
                 <StepContent>
                   <TextField
@@ -521,7 +534,7 @@ export default function Summary() {
                       title="Save the AI summary and your input"
                       disabled={
                         navigation.state !== 'idle' ||
-                        (!hasAiSummary && !userSummaryText) ||
+                        (!aiSummaryTexts[aiSummaryPage - 1] && !userSummaryText) ||
                         !!loaderData?.error
                       }
                       endIcon={<DoneIcon />}

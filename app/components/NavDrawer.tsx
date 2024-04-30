@@ -3,10 +3,11 @@ import {
   Business as BusinessIcon,
   ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
+  EditNote as EditSummaryIcon,
   GitHub as GitHubIcon,
   History as HistoryIcon,
   Subject as SubjectIcon,
-  Summarize as SummarizeIcon,
+  ShortText as SummariesIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -84,8 +85,8 @@ export default function NavDrawer({
       <List>
         {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
         {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Recent Activity', view)}
+        {listItem('summaries', '/summaries', SummariesIcon, 'Summaries', view)}
         {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
-        {listItem('summary.user', '/summaries', SummarizeIcon, 'Summaries', view)}
       </List>
       <Divider />
       <List>
@@ -102,6 +103,10 @@ export default function NavDrawer({
         </ListSubheader>
         {listItem('github', '/source/github', GitHubIcon, 'GitHub feed', view)}
         {listItem('jira', '/source/jira', JiraIcon, 'Jira feed', view)}
+      </List>
+      <Divider />
+      <List>
+        {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'User Summaries', view)}
       </List>
     </Drawer>
   );

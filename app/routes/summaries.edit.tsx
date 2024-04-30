@@ -7,7 +7,7 @@ import App from '../components/App';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 
-const logger = pino({ name: 'route:summaries' });
+const logger = pino({ name: 'route:summaries.edit' });
 
 export const meta = () => [{ title: 'Summaries | ROAKIT' }];
 
@@ -26,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export default function Summaries() {
+export default function SummariesEdit() {
   const loaderData = useLoaderData<typeof loader>();
 
   return (

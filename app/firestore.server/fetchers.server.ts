@@ -13,10 +13,11 @@ import type {
   AccountToIdentityRecord,
   ActivityMap,
   ActivityMetadata,
+  DaySummaries,
   IdentityData,
   InitiativeData,
   InitiativeRecord,
-  Summaries,
+  Summary,
   TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
@@ -340,11 +341,11 @@ export const fetchSummaries = async (
   customerId: number,
   identityId: string,
   date: { day?: string /* YYYYMMDD */; month?: string /* YYYYMM */ }
-): Promise<Summaries | undefined> => {
+): Promise<DaySummaries | undefined> => {
   if ((!date.day && !date.month) || (date.day && date.month)) {
     throw Error('Day xor month required');
   }
-  const summaries: Summaries = {};
+  const summaries: DaySummaries = {};
   const documents = await retry(async () => {
     const days = date.day ? [date.day] : daysInMonth(dayjs(date.month));
     return await Promise.all(
@@ -378,6 +379,32 @@ export const fetchSummaries = async (
       aiTeamSummary: props.data.aiTeamSummary,
       userTeamSummary: props.data.userTeamSummary,
     };
+  });
+  return summaries;
+};
+
+export const fetchAllSummaries = async (
+  customerId: number,
+  day: string /* YYYYMMDD */
+): Promise<Summary[] | undefined> => {
+  const summaries: Summary[] = [];
+  const documents = await retry(
+    async () =>
+      await firestore.collection(`customers/${customerId}/summaries/${day}/instances`).get(),
+    retryProps('Retrying fetchAllSummaries...')
+  );
+  documents.forEach(document => {
+    const props = from.summarySchema.safeParse(document.data());
+    if (!props.success) {
+      throw new ParseError('Failed to parse summary. ' + props.error.message);
+    }
+    summaries.push({
+      identityId: props.data.identityId,
+      aiSummary: props.data.aiSummary,
+      userSummary: props.data.userSummary,
+      aiTeamSummary: props.data.aiTeamSummary,
+      userTeamSummary: props.data.userTeamSummary,
+    });
   });
   return summaries;
 };
