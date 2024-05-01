@@ -430,18 +430,13 @@ export default function Summary() {
                         return null;
                       }
                       return (
-                        <Box
-                          key={i}
-                          fontSize="smaller"
-                          sx={{ opacity: aiSummaryText ? undefined : 0.5 }}
-                        >
+                        <Box key={i} fontSize="smaller">
                           <Stack direction="row" spacing={3} sx={{ my: 1 }}>
                             <Stack flex={0.5}>
                               <TextField
                                 label="AI Summary"
                                 value={aiSummaryText}
-                                placeholder="AI summary will appear here."
-                                // disabled={!aiSummaryText}
+                                placeholder="AI summary will appear here. You can edit it."
                                 multiline
                                 fullWidth
                                 minRows={12}
