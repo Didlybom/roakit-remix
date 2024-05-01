@@ -2,14 +2,14 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 RESET='\033[0m'
 
-info_page=$(curl --fail-with-body -sS  https://roakit-production.web.app/info)
+info_page=$(curl --fail-with-body -sS https://roakit-production.web.app/info)
 if [ $? -ne 0 ]; then
-    echo "${RED}⚠ Smoke test:${RESET} ERROR (curl)"
+    printf "${RED}⚠  smoke test:${RESET} ERROR (curl)\n"
     exit 1
 fi
 echo $info_page | grep 'Copyright © ROAKIT' > /dev/null
 if [ $? -ne 0 ]; then
-    echo "${RED}⚠ Smoke test:${RESET} ERROR (unexpected response)"
+    printf "${RED}⚠  smoke test:${RESET} ERROR (unexpected response)\n"
     exit 1
 fi
-echo "${GREEN}✔ smoke test:${RESET} OK"
+printf "${GREEN}✔  smoke test:${RESET} OK\n"
