@@ -136,7 +136,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   if (jsonRequest.activitiesText) {
     return {
       aiSummary: await generateContent({
-        prompt: DEFAULT_PROMPT + '\n\n' + jsonRequest.activitiesText,
+        prompt: `${DEFAULT_PROMPT}\n\n${jsonRequest.activitiesText}`,
       }),
       status: 'generated',
     };
@@ -208,7 +208,7 @@ export default function Summary() {
       ) {
         // load the summaries (for the month, to be able tyo highlight days with summaries on the calendar)
         summaryFetcher.load(
-          `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedDay)}`
+          `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedMonth)}`
         );
       }
     }
