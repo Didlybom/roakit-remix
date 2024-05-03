@@ -63,6 +63,8 @@ export const meta = () => [{ title: 'Team Summary | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
+const SEARCH_PARAM_DAY = 'day';
+
 // verify JWT, load users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const errorResponse = (sessionData: SessionData, error: string) => ({
@@ -185,7 +187,9 @@ export default function Summary() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
-    searchParams.get('day') ? dayjs(searchParams.get('day')) : dayjs().subtract(1, 'days')
+    searchParams.get(SEARCH_PARAM_DAY) ?
+      dayjs(searchParams.get(SEARCH_PARAM_DAY))
+    : dayjs().subtract(1, 'days')
   );
   const previousSelectedDay = usePrevious(selectedDay);
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(selectedDay);
@@ -340,7 +344,7 @@ export default function Summary() {
                   if (day) {
                     setSelectedDay(day);
                     setSearchParams(prev => {
-                      prev.set('day', formatYYYYMMDD(day));
+                      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(day));
                       return prev;
                     });
                   }

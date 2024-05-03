@@ -395,7 +395,7 @@ export default function Dashboard() {
                                   : encodeURI(
                                       groupedActivities.topActors[action][data.dataIndex].id
                                     )
-                                }#${action}`
+                                }?action=${action}`
                               );
                             }
                           }}
@@ -409,7 +409,7 @@ export default function Dashboard() {
                                   : encodeURI(
                                       groupedActivities.topActors[action][data.dataIndex].id
                                     )
-                                }#${action}`
+                                }?action=${action}`
                               );
                             }
                           }}

@@ -19,9 +19,9 @@ import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
 import {
   useFetcher,
   useLoaderData,
-  useLocation,
   useNavigate,
   useNavigation,
+  useSearchParams,
 } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
@@ -55,8 +55,6 @@ import { ActivityResponse } from './fetcher.activities.$userid';
 
 const logger = pino({ name: 'route:activity.user' });
 
-const ALL = '*';
-
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   let title = 'User';
   if (data?.userId && data.userId !== ALL) {
@@ -64,6 +62,11 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   }
   return [{ title: `${title} Activity | ROAKIT` }];
 };
+
+export const shouldRevalidate = () => false;
+
+const ALL = '*';
+const SEARCH_PARAM_ACTION = 'action';
 
 interface UserActivityRow {
   id: string;
@@ -111,6 +114,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
+  // validate url
+  const { searchParams } = new URL(request.url);
+  if (
+    searchParams.get(SEARCH_PARAM_ACTION) != null &&
+    ![...artifactActions.keys()].includes(searchParams.get(SEARCH_PARAM_ACTION)!)
+  ) {
+    throw Error('Invalid action param');
+  }
+
   try {
     // retrieve initiatives and users
     const [initiatives, accounts, identities] = await Promise.all([
@@ -144,10 +156,10 @@ export default function UserActivity() {
   const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activitiesFetcher = useFetcher();
   const activityResponse = activitiesFetcher.data as ActivityResponse;
-  const [actionFilter, setActionFilter] = useState(''); // see effect with location.hash dependency below
+  const [actionFilter, setActionFilter] = useState(searchParams.get(SEARCH_PARAM_ACTION) ?? '');
   const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
@@ -199,10 +211,6 @@ export default function UserActivity() {
     },
     [loaderData.accountMap, sortAndSetUserActivities]
   );
-
-  useEffect(() => {
-    setActionFilter(location.hash?.slice(1) ?? '');
-  }, [location.hash]);
 
   // load activities
   useEffect(() => {
@@ -418,7 +426,7 @@ export default function UserActivity() {
                 {loaderData.userId !== ALL && (
                   <Button
                     variant="outlined"
-                    href={'/activity/user/*' + (actionFilter ? `#${actionFilter}` : '')}
+                    href={'/activity/user/*' + (actionFilter ? `?action=${actionFilter}` : '')}
                     sx={{ textWrap: 'nowrap' }}
                   >
                     {'See all contributors'}
@@ -436,16 +444,15 @@ export default function UserActivity() {
                     })),
                   ]}
                   onChange={e => {
-                    if (e.target.value) {
-                      navigate({ hash: e.target.value });
-                    } else {
-                      history.pushState(
-                        '',
-                        document.title,
-                        window.location.pathname + window.location.search
-                      ); // see https://stackoverflow.com/a/5298684/290343 if we use navigate without a #, it causes the page to reload
-                      setActionFilter('');
-                    }
+                    setActionFilter(e.target.value);
+                    setSearchParams(prev => {
+                      if (e.target.value) {
+                        prev.set(SEARCH_PARAM_ACTION, e.target.value);
+                      } else {
+                        prev.delete(SEARCH_PARAM_ACTION);
+                      }
+                      return prev;
+                    });
                   }}
                   sx={{ justifyContent: 'right' }}
                 />
