@@ -35,6 +35,7 @@ import {
   useFetcher,
   useLoaderData,
   useNavigation,
+  useSearchParams,
   useSubmit,
 } from '@remix-run/react';
 import { usePrevious } from '@uidotdev/usehooks';
@@ -175,6 +176,7 @@ const ActivityDay = (props: PickerDayWithHighlights) => {
 
 export default function Summary() {
   const navigation = useNavigation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
@@ -182,7 +184,9 @@ export default function Summary() {
   const fetchedSummaries = summaryFetcher.data as SummariesResponse;
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [selectedDay, setSelectedDay] = useState<Dayjs>(dayjs().subtract(1, 'days'));
+  const [selectedDay, setSelectedDay] = useState<Dayjs>(
+    searchParams.get('day') ? dayjs(searchParams.get('day')) : dayjs().subtract(1, 'days')
+  );
   const previousSelectedDay = usePrevious(selectedDay);
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(selectedDay);
   const [highlightedDays, setHighlightedDays] = useState<string[]>([]);
@@ -192,11 +196,16 @@ export default function Summary() {
   const [userSummaryText, setUserSummaryText] = useState('');
   const [aiSummaryPage, setAiSummaryPage] = useState(1);
   const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+  const [error, setError] = useState('');
 
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
   // load activities and existing summary
   useEffect(() => {
+    if (isNaN(selectedDay.toDate().getTime())) {
+      setError('Invalid date');
+      return;
+    }
     if (selectedDay) {
       activitiesFetcher.load(
         `/fetcher/activities/${(showTeam ? loaderData.teamUserIds : loaderData.userIds)?.join(',')}?start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
@@ -239,7 +248,7 @@ export default function Summary() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actionData]); // selectedDay can be omitted
+  }, [actionData]); // selectedDay must be omitted
 
   // handle fetched activities
   useEffect(() => {
@@ -298,6 +307,11 @@ export default function Summary() {
           {fetchedSummaries.error.message}
         </Alert>
       )}
+      {error && (
+        <Alert severity="error" sx={{ m: 3 }}>
+          {error}
+        </Alert>
+      )}
       <Snackbar
         open={showSavedConfirmation}
         autoHideDuration={3000}
@@ -325,6 +339,10 @@ export default function Summary() {
                 onChange={day => {
                   if (day) {
                     setSelectedDay(day);
+                    setSearchParams(prev => {
+                      prev.set('day', formatYYYYMMDD(day));
+                      return prev;
+                    });
                   }
                 }}
                 onMonthChange={setSelectedMonth}
