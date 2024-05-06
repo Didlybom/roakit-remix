@@ -1,7 +1,6 @@
 import {
   AutoAwesome as AutoAwesomeIcon,
   Done as DoneIcon,
-  Person as PersonIcon,
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import {
@@ -314,7 +313,7 @@ export default function Summary() {
         }}
         message={'Saved'}
       />
-      <Grid container columns={2} sx={{ m: 3 }}>
+      <Grid container columns={2} sx={{ mx: 1, my: 3 }}>
         <Grid>
           <Stack sx={{ mb: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -345,7 +344,6 @@ export default function Summary() {
                 <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
                   <Chip
                     size="small"
-                    icon={<PersonIcon fontSize="small" />}
                     label={loaderData.actors[loaderData.userId]?.name ?? 'Unknown'}
                   />
                 </Box>
@@ -375,11 +373,7 @@ export default function Summary() {
                     key={reportId}
                     sx={{ opacity: showTeam ? undefined : 0.3 }}
                   >
-                    <Chip
-                      size="small"
-                      icon={<PersonIcon fontSize="small" />}
-                      label={loaderData.actors[reportId]?.name ?? 'Unknown'}
-                    />
+                    <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
                   </Link>
                 ))}
               </Stack>

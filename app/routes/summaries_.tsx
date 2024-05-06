@@ -111,7 +111,7 @@ export default function Summaries() {
         Work in progress. <Link href="/summaries?day=20240418">April 18 has some data.</Link> See
         also Summary Form in the navbar.
       </Alert>
-      <Grid container columns={2}>
+      <Grid container columns={2} mt={1}>
         <Grid>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <StaticDatePicker
@@ -146,7 +146,7 @@ export default function Summaries() {
                 )
                 .map((summary, i) => {
                   return (
-                    <Box key={i} sx={{ my: 1 }}>
+                    <Box key={i} my={1}>
                       <Stack direction={'row'} spacing={1}>
                         <Divider component="div" role="presentation" sx={{ width: '100%' }}>
                           <Chip
