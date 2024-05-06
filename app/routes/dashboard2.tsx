@@ -17,12 +17,12 @@ import { BarChart } from '@mui/x-charts';
 import { LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
-import Markdown from 'markdown-to-jsx';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
+import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { TOP_ACTORS_OTHERS_ID, artifactActions, identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
@@ -132,9 +132,7 @@ export default function Dashboard() {
             </Tooltip>
             {summaryResponse?.summary ?
               <Box fontSize="smaller">
-                <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                  {summaryResponse.summary}
-                </Markdown>
+                <Markdown markdownText={summaryResponse.summary} />
               </Box>
             : <Stack spacing={1} sx={{ m: 2 }}>
                 {[1, 2, 3, 4, 5].map(i => (

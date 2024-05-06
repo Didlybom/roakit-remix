@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
-import Markdown from 'markdown-to-jsx';
 import { useEffect, useState } from 'react';
+import Markdown from '../components/Markdown';
 import {
   fetchAccountMap,
   fetchActivities,
@@ -168,9 +168,7 @@ export default function AIPlayground() {
               }}
             >
               <Box fontSize="smaller">
-                <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                  {output ?? ''}
-                </Markdown>
+                <Markdown markdownText={output ?? ''} />
               </Box>
             </Paper>
             <TextField

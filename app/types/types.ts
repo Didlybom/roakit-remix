@@ -111,7 +111,7 @@ export interface SettingsData {
 }
 
 export interface Summary {
-  identityId?: string;
+  identityId: string;
   aiSummary?: string;
   userSummary?: string;
   aiTeamSummary?: string;

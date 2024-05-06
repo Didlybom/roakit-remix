@@ -23,10 +23,8 @@ import {
   Switch,
   TextField,
   Typography,
-  styled,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
-import { PickersDay, PickersDayProps, StaticDatePicker } from '@mui/x-date-pickers';
+import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
@@ -40,10 +38,12 @@ import {
 } from '@remix-run/react';
 import { usePrevious } from '@uidotdev/usehooks';
 import dayjs, { Dayjs } from 'dayjs';
-import Markdown from 'markdown-to-jsx';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
+import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
+import IconIndicator from '../components/IconIndicator';
+import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
@@ -161,19 +161,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   }
 
   return { aiSummary: null, status: null };
-};
-
-const HighlightedPickersDay = styled(PickersDay)(() => ({ backgroundColor: grey[200] }));
-
-type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?: string[] };
-
-const ActivityDay = (props: PickerDayWithHighlights) => {
-  const { highlightedDays = [], day, selected, ...other } = props;
-  if (!selected && highlightedDays.includes(formatYYYYMMDD(day))) {
-    return <HighlightedPickersDay {...other} day={day} />;
-  } else {
-    return <PickersDay {...other} day={day} selected={selected} />;
-  }
 };
 
 export default function Summary() {
@@ -333,7 +320,7 @@ export default function Summary() {
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <StaticDatePicker
                 disableFuture={true}
-                slots={{ toolbar: undefined, day: ActivityDay }}
+                slots={{ toolbar: undefined, day: ActivityPickersDay }}
                 slotProps={{
                   actionBar: { actions: [] },
                   toolbar: undefined,
@@ -487,25 +474,12 @@ export default function Summary() {
                               {aiSummaryText && (
                                 <>
                                   <Box sx={{ maxHeight: 300, overflow: 'scroll' }}>
-                                    <Markdown options={{ overrides: { a: { component: 'span' } } }}>
-                                      {aiSummaryText}
-                                    </Markdown>
+                                    <Markdown markdownText={aiSummaryText} />
                                   </Box>
-                                  <Box>
-                                    <Chip
-                                      variant="outlined"
-                                      size="small"
-                                      icon={<PreviewIcon fontSize="small" />}
-                                      sx={{
-                                        border: 'none',
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 0,
-                                        opacity: 0.4,
-                                      }}
-                                      label={'Preview'}
-                                    />
-                                  </Box>
+                                  <IconIndicator
+                                    icon={<PreviewIcon fontSize="small" />}
+                                    label="Preview"
+                                  />
                                 </>
                               )}
                             </Stack>

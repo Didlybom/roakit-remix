@@ -84,8 +84,8 @@ export default function NavDrawer({
       <Divider />
       <List>
         {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
-        {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Recent Activity', view)}
-        {listItem('summaries', '/summaries', SummariesIcon, 'Summaries', view)}
+        {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
+        {listItem('summaries', '/summaries', SummariesIcon, 'Contributor Summary', view)}
         {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
       </List>
       <Divider />
@@ -106,7 +106,7 @@ export default function NavDrawer({
       </List>
       <Divider />
       <List>
-        {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'User Summaries', view)}
+        {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'Summary Form', view)}
       </List>
     </Drawer>
   );
