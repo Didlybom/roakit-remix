@@ -23,7 +23,6 @@ import {
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
-import { usePrevious } from '@uidotdev/usehooks';
 import {
   QueryDocumentSnapshot,
   collection,
@@ -54,6 +53,7 @@ import {
   fetchTicketPriorityMap,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
+import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
 import { activitySchema } from '../types/schemas';
 import type {
