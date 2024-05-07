@@ -109,7 +109,8 @@ export default function Summaries() {
       )}
       <Alert severity="info">
         Work in progress. <Link href="/summaries?day=20240418">April 18 has some data.</Link> See
-        also Summary Form in the navbar.
+        also Summary Form in the navbar (
+        <Link href="/summary/user/TAaQqrjRl6tHB2lMvxOR?day=20240418">example</Link>).
       </Alert>
       <Grid container columns={2} mt={1}>
         <Grid>

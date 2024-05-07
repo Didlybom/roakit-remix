@@ -46,6 +46,7 @@ import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
+import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
@@ -384,7 +385,9 @@ export default function Summary() {
           <Stack spacing={2} sx={{ ml: 2 }}>
             <Stepper orientation="vertical">
               <Step active>
-                <StepLabel>Select a day, review and edit activities</StepLabel>
+                <StepLabel>
+                  Select a day, review and edit activities that AI will summarize in step 2
+                </StepLabel>
                 <StepContent>
                   <TextField
                     name="activitiesText"
@@ -396,10 +399,10 @@ export default function Summary() {
                     minRows={12}
                     maxRows={12}
                     size="small"
-                    inputProps={{ sx: { mt: 1, fontSize: 'smaller' } }}
+                    inputProps={{ sx: { mt: 1, fontSize: 'smaller', backgroundColor: grey[50] } }}
                     InputLabelProps={{ shrink: true }}
-                    onChange={e => setActivitiesText(e.target.value)}
                     sx={{ mt: 3 }}
+                    onChange={e => setActivitiesText(e.target.value)}
                   />
                 </StepContent>
               </Step>
