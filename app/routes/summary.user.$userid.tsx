@@ -1,3 +1,4 @@
+import type { GenerateContentResult } from '@google-cloud/vertexai';
 import {
   AutoAwesome as AutoAwesomeIcon,
   Done as DoneIcon,
@@ -27,7 +28,12 @@ import { grey } from '@mui/material/colors';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import {
+  ActionFunctionArgs,
+  LoaderFunctionArgs,
+  redirect,
+  type TypedResponse,
+} from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -46,7 +52,6 @@ import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
@@ -127,7 +132,16 @@ interface JsonRequest {
   userSummary?: string;
 }
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
+interface ActionResponse {
+  status?: 'generated' | 'saved';
+  error?: string;
+  aiSummary: GenerateContentResult | null;
+}
+
+export const action = async ({
+  params,
+  request,
+}: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
@@ -160,7 +174,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     return { aiSummary: null, status: 'saved' };
   }
 
-  return { aiSummary: null, status: null };
+  return { aiSummary: null, status: undefined };
 };
 
 export default function Summary() {
@@ -178,7 +192,6 @@ export default function Summary() {
       dayjs(searchParams.get(SEARCH_PARAM_DAY))
     : dayjs().subtract(1, 'days')
   );
-  const previousSelectedDay = usePrevious(selectedDay);
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(selectedDay);
   const [highlightedDays, setHighlightedDays] = useState<string[]>([]);
   const [showTeam, setShowTeam] = useState(false);
@@ -191,29 +204,29 @@ export default function Summary() {
 
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
-  // load activities and existing summary
+  // load activities for the selected day
   useEffect(() => {
     if (isNaN(selectedDay.toDate().getTime())) {
       setError('Invalid date');
       return;
     }
-    if (selectedDay) {
-      activitiesFetcher.load(
-        `/fetcher/activities/${(showTeam ? loaderData.teamUserIds : loaderData.userIds)?.join(',')}?start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
-      );
-      if (
-        !previousSelectedDay ||
-        selectedDay.month() !== selectedMonth.month() ||
-        selectedDay.year() !== selectedMonth.year()
-      ) {
-        // load the summaries (for the month, to be able tyo highlight days with summaries on the calendar)
-        summaryFetcher.load(
-          `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedMonth)}`
-        );
-      }
-    }
+    activitiesFetcher.load(
+      `/fetcher/activities/${(showTeam ? loaderData.teamUserIds : loaderData.userIds)?.join(',')}?start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDay, selectedMonth, showTeam]); // previousDay and loaderData must be omitted
+  }, [selectedDay, showTeam]); // activitiesFetcher and loaderData must be omitted
+
+  // load the summaries for the selected month (to be able to highlight days with summaries)
+  useEffect(() => {
+    if (isNaN(selectedMonth.toDate().getTime())) {
+      setError('Invalid date');
+      return;
+    }
+    summaryFetcher.load(
+      `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedMonth)}`
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth]); // summaryFetcher and loaderData must be omitted
 
   // handle save results and AI results
   useEffect(() => {
