@@ -217,11 +217,13 @@ export default function Users() {
         editable: true,
         renderCell: params =>
           params.value && params.value !== UNSET_MANAGER_ID ?
-            <Box sx={{ cursor: 'pointer' }}>
+            <Box fontSize="small" sx={{ cursor: 'pointer' }}>
               {loaderData.identities.list.find(i => i.id === params.value)?.displayName ??
                 'unknown'}
             </Box>
-          : <Box sx={{ cursor: 'pointer' }}>{'...'}</Box>,
+          : <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+              {'...'}
+            </Box>,
       },
       {
         field: 'id',
@@ -370,9 +372,9 @@ export default function Users() {
         </Stack>
       </TabPanel>
       <TabPanel value={tabValue} index={UsersTab.NeedsReview}>
-        <Typography sx={{ mb: 2 }}>
-          <em>We found activity for these accounts not listed in the directory.</em>
-        </Typography>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          We found activity for these accounts although they are not listed in the directory.
+        </Alert>
         <DataGrid
           columns={accountReviewCols}
           rows={loaderData.accountsToReview}
@@ -381,7 +383,6 @@ export default function Users() {
             pagination: { paginationModel: { pageSize: 25 } },
             sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
           }}
-          rowHeight={50}
           autosizeOnMount
         />
       </TabPanel>

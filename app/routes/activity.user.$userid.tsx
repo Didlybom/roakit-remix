@@ -314,9 +314,11 @@ export default function UserActivity() {
           <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
             <Typography
               variant="h6"
+              display="flex"
               alignItems="center"
               color={grey[600]}
-              sx={{ fontSize: '1.1rem', display: 'flex', mb: 1 }}
+              fontSize="1.1rem"
+              mb={1}
             >
               <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
               {actor?.accounts
@@ -388,12 +390,12 @@ export default function UserActivity() {
         onClick={() => setPopover(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Box sx={{ py: 1 }}>{popover?.content}</Box>
+        <Box py={1}>{popover?.content}</Box>
       </Popover>
-      <Stack sx={{ m: 3 }}>
+      <Stack m={3}>
         <Stack direction="row">
           {loaderData.userId === ALL && (
-            <Box sx={{ display: 'flex', mr: 2 }}>
+            <Box display="flex" mr={2}>
               <Box sx={{ position: 'relative' }}>
                 <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
@@ -420,8 +422,8 @@ export default function UserActivity() {
               </Box>
             </Box>
           )}
-          <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 1 }}>
+          <Stack flex={1} minWidth={0}>
+            <Grid container columns={2} spacing={2} alignItems="center" mb={1}>
               <Grid>
                 {loaderData.userId !== ALL && (
                   <Button
@@ -458,7 +460,7 @@ export default function UserActivity() {
                 />
               </Grid>
             </Grid>
-            <Box sx={{ display: 'flex' }} justifyContent="right">
+            <Box display="flex" justifyContent="right">
               {!!activityCount && (
                 <Typography variant="subtitle2">
                   {activityCount.toLocaleString()} {pluralize('activity', activityCount)}

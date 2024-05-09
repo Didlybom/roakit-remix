@@ -43,7 +43,7 @@ export default function DateRangePicker({
   };
 
   return (
-    <Box sx={{ mx: 2 }}>
+    <Box mx={2}>
       <Button
         color="inherit"
         startIcon={icons[dateRange]}

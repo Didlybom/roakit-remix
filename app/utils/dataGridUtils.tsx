@@ -33,6 +33,7 @@ import theme, { priorityColors, priorityLabels } from './theme';
 export const dataGridCommonProps = {
   autosizeOnMount: true,
   autoHeight: true, // otherwise empty state looks ugly
+  sx: { fontSize: 'small' },
   slots: {
     noRowsOverlay: () => (
       <Box height="100px" display="flex" alignItems="center" justifyContent="center">
@@ -59,7 +60,9 @@ export const dateColdDef = (colDef?: GridColDef) =>
     valueFormatter: (value: Date) => formatRelative(value),
     renderCell: (params: GridRenderCellParams) => (
       <Tooltip title={formatMonthDayTime(params.value as Date)}>
-        <Box sx={{ ...ellipsisSx }}>{formatRelative(params.value as Date)}</Box>
+        <Box fontSize="small" sx={{ ...ellipsisSx }}>
+          {formatRelative(params.value as Date)}
+        </Box>
       </Tooltip>
     ),
     ...colDef,
@@ -94,7 +97,7 @@ export const actionColDef = (colDef?: GridColDef) =>
       const event = activity.event;
       const codeAction = activity.metadata?.codeAction;
       return !event ? action : (
-          <Stack sx={{ mt: '3px' }}>
+          <Stack mt="3px">
             <Typography
               fontSize="small"
               color={action === 'unknown' ? grey[400] : undefined}
@@ -103,9 +106,9 @@ export const actionColDef = (colDef?: GridColDef) =>
               {action}
             </Typography>
             <Typography
+              fontSize="smaller"
               title={`${event} ${codeAction ?? ''}`}
               variant="caption"
-              fontSize="10px"
               sx={ellipsisSx}
             >
               {event} {codeAction}
@@ -123,9 +126,9 @@ export const priorityColDef = (colDef?: GridColDef) =>
     renderCell: params => {
       const priority = params.value as number;
       return (
-        <Typography component="span" fontSize="small" color={priorityColors[priority] ?? grey[400]}>
+        <Box fontSize="small" color={priorityColors[priority] ?? grey[400]}>
           {priorityLabels[priority] ?? 'unknown'}
-        </Typography>
+        </Box>
       );
     },
     ...colDef,
@@ -171,23 +174,23 @@ export const summaryColDef = (
         <Stack direction="row">
           {link}
           {summaryAction || comment || commits ?
-            <Stack sx={{ mt: '3px', minWidth: 0 }}>
+            <Stack mt={'3px'} minWidth={0}>
               <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>
               {summaryAction && (
-                <Typography title={summaryAction} fontSize="10px" sx={{ ...ellipsisSx }}>
+                <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
                   {summaryAction}
                 </Typography>
               )}
               {comment && (
-                <Typography title={comment} fontSize="10px" sx={{ ...ellipsisSx }}>
+                <Typography title={comment} fontSize="smaller" sx={{ ...ellipsisSx }}>
                   {comment}
                 </Typography>
               )}
               {commits && commits.length > 1 && (
                 <Link
-                  fontSize="10px"
+                  fontSize="smaller"
                   onClick={e => {
                     setPopover?.(
                       e.currentTarget,
@@ -211,12 +214,12 @@ export const summaryColDef = (
                 </Link>
               )}
               {commits && commits.length === 1 && (
-                <Typography title={summaryAction} fontSize="10px" sx={{ ...ellipsisSx }}>
+                <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
                   {'Committed'}
                 </Typography>
               )}
             </Stack>
-          : <Box title={summary} sx={{ ...ellipsisSx }}>
+          : <Box fontSize="small" title={summary} sx={{ ...ellipsisSx }}>
               {summary}
             </Box>
           }

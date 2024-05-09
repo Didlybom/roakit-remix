@@ -169,20 +169,26 @@ export default function GitHub() {
           }
           const cell = (
             <Stack sx={{ overflowX: 'scroll', mt: '5px' }}>
-              <Typography variant="body2">
+              <Typography fontSize="small" variant="body2">
                 {showBy === ActivityView.Jira ?
                   title
                 : <LinkifyJira content={title} onClick={jira => handleJiraClick(jira)} />}
               </Typography>
               {!fields?.commitMessages?.length ?
-                <Typography variant="caption">{activity}</Typography>
+                <Typography fontSize="smaller" variant="caption">
+                  {activity}
+                </Typography>
               : <Link
+                  fontSize="smaller"
                   variant="caption"
                   onClick={e => {
                     setPopover({
                       element: e.currentTarget,
                       content: (
-                        <List dense={true}>
+                        <List
+                          dense={true}
+                          sx={{ '& .MuiListItemText-root': { fontSize: 'small' } }}
+                        >
                           <LinkifyJira
                             content={fields.commitMessages?.map((message, i) => (
                               <ListItem key={i}>
@@ -201,7 +207,7 @@ export default function GitHub() {
                 </Link>
               }
               {fields?.pullRequestComment && (
-                <Typography variant="caption" sx={{ ...ellipsisSx }}>
+                <Typography fontSize="small" variant="caption" sx={{ ...ellipsisSx }}>
                   {fields.pullRequestComment.comment}
                 </Typography>
               )}

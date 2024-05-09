@@ -106,10 +106,14 @@ export default function Jira() {
             activity = activity.slice(0, -2);
           }
           return (
-            <Stack sx={{ overflowX: 'scroll', mt: '5px' }}>
-              <Typography variant="body2">{title}</Typography>
+            <Stack sx={{ overflowX: 'scroll' }} mt="5px">
+              <Typography fontSize="small" variant="body2">
+                {title}
+              </Typography>
               <Tooltip title={activity}>
-                <Typography variant="caption">{activity}</Typography>
+                <Typography fontSize="smaller" variant="caption">
+                  {activity}
+                </Typography>
               </Tooltip>
             </Stack>
           );
@@ -126,12 +130,7 @@ export default function Jira() {
               key={1}
               icon={<DataObjectIcon />}
               label="View source"
-              onClick={e =>
-                setPopover({
-                  element: e.currentTarget,
-                  content: row.sourceData,
-                })
-              }
+              onClick={e => setPopover({ element: e.currentTarget, content: row.sourceData })}
             />,
           ];
         },

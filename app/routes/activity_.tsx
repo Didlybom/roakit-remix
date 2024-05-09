@@ -300,6 +300,7 @@ export default function ActivityReview() {
   const dataGridProps = {
     autosizeOnMount: true,
     autoHeight: true, // otherwise empty state looks ugly
+    sx: { fontSize: 'small' },
     slots: {
       noRowsOverlay: () => (
         <Box height="75px" display="flex" alignItems="center" justifyContent="center">
@@ -318,10 +319,7 @@ export default function ActivityReview() {
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef({
-        field: 'createdTimestamp',
-        valueGetter: (value: number) => new Date(value),
-      }),
+      dateColdDef({ field: 'createdTimestamp', valueGetter: value => new Date(value) }),
       actorColdDef({
         field: 'actor',
         headerName: 'Contributor',
@@ -338,6 +336,7 @@ export default function ActivityReview() {
           const fields = params.value as AccountData;
           return (
             <Link
+              fontSize="small"
               href={`/activity/user/${encodeURI(fields.id)}`}
               title="View activity"
               sx={internalLinkSx}
@@ -365,10 +364,12 @@ export default function ActivityReview() {
         editable: true,
         renderCell: params =>
           params.value !== UNSET_INITIATIVE_ID ?
-            <Box sx={{ cursor: 'pointer' }}>
+            <Box fontSize="small" sx={{ cursor: 'pointer' }}>
               {loaderData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
-          : <Box sx={{ cursor: 'pointer' }}>{'...'}</Box>,
+          : <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+              {'...'}
+            </Box>,
       },
       {
         field: 'note',
@@ -377,7 +378,7 @@ export default function ActivityReview() {
         editable: true,
         sortable: false,
         renderCell: params => (
-          <Box title={params.value as string} sx={{ cursor: 'pointer' }}>
+          <Box fontSize="small" title={params.value as string} sx={{ cursor: 'pointer' }}>
             {params.value || '...'}
           </Box>
         ),
@@ -424,9 +425,7 @@ export default function ActivityReview() {
                 }
                 activities
                   .filter(a => rowSelectionModel.includes(a.id))
-                  .forEach(activity => {
-                    activity.initiativeId = bulkInitiative;
-                  });
+                  .forEach(activity => (activity.initiativeId = bulkInitiative));
                 setActivities(activities);
                 fetcher.submit(
                   {
@@ -482,15 +481,15 @@ export default function ActivityReview() {
         onClick={() => setPopover(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Box sx={{ py: 1 }}>{popover?.content}</Box>
+        <Box py={1}>{popover?.content}</Box>
       </Popover>
-      <Stack sx={{ m: 3 }}>
+      <Stack m={3}>
         {error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
             {error}
           </Alert>
         )}
-        <Grid container columns={2} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+        <Grid container columns={2} spacing={2} alignItems="center" mb={2}>
           <Grid>
             {!!rowTotal && (
               <Typography variant="subtitle2">
@@ -553,7 +552,6 @@ export default function ActivityReview() {
                 postJsonOptions
               );
             }
-
             return updatedRow;
           }}
           onRowSelectionModelChange={rowSelectionModel => {

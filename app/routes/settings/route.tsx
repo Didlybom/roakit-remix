@@ -156,6 +156,24 @@ export const screenshotThumbSx: SxProps = {
   cursor: 'pointer',
 };
 
+const globalStyles = (
+  <GlobalStyles
+    styles={{
+      code: {
+        fontFamily: 'Roboto Mono, monospace',
+        fontSize: '.8rem',
+        lineHeight: 1.5,
+        whiteSpace: 'nowrap',
+        backgroundColor: grey[200],
+        border: '1px solid',
+        borderColor: grey[400],
+        borderRadius: '5px',
+        padding: '1px 4px',
+      },
+    }}
+  />
+);
+
 export default function Settings() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -174,27 +192,11 @@ export default function Settings() {
     setShowCopyConfirmation(content);
   };
 
-  useEffect(() => {
-    setShowError(actionData?.error ?? null);
-  }, [actionData]);
+  useEffect(() => setShowError(actionData?.error ?? null), [actionData]);
 
   return (
     <App view="settings" isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
-      <GlobalStyles
-        styles={{
-          code: {
-            fontFamily: 'Roboto Mono, monospace',
-            fontSize: '.8rem',
-            lineHeight: 1.5,
-            whiteSpace: 'nowrap',
-            backgroundColor: grey[200],
-            border: '1px solid',
-            borderColor: grey[400],
-            borderRadius: '5px',
-            padding: '1px 4px',
-          },
-        }}
-      />
+      {globalStyles}
       <Popover
         id={popover?.element ? 'popover' : undefined}
         open={!!popover?.element}
@@ -206,7 +208,7 @@ export default function Settings() {
         <Box sx={{ p: 2, overflow: 'scroll' }}>{popover?.content}</Box>
       </Popover>
       <Paper variant="outlined" sx={{ backgroundColor: grey[50], m: 2 }}>
-        <Typography variant="h6" sx={{ pl: 2, pt: 2, pb: 1 }}>
+        <Typography variant="h6" pl={2} pt={2} pb={1}>
           Webhook Settings
         </Typography>
         <Form method="post" noValidate autoComplete="off">
@@ -235,7 +237,7 @@ export default function Settings() {
               {'Error: ' + (showError ?? '')}
             </Alert>
           </Snackbar>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
+          <Box borderBottom={1} borderColor="divider" mb={1}>
             <Tabs
               variant="scrollable"
               value={tabValue}

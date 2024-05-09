@@ -74,11 +74,15 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Typography sx={{ display: { xs: 'none', sm: 'flex' } }}>ROAKIT</Typography>
-        <Typography sx={{ display: { xs: 'flex', sm: 'none' } }}>RKT</Typography>
+        <Typography fontWeight={500} display={{ xs: 'none', sm: 'flex' }}>
+          ROAKIT
+        </Typography>
+        <Typography fontWeight={500} display={{ xs: 'flex', sm: 'none' }}>
+          RKT
+        </Typography>
         {view !== 'login' && view !== 'logout' && (
           <>
-            <Box sx={{ flex: 1, ml: 2 }}>
+            <Box flex={1} ml={2}>
               {dateRange && onDateRangeSelect && (
                 <DateRangePicker dateRange={dateRange} onSelect={onDateRangeSelect} />
               )}
@@ -118,7 +122,7 @@ export default function Header({
                   sx={{ display: { xs: 'flex', sm: 'none' } }}
                 >
                   <LoginIcon />
-                </IconButton>{' '}
+                </IconButton>
                 <Button
                   href="/login"
                   title="Login"

@@ -136,7 +136,7 @@ export default function Summaries() {
           </LocalizationProvider>
         </Grid>
         <Grid flex={1}>
-          <Stack useFlexGap={true} fontSize="small" mx={3}>
+          <Stack fontSize="small" mx={3}>
             {loaderData.actors &&
               fetchedSummaries?.allSummaries
                 ?.sort((a, b) =>
