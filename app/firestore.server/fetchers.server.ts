@@ -374,6 +374,7 @@ export const fetchSummaries = async (
       throw new ParseError('Failed to parse summary. ' + props.error.message);
     }
     summaries[document.day] = {
+      identityId: props.data.identityId, // useless here
       aiSummary: props.data.aiSummary,
       userSummary: props.data.userSummary,
       aiTeamSummary: props.data.aiTeamSummary,

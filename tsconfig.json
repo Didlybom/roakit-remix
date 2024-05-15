@@ -9,7 +9,12 @@
   ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["@remix-run/node", "vite/client", "jest"],
+    "types": [
+      "@remix-run/node",
+      "vite/client",
+      "jest"
+      // "@remix-run/react/future/single-fetch.d.ts"
+    ],
     "skipLibCheck": true,
     "isolatedModules": true,
     "esModuleInterop": true,

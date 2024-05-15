@@ -14,6 +14,7 @@ import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../types/activityFeed';
+import type { ActorRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD } from '../utils/dateUtils';
 import type { SessionData } from '../utils/sessionCookie.server';
@@ -91,7 +92,7 @@ export default function Summaries() {
   }, [selectedDay]); // summaryFetcher must be omitted
 
   return (
-    <App isLoggedIn={true} isNavOpen={loaderData.isNavOpen} view="summaries">
+    <App isLoggedIn={true} isNavOpen={!!loaderData.isNavOpen} view="summaries">
       {loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {loaderData?.error}
@@ -141,8 +142,8 @@ export default function Summaries() {
               fetchedSummaries?.allSummaries
                 ?.sort((a, b) =>
                   caseInsensitiveCompare(
-                    loaderData.actors[a.identityId]?.name ?? '',
-                    loaderData.actors[b.identityId]?.name ?? ''
+                    (loaderData.actors as ActorRecord)[a.identityId]?.name ?? '',
+                    (loaderData.actors as ActorRecord)[b.identityId]?.name ?? ''
                   )
                 )
                 .map((summary, i) => {
@@ -151,7 +152,10 @@ export default function Summaries() {
                       <Stack direction={'row'} spacing={1}>
                         <Divider component="div" role="presentation" sx={{ width: '100%' }}>
                           <Chip
-                            label={loaderData.actors[summary.identityId ?? '']?.name ?? 'Unknown'}
+                            label={
+                              (loaderData.actors as ActorRecord)[summary.identityId ?? '']?.name ??
+                              'Unknown'
+                            }
                             size="small"
                           />
                         </Divider>

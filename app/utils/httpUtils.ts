@@ -30,10 +30,14 @@ export const jsonResponse = (data: unknown) => {
   });
 };
 
-export interface ErrorField {
+export type ErrorField = {
   message: string;
   status?: number;
-}
+};
 
 export const errorJsonResponse = (message: string, status: number) =>
   json({ error: { message, status } as ErrorField }, { status });
+
+export const errorResponse = (message: string, status: number) => ({
+  error: { message, status } as ErrorField,
+});
