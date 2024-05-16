@@ -33,7 +33,7 @@ module.exports = {
     'no-console': ['error'],
     'arrow-parens': ['error', 'as-needed'],
     '@typescript-eslint/no-misused-promises': [
-      2,
+      'error',
       {
         checksVoidReturn: {
           attributes: false,
