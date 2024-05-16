@@ -22,7 +22,6 @@ import {
 import { grey } from '@mui/material/colors';
 import { DataGrid, GridActionsCellItem, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
 import { useLoaderData, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import firebase from 'firebase/compat/app';
@@ -64,13 +63,7 @@ enum EventTab {
 export const meta = () => [{ title: 'Live GitHub Activity | ROAKIT' }];
 
 // verify JWT and get session data
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return sessionData;
-};
+export const loader = async ({ request }: LoaderFunctionArgs) => await loadSession(request);
 
 export default function GitHub() {
   const loaderData = useLoaderData<typeof loader>();
@@ -547,7 +540,7 @@ export default function GitHub() {
             </TabPanel>
           </>
         )}
-        {error && (
+        {!!error && (
           <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>

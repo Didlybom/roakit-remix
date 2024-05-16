@@ -1,20 +1,20 @@
-export interface InitiativeData {
+export type InitiativeData = {
   id: string;
   label?: string;
   counters: {
     activities: ActivityCount;
   };
   countersLastUpdated: number;
-}
+};
 
 export type InitiativeRecord = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
 
-export interface AccountData {
+export type AccountData = {
   id: string;
   type: string;
   name: string;
   url?: string;
-}
+};
 export type AccountMap = Map<AccountData['id'], Omit<AccountData, 'id'>>;
 
 export interface IdentityData {
@@ -28,15 +28,15 @@ export interface IdentityData {
 
 export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
 
-export interface ActorData {
+export type ActorData = {
   id: string;
   name: string;
   email?: string;
   accounts?: { id: string; type: string; url?: string }[];
-}
+};
 export type ActorRecord = Record<ActorData['id'], Omit<ActorData, 'id'>>;
 
-export interface TicketData {
+export type TicketData = {
   key: string;
   id?: string;
   summary?: string;
@@ -49,19 +49,19 @@ export interface TicketData {
     uri?: string;
   };
   lastUpdatedTimestamp?: number;
-}
+};
 
 export type TicketRecord = Record<TicketData['key'], TicketData['priority']>;
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
 
-export interface ActivityChangeLog {
+export type ActivityChangeLog = {
   field: string;
   oldValue?: string;
   newValue?: string;
-}
+};
 
-export interface ActivityMetadata {
+export type ActivityMetadata = {
   codeAction?: string;
   issue?: { key: string; summary?: string; uri?: string };
   attachment?: { filename: string; mimeType?: string };
@@ -72,9 +72,9 @@ export interface ActivityMetadata {
   commits?: { message: string; url?: string }[];
   comment?: { body: string };
   changeLog?: ActivityChangeLog[];
-}
+};
 
-export interface ActivityData {
+export type ActivityData = {
   id: string;
   action: string;
   event?: string;
@@ -86,19 +86,19 @@ export interface ActivityData {
   metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging
-}
+};
 
 export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id'>>;
 export type ActivityRecord = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
 
-export interface ActivityCount {
+export type ActivityCount = {
   code: number;
   codeOrg: number;
   task: number;
   taskOrg: number;
-}
+};
 
-export interface SettingsData {
+export type SettingsData = {
   feeds: {
     secret?: string | undefined;
     feedId: string;
@@ -108,7 +108,7 @@ export interface SettingsData {
     bannedAccounts?: Record<string, boolean>;
   }[];
   initiatives: InitiativeData[];
-}
+};
 
 export type Summary = {
   identityId: string;

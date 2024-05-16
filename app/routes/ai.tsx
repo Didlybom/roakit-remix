@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import Markdown from '../components/Markdown';
@@ -35,9 +35,6 @@ export const shouldRevalidate = () => false;
 // load activities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   try {
     // retrieve  users
@@ -74,10 +71,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
+  await loadSession(request);
   const formData = await request.formData();
   const prompt = formData.get('prompt')?.toString() ?? '';
   if (!prompt) {

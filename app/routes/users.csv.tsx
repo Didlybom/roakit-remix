@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, redirect } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
@@ -9,9 +9,6 @@ const logger = pino({ name: 'route:users.csv' });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     let csv = 'ID,managerID,email,jiraID,jiraName,githubUsername\n';

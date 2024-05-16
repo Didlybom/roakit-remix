@@ -1,10 +1,10 @@
-import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchActivities } from '../firestore.server/fetchers.server';
 import type { ActivityRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
+import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.activities' });
 
@@ -19,8 +19,10 @@ export const loader = async ({
   params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<ActivityResponse>> => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
+  let sessionData;
+  try {
+    sessionData = await loadSession(request);
+  } catch (e) {
     return errorJsonResponse('Fetching activities failed. Invalid session.', 401);
   }
   if (!params.userid) {
@@ -45,7 +47,7 @@ export const loader = async ({
     [...activities].forEach(([activityId, activity]) => {
       activityRecord[activityId] = activity;
     });
-    return jsonResponse({ activities: activityRecord });
+    return json({ activities: activityRecord });
   } catch (e) {
     logger.error(e);
     return errorJsonResponse(

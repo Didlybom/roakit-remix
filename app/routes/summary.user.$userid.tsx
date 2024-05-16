@@ -28,12 +28,7 @@ import { grey } from '@mui/material/colors';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  redirect,
-  type TypedResponse,
-} from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs, type TypedResponse } from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -83,9 +78,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   });
 
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
+
   try {
     // retrieve  users
     const [accounts, identities] = await Promise.all([
@@ -143,9 +136,6 @@ export const action = async ({
   request,
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   const jsonRequest = (await request.json()) as JsonRequest;
 
@@ -296,22 +286,22 @@ export default function Summary() {
         summaryFetcher.state !== 'idle'
       }
     >
-      {loaderData?.error && (
+      {!!loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {loaderData?.error}
         </Alert>
       )}
-      {fetchedActivities?.error?.message && (
+      {!!fetchedActivities?.error?.message && (
         <Alert severity="error" sx={{ m: 3 }}>
           {fetchedActivities.error.message}
         </Alert>
       )}
-      {fetchedSummaries?.error?.message && (
+      {!!fetchedSummaries?.error?.message && (
         <Alert severity="error" sx={{ m: 3 }}>
           {fetchedSummaries.error.message}
         </Alert>
       )}
-      {error && (
+      {!!error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {error}
         </Alert>

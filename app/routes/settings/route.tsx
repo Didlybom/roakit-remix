@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
@@ -43,9 +42,6 @@ export const meta = () => [{ title: 'Settings | ROAKIT' }];
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
@@ -102,9 +98,6 @@ interface JsonRequest {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   try {
     const customerId = sessionData.customerId;

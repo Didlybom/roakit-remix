@@ -1,10 +1,10 @@
-import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchAllSummaries, fetchSummaries } from '../firestore.server/fetchers.server';
 import type { DaySummaries, Summary } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
+import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 
 const logger = pino({ name: 'route:fetcher.summaries' });
 
@@ -22,8 +22,10 @@ export const loader = async ({
   params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<SummariesResponse>> => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
+  let sessionData;
+  try {
+    sessionData = await loadSession(request);
+  } catch (e) {
     return errorJsonResponse('Fetching summaries failed. Invalid session.', 401);
   }
   if (!params.userid) {
@@ -36,7 +38,7 @@ export const loader = async ({
     return errorJsonResponse('Fetching summaries failed. Invalid params.', 400);
   }
   try {
-    return jsonResponse(
+    return json(
       params.userid === ALL ?
         { allSummaries: await fetchAllSummaries(sessionData.customerId!, day!) }
       : { summaries: await fetchSummaries(sessionData.customerId!, params.userid, { day, month }) }

@@ -2,7 +2,6 @@ import { DataObject as DataObjectIcon } from '@mui/icons-material';
 import { Alert, Box, Link, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridColDef } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs } from '@remix-run/node';
-import { redirect } from '@remix-run/node';
 import { useLoaderData, useNavigation } from '@remix-run/react';
 import firebase from 'firebase/compat/app';
 import { useEffect, useMemo, useState } from 'react';
@@ -25,13 +24,7 @@ enum View {
 export const meta = () => [{ title: 'Live Jira Activity | ROAKIT' }];
 
 // verify JWT and get session data
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return sessionData;
-};
+export const loader = async ({ request }: LoaderFunctionArgs) => await loadSession(request);
 
 export default function Jira() {
   const loaderData = useLoaderData<typeof loader>();
@@ -212,7 +205,7 @@ export default function Jira() {
             </TabPanel>
           </>
         )}
-        {error && (
+        {!!error && (
           <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>

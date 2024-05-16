@@ -12,8 +12,8 @@
     "types": [
       "@remix-run/node",
       "vite/client",
-      "jest"
-      // "@remix-run/react/future/single-fetch.d.ts"
+      "jest",
+      "@remix-run/react/future/single-fetch.d.ts"
     ],
     "skipLibCheck": true,
     "isolatedModules": true,

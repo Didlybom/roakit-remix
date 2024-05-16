@@ -1,6 +1,6 @@
 import { Science as ScienceIcon } from '@mui/icons-material';
 import { Alert, Link, List, ListItem, ListItemText } from '@mui/material';
-import { redirect, useLoaderData } from '@remix-run/react';
+import { useLoaderData } from '@remix-run/react';
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import App from '../components/App';
@@ -14,9 +14,6 @@ export const meta = () => [{ title: 'Summaries | ROAKIT' }];
 // verify JWT, load identities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     return { ...sessionData, identities };

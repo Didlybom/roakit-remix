@@ -9,7 +9,6 @@ import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
   Link as RemixLink,
   ShouldRevalidateFunction,
-  redirect,
   useActionData,
   useLoaderData,
   useNavigation,
@@ -45,9 +44,6 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => 
 // verify JWT, load identities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     const [identities, accountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
@@ -75,10 +71,6 @@ export const action = async ({
   request,
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-
   const jsonRequest = (await request.json()) as JsonRequest;
 
   // update manager
@@ -287,7 +279,7 @@ export default function Users() {
       </Box>
       <TabPanel value={tabValue} index={UsersTab.Directory}>
         <Stack>
-          {error && (
+          {!!error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>

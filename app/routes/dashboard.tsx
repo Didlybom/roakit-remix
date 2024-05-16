@@ -17,7 +17,7 @@ import {
   PieValueType,
   pieArcLabelClasses,
 } from '@mui/x-charts';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
@@ -52,13 +52,7 @@ export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 export const shouldRevalidate = () => false;
 
 // verify session data
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
-  return sessionData;
-};
+export const loader = async ({ request }: LoaderFunctionArgs) => await loadSession(request);
 
 interface JsonRequest {
   dateFilter: DateRange;
@@ -66,9 +60,6 @@ interface JsonRequest {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   try {
     // retrieve initiatives and users
@@ -437,7 +428,7 @@ export default function Dashboard() {
       showProgress={loading || navigation.state !== 'idle'}
       showPulse={false}
     >
-      {error && (
+      {!!error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {error}
         </Alert>

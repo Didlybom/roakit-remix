@@ -9,13 +9,10 @@ import { sessionCookie } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Logout | ROAKIT' }];
 
-export const action = async () => {
-  return redirect('/', {
-    headers: {
-      'Set-Cookie': await sessionCookie.serialize('', { expires: new Date(0) }),
-    },
+export const action = async () =>
+  redirect('/', {
+    headers: { 'Set-Cookie': await sessionCookie.serialize('', { expires: new Date(0) }) },
   });
-};
 
 export default function Logout() {
   const submit = useSubmit();

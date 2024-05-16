@@ -45,9 +45,6 @@ export const meta = () => [{ title: 'Initiatives Admin | ROAKIT' }];
 // verify JWT, load initiatives
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { ...sessionData, initiatives };
@@ -248,7 +245,7 @@ export default function Initiatives() {
           }}
           onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save initiative'))}
         />
-        {error && (
+        {!!error && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}
           </Alert>

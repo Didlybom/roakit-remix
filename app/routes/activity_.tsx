@@ -21,7 +21,7 @@ import {
   GridSortDirection,
   GridToolbarContainer,
 } from '@mui/x-data-grid';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import {
   QueryDocumentSnapshot,
@@ -87,9 +87,6 @@ export const meta = () => [{ title: 'Activity | ROAKIT' }];
 // verify JWT, load initiatives and users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     // retrieve initiatives, tickets, and users
     const [initiatives, accounts, identities, tickets] = await Promise.all([
@@ -125,9 +122,6 @@ interface JsonRequest {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   try {
     const customerId = sessionData.customerId;
@@ -484,7 +478,7 @@ export default function ActivityReview() {
         <Box py={1}>{popover?.content}</Box>
       </Popover>
       <Stack m={3}>
-        {error && (
+        {!!error && (
           <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
             {error}
           </Alert>

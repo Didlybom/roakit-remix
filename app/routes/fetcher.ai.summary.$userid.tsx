@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
 import {
   fetchAccountMap,
@@ -11,7 +11,7 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { ErrorField, errorJsonResponse, jsonResponse } from '../utils/httpUtils';
+import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 
 const logger = pino({ name: 'route:fetcher.summary' });
@@ -27,8 +27,10 @@ export const loader = async ({
   params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<SummaryResponse>> => {
-  const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
+  let sessionData;
+  try {
+    sessionData = await loadSession(request);
+  } catch (e) {
     return errorJsonResponse('Summary failed. Invalid session', 401);
   }
   try {
@@ -70,7 +72,7 @@ export const loader = async ({
     }
     const summary = getSummaryResult(content);
 
-    return jsonResponse({ summary });
+    return json({ summary });
   } catch (e) {
     logger.error(e);
     return errorJsonResponse(

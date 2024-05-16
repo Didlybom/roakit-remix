@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { BarChart } from '@mui/x-charts';
-import { LoaderFunctionArgs, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
@@ -41,9 +41,6 @@ export const shouldRevalidate = () => false;
 // verify session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     // retrieve users
     const [accounts, identities] = await Promise.all([

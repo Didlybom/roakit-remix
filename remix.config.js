@@ -9,5 +9,5 @@ module.exports = {
   publicPath: '/',
   serverDependenciesToBundle: 'all',
   serverBuildPath: 'functions/build/server/remix.js',
-  // future: { unstable_singleFetch: true },
+  future: { unstable_singleFetch: true },
 };

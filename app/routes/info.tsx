@@ -7,9 +7,8 @@ import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Version Info | ROAKIT' }];
 
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> => {
-  return await getSessionData(request);
-};
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> =>
+  await getSessionData(request);
 
 export default function Info() {
   const loaderData = useLoaderData<typeof loader>();

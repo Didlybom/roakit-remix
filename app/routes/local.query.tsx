@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, json, redirect } from '@remix-run/server-runtime';
+import { LoaderFunctionArgs, json } from '@remix-run/server-runtime';
 import { firestore } from '../firebase.server';
 import { loadSession } from '../utils/authUtils.server';
 
@@ -9,9 +9,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
 
   const docs = await firestore
     .collection(`customers/${sessionData.customerId!}/activities/`)

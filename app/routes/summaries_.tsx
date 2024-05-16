@@ -3,7 +3,7 @@ import { Alert, Box, Chip, Divider, Grid, Link, Paper, Stack, styled } from '@mu
 import { grey } from '@mui/material/colors';
 import { LocalizationProvider, StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { redirect, useFetcher, useLoaderData, useSearchParams } from '@remix-run/react';
+import { useFetcher, useLoaderData, useSearchParams } from '@remix-run/react';
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -14,7 +14,6 @@ import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/Markdown';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../types/activityFeed';
-import type { ActorRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD } from '../utils/dateUtils';
 import type { SessionData } from '../utils/sessionCookie.server';
@@ -37,9 +36,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     actors: null,
   });
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
   try {
     // retrieve  users
     const [accounts, identities] = await Promise.all([
@@ -93,17 +89,17 @@ export default function Summaries() {
 
   return (
     <App isLoggedIn={true} isNavOpen={!!loaderData.isNavOpen} view="summaries">
-      {loaderData?.error && (
+      {!!loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {loaderData?.error}
         </Alert>
       )}
-      {fetchedSummaries?.error?.message && (
+      {!!fetchedSummaries?.error?.message && (
         <Alert severity="error" sx={{ m: 3 }}>
           {fetchedSummaries.error.message}
         </Alert>
       )}
-      {error && (
+      {!!error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {error}
         </Alert>
@@ -142,51 +138,46 @@ export default function Summaries() {
               fetchedSummaries?.allSummaries
                 ?.sort((a, b) =>
                   caseInsensitiveCompare(
-                    (loaderData.actors as ActorRecord)[a.identityId]?.name ?? '',
-                    (loaderData.actors as ActorRecord)[b.identityId]?.name ?? ''
+                    loaderData.actors[a.identityId]?.name ?? '',
+                    loaderData.actors[b.identityId]?.name ?? ''
                   )
                 )
-                .map((summary, i) => {
-                  return (
-                    <Box key={i} my={1}>
-                      <Stack direction={'row'} spacing={1}>
-                        <Divider component="div" role="presentation" sx={{ width: '100%' }}>
-                          <Chip
-                            label={
-                              (loaderData.actors as ActorRecord)[summary.identityId ?? '']?.name ??
-                              'Unknown'
-                            }
-                            size="small"
-                          />
-                        </Divider>
-                      </Stack>
-                      {summary.aiSummary && (
-                        <SummaryBox variant="outlined">
-                          <Markdown markdownText={summary.aiSummary} />
-                          <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
-                        </SummaryBox>
-                      )}
-                      {summary.userSummary && (
-                        <SummaryBox variant="outlined">
-                          <Markdown markdownText={summary.userSummary} />
-                        </SummaryBox>
-                      )}
-                      {summary.aiTeamSummary && (
-                        <SummaryBox variant="outlined">
-                          <Markdown markdownText={summary.aiTeamSummary} />
-                          <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
-                          <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} right={30} />
-                        </SummaryBox>
-                      )}{' '}
-                      {summary.userTeamSummary && (
-                        <SummaryBox variant="outlined">
-                          <Markdown markdownText={summary.userTeamSummary} />
-                          <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} />
-                        </SummaryBox>
-                      )}
-                    </Box>
-                  );
-                })}
+                .map((summary, i) => (
+                  <Box key={i} my={1}>
+                    <Stack direction={'row'} spacing={1}>
+                      <Divider component="div" role="presentation" sx={{ width: '100%' }}>
+                        <Chip
+                          label={loaderData.actors[summary.identityId ?? '']?.name ?? 'Unknown'}
+                          size="small"
+                        />
+                      </Divider>
+                    </Stack>
+                    {summary.aiSummary && (
+                      <SummaryBox variant="outlined">
+                        <Markdown markdownText={summary.aiSummary} />
+                        <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
+                      </SummaryBox>
+                    )}
+                    {summary.userSummary && (
+                      <SummaryBox variant="outlined">
+                        <Markdown markdownText={summary.userSummary} />
+                      </SummaryBox>
+                    )}
+                    {summary.aiTeamSummary && (
+                      <SummaryBox variant="outlined">
+                        <Markdown markdownText={summary.aiTeamSummary} />
+                        <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
+                        <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} right={30} />
+                      </SummaryBox>
+                    )}
+                    {summary.userTeamSummary && (
+                      <SummaryBox variant="outlined">
+                        <Markdown markdownText={summary.userTeamSummary} />
+                        <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} />
+                      </SummaryBox>
+                    )}
+                  </Box>
+                ))}
           </Stack>
         </Grid>
       </Grid>

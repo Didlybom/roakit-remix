@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { LoaderFunctionArgs, MetaFunction, redirect } from '@remix-run/node';
+import { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import {
   useFetcher,
   useLoaderData,
@@ -111,9 +111,7 @@ const userActivityRows = (
 // verify JWT, load initiatives and users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-  if (sessionData.redirect) {
-    return redirect(sessionData.redirect);
-  }
+
   // validate url
   const { searchParams } = new URL(request.url);
   if (
@@ -220,7 +218,7 @@ export default function UserActivity() {
       `/fetcher/activities/${userIds}?start=${dateFilterToStartDate(dateFilter)!}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFilter]);
+  }, [dateFilter]); // activitiesFetcher must be omitted
 
   useEffect(() => {
     if (activityResponse?.error?.status === 401) {
