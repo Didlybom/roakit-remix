@@ -88,7 +88,7 @@ export default function Summaries() {
   }, [selectedDay]); // summaryFetcher must be omitted
 
   return (
-    <App isLoggedIn={true} isNavOpen={!!loaderData.isNavOpen} view="summaries">
+    <App isLoggedIn={true} isNavOpen={loaderData.isNavOpen} view="summaries">
       {!!loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
           {loaderData?.error}

@@ -35,7 +35,10 @@ export const loader = async ({
   }
   try {
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('start') ? +searchParams.get('start')! : undefined;
+    const startDate =
+      searchParams.get('start') ?
+        +searchParams.get('start')!
+      : dateFilterToStartDate(DateRange.OneDay)!;
     const endDate = searchParams.get('end') ? +searchParams.get('end')! : undefined;
     const userId = params.userid;
 
@@ -48,15 +51,18 @@ export const loader = async ({
     const userIds =
       userId && userId !== '*' ?
         getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap)
-      : [];
+      : undefined;
+
+    // retrieve activities
     const activities = await fetchActivities({
       customerId: sessionData.customerId!,
-      startDate: startDate ?? dateFilterToStartDate(DateRange.OneDay)!,
+      startDate,
       endDate,
       userIds,
       options: { includesMetadata: true },
     });
 
+    // ai
     const prompt =
       DEFAULT_PROMPT +
       '\n\n' +
@@ -65,7 +71,6 @@ export const loader = async ({
         actors,
         { activityCount: 100, inclDates: true, inclActions: true, inclContributors: true }
       );
-
     const content = await generateContent({ prompt });
     if (!content) {
       return errorJsonResponse('Summary failed. Empty response', 500);

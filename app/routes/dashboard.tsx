@@ -1,49 +1,54 @@
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import {
+  AutoAwesome as AutoAwesomeIcon,
+  ExpandMore as ExpandMoreIcon,
+  Science as ScienceIcon,
+  ShortText as SummariesIcon,
+} from '@mui/icons-material';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Alert,
+  Box,
+  Button,
   Unstable_Grid2 as Grid,
   Paper,
+  Skeleton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import { grey } from '@mui/material/colors';
 import {
   BarChart,
-  ChartsAxisContentProps,
   DefaultChartsAxisTooltipContent,
   PieChart,
-  PieValueType,
   pieArcLabelClasses,
+  type ChartsAxisContentProps,
+  type PieValueType,
 } from '@mui/x-charts';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
+import { LoaderFunctionArgs } from '@remix-run/node';
+import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import memoize from 'fast-memoize';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
+import Markdown from '../components/Markdown';
 import {
   fetchAccountMap,
-  fetchActivities,
   fetchIdentities,
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
-import {
-  TOP_ACTORS_OTHERS_ID,
-  artifactActions,
-  groupActivities,
-  identifyAccounts,
-  identifyActivities,
-} from '../types/activityFeed';
+import { TOP_ACTORS_OTHERS_ID, artifactActions, identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate, dateRangeLabels } from '../utils/dateUtils';
+import { DateRange, dateRangeLabels } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { postJsonOptions } from '../utils/httpUtils';
-import { ellipsisSx, windowOpen } from '../utils/jsxUtils';
+import { ellipsisSx, randomNumber, windowOpen } from '../utils/jsxUtils';
 import { priorityColors, priorityLabels } from '../utils/theme';
+import { SummaryResponse } from './fetcher.ai.summary.$userid';
+import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -52,15 +57,8 @@ export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 export const shouldRevalidate = () => false;
 
 // verify session data
-export const loader = async ({ request }: LoaderFunctionArgs) => await loadSession(request);
-
-interface JsonRequest {
-  dateFilter: DateRange;
-}
-
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
@@ -72,30 +70,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
     const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
-    const jsonRequest = (await request.json()) as JsonRequest;
-
-    // retrieve activities
-    const startDate = dateFilterToStartDate(
-      jsonRequest.dateFilter ?? sessionData.dateFilter ?? DateRange.OneDay
-    )!;
-
-    const activities = await fetchActivities({
-      customerId: sessionData.customerId!,
-      startDate,
-      options: { findPriority: true },
-    });
-    const groupedActivities = groupActivities(
-      identifyActivities(activities, identities.accountMap)
-    );
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    return { ...sessionData, groupedActivities, initiatives, actors, error: null };
+    return { ...sessionData, actors, initiatives, error: null };
   } catch (e) {
     logger.error(e);
     return {
       ...sessionData,
-      error: errMsg(e, 'Failed to fetch activity'),
-      groupedActivities: null,
-      activities: null,
+      error: errMsg(e, 'Failed to fetch actors'),
       actors: null,
       initiatives: null,
     };
@@ -104,18 +85,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Dashboard() {
   const navigation = useNavigation();
-  const submit = useSubmit();
+  const navigate = useNavigate();
+  const summaryFetcher = useFetcher();
+  const groupedActivitiesFetcher = useFetcher();
   const loaderData = useLoaderData<typeof loader>();
-  const data = useActionData<typeof action>();
-  const { groupedActivities, actors, initiatives, error } = data ?? {
-    groupedActivities: null,
-    activities: null,
-    actors: null,
-    initiatives: null,
-  };
-  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
-  const dateRangeLabel = dateRangeLabels[dateFilter];
-  const [loading, setLoading] = useState(true);
+  const summaryResponse = summaryFetcher.data as SummaryResponse;
+  const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivitiesResponse;
+  const [dateRange, setDateRange] = useState(loaderData.dateFilter ?? DateRange.OneDay);
+  const dateRangeLabel = dateRangeLabels[dateRange];
 
   const pluralizeMemo = memoize(pluralize);
 
@@ -127,7 +104,11 @@ export default function Dashboard() {
     5: { id: 5, label: priorityLabels[5], color: priorityColors[5] },
   };
 
-  const commonPaperSx = { width: 320, p: 1 };
+  const commonPaperSx = ({ isDisabled = false }: { isDisabled?: boolean }) => ({
+    width: 320,
+    p: 1,
+    opacity: isDisabled ? 0.4 : 1,
+  });
 
   const widgetSize = { width: 300, height: 260 };
 
@@ -137,147 +118,220 @@ export default function Dashboard() {
   const widgetTitle = (title: string) => (
     <Typography
       fontSize="14px"
-      sx={{
-        mb: 2,
-        borderBottom: 'solid 1px rgba(0, 0, 0, 0.12)',
-        whiteSpace: 'nowrap',
-        ...ellipsisSx,
-      }}
+      mb="2"
+      borderBottom="solid 1px rgba(0, 0, 0, 0.12)"
+      whiteSpace="noWrap"
+      sx={ellipsisSx}
     >
       {title}
     </Typography>
   );
 
+  // load grouped activities
   useEffect(() => {
-    if (groupedActivities) {
-      setLoading(false);
-    } else {
-      submit({}, postJsonOptions); // ask server to do the initial load
-    }
-  }, [groupedActivities, submit]);
+    groupedActivitiesFetcher.load(`/fetcher/grouped-activities/${dateRange}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange]);
+
+  // load AI summary
+  useEffect(() => {
+    summaryFetcher.load('/fetcher/ai/summary/*');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    submit({ dateFilter }, postJsonOptions); // ask server to reload with new dates
-  }, [dateFilter, submit]);
+    if (
+      summaryResponse?.error?.status === 401 ||
+      groupedActivitiesResponse?.error?.status === 401
+    ) {
+      navigate('/login');
+    }
+  }, [groupedActivitiesResponse?.error, summaryResponse?.error, navigate]);
 
   const ContributorsByInitiativeTooltipContent = (props: ChartsAxisContentProps) => {
-    return initiatives ?
+    return loaderData.initiatives ?
         <DefaultChartsAxisTooltipContent
           {...props}
-          axisValue={initiatives[props.axisValue as string]?.label ?? (props.axisValue as string)}
+          axisValue={
+            loaderData.initiatives[props.axisValue as string]?.label ?? (props.axisValue as string)
+          }
         />
       : <DefaultChartsAxisTooltipContent {...props} />;
   };
 
-  const widgets =
-    !groupedActivities ?
-      <></>
-    : <Stack
-        spacing={3}
-        sx={{
-          mx: 3,
-          mt: 2,
-          mb: 3,
-          opacity: navigation.state === 'submitting' ? 0.5 : undefined,
-        }}
-      >
-        <Grid container spacing={5} sx={{ m: 3 }}>
-          {!!groupedActivities.initiatives.length && (
-            <Grid>
-              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                {widgetTitle('Effort by Initiative')}
-                <PieChart
-                  series={[
-                    {
-                      id: 'effort-by-initiative',
-                      data: groupedActivities.initiatives.map(initiative => ({
-                        id: initiative.id,
-                        value: initiative.effort,
-                        label: initiatives[initiative.id].label,
-                      })),
-                      arcLabel: item => `${item.id}`,
-                      outerRadius: 100,
-                      innerRadius: 30,
-                    },
-                  ]}
-                  margin={{ left: 100 }}
-                  sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
-                  {...widgetSize}
-                  slotProps={{ legend: { hidden: true } }}
-                />
-              </Paper>
-              <Typography
-                variant="caption"
-                justifyContent="center"
-                sx={{ mt: -3, display: 'flex' }}
-              >
-                simulated
-              </Typography>
-            </Grid>
-          )}
-          {!!groupedActivities.priorities.length && (
-            <Grid>
-              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                {widgetTitle('Activities by Priority')}
-                <PieChart
-                  series={[
-                    {
-                      id: 'activity-by-priority',
-                      valueFormatter: item =>
-                        `${item.value} ${pluralizeMemo('activity', item.value)}`,
-                      data: groupedActivities.priorities.map(p => ({
-                        value: p.count,
-                        ...priorityDefs[p.id],
-                      })),
-                      outerRadius: 100,
-                    },
-                  ]}
-                  margin={{ left: 100 }}
-                  {...widgetSize}
-                  slotProps={{ legend: { hidden: true } }}
-                />
-              </Paper>
-            </Grid>
-          )}
-          {!!groupedActivities.initiatives.length && (
-            <Grid>
-              <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                {widgetTitle('Contributors by Initiative')}
-                <BarChart
-                  series={[
-                    {
-                      id: 'contributors-by-initiative',
-                      valueFormatter: value =>
-                        `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-                      data: groupedActivities.initiatives.map(i => i.actorCount),
-                    },
-                  ]}
-                  yAxis={[
-                    { data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' },
-                  ]}
-                  xAxis={[{ tickMinStep: 1 }]}
-                  layout="horizontal"
-                  {...widgetSize}
-                  slotProps={{ legend: { hidden: true } }}
-                  tooltip={{ trigger: 'axis', axisContent: ContributorsByInitiativeTooltipContent }}
-                />
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
-        <Accordion variant="outlined" disableGutters defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activities by Initiative
-          </AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              {groupedActivities.initiatives.map(initiative => {
-                const totalCounters = initiatives[initiative.id].counters.activities;
+  const widgets = (
+    <Stack spacing={3} mx={3} mt={2} mb={3}>
+      <Grid container spacing={5} sx={{ m: 3 }}>
+        {!!loaderData.initiatives && !!groupedActivitiesResponse?.initiatives?.length && (
+          <Grid>
+            <Paper
+              variant="outlined"
+              sx={commonPaperSx({
+                isDisabled: groupedActivitiesFetcher.state === 'loading',
+              })}
+            >
+              {widgetTitle('Effort by Initiative')}
+              <PieChart
+                series={[
+                  {
+                    id: 'effort-by-initiative',
+                    data: groupedActivitiesResponse.initiatives.map(initiative => ({
+                      id: initiative.id,
+                      value: initiative.effort,
+                      label: loaderData.initiatives[initiative.id].label,
+                    })),
+                    arcLabel: item => `${item.id}`,
+                    outerRadius: 100,
+                    innerRadius: 30,
+                  },
+                ]}
+                margin={{ left: 100 }}
+                sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
+                {...widgetSize}
+                slotProps={{ legend: { hidden: true } }}
+              />
+            </Paper>
+            <Typography variant="caption" justifyContent="center" sx={{ mt: -3, display: 'flex' }}>
+              fake data – demo
+            </Typography>
+          </Grid>
+        )}
+        {!!groupedActivitiesResponse?.priorities?.length && (
+          <Grid>
+            <Paper
+              variant="outlined"
+              sx={commonPaperSx({
+                isDisabled: groupedActivitiesFetcher.state === 'loading',
+              })}
+            >
+              {widgetTitle('Activities by Priority')}
+              <PieChart
+                series={[
+                  {
+                    id: 'activity-by-priority',
+                    valueFormatter: item =>
+                      `${item.value} ${pluralizeMemo('activity', item.value)}`,
+                    data: groupedActivitiesResponse.priorities.map(p => ({
+                      value: p.count,
+                      ...priorityDefs[p.id],
+                    })),
+                    outerRadius: 100,
+                  },
+                ]}
+                margin={{ left: 100 }}
+                {...widgetSize}
+                slotProps={{ legend: { hidden: true } }}
+              />
+            </Paper>
+          </Grid>
+        )}
+        {!!groupedActivitiesResponse?.initiatives?.length && (
+          <Grid>
+            <Paper
+              variant="outlined"
+              sx={commonPaperSx({
+                isDisabled: groupedActivitiesFetcher.state === 'loading',
+              })}
+            >
+              {widgetTitle('Contributors by Initiative')}
+              <BarChart
+                series={[
+                  {
+                    id: 'contributors-by-initiative',
+                    valueFormatter: value => `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
+                    data: groupedActivitiesResponse.initiatives.map(i => i.actorCount),
+                  },
+                ]}
+                yAxis={[
+                  { data: groupedActivitiesResponse.initiatives.map(i => i.id), scaleType: 'band' },
+                ]}
+                xAxis={[{ tickMinStep: 1 }]}
+                layout="horizontal"
+                {...widgetSize}
+                slotProps={{ legend: { hidden: true } }}
+                tooltip={{ trigger: 'axis', axisContent: ContributorsByInitiativeTooltipContent }}
+              />
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
+      <Accordion variant="outlined" disableGutters defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          Recent Activity AI Summary
+        </AccordionSummary>
+        <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+          <Typography component="div" variant="caption" mb={2} mt={-1}>
+            Work in progress. Doesn&apos;t use date filter. 100 most recent activities. See also
+            <Button
+              href="/summaries"
+              variant="outlined"
+              startIcon={<SummariesIcon fontSize="small" />}
+              sx={{ mx: 1, p: 1, fontSize: '.75rem', fontWeight: 400, textTransform: 'none' }}
+            >
+              Contributor Summary
+            </Button>
+            and
+            <Button
+              href="/ai"
+              variant="outlined"
+              startIcon={<ScienceIcon fontSize="small" />}
+              sx={{ mx: 1, p: 1, fontSize: '.75rem', fontWeight: 400, textTransform: 'none' }}
+            >
+              AI Playground
+            </Button>
+          </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              px: 2,
+              minHeight: '200px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              position: 'relative',
+            }}
+          >
+            <Tooltip title="AI powered">
+              <AutoAwesomeIcon
+                fontSize="small"
+                sx={{ color: grey[400], position: 'absolute', margin: '20px', top: 0, right: 0 }}
+              />
+            </Tooltip>
+            {summaryResponse?.summary ?
+              <Box fontSize="smaller">
+                <Markdown markdownText={summaryResponse.summary} />
+              </Box>
+            : <Stack spacing={1} m={2}>
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton
+                    key={i}
+                    height="25px"
+                    width={randomNumber(20, 80) + '%'}
+                    sx={{ ml: '-10px' }}
+                  />
+                ))}
+              </Stack>
+            }
+          </Paper>
+        </AccordionDetails>
+      </Accordion>
+      <Accordion variant="outlined" disableGutters defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          Activities by Initiative
+        </AccordionSummary>
+        <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+          <Grid container spacing={5}>
+            {!!loaderData.initiatives &&
+              groupedActivitiesResponse?.initiatives?.map(initiative => {
+                const totalCounters = loaderData.initiatives[initiative.id].counters.activities;
                 return (
                   <Grid key={initiative.id}>
-                    <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                      {widgetTitle(initiatives[initiative.id]?.label ?? 'Unknown')}
+                    <Paper
+                      variant="outlined"
+                      sx={commonPaperSx({
+                        isDisabled: groupedActivitiesFetcher.state === 'loading',
+                      })}
+                    >
+                      {widgetTitle(loaderData.initiatives[initiative.id]?.label ?? 'Unknown')}
                       <BarChart
                         series={[
                           {
@@ -337,100 +391,121 @@ export default function Dashboard() {
                   </Grid>
                 );
               })}
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-        <Accordion variant="outlined" disableGutters defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              {Object.keys(groupedActivities.topActors)
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+      <Accordion variant="outlined" disableGutters defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
+        <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+          <Grid container spacing={5}>
+            {groupedActivitiesResponse?.topActors &&
+              loaderData.actors &&
+              Object.keys(groupedActivitiesResponse.topActors)
                 .sort(
                   (a, b) =>
                     (artifactActions.get(a)?.sortOrder ?? 999) -
                     (artifactActions.get(b)?.sortOrder ?? 999)
                 )
-                .map(action => {
-                  return (
-                    <Grid key={action}>
-                      <Paper variant="outlined" sx={{ ...commonPaperSx }}>
-                        {widgetTitle(artifactActions.get(action)?.label ?? action)}
-                        <BarChart
-                          series={[
-                            {
-                              id: `top-actors-${action}`,
-                              valueFormatter: value =>
-                                `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                              data: groupedActivities.topActors[action].map(a => a.count),
-                              color: dateRangeColor,
-                            },
-                          ]}
-                          yAxis={[
-                            {
-                              data: groupedActivities.topActors[action].map(a =>
-                                a.id === TOP_ACTORS_OTHERS_ID ?
-                                  'All others'
-                                : actors[a.id]?.name ?? 'unknown'
-                              ),
-                              scaleType: 'band',
-                            },
-                          ]}
-                          xAxis={[{ tickMinStep: 1 }]}
-                          onItemClick={(event, data) => {
-                            if (data) {
-                              windowOpen(
-                                event.nativeEvent,
-                                `/activity/user/${
-                                  data.dataIndex === 10 ?
-                                    '*'
-                                  : encodeURI(
-                                      groupedActivities.topActors[action][data.dataIndex].id
-                                    )
-                                }?action=${action}`
-                              );
-                            }
-                          }}
-                          onAxisClick={(event, data) => {
-                            if (data) {
-                              windowOpen(
-                                event,
-                                `/activity/user/${
-                                  data.dataIndex === 10 ?
-                                    '*'
-                                  : encodeURI(
-                                      groupedActivities.topActors[action][data.dataIndex].id
-                                    )
-                                }?action=${action}`
-                              );
-                            }
-                          }}
-                          layout="horizontal"
-                          {...widgetSize}
-                          margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
-                          slotProps={{ legend: { hidden: true } }}
-                        />
-                      </Paper>
-                    </Grid>
-                  );
-                })}
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-      </Stack>;
+                .map(action => (
+                  <Grid key={action}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        ...commonPaperSx({
+                          isDisabled: groupedActivitiesFetcher.state === 'loading',
+                        }),
+                      }}
+                    >
+                      {widgetTitle(artifactActions.get(action)?.label ?? action)}
+                      <BarChart
+                        series={[
+                          {
+                            id: `top-actors-${action}`,
+                            valueFormatter: val => `${val} ${pluralizeMemo('activity', val ?? 0)}`,
+                            data: groupedActivitiesResponse.topActors![action].map(a => a.count),
+                            color: dateRangeColor,
+                          },
+                        ]}
+                        yAxis={[
+                          {
+                            data: groupedActivitiesResponse.topActors![action].map(a =>
+                              a.id === TOP_ACTORS_OTHERS_ID ?
+                                'All others'
+                              : loaderData.actors[a.id]?.name ?? 'unknown'
+                            ),
+                            scaleType: 'band',
+                          },
+                        ]}
+                        xAxis={[{ tickMinStep: 1 }]}
+                        onItemClick={(event, data) => {
+                          if (data) {
+                            windowOpen(
+                              event.nativeEvent,
+                              `/activity/user/${
+                                data.dataIndex === 10 ?
+                                  '*'
+                                : encodeURI(
+                                    groupedActivitiesResponse.topActors![action][data.dataIndex].id
+                                  )
+                              }#${action}`
+                            );
+                          }
+                        }}
+                        onAxisClick={(event, data) => {
+                          if (data) {
+                            windowOpen(
+                              event,
+                              `/activity/user/${
+                                data.dataIndex === 10 ?
+                                  '*'
+                                : encodeURI(
+                                    groupedActivitiesResponse.topActors![action][data.dataIndex].id
+                                  )
+                              }#${action}`
+                            );
+                          }
+                        }}
+                        layout="horizontal"
+                        {...widgetSize}
+                        margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
+                        slotProps={{ legend: { hidden: true } }}
+                      />
+                    </Paper>
+                  </Grid>
+                ))}
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
+    </Stack>
+  );
 
   return (
     <App
       view="dashboard"
       isLoggedIn={loaderData.isLoggedIn}
-      dateRange={dateFilter}
-      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+      dateRange={dateRange}
+      onDateRangeSelect={dateRange => setDateRange(dateRange)}
       isNavOpen={loaderData.isNavOpen}
-      showProgress={loading || navigation.state !== 'idle'}
+      showProgress={
+        navigation.state !== 'idle' ||
+        summaryFetcher.state !== 'idle' ||
+        groupedActivitiesFetcher.state !== 'idle'
+      }
       showPulse={false}
     >
-      {!!error && (
+      {!!loaderData?.error && (
         <Alert severity="error" sx={{ m: 3 }}>
-          {error}
+          {loaderData?.error}
+        </Alert>
+      )}
+      {!!summaryResponse?.error?.message && (
+        <Alert severity="error" sx={{ m: 3 }}>
+          {summaryResponse.error.message}
+        </Alert>
+      )}
+      {!!groupedActivitiesResponse?.error?.message && (
+        <Alert severity="error" sx={{ m: 3 }}>
+          {groupedActivitiesResponse.error.message}
         </Alert>
       )}
       {widgets}

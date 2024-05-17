@@ -6,6 +6,7 @@ import {
   EditNote as EditSummaryIcon,
   GitHub as GitHubIcon,
   History as HistoryIcon,
+  Science as ScienceIcon,
   Subject as SubjectIcon,
   ShortText as SummariesIcon,
 } from '@mui/icons-material';
@@ -30,14 +31,14 @@ import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
 
 const listItem = (
-  view: View,
+  view: View | null,
   url: string,
   Icon: OverridableComponent<SvgIconTypeMap>,
   label: string,
   currentView: View
 ) => (
   <ListItem key={view} disablePadding>
-    <ListItemButton href={url} selected={currentView === view}>
+    <ListItemButton href={url} target={view ? '_self' : '_blank'} selected={currentView === view}>
       <ListItemIcon sx={{ minWidth: '30px' }}>
         <Icon fontSize="small" />
       </ListItemIcon>
@@ -107,6 +108,7 @@ export default function NavDrawer({
       <Divider />
       <List>
         {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'Summary Form', view)}
+        {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
       </List>
     </Drawer>
   );
