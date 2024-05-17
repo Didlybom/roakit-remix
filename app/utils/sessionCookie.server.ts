@@ -1,5 +1,6 @@
 import { createCookie } from '@remix-run/node';
 import pino from 'pino';
+import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryCustomerId } from '../firestore.server/fetchers.server';
 import { DateRange, DateRangeValue } from './dateUtils';
@@ -43,7 +44,14 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   let token;
   try {
     token = await auth.verifySessionCookie(jwt);
-    sessionData = { isLoggedIn: true, email: token.email, isNavOpen, dateFilter: dateRange };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { isMobile } = getSelectorsByUserAgent(request.headers.get('User-Agent') ?? '');
+    sessionData = {
+      isLoggedIn: true,
+      email: token.email,
+      isNavOpen: isMobile ? false : isNavOpen,
+      dateFilter: dateRange,
+    };
   } catch (e) {
     logger.error(e, 'Error verifying session');
     throw e;
