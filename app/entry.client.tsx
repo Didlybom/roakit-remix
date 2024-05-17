@@ -1,3 +1,4 @@
+import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
@@ -6,19 +7,18 @@ import { ConfirmProvider } from 'material-ui-confirm';
 import { ReactNode, startTransition, useMemo, useState } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import ClientStyleContext from './components/ClientStyleContext';
-import createEmotionCache from './utils/createEmotionCache';
 import theme from './utils/theme';
 
 interface ClientCacheProviderProps {
   children: ReactNode;
 }
 function ClientCacheProvider({ children }: ClientCacheProviderProps) {
-  const [cache, setCache] = useState(createEmotionCache());
+  const [cache, setCache] = useState(createCache({ key: 'css' }));
 
   const clientStyleContextValue = useMemo(
     () => ({
       reset() {
-        setCache(createEmotionCache());
+        setCache(createCache({ key: 'css' }));
       },
     }),
     []

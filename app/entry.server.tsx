@@ -1,3 +1,4 @@
+import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import createEmotionServer from '@emotion/server/create-instance';
 import { CssBaseline } from '@mui/material';
@@ -8,7 +9,6 @@ import { isbot } from 'isbot';
 import { ConfirmProvider } from 'material-ui-confirm';
 import { PassThrough } from 'node:stream';
 import { renderToPipeableStream } from 'react-dom/server';
-import createEmotionCache from './utils/createEmotionCache';
 import { createReadableStreamFromReadWrite } from './utils/stream.server';
 import theme from './utils/theme';
 
@@ -33,52 +33,46 @@ const handleBotRequest = (
 ) =>
   new Promise((resolve, reject) => {
     let shellRendered = false;
-    const emotionCache = createEmotionCache();
-
-    const MuiRemixServer = () => (
+    const emotionCache = createCache({ key: 'css' });
+    const { pipe, abort } = renderToPipeableStream(
       <CacheProvider value={emotionCache}>
         <ThemeProvider theme={theme}>
-          <ConfirmProvider>
-            <CssBaseline />
-            <RemixServer context={remixContext} url={request.url} abortDelay={ABORT_DELAY} />
-          </ConfirmProvider>
+          <CssBaseline />
+          <RemixServer context={remixContext} url={request.url} abortDelay={ABORT_DELAY} />
         </ThemeProvider>
-      </CacheProvider>
+      </CacheProvider>,
+      {
+        onAllReady: () => {
+          shellRendered = true;
+          const reactBody = new PassThrough();
+          const emotionServer = createEmotionServer(emotionCache);
+          const bodyWithStyles = emotionServer.renderStylesToNodeStream();
+          reactBody.pipe(bodyWithStyles);
+          responseHeaders.set('Content-Type', 'text/html');
+          resolve(
+            new Response(createReadableStreamFromReadWrite(bodyWithStyles), {
+              headers: responseHeaders,
+              status: responseStatusCode,
+            })
+          );
+          pipe(reactBody);
+        },
+        onShellError: (error: unknown) => {
+          reject(error);
+        },
+        onError: (error: unknown) => {
+          responseStatusCode = 500;
+          responseStatusCode = 500;
+          // Log streaming rendering errors from inside the shell.  Don't log
+          // errors encountered during initial shell rendering since they'll
+          // reject and get logged in handleDocumentRequest.
+          if (shellRendered) {
+            // eslint-disable-next-line no-console
+            console.error(error);
+          }
+        },
+      }
     );
-
-    const { pipe, abort } = renderToPipeableStream(<MuiRemixServer />, {
-      onAllReady: () => {
-        shellRendered = true;
-        const reactBody = new PassThrough();
-        const emotionServer = createEmotionServer(emotionCache);
-        const bodyWithStyles = emotionServer.renderStylesToNodeStream();
-        reactBody.pipe(bodyWithStyles);
-        responseHeaders.set('Content-Type', 'text/html');
-        resolve(
-          new Response(createReadableStreamFromReadWrite(bodyWithStyles), {
-            headers: responseHeaders,
-            status: responseStatusCode,
-          })
-        );
-
-        pipe(reactBody);
-      },
-      onShellError: (error: unknown) => {
-        reject(error);
-      },
-      onError: (error: unknown) => {
-        responseStatusCode = 500;
-        responseStatusCode = 500;
-        // Log streaming rendering errors from inside the shell.  Don't log
-        // errors encountered during initial shell rendering since they'll
-        // reject and get logged in handleDocumentRequest.
-        if (shellRendered) {
-          // eslint-disable-next-line no-console
-          console.error(error);
-        }
-      },
-    });
-
     setTimeout(abort, ABORT_DELAY);
   });
 
@@ -90,8 +84,8 @@ const handleBrowserRequest = (
 ) =>
   new Promise((resolve, reject) => {
     let shellRendered = false;
-    const emotionCache = createEmotionCache();
-    const MuiRemixServer = () => (
+    const emotionCache = createCache({ key: 'css' });
+    const { pipe, abort } = renderToPipeableStream(
       <CacheProvider value={emotionCache}>
         <ThemeProvider theme={theme}>
           <ConfirmProvider>
@@ -99,40 +93,37 @@ const handleBrowserRequest = (
             <RemixServer context={remixContext} url={request.url} abortDelay={ABORT_DELAY} />
           </ConfirmProvider>
         </ThemeProvider>
-      </CacheProvider>
+      </CacheProvider>,
+      {
+        onShellReady: () => {
+          shellRendered = true;
+          const reactBody = new PassThrough();
+          const emotionServer = createEmotionServer(emotionCache);
+          const bodyWithStyles = emotionServer.renderStylesToNodeStream();
+          reactBody.pipe(bodyWithStyles);
+          responseHeaders.set('Content-Type', 'text/html');
+          resolve(
+            new Response(createReadableStreamFromReadWrite(bodyWithStyles), {
+              headers: responseHeaders,
+              status: responseStatusCode,
+            })
+          );
+          pipe(reactBody);
+        },
+        onShellError: (error: unknown) => {
+          reject(error);
+        },
+        onError: (error: unknown) => {
+          responseStatusCode = 500;
+          // Log streaming rendering errors from inside the shell.  Don't log
+          // errors encountered during initial shell rendering since they'll
+          // reject and get logged in handleDocumentRequest.
+          if (shellRendered) {
+            // eslint-disable-next-line no-console
+            console.error(error);
+          }
+        },
+      }
     );
-
-    const { pipe, abort } = renderToPipeableStream(<MuiRemixServer />, {
-      onShellReady: () => {
-        shellRendered = true;
-        const reactBody = new PassThrough();
-        const emotionServer = createEmotionServer(emotionCache);
-        const bodyWithStyles = emotionServer.renderStylesToNodeStream();
-        reactBody.pipe(bodyWithStyles);
-        responseHeaders.set('Content-Type', 'text/html');
-        resolve(
-          new Response(createReadableStreamFromReadWrite(bodyWithStyles), {
-            headers: responseHeaders,
-            status: responseStatusCode,
-          })
-        );
-
-        pipe(reactBody);
-      },
-      onShellError: (error: unknown) => {
-        reject(error);
-      },
-      onError: (error: unknown) => {
-        responseStatusCode = 500;
-        // Log streaming rendering errors from inside the shell.  Don't log
-        // errors encountered during initial shell rendering since they'll
-        // reject and get logged in handleDocumentRequest.
-        if (shellRendered) {
-          // eslint-disable-next-line no-console
-          console.error(error);
-        }
-      },
-    });
-
     setTimeout(abort, ABORT_DELAY);
   });
