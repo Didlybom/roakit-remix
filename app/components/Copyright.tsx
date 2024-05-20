@@ -1,6 +1,5 @@
 import { Unstable_Grid2 as Grid, Typography } from '@mui/material';
 import { grey, indigo } from '@mui/material/colors';
-import theme from '../utils/theme';
 
 export default function Copyright() {
   return (
