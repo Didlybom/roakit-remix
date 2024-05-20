@@ -4,11 +4,9 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
   EditNote as EditSummaryIcon,
-  GitHub as GitHubIcon,
   History as HistoryIcon,
   Science as ScienceIcon,
   Subject as SubjectIcon,
-  ShortText as SummariesIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -22,10 +20,10 @@ import {
   ListItemText,
   ListSubheader,
   SvgIconTypeMap,
+  Typography,
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
-import JiraIcon from '../icons/Jira';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
@@ -68,7 +66,6 @@ export default function NavDrawer({
         '& .MuiDrawer-paper': { width, boxSizing: 'border-box' },
       }}
       variant="persistent"
-      anchor="left"
       open={open}
     >
       <DrawerHeader>
@@ -86,7 +83,6 @@ export default function NavDrawer({
       <List>
         {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
         {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
-        {listItem('summaries', '/summaries', SummariesIcon, 'Contributor Summary', view)}
         {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
       </List>
       <Divider />
@@ -98,18 +94,23 @@ export default function NavDrawer({
         {listItem('users', '/users', BusinessIcon, 'Directory', view)}
       </List>
       <Divider />
-      <List sx={{ opacity: 0.4 }}>
-        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px' }}>
-          Real-time ingestion
-        </ListSubheader>
-        {listItem('github', '/source/github', GitHubIcon, 'GitHub feed', view)}
-        {listItem('jira', '/source/jira', JiraIcon, 'Jira feed', view)}
-      </List>
-      <Divider />
       <List>
+        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+          Experiments
+        </ListSubheader>
         {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'Summary Form', view)}
         {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
       </List>
+      <Box flexGrow={1} />
+
+      <Box p={1} sx={{ backgroundColor: grey[50] }} borderTop="solid 1px" borderColor={grey[200]}>
+        <Typography variant="body2" color="text.secondary" pl={1}>
+          {'© ROAKIT'} {new Date().getFullYear()}.
+        </Typography>
+        <Typography variant="body2" color="text.disabled" pl={1}>
+          Work in progress.
+        </Typography>
+      </Box>
     </Drawer>
   );
 }

@@ -62,7 +62,12 @@ export default function Header({
   onNavBarOpen: () => void;
 }) {
   return (
-    <NavBar position="fixed" navbarWidth={navbarWidth} navbarOpen={isNavBarOpen}>
+    <NavBar
+      position="fixed"
+      navbarWidth={navbarWidth}
+      navbarOpen={isNavBarOpen}
+      sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}
+    >
       <Toolbar variant="dense">
         {isLoggedIn && (
           <IconButton

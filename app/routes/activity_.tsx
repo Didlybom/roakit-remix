@@ -496,7 +496,7 @@ export default function ActivityReview() {
               sx={{ justifyContent: 'right' }}
               selectedValue={activityFilter}
               items={[
-                { value: '', label: 'None', color: grey[500] },
+                { value: '', label: 'All', color: grey[500] },
                 { value: 'withoutInitiative', label: 'Without initiatives' },
                 { value: 'withInitiative', label: 'With initiatives' },
               ]}

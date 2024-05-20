@@ -6,7 +6,7 @@ import Header from './Header';
 import NavDrawer from './NavDrawer';
 import DrawerHeader from './NavDrawerHeader';
 
-const navbarWidth = 200;
+export const navbarWidth = 200;
 
 export type View =
   | 'dashboard'

@@ -7,7 +7,7 @@ if [ $? -ne 0 ]; then
     printf "${RED}⚠  smoke test:${RESET} ERROR (curl)\n"
     exit 1
 fi
-echo $info_page | grep 'Copyright © ROAKIT' > /dev/null
+echo $info_page | grep '© ROAKIT' > /dev/null
 if [ $? -ne 0 ]; then
     printf "${RED}⚠  smoke test:${RESET} ERROR (unexpected response)\n"
     exit 1

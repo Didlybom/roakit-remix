@@ -10,7 +10,6 @@ export default function Copyright() {
         px: 2,
         py: 1,
         textWrap: 'nowrap',
-        zIndex: theme.zIndex.drawer + 1,
         backgroundColor: indigo[50],
         borderTop: 'solid 1px',
         borderColor: grey[200],

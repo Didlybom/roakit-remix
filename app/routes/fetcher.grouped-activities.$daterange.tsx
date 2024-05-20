@@ -7,7 +7,7 @@ import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 
-const logger = pino({ name: 'route:fetcher.top-contributors' });
+const logger = pino({ name: 'route:fetcher.grouped-activities' });
 
 export type GroupedActivitiesResponse = { error?: ErrorField } & GroupedActivities;
 

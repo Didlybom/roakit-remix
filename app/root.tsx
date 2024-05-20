@@ -95,11 +95,9 @@ export default function App() {
     <Document>
       <script
         // see https://remix.run/docs/en/main/guides/envvars
-        dangerouslySetInnerHTML={{
-          __html: `window.ROAKIT_ENV = ${JSON.stringify(clientEnv)}`,
-        }}
+        dangerouslySetInnerHTML={{ __html: `window.ROAKIT_ENV = ${JSON.stringify(clientEnv)}` }}
       />
-      <Layout>
+      <Layout showCopyright={false}>
         <Outlet />
       </Layout>
     </Document>
@@ -128,10 +126,10 @@ export function ErrorBoundary() {
   }
   return (
     <Document title="ROAKIT Error">
-      <Layout>
-        <Box sx={{ m: 4 }}>
+      <Layout showCopyright={true}>
+        <Box m={4}>
           <Typography variant="h5">An error occurred!</Typography>
-          <Typography sx={{ mt: 2 }}>
+          <Typography mt={2}>
             You can try to{' '}
             <Link onClick={() => window.location.reload()} sx={internalLinkSx}>
               refresh

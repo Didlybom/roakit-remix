@@ -427,7 +427,7 @@ export default function UserActivity() {
                   <Button
                     variant="outlined"
                     href={'/activity/user/*' + (actionFilter ? `?action=${actionFilter}` : '')}
-                    sx={{ textWrap: 'nowrap' }}
+                    sx={{ textTransform: 'none', textWrap: 'nowrap' }}
                   >
                     {'See all contributors'}
                   </Button>
@@ -437,7 +437,7 @@ export default function UserActivity() {
                 <FilterMenu
                   selectedValue={actionFilter ?? ''}
                   items={[
-                    { value: '', label: 'None', color: grey[500] },
+                    { value: '', label: 'All', color: grey[500] },
                     ...[...artifactActions].map(([key, action]) => ({
                       value: key,
                       label: action.label,
