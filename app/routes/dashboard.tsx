@@ -44,12 +44,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import App, { navbarWidth } from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
 import IconIndicator from '../components/IconIndicator';
-import Markdown from '../components/Markdown';
-import ActiveContributors from '../components/dashboardGrids/ActiveContributors.';
-import ActivitiesByInitiative from '../components/dashboardGrids/ActivitiesByInitiative';
-import ContributorsByInitiative from '../components/dashboardGrids/ContributorsByInitiative';
-import EffortByInitiative from '../components/dashboardGrids/EffortByInitiative';
-import Priorities from '../components/dashboardGrids/Priorities';
+import Markdown from '../components/MarkdownText';
+import ActiveContributors from '../components/dashboard/ActiveContributors.';
+import ActivitiesByInitiative from '../components/dashboard/ActivitiesByInitiative';
+import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
+import EffortByInitiative from '../components/dashboard/EffortByInitiative';
+import Priorities from '../components/dashboard/Priorities';
 import {
   fetchAccountMap,
   fetchIdentities,

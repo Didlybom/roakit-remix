@@ -43,7 +43,7 @@ import { useEffect, useState } from 'react';
 import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
-import Markdown from '../components/Markdown';
+import Markdown from '../components/MarkdownText';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
@@ -275,6 +275,13 @@ export default function Summary() {
     setHighlightedDays(fetchedSummaries?.summaries ? Object.keys(fetchedSummaries?.summaries) : []);
   }, [fetchedSummaries?.summaries, selectedDay, showTeam]);
 
+  const errorAlert = (message?: string | null) =>
+    !!message && (
+      <Alert severity="error" sx={{ m: 3 }}>
+        {message}
+      </Alert>
+    );
+
   return (
     <App
       view="summary.user"
@@ -286,26 +293,10 @@ export default function Summary() {
         summaryFetcher.state !== 'idle'
       }
     >
-      {!!loaderData?.error && (
-        <Alert severity="error" sx={{ m: 3 }}>
-          {loaderData?.error}
-        </Alert>
-      )}
-      {!!fetchedActivities?.error?.message && (
-        <Alert severity="error" sx={{ m: 3 }}>
-          {fetchedActivities.error.message}
-        </Alert>
-      )}
-      {!!fetchedSummaries?.error?.message && (
-        <Alert severity="error" sx={{ m: 3 }}>
-          {fetchedSummaries.error.message}
-        </Alert>
-      )}
-      {!!error && (
-        <Alert severity="error" sx={{ m: 3 }}>
-          {error}
-        </Alert>
-      )}
+      {errorAlert(loaderData?.error)}
+      {errorAlert(fetchedActivities?.error?.message)}
+      {errorAlert(fetchedSummaries?.error?.message)}
+      {errorAlert(error)}
       <Snackbar
         open={showSavedConfirmation}
         autoHideDuration={3000}

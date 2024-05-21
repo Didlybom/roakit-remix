@@ -14,7 +14,7 @@ import {
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import Markdown from '../components/Markdown';
+import Markdown from '../components/MarkdownText';
 import {
   fetchAccountMap,
   fetchActivities,

@@ -29,16 +29,12 @@ export default function Info() {
           <Grid>
             <strong>Date Filter</strong>
           </Grid>
-          <Grid>
-            <strong>IsNavOpen</strong>
-          </Grid>
         </Grid>
         <Grid>
           <Grid>{packageJson.version}</Grid>
           <Grid>{loaderData.email}</Grid>
           <Grid>{loaderData.customerId}</Grid>
           <Grid>{loaderData.dateFilter}</Grid>
-          <Grid>{`${loaderData.isNavOpen}`}</Grid>
         </Grid>
       </Grid>
     </App>

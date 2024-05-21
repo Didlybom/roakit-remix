@@ -13,12 +13,12 @@ import type {
 } from './types';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
-  ['task-created', { sortOrder: 1, label: 'Task creation' }],
-  ['task-updated', { sortOrder: 2, label: 'Task update' }],
-  ['task-deleted', { sortOrder: 3, label: 'Task deletion' }],
-  ['task-disabled', { sortOrder: 4, label: 'Task disable' }],
-  ['taskOrg-created', { sortOrder: 5, label: 'Task org. creation' }],
-  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. update' }],
+  ['task-created', { sortOrder: 1, label: 'Task (Jira) creation' }],
+  ['task-updated', { sortOrder: 2, label: 'Task (Jira) update' }],
+  ['task-deleted', { sortOrder: 3, label: 'Task (Jira) deletion' }],
+  ['task-disabled', { sortOrder: 4, label: 'Task (Jira) disable' }],
+  ['taskOrg-created', { sortOrder: 5, label: 'Task org. (Jira) creation' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. (Jira) update' }],
   ['code-created', { sortOrder: 7, label: 'Code creation' }],
   ['code-updated', { sortOrder: 8, label: 'Code update' }],
   ['code-deleted', { sortOrder: 9, label: 'Code deletion' }],

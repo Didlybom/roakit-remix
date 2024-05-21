@@ -11,7 +11,7 @@ import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
-import Markdown from '../components/Markdown';
+import Markdown from '../components/MarkdownText';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';

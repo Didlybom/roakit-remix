@@ -1,5 +1,5 @@
 import { Google as GoogleIcon } from '@mui/icons-material';
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Divider, Stack, TextField } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useFetcher, useNavigation, useSubmit } from '@remix-run/react';
@@ -12,6 +12,7 @@ import {
 import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
+import Copyright from '../components/Copyright';
 import { auth as clientAuth } from '../firebase.client';
 import { auth as serverAuth } from '../firebase.server';
 import { queryCustomerId } from '../firestore.server/fetchers.server';
@@ -153,44 +154,46 @@ export default function Login() {
   }
 
   return (
-    <App view="login" isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
-      <Box display="flex" justifyContent="center" sx={{ mt: 10 }}>
-        <Stack spacing={2} sx={{ width: 300, mb: 5 }}>
-          <Form method="post" onSubmit={handleLogin}>
-            <Stack spacing={2}>
-              <TextField id="email" label="Email" type="email" autoComplete="on" fullWidth />
-              <TextField
-                id="password"
-                label="Password"
-                type="password"
-                autoComplete="off"
-                fullWidth
-                error={!!loginError}
-                helperText={loginError}
-                onChange={() => setLoginError('')}
-              />
-              <Button variant="contained" type="submit">
-                Login
+    <Stack display="flex" minHeight="100vh">
+      <App view="login" isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
+        <Box display="flex" justifyContent="center" mt={10}>
+          <Stack spacing={2} width={300} mb={5}>
+            <Form method="post" onSubmit={handleLogin}>
+              <Stack spacing={2}>
+                <TextField id="email" label="Email" type="email" autoComplete="on" fullWidth />
+                <TextField
+                  id="password"
+                  label="Password"
+                  type="password"
+                  autoComplete="off"
+                  fullWidth
+                  error={!!loginError}
+                  helperText={loginError}
+                  onChange={() => setLoginError('')}
+                />
+                <Button variant="contained" type="submit">
+                  Login
+                </Button>
+              </Stack>
+            </Form>
+            <Divider sx={{ py: 3 }}>or</Divider>
+            <Box position="relative">
+              <Button
+                variant="outlined"
+                startIcon={<GoogleIcon />}
+                sx={{ width: '100%' }}
+                onClick={handleSignInWithGoogle}
+                disabled={navigation.state !== 'idle'}
+              >
+                Sign in with Google
               </Button>
-            </Stack>
-          </Form>
-          <Typography textAlign="center" sx={{ p: 2 }}>
-            or
-          </Typography>
-          <Box sx={{ position: 'relative' }}>
-            <Button
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              sx={{ width: '100%' }}
-              onClick={handleSignInWithGoogle}
-              disabled={navigation.state !== 'idle'}
-            >
-              Sign in with Google
-            </Button>
-          </Box>
-          {googleError && <Alert severity="error">{googleError}</Alert>}
-        </Stack>
-      </Box>
-    </App>
+            </Box>
+            {!!googleError && <Alert severity="error">{googleError}</Alert>}
+          </Stack>
+        </Box>
+      </App>
+      <Box flexGrow={1} />
+      <Copyright />
+    </Stack>
   );
 }
