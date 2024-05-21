@@ -1,9 +1,22 @@
 import {
+  AddCircle as AddCircleIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
   Upload as UploadIcon,
 } from '@mui/icons-material';
-import { Alert, Box, Button, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  Link,
+  Snackbar,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
@@ -15,12 +28,15 @@ import {
   useSubmit,
 } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
+import type { UserRecord } from 'firebase-admin/auth';
 import pino from 'pino';
+import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import App from '../components/App';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import TabPanel from '../components/TabPanel';
-import { firestore } from '../firebase.server';
+import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
 import type { IdentityData } from '../types/types';
@@ -28,7 +44,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { internalLinkSx } from '../utils/jsxUtils';
+import { ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
 
 const logger = pino({ name: 'route:identities' });
 
@@ -38,10 +54,11 @@ const UNSET_MANAGER_ID = '_UNSET_MANAGER_';
 export const meta = () => [{ title: 'Contributors Admin | ROAKIT' }];
 
 export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => {
-  return (actionResult as ActionResponse)?.status === 'imported';
+  const actionStatus = (actionResult as ActionResponse)?.status?.code;
+  return actionStatus === 'imported' || actionStatus === 'firebaseUserCreated';
 };
 
-// verify JWT, load identities
+// verify JWT, load identities and Firebase users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
   try {
@@ -49,6 +66,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       fetchIdentities(sessionData.customerId!),
       fetchAccountsToReview(sessionData.customerId!),
     ]);
+
+    // get Firebase users
+    const roakitUsers = [...identities.list];
+    const firebaseUsers: UserRecord[] = [];
+    const getUserBatches = [];
+    while (roakitUsers.length) {
+      // firestore supports getting up to 100 users at a time
+      const batch = roakitUsers.splice(0, 100);
+      getUserBatches.push(
+        auth
+          .getUsers(batch.map(identity => ({ email: identity.email! })))
+          .then(result => firebaseUsers.push(...result.users))
+      );
+    }
+    await Promise.all(getUserBatches);
+
+    firebaseUsers
+      .filter(user => user.customClaims?.customerId == sessionData.customerId) // comes as a string from Firestore
+      .forEach(user => {
+        const identity = identities.list.find(i => i.email === user.email);
+        if (identity) {
+          identity.firebaseId = user.uid;
+        }
+      });
+
     return { ...sessionData, identities, accountsToReview };
   } catch (e) {
     logger.error(e);
@@ -60,10 +102,11 @@ interface JsonRequest {
   identityId?: string;
   managerId?: string;
   imports?: string;
+  createFirebaseUserForEmail?: string;
 }
 
 interface ActionResponse {
-  status?: 'imported' | 'userUpdated';
+  status?: { code: 'imported' | 'userUpdated' | 'firebaseUserCreated'; message?: string };
   error?: string;
 }
 
@@ -81,7 +124,7 @@ export const action = async ({
         .update({
           managerId: jsonRequest.managerId === UNSET_MANAGER_ID ? '' : jsonRequest.managerId,
         });
-      return { status: 'userUpdated' };
+      return { status: { code: 'userUpdated', message: 'User updated' } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save user') };
     }
@@ -95,16 +138,23 @@ export const action = async ({
     const accounts = jsonRequest.imports.split(/\r|\n/);
 
     if (accounts.length > MAX_IMPORT) {
+      const message = `You cannot import more than ${MAX_IMPORT} accounts at a time`;
       return {
-        error: `You cannot import more than ${MAX_IMPORT} accounts at a time`,
-        status: 'imported',
+        error: message,
+        status: { code: 'imported', message },
       };
     }
     const dateCreated = Date.now();
+    let importCount = 0;
     for (const account of accounts) {
-      const [email, jiraId, jiraName, gitHubId] = account.split(',');
+      const [managerId, email, jiraId, jiraName, gitHubId] = account.split(',');
+      if (!email || gitHubId == null) {
+        continue;
+      }
+      importCount++;
       batch.set(identitiesColl.doc(), {
         dateCreated,
+        managerId,
         displayName: jiraName,
         ...(email && { email }),
         accounts: [
@@ -114,7 +164,29 @@ export const action = async ({
       });
     }
     await batch.commit(); // up to 500 operations
-    return { status: 'imported' };
+    return {
+      status: {
+        code: 'imported',
+        message: `Imported ${importCount} ${pluralize('user', importCount)}`,
+      },
+    };
+  }
+
+  // create Firebase user
+  if (jsonRequest.createFirebaseUserForEmail) {
+    await auth.importUsers([
+      {
+        uid: uuidv4(),
+        customClaims: { customerId: sessionData.customerId },
+        email: jsonRequest.createFirebaseUserForEmail,
+        emailVerified: true,
+      },
+    ]);
+    await firestore.collection('users').add({
+      customerId: sessionData.customerId,
+      email: jsonRequest.createFirebaseUserForEmail,
+    });
+    return { status: { code: 'firebaseUserCreated', message: 'Firebase user created' } };
   }
 
   return {};
@@ -129,6 +201,7 @@ export default function Users() {
   const [identities, setIdentities] = useState(loaderData.identities.list);
   const [imports, setImports] = useState('');
 
+  const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -139,8 +212,18 @@ export default function Users() {
     setError(actionData?.error ?? '');
   }, [actionData?.error]);
 
-  const identityCols = useMemo<GridColDef[]>(
-    () => [
+  useEffect(() => {
+    if (!actionData?.status) {
+      setConfirmation('');
+    } else if (actionData?.status?.message) {
+      setConfirmation(actionData?.status?.message);
+    }
+  }, [actionData?.status]);
+
+  const identityCols = useMemo<GridColDef[]>(() => {
+    const findManagerName = (identityId: string) =>
+      loaderData.identities.list.find(i => i.id === identityId)?.displayName ?? 'unknown';
+    return [
       {
         field: 'displayName',
         headerName: 'Name',
@@ -168,28 +251,30 @@ export default function Users() {
         renderCell: params => {
           return (params.value as IdentityData['accounts']).map((account, i) => {
             return (
-              <Stack key={i}>
-                <Stack direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
-                  <Typography
-                    component="div"
-                    fontSize="small"
-                    color={!account.id ? 'error' : 'inherited'}
-                  >
-                    <Stack direction="row" alignItems={'center'}>
-                      {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
-                      {account.type === 'jira' && (
-                        <Box component="span" sx={{ fontSize: '10px' }}>
-                          <JiraIcon />
-                        </Box>
-                      )}
-                      <Box sx={{ ml: 1 }}> {account.id || 'no id'}</Box>
-                    </Stack>
-                  </Typography>
-                  {account.name && <Box>{account.name}</Box>}
-                  <Link href={account.url} target="_blank" sx={{ cursor: 'pointer' }}>
-                    {account.url}
-                  </Link>
-                </Stack>
+              <Stack key={i} direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
+                <Typography
+                  component="div"
+                  fontSize="small"
+                  color={!account.id ? 'error' : 'inherited'}
+                >
+                  <Stack direction="row" spacing={1} alignItems={'center'}>
+                    {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
+                    {account.type === 'jira' && (
+                      <Box component="span" sx={{ fontSize: '10px' }}>
+                        <JiraIcon />
+                      </Box>
+                    )}
+                    <Box> {account.id || 'n/a'}</Box>
+                    {account.name && <Box sx={ellipsisSx}>{account.name}</Box>}
+                    <Link
+                      href={account.url}
+                      target="_blank"
+                      sx={{ cursor: 'pointer', ...ellipsisSx }}
+                    >
+                      {account.url}
+                    </Link>
+                  </Stack>
+                </Typography>
               </Stack>
             );
           });
@@ -200,6 +285,11 @@ export default function Users() {
         headerName: 'Team',
         minWidth: 200,
         type: 'singleSelect',
+        sortComparator: (a: string, b: string) => {
+          const aName = a === UNSET_MANAGER_ID ? 'ZZZ' : findManagerName(a);
+          const bName = b === UNSET_MANAGER_ID ? 'ZZZ' : findManagerName(b);
+          return aName.localeCompare(bName);
+        },
         valueOptions: params => [
           { value: UNSET_MANAGER_ID, label: '[unset]' },
           ...loaderData.identities.list
@@ -207,32 +297,43 @@ export default function Users() {
             .map(identity => ({ value: identity.id, label: identity.displayName })),
         ],
         editable: true,
-        renderCell: params =>
-          params.value && params.value !== UNSET_MANAGER_ID ?
-            <Box fontSize="small" sx={{ cursor: 'pointer' }}>
-              {loaderData.identities.list.find(i => i.id === params.value)?.displayName ??
-                'unknown'}
-            </Box>
-          : <Box fontSize="small" sx={{ cursor: 'pointer' }}>
-              {'...'}
-            </Box>,
+        renderCell: params => (
+          <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+            {params.value && params.value !== UNSET_MANAGER_ID ?
+              findManagerName(params.value as string)
+            : '...'}
+          </Box>
+        ),
       },
+      { field: 'id', headerName: 'Roakit ID', minWidth: 150 },
       {
-        field: 'id',
-        headerName: 'Roakit ID',
-        minWidth: 200,
+        field: 'firebaseId',
+        headerName: 'Firebase ID',
+        minWidth: 150,
+        renderCell: params => {
+          return params.value ?
+              <Box whiteSpace="noWrap" sx={ellipsisSx}>
+                {params.value as string}
+              </Box>
+            : <IconButton
+                title="Allow the user to login to ROAKIT"
+                onClick={() =>
+                  submit(
+                    { createFirebaseUserForEmail: (params.row as IdentityData).email ?? null },
+                    postJsonOptions
+                  )
+                }
+              >
+                <AddCircleIcon fontSize="small" />
+              </IconButton>;
+        },
       },
-    ],
-    [loaderData.identities]
-  );
+    ];
+  }, [loaderData.identities, submit]);
 
   const accountReviewCols = useMemo<GridColDef[]>(
     () => [
-      {
-        field: 'id',
-        headerName: 'Account ID',
-        minWidth: 200,
-      },
+      { field: 'id', headerName: 'Account ID', minWidth: 200 },
       { field: 'type', headerName: 'Source', minWidth: 80 },
       {
         field: 'name',
@@ -267,6 +368,17 @@ export default function Users() {
       showProgress={navigation.state !== 'idle'}
       view="users"
     >
+      <Snackbar
+        open={!!confirmation}
+        autoHideDuration={3000}
+        onClose={(_, reason?: string) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setConfirmation('');
+        }}
+        message={confirmation}
+      />
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs
           variant="scrollable"
@@ -291,11 +403,11 @@ export default function Users() {
               managerId: identity.managerId ?? UNSET_MANAGER_ID,
             }))}
             {...dataGridCommonProps}
+            rowHeight={65}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
             }}
-            getRowHeight={() => 'auto'}
             processRowUpdate={(updatedRow: IdentityData, oldRow: IdentityData) => {
               if (updatedRow.managerId !== oldRow.managerId) {
                 setIdentities(
@@ -371,11 +483,11 @@ export default function Users() {
           columns={accountReviewCols}
           rows={loaderData.accountsToReview}
           {...dataGridCommonProps}
+          rowHeight={50}
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },
             sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
           }}
-          autosizeOnMount
         />
       </TabPanel>
     </App>

@@ -24,6 +24,7 @@ export interface IdentityData {
   managerId?: string;
   reportIds?: string[];
   accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
+  firebaseId?: string;
 }
 
 export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
