@@ -369,6 +369,7 @@ export default function UserActivity() {
     <App
       view="activity.user"
       isLoggedIn={true}
+      role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}

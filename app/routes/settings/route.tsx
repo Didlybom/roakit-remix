@@ -25,6 +25,7 @@ import { bannedRecordSchema, feedSchema } from '../../types/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
+import { Role } from '../../utils/userUtils';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
@@ -42,6 +43,9 @@ export const meta = () => [{ title: 'Settings | ROAKIT' }];
 // verify JWT, load client settings
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
@@ -188,7 +192,7 @@ export default function Settings() {
   useEffect(() => setShowError(actionData?.error ?? null), [actionData]);
 
   return (
-    <App view="settings" isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
+    <App view="settings" role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
       {globalStyles}
       <Popover
         id={popover?.element ? 'popover' : undefined}

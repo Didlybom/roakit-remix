@@ -2,8 +2,9 @@ import { createCookie } from '@remix-run/node';
 import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
-import { queryCustomerId } from '../firestore.server/fetchers.server';
+import { queryUser } from '../firestore.server/fetchers.server';
 import { DateRange, DateRangeValue } from './dateUtils';
+import type { Role } from './userUtils';
 
 const logger = pino({ name: 'utils:session-cookie' });
 
@@ -12,6 +13,7 @@ export interface SessionData {
   isLoggedIn: boolean;
   email?: string;
   customerId?: number;
+  role?: Role;
   isNavOpen?: boolean;
   dateFilter?: DateRange;
 }
@@ -58,7 +60,9 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   }
 
   if (sessionData.isLoggedIn && sessionData.email) {
-    sessionData.customerId = await queryCustomerId(sessionData.email);
+    const userData = await queryUser(sessionData.email);
+    sessionData.customerId = userData.customerId;
+    sessionData.role = userData.role;
     if (sessionData.customerId != +token.customerId) {
       sessionData.isLoggedIn = false; // force user to re-login if customerId is not there or wrong
     }

@@ -15,7 +15,7 @@ import App from '../components/App';
 import Copyright from '../components/Copyright';
 import { auth as clientAuth } from '../firebase.client';
 import { auth as serverAuth } from '../firebase.server';
-import { queryCustomerId } from '../firestore.server/fetchers.server';
+import { queryUser } from '../firestore.server/fetchers.server';
 import { ONE_DAY } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { sessionCookie } from '../utils/sessionCookie.server';
@@ -31,7 +31,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!token.email) {
     throw Error('Token missing email');
   }
-  const customerId = await queryCustomerId(token.email);
+  const customerId = (await queryUser(token.email)).customerId;
   if (!form.get('isTokenRefreshed')) {
     // check if we need to add the customerId claim to the token (used by Firebase rules)
     if (!token.customerId || token.customerId != customerId) {

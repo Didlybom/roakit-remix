@@ -15,7 +15,6 @@ import {
   BottomNavigation,
   BottomNavigationAction,
   Box,
-  Button,
   Chip,
   Divider,
   Unstable_Grid2 as Grid,
@@ -40,11 +39,12 @@ import {
 } from '@remix-run/react';
 import dayjs, { type Dayjs } from 'dayjs';
 import pino from 'pino';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import App, { navbarWidth } from '../components/App';
 import DateRangePicker from '../components/DateRangePicker';
 import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/MarkdownText';
+import SmallButton from '../components/SmallButton';
 import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ActivitiesByInitiative from '../components/dashboard/ActivitiesByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
@@ -61,6 +61,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
+import { Role } from '../utils/userUtils';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
 import type { SummariesResponse } from './fetcher.summaries.$userid';
 
@@ -75,6 +76,9 @@ const SEARCH_PARAM_DAY = 'day';
 // verify session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
@@ -134,25 +138,6 @@ export default function Dashboard() {
     '(min-width:' + (900 + (loaderData.isNavOpen ? navbarWidth : 0)) + 'px)'
   );
   const [bottomNav, setBottomNav] = useState<BottomNav>('summaries');
-
-  const smallButton = (href: string, label: string, icon: ReactNode) => (
-    <Button
-      href={href}
-      variant="outlined"
-      startIcon={icon}
-      sx={{
-        mx: '2px',
-        px: 1,
-        py: 0,
-        fontSize: '.75rem',
-        fontWeight: 400,
-        textTransform: 'none',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </Button>
-  );
 
   // load summaries
   useEffect(() => {
@@ -317,10 +302,10 @@ export default function Dashboard() {
   return (
     <App
       view="dashboard"
+      role={loaderData.role}
       isLoggedIn={loaderData.isLoggedIn}
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle' || groupedActivitiesFetcher.state !== 'idle'}
-      showPulse={false}
     >
       {errorAlert(loaderData?.error)}
       {errorAlert(groupedActivitiesResponse?.error?.message)}
@@ -358,18 +343,30 @@ export default function Dashboard() {
               </Typography>
               <Typography fontSize="small">
                 See also{' '}
-                {smallButton('/summaries/edit', 'Summary Form', <SummariesIcon fontSize="small" />)}{' '}
+                <SmallButton
+                  href="/summary/multi"
+                  label="Summaries"
+                  icon={<SummariesIcon fontSize="small" />}
+                />{' '}
                 to submit data,{' '}
-                {smallButton('/activities', 'All Activity', <HistoryIcon fontSize="small" />)} to
-                assign initiatives to activities, and{' '}
-                {smallButton('/ai', 'AI Playground', <ScienceIcon fontSize="small" />)}.
+                <SmallButton
+                  href="/activities"
+                  label="All Activity"
+                  icon={<HistoryIcon fontSize="small" />}
+                />{' '}
+                to assign initiatives to activities, and{' '}
+                <SmallButton
+                  href="/ai"
+                  label="AI Playground"
+                  icon={<ScienceIcon fontSize="small" />}
+                />
+                .
               </Typography>
             </Alert>
             {summaries}
           </Grid>
         )}
         {(!useBottomNav || bottomNav === 'charts') && <Grid>{charts}</Grid>}
-
         {useBottomNav && (
           <Paper
             sx={{

@@ -2,6 +2,7 @@ import { Box, styled } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import { DateRange } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
+import { DEFAULT_ROLE, type Role } from '../utils/userUtils';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
 import DrawerHeader from './NavDrawerHeader';
@@ -12,10 +13,8 @@ export type View =
   | 'dashboard'
   | 'activity'
   | 'activity.user'
-  | 'summaries'
-  | 'summary.user'
-  | 'github'
-  | 'jira'
+  | 'summary'
+  | 'summary.multi'
   | 'initiatives'
   | 'users'
   | 'settings'
@@ -46,6 +45,7 @@ const Main = styled('main', { shouldForwardProp: prop => prop !== 'open' })<{
 export default function App({
   isLoggedIn,
   view,
+  role = DEFAULT_ROLE,
   dateRange,
   onDateRangeSelect,
   showProgress,
@@ -54,6 +54,7 @@ export default function App({
   children,
 }: {
   isLoggedIn: boolean;
+  role?: Role;
   view: View;
   dateRange?: DateRange;
   onDateRangeSelect?: (dateRange: DateRange) => void;
@@ -73,6 +74,7 @@ export default function App({
     <Box sx={{ display: 'flex' }}>
       <Header
         isLoggedIn={isLoggedIn}
+        role={role}
         view={view}
         dateRange={dateRange}
         onDateRangeSelect={onDateRangeSelect}
@@ -82,6 +84,7 @@ export default function App({
         onNavBarOpen={() => toggleNavBar(true)}
       />
       <NavDrawer
+        role={role}
         view={view}
         width={navbarWidth}
         showPulse={showPulse}

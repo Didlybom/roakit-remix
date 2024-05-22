@@ -5,7 +5,7 @@ import NodeCache from 'node-cache';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
 import { findTicket } from '../types/activityFeed';
-import * as from from '../types/schemas';
+import * as schemas from '../types/schemas';
 import { displayName, emptyActivity } from '../types/typeUtils';
 import type {
   AccountData,
@@ -23,6 +23,7 @@ import type {
 import { daysInMonth } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
 import { FEED_TYPES } from '../utils/feedUtils';
+import { DEFAULT_ROLE, Role } from '../utils/userUtils';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
@@ -42,7 +43,7 @@ interface TicketCache {
 const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
 const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
 
-export const queryCustomerId = async (email: string) => {
+export const queryUser = async (email: string): Promise<{ customerId: number; role: Role }> => {
   const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
   if (userDocs.length === 0) {
     throw Error('User not found');
@@ -50,7 +51,11 @@ export const queryCustomerId = async (email: string) => {
   if (userDocs.length > 1) {
     throw Error('More than one User found');
   }
-  return userDocs[0].data().customerId as number;
+  const data = schemas.userSchema.parse(userDocs[0].data());
+  return {
+    customerId: data.customerId,
+    role: data.role! || DEFAULT_ROLE,
+  };
 };
 
 export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
@@ -58,7 +63,7 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
     const initiatives: InitiativeData[] = [];
     (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
       initiative => {
-        const data = from.initiativeSchema.parse(initiative.data());
+        const data = schemas.initiativeSchema.parse(initiative.data());
         initiatives.push({
           id: initiative.id,
           label: data.label,
@@ -79,7 +84,7 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
     const initiatives: InitiativeRecord = {};
     (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
       initiative => {
-        const data = from.initiativeSchema.parse(initiative.data());
+        const data = schemas.initiativeSchema.parse(initiative.data());
         initiatives[initiative.id] = {
           label: data.label,
           counters:
@@ -102,13 +107,23 @@ export const fetchIdentities = async (
   return await retry(async () => {
     const identities: IdentityData[] = [];
     const accountMap: AccountToIdentityRecord = {};
+
+    const usersByEmail: Record<string, { id: string; role: Role }> = {};
+    (await firestore.collection('users').where('customerId', '==', customerId).get()).forEach(
+      user => {
+        const data = schemas.userSchema.parse(user.data());
+        usersByEmail[data.email] = { id: user.id, role: data.role ?? DEFAULT_ROLE };
+      }
+    );
+
     (await firestore.collection(`customers/${customerId}/identities`).get()).forEach(identity => {
-      const data = from.identitySchema.parse(identity.data());
+      const data = schemas.identitySchema.parse(identity.data());
       identities.push({
         id: identity.id,
         email: data.email,
         displayName: data.displayName,
         managerId: data.managerId,
+        user: usersByEmail[data.email ?? ''] ?? { role: DEFAULT_ROLE },
         accounts: data.accounts ?? [],
       });
       // map accounts to identities
@@ -131,6 +146,7 @@ export const fetchIdentities = async (
           )
         );
     });
+
     return {
       list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
       accountMap,
@@ -148,7 +164,7 @@ export const fetchTicketPriorityMap = async (customerId: number): Promise<Ticket
   return await retry(async () => {
     const tickets: TicketRecord = {};
     (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
-      const data = from.ticketSchema.parse(ticket.data());
+      const data = schemas.ticketSchema.parse(ticket.data());
       tickets[ticket.id] = data.priority;
     });
     ticketsCache.set(cacheKey, { tickets, hasAllTickets: true });
@@ -185,7 +201,7 @@ export const fetchTicketPriorities = async (
           .get()
           .then(result =>
             result.docs.map(ticket => {
-              const data = from.ticketSchema.parse(ticket.data());
+              const data = schemas.ticketSchema.parse(ticket.data());
               tickets[ticket.id] = data.priority;
             })
           )
@@ -208,7 +224,7 @@ export const fetchAccountMap = async (customerId: number): Promise<AccountMap> =
         (
           await firestore.collection(`customers/${customerId}/feeds/${feed.id}/accounts`).get()
         ).forEach(account => {
-          const data = from.accountSchema.parse(account.data());
+          const data = schemas.accountSchema.parse(account.data());
           accounts.set(account.id, {
             type: feed.type,
             name: data.accountName,
@@ -231,7 +247,7 @@ export const fetchAccountsToReview = async (customerId: number): Promise<Account
             .collection(`customers/${customerId}/feeds/${feed.id}/accountsToReview`)
             .get()
         ).forEach(account => {
-          const data = from.accountToReviewSchema.parse(account.data());
+          const data = schemas.accountToReviewSchema.parse(account.data());
           accounts.push({
             id: account.id,
             type: feed.type,
@@ -297,7 +313,7 @@ export const fetchActivities = async ({
     const ticketPrioritiesToFetch = new Set<string>();
     const activityTickets = new Map<string, string>();
     activityDocs.forEach(activity => {
-      const props = from.activitySchema.safeParse(activity.data());
+      const props = schemas.activitySchema.safeParse(activity.data());
       if (!props.success) {
         bail(new ParseError('Failed to parse activities. ' + props.error.message));
         return emptyActivity; // not used, bail() will throw
@@ -369,7 +385,7 @@ export const fetchSummaries = async (
         `Found more than one summary for customer ${customerId}, user ${identityId} on ${document.day}`
       );
     }
-    const props = from.summarySchema.safeParse(document.snapshot.docs[0].data());
+    const props = schemas.summarySchema.safeParse(document.snapshot.docs[0].data());
     if (!props.success) {
       throw new ParseError('Failed to parse summary. ' + props.error.message);
     }
@@ -395,7 +411,7 @@ export const fetchAllSummaries = async (
     retryProps('Retrying fetchAllSummaries...')
   );
   documents.forEach(document => {
-    const props = from.summarySchema.safeParse(document.data());
+    const props = schemas.summarySchema.safeParse(document.data());
     if (!props.success) {
       throw new ParseError('Failed to parse summary. ' + props.error.message);
     }

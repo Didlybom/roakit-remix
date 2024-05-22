@@ -59,7 +59,7 @@ import { SummariesResponse } from './fetcher.summaries.$userid';
 
 const logger = pino({ name: 'route:summary.user' });
 
-export const meta = () => [{ title: 'Team Summary | ROAKIT' }];
+export const meta = () => [{ title: 'Summary Form | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
@@ -86,15 +86,23 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       fetchIdentities(sessionData.customerId!),
     ]);
 
-    const userId = params.userid;
+    let userId = params.userid;
 
-    const userIdentity = identities.list.find(identity => identity.id === userId);
+    const userIdentity = identities.list.find(identity => {
+      if (userId) {
+        return identity.id === userId;
+      } else {
+        return identity.email === sessionData.email;
+      }
+    });
     if (!userIdentity) {
-      return errorResponse(sessionData, 'User has no identity');
+      return errorResponse(sessionData, 'Identity not found');
+    }
+    if (!userId) {
+      userId = userIdentity.id;
     }
 
-    const userIds =
-      userId ? getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap) : [];
+    const userIds = getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap);
     const teamUserIds: string[] = [];
     userIdentity.reportIds?.forEach(reportId => {
       teamUserIds.push(
@@ -284,8 +292,9 @@ export default function Summary() {
 
   return (
     <App
-      view="summary.user"
+      view="summary"
       isLoggedIn={true}
+      role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       showProgress={
         navigation.state !== 'idle' ||
@@ -363,7 +372,7 @@ export default function Summary() {
                 )}
                 {loaderData.reportIds?.map(reportId => (
                   <Link
-                    href={`/summary/user/${encodeURI(reportId)}`}
+                    href={`/summary/${encodeURI(reportId)}`}
                     target="_blank"
                     key={reportId}
                     sx={{ opacity: showTeam ? undefined : 0.3 }}

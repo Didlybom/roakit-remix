@@ -1,3 +1,5 @@
+import type { Role } from '../utils/userUtils';
+
 export type InitiativeData = {
   id: string;
   label?: string;
@@ -23,8 +25,8 @@ export interface IdentityData {
   displayName?: string;
   managerId?: string;
   reportIds?: string[];
+  user?: { id: string; role?: Role };
   accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
-  firebaseId?: string;
 }
 
 export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;

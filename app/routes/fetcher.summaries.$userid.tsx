@@ -28,6 +28,7 @@ export const loader = async ({
   } catch (e) {
     return errorJsonResponse('Fetching summaries failed. Invalid session.', 401);
   }
+  // FIXME for non admin users, only authorized logged in user
   if (!params.userid) {
     return errorJsonResponse('Fetching summaries failed. Invalid params.', 400);
   }

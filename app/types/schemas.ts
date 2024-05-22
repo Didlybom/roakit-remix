@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Roles } from '../utils/userUtils';
 
 export const bannedRecordSchema = z.record(z.string(), z.boolean());
 export const feedSchema = z.object({
@@ -32,6 +33,12 @@ export const accountToReviewSchema = z.object({
   createdDate: z.number(),
   accountName: z.string(),
   accountUri: z.string().optional(),
+});
+
+export const userSchema = z.object({
+  email: z.string(),
+  customerId: z.number(),
+  role: z.enum(Roles).optional(),
 });
 
 export const identitySchema = z.object({

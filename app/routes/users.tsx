@@ -28,7 +28,6 @@ import {
   useSubmit,
 } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
-import type { UserRecord } from 'firebase-admin/auth';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,11 +44,19 @@ import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
+import theme from '../utils/theme';
+import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:identities' });
 
 const MAX_IMPORT = 500;
 const UNSET_MANAGER_ID = '_UNSET_MANAGER_';
+
+const roleLabels = [
+  { value: Role.Admin, label: 'Administrator' },
+  { value: Role.Monitor, label: 'Monitor' },
+  { value: Role.Contributor, label: 'Contributor' },
+];
 
 export const meta = () => [{ title: 'Contributors Admin | ROAKIT' }];
 
@@ -61,36 +68,14 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => 
 // verify JWT, load identities and Firebase users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     const [identities, accountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
       fetchAccountsToReview(sessionData.customerId!),
     ]);
-
-    // get Firebase users
-    const roakitUsers = [...identities.list];
-    const firebaseUsers: UserRecord[] = [];
-    const getUserBatches = [];
-    while (roakitUsers.length) {
-      // firestore supports getting up to 100 users at a time
-      const batch = roakitUsers.splice(0, 100);
-      getUserBatches.push(
-        auth
-          .getUsers(batch.map(identity => ({ email: identity.email! })))
-          .then(result => firebaseUsers.push(...result.users))
-      );
-    }
-    await Promise.all(getUserBatches);
-
-    firebaseUsers
-      .filter(user => user.customClaims?.customerId == sessionData.customerId) // comes as a string from Firestore
-      .forEach(user => {
-        const identity = identities.list.find(i => i.email === user.email);
-        if (identity) {
-          identity.firebaseId = user.uid;
-        }
-      });
-
     return { ...sessionData, identities, accountsToReview };
   } catch (e) {
     logger.error(e);
@@ -101,6 +86,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 interface JsonRequest {
   identityId?: string;
   managerId?: string;
+  userId?: string;
+  role?: Role;
   imports?: string;
   createFirebaseUserForEmail?: string;
 }
@@ -124,7 +111,17 @@ export const action = async ({
         .update({
           managerId: jsonRequest.managerId === UNSET_MANAGER_ID ? '' : jsonRequest.managerId,
         });
-      return { status: { code: 'userUpdated', message: 'User updated' } };
+      return { status: { code: 'userUpdated', message: "User's team updated" } };
+    } catch (e) {
+      return { error: errMsg(e, 'Failed to save user') };
+    }
+  }
+
+  // update role
+  if (jsonRequest.userId && jsonRequest.role) {
+    try {
+      await firestore.doc(`users/${jsonRequest.userId}`).update({ role: jsonRequest.role });
+      return { status: { code: 'userUpdated', message: "User's role updated" } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save user') };
     }
@@ -298,18 +295,19 @@ export default function Users() {
         ],
         editable: true,
         renderCell: params => (
-          <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+          <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
             {params.value && params.value !== UNSET_MANAGER_ID ?
               findManagerName(params.value as string)
             : '...'}
           </Box>
         ),
       },
-      { field: 'id', headerName: 'Roakit ID', minWidth: 150 },
+      { field: 'id', headerName: 'Tracking ID', minWidth: 150 },
       {
         field: 'firebaseId',
-        headerName: 'Firebase ID',
+        headerName: 'Login ID',
         minWidth: 150,
+        valueGetter: (_, row: IdentityData) => row.user!.id,
         renderCell: params => {
           return params.value ?
               <Box whiteSpace="noWrap" sx={ellipsisSx}>
@@ -323,9 +321,31 @@ export default function Users() {
                     postJsonOptions
                   )
                 }
+                sx={{ ml: -1 }}
               >
                 <AddCircleIcon fontSize="small" />
               </IconButton>;
+        },
+      },
+      {
+        field: 'role',
+        headerName: 'Role',
+        minWidth: 150,
+        type: 'singleSelect',
+        editable: true,
+        valueGetter: (v_, row: IdentityData) => row.user!.role,
+        valueSetter: (value: Role, row: IdentityData) => ({
+          ...row,
+          user: { ...row.user, role: value },
+        }),
+        valueOptions: () => roleLabels,
+        renderCell: params => {
+          const user = (params.row as IdentityData).user;
+          return user?.id ?
+              <Box color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
+                {roleLabels.find(r => r.value === params.value)?.label}
+              </Box>
+            : null;
         },
       },
     ];
@@ -364,6 +384,7 @@ export default function Users() {
   return (
     <App
       isLoggedIn={true}
+      role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle'}
       view="users"
@@ -419,6 +440,21 @@ export default function Users() {
                 );
                 submit(
                   { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
+                  postJsonOptions
+                );
+              } else if (updatedRow.user?.role && updatedRow.user.role !== oldRow.user?.role) {
+                if (!oldRow.user?.id) {
+                  return oldRow;
+                }
+                setIdentities(
+                  identities.map(identity =>
+                    identity.id === updatedRow.id ?
+                      { ...identity, user: updatedRow.user }
+                    : identity
+                  )
+                );
+                submit(
+                  { userId: updatedRow.user.id ?? null, role: updatedRow.user.role ?? null },
                   postJsonOptions
                 );
               }

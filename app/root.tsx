@@ -107,39 +107,42 @@ export default function App() {
 // https://remix.run/docs/en/main/route/error-boundary
 export function ErrorBoundary() {
   let message;
-
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
     switch (error.status) {
       case 401:
-        message = `Oops! Looks like you tried to visit a page that you do not have access to. [${error.status}: ${error.statusText}]`;
+      case 403:
+        message = 'Oops! Looks like you tried to visit a page that you do not have access to.';
         break;
       case 404:
-        message = `Oops! Looks like you tried to visit a page that does not exist. [${error.status}: ${error.statusText}]`;
+        message = 'Oops! Looks like you tried to visit a page that does not exist.';
         break;
       default:
         throw new Error((error.data as string) || error.statusText);
     }
   } else {
-    message = errMsg(error, 'Unknown error');
+    message = errMsg(error, 'An error occurred');
   }
+
   return (
     <Document title="ROAKIT Error">
       <Layout showCopyright={true}>
         <Box m={4}>
           <Typography variant="h5">An error occurred!</Typography>
-          <Typography mt={2}>
-            You can try to{' '}
-            <Link onClick={() => window.location.reload()} sx={internalLinkSx}>
-              refresh
-            </Link>
-            , or{' '}
-            <Link href="/logout" sx={internalLinkSx}>
-              logout
-            </Link>{' '}
-            and login again.
-          </Typography>
+          {!isRouteErrorResponse(error) && (
+            <Typography mt={2}>
+              You can try to{' '}
+              <Link onClick={() => window.location.reload()} sx={internalLinkSx}>
+                refresh
+              </Link>
+              , or{' '}
+              <Link href="/logout" sx={internalLinkSx}>
+                logout
+              </Link>{' '}
+              and login again.
+            </Typography>
+          )}
           <Alert severity="error" sx={{ mt: 4 }}>
             {message}
           </Alert>

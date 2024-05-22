@@ -16,6 +16,7 @@ import {
   styled,
 } from '@mui/material';
 import { DateRange } from '../utils/dateUtils';
+import { Role } from '../utils/userUtils';
 import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 
@@ -44,6 +45,7 @@ const NavBar = styled(AppBar, {
 
 export default function Header({
   isLoggedIn,
+  role,
   view,
   dateRange,
   onDateRangeSelect,
@@ -53,6 +55,7 @@ export default function Header({
   onNavBarOpen,
 }: {
   isLoggedIn: boolean;
+  role: Role;
   view: View;
   dateRange?: DateRange;
   onDateRangeSelect?: (dateRange: DateRange) => void;
@@ -92,7 +95,7 @@ export default function Header({
                 <DateRangePicker dateRange={dateRange} onSelect={onDateRangeSelect} />
               )}
             </Box>
-            {isLoggedIn && (
+            {isLoggedIn && role === Role.Admin && (
               <>
                 <IconButton
                   href="/settings"

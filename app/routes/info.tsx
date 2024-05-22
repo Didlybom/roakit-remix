@@ -14,7 +14,12 @@ export default function Info() {
   const loaderData = useLoaderData<typeof loader>();
 
   return (
-    <App view="info" isLoggedIn={loaderData.isLoggedIn} isNavOpen={loaderData.isNavOpen}>
+    <App
+      view="info"
+      isLoggedIn={loaderData.isLoggedIn}
+      role={loaderData.role}
+      isNavOpen={loaderData.isNavOpen}
+    >
       <Grid container spacing={2} sx={{ display: 'flex', flex: 1, minWidth: 0, m: 4 }}>
         <Grid>
           <Grid>
@@ -22,6 +27,9 @@ export default function Info() {
           </Grid>
           <Grid>
             <strong>Email</strong>
+          </Grid>
+          <Grid>
+            <strong>Role</strong>
           </Grid>
           <Grid>
             <strong>Customer ID</strong>
@@ -33,6 +41,7 @@ export default function Info() {
         <Grid>
           <Grid>{packageJson.version}</Grid>
           <Grid>{loaderData.email}</Grid>
+          <Grid>{loaderData.role}</Grid>
           <Grid>{loaderData.customerId}</Grid>
           <Grid>{loaderData.dateFilter}</Grid>
         </Grid>

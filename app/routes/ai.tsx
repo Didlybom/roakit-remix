@@ -27,6 +27,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { formatJson } from '../utils/jsxUtils';
+import { Role } from '../utils/userUtils';
 
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
 
@@ -35,7 +36,9 @@ export const shouldRevalidate = () => false;
 // load activities
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
-
+  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     // retrieve  users
     const [accounts, identities] = await Promise.all([

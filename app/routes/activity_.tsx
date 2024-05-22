@@ -75,6 +75,8 @@ import {
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
+import theme from '../utils/theme';
+import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:activity' });
 
@@ -87,6 +89,9 @@ export const meta = () => [{ title: 'Activity | ROAKIT' }];
 // verify JWT, load initiatives and users
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     // retrieve initiatives, tickets, and users
     const [initiatives, accounts, identities, tickets] = await Promise.all([
@@ -358,10 +363,10 @@ export default function ActivityReview() {
         editable: true,
         renderCell: params =>
           params.value !== UNSET_INITIATIVE_ID ?
-            <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+            <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
               {loaderData.initiatives[params.value as string]?.label ?? 'unknown'}
             </Box>
-          : <Box fontSize="small" sx={{ cursor: 'pointer' }}>
+          : <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
               {'...'}
             </Box>,
       },
@@ -372,7 +377,12 @@ export default function ActivityReview() {
         editable: true,
         sortable: false,
         renderCell: params => (
-          <Box fontSize="small" title={params.value as string} sx={{ cursor: 'pointer' }}>
+          <Box
+            fontSize="small"
+            color={theme.palette.primary.main}
+            title={params.value as string}
+            sx={{ cursor: 'pointer' }}
+          >
             {params.value || '...'}
           </Box>
         ),
@@ -450,16 +460,22 @@ export default function ActivityReview() {
 
   if (!activities) {
     return (
-      <App view="activity" isLoggedIn={true} isNavOpen={loaderData.isNavOpen} showProgress={true} />
+      <App
+        view="activity"
+        isLoggedIn={true}
+        role={loaderData.role}
+        isNavOpen={loaderData.isNavOpen}
+        showProgress={true}
+      />
     );
   }
   return (
     <App
       view="activity"
       isLoggedIn={true}
+      role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       showProgress={loading}
-      showPulse={false}
     >
       <CodePopover
         popover={codePopover}

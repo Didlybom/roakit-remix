@@ -3,10 +3,10 @@ import {
   Business as BusinessIcon,
   ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
-  EditNote as EditSummaryIcon,
   History as HistoryIcon,
   Science as ScienceIcon,
   Subject as SubjectIcon,
+  EditNote as SummaryIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
+import { Role } from '../utils/userUtils';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
@@ -46,12 +47,14 @@ const listItem = (
 );
 
 export default function NavDrawer({
+  role,
   view,
   width,
   showPulse,
   open,
   onClose,
 }: {
+  role: Role;
   view: View;
   width: number;
   showPulse?: boolean;
@@ -80,29 +83,46 @@ export default function NavDrawer({
         </IconButton>
       </DrawerHeader>
       <Divider />
-      <List>
-        {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
-        {listItem('activity.user', '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
-        {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
-      </List>
-      <Divider />
-      <List>
-        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
-          Administration
-        </ListSubheader>
-        {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
-        {listItem('users', '/users', BusinessIcon, 'Directory', view)}
-      </List>
-      <Divider />
-      <List>
-        <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
-          Experiments
-        </ListSubheader>
-        {listItem('summary.user', '/summaries/edit', EditSummaryIcon, 'Summary Form', view)}
-        {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
-      </List>
+      {(role === Role.Admin || role === Role.Monitor) && (
+        <>
+          <List>
+            {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
+            {listItem(
+              'activity.user',
+              '/activity/user/*',
+              SubjectIcon,
+              'Contributor Activity',
+              view
+            )}
+            {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
+          </List>
+          <Divider />
+        </>
+      )}
+      <List>{listItem('summary', '/summary', SummaryIcon, 'Summary Form', view)}</List>
+      {role === Role.Admin && (
+        <>
+          <Divider />
+          <List>
+            <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+              Administration
+            </ListSubheader>
+            {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
+            {listItem('users', '/users', BusinessIcon, 'Directory', view)}
+          </List>
+          <Divider />
+        </>
+      )}
+      {(role === Role.Admin || role === Role.Monitor) && (
+        <List>
+          <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+            Experiments
+          </ListSubheader>
+          {listItem('summary.multi', '/summary/multi', SummaryIcon, 'Summaries', view)}
+          {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
+        </List>
+      )}
       <Box flexGrow={1} />
-
       <Box p={1} sx={{ backgroundColor: grey[50] }} borderTop="solid 1px" borderColor={grey[200]}>
         <Typography variant="body2" color="text.secondary" pl={1}>
           {'© ROAKIT'} {new Date().getFullYear()}.

@@ -3,11 +3,15 @@ import pino from 'pino';
 import { fetchEvent } from '../cloudstore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
+import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:event.view' });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  await loadSession(request);
+  const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     const eventJsonString = await fetchEvent(params['*']!);
     return new Response(eventJsonString, { headers: { 'Content-Type': 'application/json' } });

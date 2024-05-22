@@ -87,10 +87,7 @@ export const actorColdDef = (colDef?: GridColDef) =>
 export const actionColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Action',
-    valueGetter: (value, row) => {
-      const activity = row as ActivityData;
-      return `${activity.artifact} ${value as string}`;
-    },
+    valueGetter: (value, row: ActivityData) => `${row.artifact} ${value as string}`,
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
       const activity = params.row as ActivityData;
@@ -144,10 +141,7 @@ export const summaryColDef = (
     headerName: 'Summary',
     minWidth: 300,
     flex: 1,
-    valueGetter: (_, row) => {
-      const activity = row as ActivityData;
-      return findTicket(activity.metadata) ?? getSummary(activity);
-    },
+    valueGetter: (_, row: ActivityData) => findTicket(row.metadata) ?? getSummary(row),
     renderCell: params => {
       const activity = params.row as ActivityData;
       const summary = getSummary(activity);

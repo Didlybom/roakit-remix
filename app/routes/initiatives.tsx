@@ -30,6 +30,7 @@ import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
+import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -45,6 +46,9 @@ export const meta = () => [{ title: 'Initiatives Admin | ROAKIT' }];
 // verify JWT, load initiatives
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request);
+  if (sessionData.role !== Role.Admin) {
+    throw new Response(null, { status: 403 });
+  }
   try {
     const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { ...sessionData, initiatives };
@@ -209,7 +213,12 @@ export default function Initiatives() {
   ];
 
   return (
-    <App isLoggedIn={true} view="initiatives" isNavOpen={loaderData.isNavOpen}>
+    <App
+      isLoggedIn={true}
+      role={loaderData.role}
+      view="initiatives"
+      isNavOpen={loaderData.isNavOpen}
+    >
       <Stack sx={{ m: 3 }}>
         <DataGrid
           columns={columns}
