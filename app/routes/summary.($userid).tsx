@@ -44,7 +44,11 @@ import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/MarkdownText';
-import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
+import {
+  fetchAccountMap,
+  fetchIdentities,
+  queryIdentity,
+} from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../types/activityFeed';
@@ -52,10 +56,10 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
+import { View } from '../utils/rbac';
 import { SessionData } from '../utils/sessionCookie.server';
-import { ActivityResponse } from './fetcher.activities.$userid';
-import { SummariesResponse } from './fetcher.summaries.$userid';
+import { ActivityResponse } from './fetcher.activities.($userid)';
+import { SummariesResponse } from './fetcher.summaries.($userid)';
 
 const logger = pino({ name: 'route:summary.user' });
 
@@ -63,21 +67,21 @@ export const meta = () => [{ title: 'Summary Form | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
+const VIEW = View.Summary;
 const SEARCH_PARAM_DAY = 'day';
 
-// verify JWT, load users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const errorResponse = (sessionData: SessionData, error: string) => ({
     ...sessionData,
     error,
     userId: null,
+    userDisplayName: null,
     userIds: null,
-    teamUserIds: null,
     reportIds: null,
     actors: null,
   });
 
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW, params);
 
   try {
     // retrieve  users
@@ -86,7 +90,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       fetchIdentities(sessionData.customerId!),
     ]);
 
-    let userId = params.userid;
+    const userId = params.userid; // impersonification, see utils/rbac.ts
 
     const userIdentity = identities.list.find(identity => {
       if (userId) {
@@ -98,23 +102,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     if (!userIdentity) {
       return errorResponse(sessionData, 'Identity not found');
     }
-    if (!userId) {
-      userId = userIdentity.id;
-    }
-
-    const userIds = getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap);
-    const teamUserIds: string[] = [];
-    userIdentity.reportIds?.forEach(reportId => {
-      teamUserIds.push(
-        ...getAllPossibleActivityUserIds(reportId, identities.list, identities.accountMap)
-      );
-    });
 
     return {
       ...sessionData,
       userId,
-      userIds,
-      teamUserIds,
+      userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       error: null,
@@ -143,7 +135,7 @@ export const action = async ({
   params,
   request,
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW, params);
 
   const jsonRequest = (await request.json()) as JsonRequest;
 
@@ -158,15 +150,20 @@ export const action = async ({
   }
 
   // save summaries
-  if (jsonRequest.day && jsonRequest.aiSummary) {
-    const identityId = params.userid;
+  if (jsonRequest.day) {
+    let identityId = params.userid; // impersonification
+    if (!identityId) {
+      const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
+      identityId = identity.id;
+    }
+
     if (!identityId) {
       throw 'Identity required';
     }
     await upsertSummary(sessionData.customerId!, jsonRequest.day, {
       identityId,
       isTeam: jsonRequest.isTeam,
-      aiSummary: jsonRequest.aiSummary,
+      aiSummary: jsonRequest.aiSummary ?? '',
       userSummary: jsonRequest.userSummary ?? '',
     });
     return { aiSummary: null, status: 'saved' };
@@ -209,7 +206,7 @@ export default function Summary() {
       return;
     }
     activitiesFetcher.load(
-      `/fetcher/activities/${(showTeam ? loaderData.teamUserIds : loaderData.userIds)?.join(',')}?start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
+      `/fetcher/activities/${loaderData.userId ?? ''}?${showTeam ? 'includeTeam=true&' : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDay, showTeam]); // activitiesFetcher and loaderData must be omitted
@@ -221,7 +218,7 @@ export default function Summary() {
       return;
     }
     summaryFetcher.load(
-      `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedMonth)}`
+      `/fetcher/summaries/${loaderData.userId ?? ''}?month=${formatYYYYMM(selectedMonth)}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]); // summaryFetcher and loaderData must be omitted
@@ -234,7 +231,7 @@ export default function Summary() {
     if (actionData.status === 'saved') {
       // refresh summary from server (could be optimized by putting the fetcher response in a state, updated on click on Save)
       summaryFetcher.load(
-        `/fetcher/summaries/${loaderData.userId}?month=${formatYYYYMM(selectedDay)}`
+        `/fetcher/summaries/${loaderData.userId ?? ''}?month=${formatYYYYMM(selectedDay)}`
       );
       setShowSavedConfirmation(true);
     }
@@ -292,7 +289,7 @@ export default function Summary() {
 
   return (
     <App
-      view="summary"
+      view={VIEW}
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
@@ -342,14 +339,11 @@ export default function Summary() {
                 onMonthChange={setSelectedMonth}
               />
             </LocalizationProvider>
-            {loaderData.actors && loaderData.userId && (
+            {loaderData.actors && (
               <Stack spacing={1} sx={{ ml: 3 }}>
                 <Typography fontWeight={500}>Activities for…</Typography>
                 <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
-                  <Chip
-                    size="small"
-                    label={loaderData.actors[loaderData.userId]?.name ?? 'Unknown'}
-                  />
+                  <Chip size="small" label={loaderData.userDisplayName} />
                 </Box>
                 {!!loaderData.reportIds?.length && (
                   <FormControlLabel

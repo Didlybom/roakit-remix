@@ -2,25 +2,12 @@ import { Box, styled } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import { DateRange } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
-import { DEFAULT_ROLE, type Role } from '../utils/userUtils';
+import { DEFAULT_ROLE, type Role, type View } from '../utils/rbac';
 import Header from './Header';
 import NavDrawer from './NavDrawer';
 import DrawerHeader from './NavDrawerHeader';
 
 export const navbarWidth = 200;
-
-export type View =
-  | 'dashboard'
-  | 'activity'
-  | 'activity.user'
-  | 'summary'
-  | 'summary.multi'
-  | 'initiatives'
-  | 'users'
-  | 'settings'
-  | 'login'
-  | 'logout'
-  | 'info';
 
 const Main = styled('main', { shouldForwardProp: prop => prop !== 'open' })<{
   open?: boolean;

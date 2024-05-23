@@ -75,8 +75,8 @@ import {
 import { ParseError, errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { internalLinkSx } from '../utils/jsxUtils';
+import { View } from '../utils/rbac';
 import theme from '../utils/theme';
-import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:activity' });
 
@@ -86,12 +86,10 @@ const DELETE = '_DELETE_';
 
 export const meta = () => [{ title: 'Activity | ROAKIT' }];
 
-// verify JWT, load initiatives and users
+const VIEW = View.Activity;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
-    throw new Response(null, { status: 403 });
-  }
+  const sessionData = await loadSession(request, VIEW);
   try {
     // retrieve initiatives, tickets, and users
     const [initiatives, accounts, identities, tickets] = await Promise.all([
@@ -126,7 +124,7 @@ interface JsonRequest {
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
 
   try {
     const customerId = sessionData.customerId;
@@ -461,7 +459,7 @@ export default function ActivityReview() {
   if (!activities) {
     return (
       <App
-        view="activity"
+        view={VIEW}
         isLoggedIn={true}
         role={loaderData.role}
         isNavOpen={loaderData.isNavOpen}
@@ -471,7 +469,7 @@ export default function ActivityReview() {
   }
   return (
     <App
-      view="activity"
+      view={VIEW}
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}

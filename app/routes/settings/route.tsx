@@ -25,27 +25,19 @@ import { bannedRecordSchema, feedSchema } from '../../types/schemas';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import * as feedUtils from '../../utils/feedUtils';
-import { Role } from '../../utils/userUtils';
+import { View } from '../../utils/rbac';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
 
 const logger = pino({ name: 'route:settings' });
 
-enum FeedTab {
-  Jira,
-  GitHub,
-  Confluence,
-}
-
 export const meta = () => [{ title: 'Settings | ROAKIT' }];
 
-// verify JWT, load client settings
+const VIEW = View.Settings;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.role !== Role.Admin) {
-    throw new Response(null, { status: 403 });
-  }
+  const sessionData = await loadSession(request, VIEW);
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
@@ -101,7 +93,7 @@ interface JsonRequest {
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
 
   try {
     const customerId = sessionData.customerId;
@@ -171,6 +163,12 @@ const globalStyles = (
   />
 );
 
+enum FeedTab {
+  Jira,
+  GitHub,
+  Confluence,
+}
+
 export default function Settings() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -192,7 +190,7 @@ export default function Settings() {
   useEffect(() => setShowError(actionData?.error ?? null), [actionData]);
 
   return (
-    <App view="settings" role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
+    <App view={VIEW} role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
       {globalStyles}
       <Popover
         id={popover?.element ? 'popover' : undefined}

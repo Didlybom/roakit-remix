@@ -1,4 +1,4 @@
-import type { Role } from '../utils/userUtils';
+import type { Role } from '../utils/rbac';
 
 export type InitiativeData = {
   id: string;

@@ -30,7 +30,7 @@ import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
-import { Role } from '../utils/userUtils';
+import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -43,12 +43,10 @@ interface InitiativeRow {
 
 export const meta = () => [{ title: 'Initiatives Admin | ROAKIT' }];
 
-// verify JWT, load initiatives
+const VIEW = View.Initiatives;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.role !== Role.Admin) {
-    throw new Response(null, { status: 403 });
-  }
+  const sessionData = await loadSession(request, VIEW);
   try {
     const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { ...sessionData, initiatives };
@@ -64,7 +62,7 @@ interface JsonRequest {
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
   if (sessionData.redirect) {
     return redirect(sessionData.redirect);
   }
@@ -213,12 +211,7 @@ export default function Initiatives() {
   ];
 
   return (
-    <App
-      isLoggedIn={true}
-      role={loaderData.role}
-      view="initiatives"
-      isNavOpen={loaderData.isNavOpen}
-    >
+    <App view={VIEW} isLoggedIn={true} role={loaderData.role} isNavOpen={loaderData.isNavOpen}>
       <Stack sx={{ m: 3 }}>
         <DataGrid
           columns={columns}

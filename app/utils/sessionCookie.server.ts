@@ -4,7 +4,7 @@ import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
 import { DateRange, DateRangeValue } from './dateUtils';
-import type { Role } from './userUtils';
+import type { Role } from './rbac';
 
 const logger = pino({ name: 'utils:session-cookie' });
 
@@ -13,6 +13,7 @@ export interface SessionData {
   isLoggedIn: boolean;
   email?: string;
   customerId?: number;
+  userId?: string;
   role?: Role;
   isNavOpen?: boolean;
   dateFilter?: DateRange;
@@ -62,6 +63,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
   if (sessionData.isLoggedIn && sessionData.email) {
     const userData = await queryUser(sessionData.email);
     sessionData.customerId = userData.customerId;
+    sessionData.userId = userData.id;
     sessionData.role = userData.role;
     if (sessionData.customerId != +token.customerId) {
       sessionData.isLoggedIn = false; // force user to re-login if customerId is not there or wrong

@@ -5,9 +5,12 @@ import { useSubmit } from '@remix-run/react';
 import { useEffect } from 'react';
 import App from '../components/App';
 import { auth } from '../firebase.client';
+import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Logout | ROAKIT' }];
+
+const VIEW = View.Logout;
 
 export const action = async () =>
   redirect('/', {
@@ -26,7 +29,7 @@ export default function Logout() {
   }, [submit]);
 
   return (
-    <App view="login" isLoggedIn={false}>
+    <App view={VIEW} isLoggedIn={false}>
       <Box sx={{ display: 'flex', justifyContent: 'center', m: 10, position: 'relative' }}>
         <Typography>Logging out...</Typography>
         <CircularProgress

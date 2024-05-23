@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Roles } from '../utils/userUtils';
+import { Roles } from '../utils/rbac';
 
 export const bannedRecordSchema = z.record(z.string(), z.boolean());
 export const feedSchema = z.object({

@@ -27,15 +27,16 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { formatJson } from '../utils/jsxUtils';
-import { Role } from '../utils/userUtils';
+import { Role, View } from '../utils/rbac';
 
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
-// load activities
+const VIEW = View.AI;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
   if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
     throw new Response(null, { status: 403 });
   }
@@ -74,7 +75,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await loadSession(request);
+  await loadSession(request, VIEW);
   const formData = await request.formData();
   const prompt = formData.get('prompt')?.toString() ?? '';
   if (!prompt) {

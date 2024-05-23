@@ -16,7 +16,7 @@ import {
   styled,
 } from '@mui/material';
 import { DateRange } from '../utils/dateUtils';
-import { Role } from '../utils/userUtils';
+import { Role } from '../utils/rbac';
 import { View } from './App';
 import DateRangePicker from './DateRangePicker';
 

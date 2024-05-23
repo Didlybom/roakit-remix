@@ -6,7 +6,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
-import { Role } from '../utils/userUtils';
+import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:fetcher.grouped-activities' });
 
@@ -14,18 +14,17 @@ export type GroupedActivitiesResponse = { error?: ErrorField } & GroupedActiviti
 
 export const shouldRevalidate = () => false;
 
+const VIEW = View.FetcherGroupedActivities;
+
 export const loader = async ({
   params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<GroupedActivitiesResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request);
+    sessionData = await loadSession(request, VIEW);
   } catch (e) {
     return errorJsonResponse('Fetching grouped activities failed. Invalid session.', 401);
-  }
-  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
-    return errorJsonResponse('Fetching grouped activities failed. Unauthorized.', 403);
   }
   if (!params.daterange) {
     return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);

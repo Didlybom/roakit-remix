@@ -50,8 +50,9 @@ import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
+import { View } from '../utils/rbac';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
-import { ActivityResponse } from './fetcher.activities.$userid';
+import { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:activity.user' });
 
@@ -64,6 +65,8 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
 };
 
 export const shouldRevalidate = () => false;
+
+const VIEW = View.ActivityUser;
 
 const ALL = '*';
 const SEARCH_PARAM_ACTION = 'action';
@@ -108,9 +111,8 @@ const userActivityRows = (
   return rows;
 };
 
-// verify JWT, load initiatives and users
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
 
   // validate url
   const { searchParams } = new URL(request.url);
@@ -215,7 +217,7 @@ export default function UserActivity() {
     setGotSnapshot(false);
     const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
     activitiesFetcher.load(
-      `/fetcher/activities/${userIds}?start=${dateFilterToStartDate(dateFilter)!}`
+      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter)!}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]); // activitiesFetcher must be omitted
@@ -367,7 +369,7 @@ export default function UserActivity() {
 
   return (
     <App
-      view="activity.user"
+      view={VIEW}
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}

@@ -44,8 +44,8 @@ import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
+import { Role, View } from '../utils/rbac';
 import theme from '../utils/theme';
-import { Role } from '../utils/userUtils';
 
 const logger = pino({ name: 'route:identities' });
 
@@ -65,9 +65,10 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => 
   return actionStatus === 'imported' || actionStatus === 'firebaseUserCreated';
 };
 
-// verify JWT, load identities and Firebase users
+const VIEW = View.Users;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
   if (sessionData.role !== Role.Admin) {
     throw new Response(null, { status: 403 });
   }
@@ -100,7 +101,7 @@ interface ActionResponse {
 export const action = async ({
   request,
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
   const jsonRequest = (await request.json()) as JsonRequest;
 
   // update manager
@@ -383,11 +384,11 @@ export default function Users() {
 
   return (
     <App
+      view={VIEW}
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle'}
-      view="users"
     >
       <Snackbar
         open={!!confirmation}

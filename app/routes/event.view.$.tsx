@@ -3,12 +3,14 @@ import pino from 'pino';
 import { fetchEvent } from '../cloudstore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { Role } from '../utils/userUtils';
+import { Role, View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:event.view' });
 
+const VIEW = View.RawEvent;
+
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
   if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
     throw new Response(null, { status: 403 });
   }

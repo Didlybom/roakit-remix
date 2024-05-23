@@ -18,11 +18,14 @@ import { auth as serverAuth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
 import { ONE_DAY } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
 
 const logger = pino({ name: 'route:login' });
 
 export const meta = () => [{ title: 'Login | ROAKIT' }];
+
+const VIEW = View.Login;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
@@ -155,7 +158,7 @@ export default function Login() {
 
   return (
     <Stack display="flex" minHeight="100vh">
-      <App view="login" isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
+      <App view={VIEW} isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
         <Box display="flex" justifyContent="center" mt={10}>
           <Stack spacing={2} width={300} mb={5}>
             <Form method="post" onSubmit={handleLogin}>

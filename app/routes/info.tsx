@@ -3,9 +3,12 @@ import { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';
 import App from '../components/App';
+import { View } from '../utils/rbac';
 import { SessionData, getSessionData } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Version Info | ROAKIT' }];
+
+const VIEW = View.Info;
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<SessionData> =>
   await getSessionData(request);
@@ -15,7 +18,7 @@ export default function Info() {
 
   return (
     <App
-      view="info"
+      view={VIEW}
       isLoggedIn={loaderData.isLoggedIn}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}

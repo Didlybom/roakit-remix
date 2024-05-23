@@ -23,7 +23,7 @@ import type {
 import { daysInMonth } from '../utils/dateUtils';
 import { ParseError } from '../utils/errorUtils';
 import { FEED_TYPES } from '../utils/feedUtils';
-import { DEFAULT_ROLE, Role } from '../utils/userUtils';
+import { DEFAULT_ROLE, Role } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
@@ -43,19 +43,89 @@ interface TicketCache {
 const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
 const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
 
-export const queryUser = async (email: string): Promise<{ customerId: number; role: Role }> => {
-  const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
-  if (userDocs.length === 0) {
-    throw Error('User not found');
+export const queryUser = async (
+  email: string
+): Promise<{ customerId: number; id: string; role: Role }> => {
+  return await retry(async () => {
+    const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
+    if (userDocs.length === 0) {
+      throw Error('User not found');
+    }
+    if (userDocs.length > 1) {
+      throw Error('More than one User found');
+    }
+    const data = schemas.userSchema.parse(userDocs[0].data());
+    return {
+      customerId: data.customerId,
+      id: userDocs[0].id,
+      role: data.role! || DEFAULT_ROLE,
+    };
+  }, retryProps('Retrying queryUser...'));
+};
+
+export const queryIdentity = async (
+  customerId: number,
+  key: { identityId?: string; email?: string }
+): Promise<IdentityData> => {
+  if (!key.identityId && !key.email) {
+    throw Error('queryIdentity missing param');
   }
-  if (userDocs.length > 1) {
-    throw Error('More than one User found');
-  }
-  const data = schemas.userSchema.parse(userDocs[0].data());
-  return {
-    customerId: data.customerId,
-    role: data.role! || DEFAULT_ROLE,
-  };
+  return await retry(async () => {
+    let doc;
+    let id;
+    if (key.identityId) {
+      doc = await firestore.doc(`customers/${customerId}/identities/${key.identityId}`).get();
+      if (!doc.exists) {
+        throw Error('Identity not found');
+      }
+      id = key.identityId;
+    } else {
+      const docs = (
+        await firestore
+          .collection(`customers/${customerId}/identities`)
+          .where('email', '==', key.email)
+          .get()
+      ).docs;
+      if (docs.length === 0) {
+        throw Error('Identity not found');
+      }
+      if (docs.length > 1) {
+        throw Error('More than one Identity found');
+      }
+      id = docs[0].id;
+      doc = docs[0];
+    }
+    const data = schemas.identitySchema.parse(doc.data());
+    return {
+      id,
+      email: data.email,
+      displayName: data.displayName,
+      managerId: data.managerId,
+      accounts: data.accounts ?? [],
+    };
+  }, retryProps('Retrying queryIdentity...'));
+};
+
+export const queryTeamIdentities = async (
+  customerId: number,
+  managerId: string
+): Promise<IdentityData[]> => {
+  return await retry(async () => {
+    const identities: IdentityData[] = [];
+    (
+      await firestore
+        .collection(`customers/${customerId}/identities`)
+        .where('managerId', '==', managerId)
+        .get()
+    ).docs.forEach(doc => {
+      const data = schemas.identitySchema.parse(doc.data());
+      identities.push({
+        id: doc.id,
+        accounts: data.accounts ?? [],
+      });
+    });
+    return identities;
+  }, retryProps('Retrying queryTeamIdentities...'));
 };
 
 export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
@@ -304,14 +374,13 @@ export const fetchActivities = async ({
     }
 
     const activityDocs = (
-      await withMetricsAsync(() => Promise.all(batches), {
-        metricsName: 'fetcher:getActivities',
-      })
+      await withMetricsAsync(() => Promise.all(batches), { metricsName: 'fetcher:getActivities' })
     ).flatMap(a => a.docs);
 
     const activities: ActivityMap = new Map();
     const ticketPrioritiesToFetch = new Set<string>();
     const activityTickets = new Map<string, string>();
+
     activityDocs.forEach(activity => {
       const props = schemas.activitySchema.safeParse(activity.data());
       if (!props.success) {
@@ -349,6 +418,7 @@ export const fetchActivities = async ({
         }
       });
     }
+
     return activities;
   }, retryProps('Retrying fetchActivities...'));
 };

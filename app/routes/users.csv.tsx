@@ -4,15 +4,14 @@ import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../utils/feedUtils';
 import { contentLength } from '../utils/httpUtils';
-import { Role } from '../utils/userUtils';
+import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:users.csv' });
 
+const VIEW = View.UsersCSV;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.role !== Role.Admin) {
-    throw new Response(null, { status: 403 });
-  }
+  const sessionData = await loadSession(request, VIEW);
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     let csv = 'ID,managerID,email,jiraID,jiraName,githubUsername\n';

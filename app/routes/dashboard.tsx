@@ -60,10 +60,10 @@ import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
-import { Role } from '../utils/userUtils';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
-import type { SummariesResponse } from './fetcher.summaries.$userid';
+import type { SummariesResponse } from './fetcher.summaries.($userid)';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -71,14 +71,11 @@ export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
+const VIEW = View.Dashboard;
 const SEARCH_PARAM_DAY = 'day';
 
-// verify session data
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request);
-  if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
-    throw new Response(null, { status: 403 });
-  }
+  const sessionData = await loadSession(request, VIEW);
   try {
     // retrieve initiatives and users
     const [fetchedInitiatives, accounts, identities] = await Promise.all([
@@ -301,7 +298,7 @@ export default function Dashboard() {
 
   return (
     <App
-      view="dashboard"
+      view={VIEW}
       role={loaderData.role}
       isLoggedIn={loaderData.isLoggedIn}
       isNavOpen={loaderData.isNavOpen}

@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
-import { Role } from '../utils/userUtils';
+import { Role } from '../utils/rbac';
 import { View } from './App';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';

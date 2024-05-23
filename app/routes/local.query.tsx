@@ -1,14 +1,13 @@
 import { LoaderFunctionArgs, json } from '@remix-run/server-runtime';
 import { firestore } from '../firebase.server';
 import { loadSession } from '../utils/authUtils.server';
+import { View } from '../utils/rbac';
+
+const VIEW = View.Developer;
 
 // developer utility
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  if (request.headers.get('host') !== 'localhost:3000') {
-    return 'Invalid env';
-  }
-
-  const sessionData = await loadSession(request);
+  const sessionData = await loadSession(request, VIEW);
 
   const docs = await firestore
     .collection(`customers/${sessionData.customerId!}/activities/`)
