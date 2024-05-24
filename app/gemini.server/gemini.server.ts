@@ -6,25 +6,27 @@ export const generateContent = async ({
   temperature,
   topP,
   topK,
+  model = 'gemini-1.0-pro-002',
 }: {
   prompt: string;
   temperature?: number;
   topP?: number;
   topK?: number;
+  model?: string;
 }) => {
   if (!projectId) {
     return null;
   }
   const vertexAI = new VertexAI({ project: projectId, location: 'us-west1' });
-  const model = vertexAI.getGenerativeModel({
-    model: 'gemini-1.0-pro',
+  const modelInstance = vertexAI.getGenerativeModel({
+    model,
     generationConfig: {
       ...(temperature && { temperature }),
       ...(topP && { top_p: topP }),
       ...(topK && { top_k: topK }),
     },
   });
-  const result = await model.generateContent(prompt);
-  result?.response.candidates?.forEach(candidate => delete candidate.safetyRatings);
+  const result = await modelInstance.generateContent(prompt);
+  // result?.response.candidates?.forEach(candidate => delete candidate.safetyRatings);
   return result;
 };

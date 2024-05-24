@@ -2,15 +2,20 @@ import {
   Box,
   Button,
   Divider,
+  FormControl,
   FormControlLabel,
+  InputLabel,
   LinearProgress,
   Link,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Switch,
   TextField,
   Typography,
 } from '@mui/material';
+import { grey } from '@mui/material/colors';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
@@ -77,31 +82,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   await loadSession(request, VIEW);
   const formData = await request.formData();
-  const prompt = formData.get('prompt')?.toString() ?? '';
+  const prompt = formData.get('prompt')?.toString();
   if (!prompt) {
     throw Error('Empty prompt');
   }
-  const promptActivities = formData.get('promptActivities')?.toString() ?? '';
+  const promptActivities = formData.get('promptActivities')?.toString();
   const temperature = Number(formData.get('temperature') ?? 0) || undefined;
   const topK = Number(formData.get('topK') ?? 0) || undefined;
   const topP = Number(formData.get('topP') ?? 0) || undefined;
+  const model = formData.get('model')?.toString();
   const result = await generateContent({
     prompt: prompt + '\n\n' + promptActivities,
     temperature,
     topK,
     topP,
+    model,
   });
   return result;
 };
+
+const MODELS = [
+  'gemini-1.0-pro-002',
+  'gemini-1.5-pro-preview-0514',
+  'gemini-1.5-flash-preview-0514',
+  'text-bison@002',
+];
 
 export default function AIPlayground() {
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [activityCount, setActivityCount] = useState(100);
-  const [inclDates, setInclDates] = useState(true);
+  const [inclDates, setInclDates] = useState(false);
   const [inclActions, setInclActions] = useState(true);
   const [inclContributors, setInclContributors] = useState(true);
+  const [model, setModel] = useState(MODELS[0]);
+
   const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
@@ -153,15 +169,17 @@ export default function AIPlayground() {
             />
             <Box justifyContent="end" sx={{ display: 'flex', mt: 1, mb: 4 }}>
               <Button variant="contained" type="submit" disabled={navigation.state !== 'idle'}>
-                {'Submit'}
+                {'Generate Summary'}
               </Button>
             </Box>
+            <Typography variant="caption">Response</Typography>
             <Paper
               variant="outlined"
               sx={{
                 px: 2,
+                mb: 4,
                 minHeight: '200px',
-                maxHeight: '500px',
+                maxHeight: '400px',
                 overflowY: 'auto',
               }}
             >
@@ -169,19 +187,24 @@ export default function AIPlayground() {
                 <Markdown markdownText={output ?? ''} />
               </Box>
             </Paper>
-            <TextField
-              label="Raw Response"
-              multiline
-              fullWidth
-              minRows={8}
-              maxRows={8}
-              size="small"
-              inputProps={{ style: { fontSize: 'smaller' } }}
-              InputProps={{ readOnly: true }}
-              InputLabelProps={{ shrink: true }}
-              sx={{ mt: 4 }}
-              value={formatJson(actionData)}
-            />
+            <Typography variant="caption">Raw Response</Typography>
+            <Paper variant="outlined">
+              <Typography
+                component="pre"
+                fontFamily="Roboto Mono, monospace"
+                fontSize="smaller"
+                color={grey[700]}
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  p: 2,
+                  minHeight: '200px',
+                  maxHeight: '200px',
+                  overflow: 'auto',
+                }}
+              >
+                {formatJson(actionData)}
+              </Typography>
+            </Paper>
           </Box>
           <Stack spacing={2} useFlexGap>
             <TextField
@@ -205,9 +228,10 @@ export default function AIPlayground() {
                   <Switch size="small" checked={value} onChange={e => set(e.target.checked)} />
                 }
                 label={<Box fontSize="small">{label}</Box>}
+                sx={{ ml: 1 }}
               />
             ))}
-            <Divider />
+            <Divider sx={{ my: 2 }} />
             <TextField
               name="temperature"
               type="number"
@@ -242,6 +266,21 @@ export default function AIPlayground() {
             >
               Documentation
             </Typography>
+            <FormControl sx={{ width: 200, mt: 2 }}>
+              <InputLabel>Model</InputLabel>
+              <Select
+                name="model"
+                value={model}
+                label="Model"
+                onChange={e => setModel(e.target.value)}
+              >
+                {MODELS.map((m, i) => (
+                  <MenuItem key={i} value={m}>
+                    {m}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
         </Stack>
       </Form>
