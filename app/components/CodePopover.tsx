@@ -60,7 +60,12 @@ export default function CodePopover({
         fontSize="small"
         fontFamily="Roboto Mono, monospace"
         color={grey[700]}
-        sx={{ p: 2, overflowX: 'auto', minWidth: '150px', minHeight: '70px' }}
+        sx={{
+          p: 2,
+          whiteSpace: 'pre-wrap',
+          minWidth: '150px',
+          minHeight: '70px',
+        }}
       >
         {options?.linkifyBuckets ?
           <LinkIt

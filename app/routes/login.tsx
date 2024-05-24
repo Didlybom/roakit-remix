@@ -100,6 +100,7 @@ export default function Login() {
   useEffect(() => {
     async function refreshToken() {
       setRefreshedToken(await clientAuth.currentUser?.getIdToken(true /* forceRefresh */));
+      // await clientAuth.currentUser?.reload();
     }
     if (actionData?.refreshToken) {
       // refresh the Firebase token (client-side call)

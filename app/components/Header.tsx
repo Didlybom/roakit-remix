@@ -16,8 +16,7 @@ import {
   styled,
 } from '@mui/material';
 import { DateRange } from '../utils/dateUtils';
-import { Role } from '../utils/rbac';
-import { View } from './App';
+import { Role, View } from '../utils/rbac';
 import DateRangePicker from './DateRangePicker';
 
 interface NavBarProps extends AppBarProps {
@@ -88,7 +87,7 @@ export default function Header({
         <Typography fontWeight={500} display={{ xs: 'flex', sm: 'none' }}>
           RKT
         </Typography>
-        {view !== 'login' && view !== 'logout' && (
+        {view !== View.Login && view !== View.Logout && (
           <>
             <Box flex={1} ml={2}>
               {dateRange && onDateRangeSelect && (
@@ -108,7 +107,7 @@ export default function Header({
                 <Button
                   href="/settings"
                   onClick={e => {
-                    if (view === 'settings') {
+                    if (view === View.Settings) {
                       e.preventDefault();
                     }
                   }}

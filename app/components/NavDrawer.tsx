@@ -24,8 +24,7 @@ import {
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
-import { Role } from '../utils/rbac';
-import { View } from './App';
+import { Role, View } from '../utils/rbac';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
 
@@ -86,20 +85,20 @@ export default function NavDrawer({
       {(role === Role.Admin || role === Role.Monitor) && (
         <>
           <List>
-            {listItem('dashboard', '/dashboard', DashboardIcon, 'Dashboard', view)}
+            {listItem(View.Dashboard, '/dashboard', DashboardIcon, 'Dashboard', view)}
             {listItem(
-              'activity.user',
+              View.ActivityUser,
               '/activity/user/*',
               SubjectIcon,
               'Contributor Activity',
               view
             )}
-            {listItem('activity', '/activity', HistoryIcon, 'All Activity', view)}
+            {listItem(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
           </List>
           <Divider />
         </>
       )}
-      <List>{listItem('summary', '/summary', SummaryIcon, 'Summary Form', view)}</List>
+      <List>{listItem(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}</List>
       {role === Role.Admin && (
         <>
           <Divider />
@@ -107,20 +106,22 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Administration
             </ListSubheader>
-            {listItem('initiatives', '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
-            {listItem('users', '/users', BusinessIcon, 'Directory', view)}
+            {listItem(View.Initiatives, '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
+            {listItem(View.Users, '/users', BusinessIcon, 'Directory', view)}
           </List>
-          <Divider />
         </>
       )}
       {(role === Role.Admin || role === Role.Monitor) && (
-        <List>
-          <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
-            Experiments
-          </ListSubheader>
-          {listItem('summary.multi', '/summary/multi', SummaryIcon, 'Summaries', view)}
-          {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
-        </List>
+        <>
+          <Divider />
+          <List>
+            <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+              Experiments
+            </ListSubheader>
+            {listItem(View.SummaryMulti, '/summary/multi', SummaryIcon, 'Summaries', view)}
+            {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
+          </List>
+        </>
       )}
       <Box flexGrow={1} />
       <Box p={1} sx={{ backgroundColor: grey[50] }} borderTop="solid 1px" borderColor={grey[200]}>
