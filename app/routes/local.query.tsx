@@ -9,6 +9,10 @@ const VIEW = View.Developer;
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
 
+  // await firestore.recursiveDelete(
+  //   firestore.collection(`customers/${sessionData.customerId!}/feeds/1/events/`)
+  // );
+
   const docs = await firestore
     .collection(`customers/${sessionData.customerId!}/activities/`)
     .where('event', '==', 'workflow_run')
