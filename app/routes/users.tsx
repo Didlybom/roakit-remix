@@ -31,7 +31,6 @@ import { ActionFunctionArgs, LoaderFunctionArgs, TypedResponse } from '@remix-ru
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import App from '../components/App';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import TabPanel from '../components/TabPanel';
@@ -172,14 +171,11 @@ export const action = async ({
 
   // create Firebase user
   if (jsonRequest.createFirebaseUserForEmail) {
-    await auth.importUsers([
-      {
-        uid: uuidv4(),
-        customClaims: { customerId: sessionData.customerId },
-        email: jsonRequest.createFirebaseUserForEmail,
-        emailVerified: true,
-      },
-    ]);
+    const user = await auth.createUser({
+      email: jsonRequest.createFirebaseUserForEmail,
+      emailVerified: true,
+    });
+    await auth.setCustomUserClaims(user.uid, { customerId: sessionData.customerId });
     await firestore.collection('users').add({
       customerId: sessionData.customerId,
       email: jsonRequest.createFirebaseUserForEmail,
