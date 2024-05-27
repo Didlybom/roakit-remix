@@ -11,6 +11,7 @@ import type {
   AccountData,
   AccountMap,
   AccountToIdentityRecord,
+  ActivityData,
   ActivityMap,
   ActivityMetadata,
   DaySummaries,
@@ -421,6 +422,67 @@ export const fetchActivities = async ({
 
     return activities;
   }, retryProps('Retrying fetchActivities...'));
+};
+
+export const fetchActivitiesPage = async ({
+  customerId,
+  startAfter,
+  endBefore,
+  limit,
+  withInitiatives,
+}: {
+  customerId: number;
+  startAfter?: number;
+  endBefore?: number;
+  limit: number;
+  withInitiatives?: boolean;
+}) => {
+  if (startAfter != null && endBefore != null) {
+    throw Error('startAfter and endBefore are mutually exclusive params.');
+  }
+  return await retry(async bail => {
+    const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
+    let activityQuery;
+    if (withInitiatives == null) {
+      activityQuery = activitiesCollection;
+    } else {
+      activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
+    }
+    let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
+    if (startAfter != null) {
+      activityPageQuery = activityPageQuery.startAfter(startAfter).limit(limit);
+    } else if (endBefore != null) {
+      activityPageQuery = activityPageQuery.endBefore(endBefore).limitToLast(limit);
+    } else {
+      activityPageQuery = activityPageQuery.limit(limit);
+    }
+    const activities: ActivityData[] = [];
+    const [activityPage, activityTotal] = await Promise.all([
+      activityPageQuery.get(),
+      activityQuery.count().get(),
+    ]);
+    activityPage.forEach(activity => {
+      const props = schemas.activitySchema.safeParse(activity.data());
+      if (!props.success) {
+        bail(new ParseError('Failed to parse activities. ' + props.error.message));
+        return emptyActivity; // not used, bail() will throw
+      }
+      activities.push({
+        id: activity.id,
+        action: props.data.action,
+        event: props.data.event,
+        actorId: props.data.actorAccountId,
+        artifact: props.data.artifact,
+        createdTimestamp: props.data.createdTimestamp,
+        priority: props.data.priority,
+        initiativeId: props.data.initiative,
+        metadata: props.data.metadata as ActivityMetadata,
+        note: props.data.note,
+        objectId: props.data.objectId, // for debugging
+      });
+    });
+    return { activities, activityTotal: activityTotal.data().count };
+  }, retryProps('Retrying fetchActivitiesPage...'));
 };
 
 export const fetchSummaries = async (

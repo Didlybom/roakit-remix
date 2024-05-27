@@ -10,4 +10,5 @@ node_modules
 .firebase
 .DS_Store
 firebase-debug.log
+firestore-debug.log
 ui-debug.log

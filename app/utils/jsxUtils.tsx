@@ -1,4 +1,4 @@
-import { SxProps } from '@mui/material';
+import { Alert, SxProps } from '@mui/material';
 
 export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
@@ -32,3 +32,10 @@ export const renderJson = (data: unknown) => <pre>{formatJson(data)}</pre>;
 
 export const randomNumber = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1) + min);
+
+export const errorAlert = (message?: string | null) =>
+  !!message && (
+    <Alert severity="error" sx={{ m: 3 }}>
+      {message}
+    </Alert>
+  );

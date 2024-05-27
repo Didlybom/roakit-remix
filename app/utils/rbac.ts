@@ -21,6 +21,7 @@ export enum View {
   RawEvent,
   UsersCSV,
   FetcherActivities,
+  FetcherActivitiesPage,
   FetcherGroupedActivities,
   FetcherSummaries,
 
@@ -55,6 +56,7 @@ export const checkAccess = (
     case View.Dashboard:
     case View.Activity:
     case View.ActivityUser:
+    case View.FetcherActivitiesPage:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
     case View.SummaryMulti:

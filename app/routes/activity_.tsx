@@ -22,21 +22,7 @@ import {
   GridToolbarContainer,
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { useFetcher, useLoaderData } from '@remix-run/react';
-import {
-  QueryDocumentSnapshot,
-  collection,
-  endBefore,
-  getCountFromServer,
-  getDocs,
-  limit,
-  limitToLast,
-  orderBy,
-  query,
-  startAfter,
-  startAt,
-  where,
-} from 'firebase/firestore';
+import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
@@ -44,7 +30,6 @@ import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import FilterMenu from '../components/FilterMenu';
-import { firestore as firestoreClient } from '../firebase.client';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
@@ -55,14 +40,7 @@ import {
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
-import { activitySchema } from '../types/schemas';
-import type {
-  AccountData,
-  ActivityCount,
-  ActivityData,
-  ActivityMetadata,
-  Artifact,
-} from '../types/types';
+import type { AccountData, ActivityCount, ActivityData, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import {
   actionColDef,
@@ -72,11 +50,12 @@ import {
   priorityColDef,
   summaryColDef,
 } from '../utils/dataGridUtils';
-import { ParseError, errMsg } from '../utils/errorUtils';
+import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { internalLinkSx } from '../utils/jsxUtils';
+import { errorAlert, internalLinkSx } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
+import type { ActivityPageResponse } from './fetcher.activities.page';
 
 const logger = pino({ name: 'route:activity' });
 
@@ -177,8 +156,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 type ShowActivity = '' | 'withInitiative' | 'withoutInitiative';
 
 export default function ActivityReview() {
-  const fetcher = useFetcher();
+  const navigation = useNavigation();
+  const assignInitiativeFetcher = useFetcher();
   const loaderData = useLoaderData<typeof loader>();
+  const activitiesFetcher = useFetcher();
+  const fetchedActivities = activitiesFetcher.data as ActivityPageResponse;
   const [activities, setActivities] = useState<ActivityRow[] | null>(null);
   const [activityFilter, setActivityFilter] = useState<ShowActivity>('');
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
@@ -186,113 +168,61 @@ export default function ActivityReview() {
   const [rowTotal, setRowTotal] = useState(0);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const prevPaginationModel = usePrevious(paginationModel);
-  const [boundaryDocs, setBoundaryDocs] = useState<{
-    first: QueryDocumentSnapshot;
-    last: QueryDocumentSnapshot;
-  } | null>(null);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const activitiesCollection = collection(
-          firestoreClient,
-          `customers/${loaderData.customerId}/activities`
-        );
-        const activityQuery =
-          activityFilter === '' ?
-            query(activitiesCollection)
-          : query(
-              activitiesCollection,
-              where('initiative', activityFilter === 'withInitiative' ? '!=' : '==', '')
-            );
-        let activityPageQuery = activityQuery;
-        if (prevPaginationModel && boundaryDocs) {
-          if (prevPaginationModel?.page < paginationModel.page) {
-            activityPageQuery = query(
-              activityQuery,
-              orderBy('createdTimestamp', 'desc'),
-              startAfter(boundaryDocs.last),
-              limit(paginationModel.pageSize)
-            );
-          } else if (prevPaginationModel?.page > paginationModel.page) {
-            activityPageQuery = query(
-              activityQuery,
-              orderBy('createdTimestamp', 'desc'),
-              endBefore(boundaryDocs.first),
-              limitToLast(paginationModel.pageSize)
-            );
-          } else {
-            // reachable on dev hot reload, then page is the same but we are reloading
-            activityPageQuery = query(
-              activityQuery,
-              orderBy('createdTimestamp', 'desc'),
-              startAt(boundaryDocs.first),
-              limit(paginationModel.pageSize)
-            );
-          }
-        } else {
-          activityPageQuery = query(
-            activityQuery,
-            orderBy('createdTimestamp', 'desc'),
-            limit(paginationModel.pageSize)
-          );
-        }
-        const [activityDocs, activityCount] = await Promise.all([
-          getDocs(activityPageQuery),
-          getCountFromServer(activityQuery),
-        ]);
-        const activityData: ActivityData[] = [];
-        activityDocs.forEach(activity => {
-          const fields = activitySchema.safeParse(activity.data());
-          if (!fields.success) {
-            throw new ParseError('Failed to parse activities. ' + fields.error.message);
-          }
-          let priority = fields.data.priority;
-          if (priority === undefined || priority === -1) {
-            priority = inferPriority(loaderData.tickets, fields.data.metadata as ActivityMetadata);
-          }
-          activityData.push({
-            id: activity.id,
-            action: fields.data.action,
-            event: fields.data.event,
-            actorId:
-              fields.data.actorAccountId ?
-                loaderData.accountMap[fields.data.actorAccountId] ?? fields.data.actorAccountId // resolve identity
-              : undefined,
-            artifact: fields.data.artifact,
-            createdTimestamp: fields.data.createdTimestamp,
-            priority,
-            initiativeId: fields.data.initiative || UNSET_INITIATIVE_ID,
-            metadata: fields.data.metadata as ActivityMetadata,
-            note: fields.data.note,
-            objectId: fields.data.objectId, // for debugging
-          });
-        });
-        setActivities(activityData);
-        setRowTotal(activityCount.data().count);
-        if (activityDocs.docs.length > 0) {
-          setBoundaryDocs({
-            first: activityDocs.docs[0],
-            last: activityDocs.docs[activityDocs.docs.length - 1],
-          });
-        }
-        setLoading(false);
-      } catch (e) {
-        setError(errMsg(e, 'Failed to fetch activities'));
+    setError('');
+    let query = `/fetcher/activities/page?limit=${paginationModel.pageSize}`;
+    if (activityFilter) {
+      query += `&withInitiatives=${activityFilter === 'withInitiative' ? true : false}`;
+    }
+    if (prevPaginationModel && activities?.length && paginationModel.page > 0) {
+      // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
+      // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
+      if (prevPaginationModel.page < paginationModel.page) {
+        query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
+      } else if (prevPaginationModel.page > paginationModel.page) {
+        query += `&endBefore=${activities[0].createdTimestamp}`;
+      } else {
+        // reachable on dev hot reload, then page is the same but we are reloading UI
+        return;
       }
-    };
+    }
+    activitiesFetcher.load(query);
 
-    void fetchActivities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityFilter, paginationModel]); // sessionData, prevPaginationModel and boundaryDocs must be omitted
+  }, [activityFilter, paginationModel]); // sessionData, prevPaginationModel and boundaryTimestamps must be omitted
+
+  // handle fetched activities
+  useEffect(() => {
+    if (!fetchedActivities?.activities || fetchedActivities?.activityTotal == null) {
+      return;
+    }
+    const activityData: ActivityData[] = [];
+    fetchedActivities.activities.forEach(activity => {
+      let priority = activity.priority;
+      if (priority === undefined || priority === -1) {
+        priority = inferPriority(loaderData.tickets, activity.metadata!);
+      }
+      activityData.push({
+        ...activity,
+        actorId:
+          activity.actorId ?
+            loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
+          : undefined,
+        priority,
+        initiativeId: activity.initiativeId || UNSET_INITIATIVE_ID,
+      });
+    });
+    setActivities(activityData);
+    setRowTotal(fetchedActivities.activityTotal);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedActivities?.activities]); // loaderData and activities must be omitted
 
   const dataGridProps = {
     autosizeOnMount: true,
@@ -429,7 +359,7 @@ export default function ActivityReview() {
                   .filter(a => rowSelectionModel.includes(a.id))
                   .forEach(activity => (activity.initiativeId = bulkInitiative));
                 setActivities(activities);
-                fetcher.submit(
+                assignInitiativeFetcher.submit(
                   {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
@@ -473,8 +403,10 @@ export default function ActivityReview() {
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
-      showProgress={loading}
+      showProgress={navigation.state !== 'idle' || activitiesFetcher.state !== 'idle'}
     >
+      {errorAlert(fetchedActivities?.error?.message)}
+      {errorAlert(error)}
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}
@@ -492,11 +424,6 @@ export default function ActivityReview() {
         <Box py={1}>{popover?.content}</Box>
       </Popover>
       <Stack m={3}>
-        {!!error && (
-          <Alert severity="error" variant="standard" sx={{ mb: 1 }}>
-            {error}
-          </Alert>
-        )}
         <Grid container columns={2} spacing={2} alignItems="center" mb={2}>
           <Grid>
             {!!rowTotal && (
@@ -516,7 +443,6 @@ export default function ActivityReview() {
               ]}
               onChange={e => {
                 setPaginationModel({ ...paginationModel, page: 0 });
-                setBoundaryDocs(null);
                 setActivityFilter(e.target.value as ShowActivity);
               }}
             />
@@ -531,7 +457,6 @@ export default function ActivityReview() {
           onPaginationModelChange={newPaginationModel => {
             if (paginationModel && paginationModel.pageSize !== newPaginationModel.pageSize) {
               setPaginationModel({ pageSize: newPaginationModel.pageSize, page: 0 });
-              setBoundaryDocs(null);
             } else {
               setPaginationModel(newPaginationModel);
             }
@@ -539,7 +464,7 @@ export default function ActivityReview() {
           slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
           processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
             if (updatedRow.initiativeId !== oldRow.initiativeId) {
-              fetcher.submit(
+              assignInitiativeFetcher.submit(
                 {
                   initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
@@ -555,7 +480,7 @@ export default function ActivityReview() {
                 postJsonOptions
               );
             } else if (updatedRow.note !== oldRow.note) {
-              fetcher.submit(
+              assignInitiativeFetcher.submit(
                 { activityId: updatedRow.id, note: updatedRow.note || DELETE },
                 postJsonOptions
               );
