@@ -5,7 +5,6 @@ import {
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -56,6 +55,7 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
+import { errorAlert } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { SessionData } from '../utils/sessionCookie.server';
 import { ActivityResponse } from './fetcher.activities.($userid)';
@@ -279,13 +279,6 @@ export default function Summary() {
     setAiSummaryPage(1);
     setHighlightedDays(fetchedSummaries?.summaries ? Object.keys(fetchedSummaries?.summaries) : []);
   }, [fetchedSummaries?.summaries, selectedDay, showTeam]);
-
-  const errorAlert = (message?: string | null) =>
-    !!message && (
-      <Alert severity="error" sx={{ m: 3 }}>
-        {message}
-      </Alert>
-    );
 
   return (
     <App

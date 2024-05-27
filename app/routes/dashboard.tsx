@@ -60,6 +60,7 @@ import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { errorAlert } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
@@ -159,13 +160,6 @@ export default function Dashboard() {
       navigate('/login');
     }
   }, [groupedActivitiesResponse?.error, navigate]);
-
-  const errorAlert = (message?: string | null) =>
-    !!message && (
-      <Alert severity="error" sx={{ m: 3 }}>
-        {message}
-      </Alert>
-    );
 
   const summaries = (
     <Stack fontSize="small" sx={{ opacity: summaryFetcher.state === 'loading' ? 0.4 : 1 }}>
