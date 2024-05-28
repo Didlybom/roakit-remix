@@ -105,7 +105,7 @@ const MODELS = [
   'gemini-1.0-pro-002',
   'gemini-1.5-pro-preview-0514',
   'gemini-1.5-flash-preview-0514',
-  'text-bison@002',
+  // 'text-bison@002',
 ];
 
 export default function AIPlayground() {
