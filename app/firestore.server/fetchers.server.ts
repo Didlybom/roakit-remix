@@ -44,6 +44,18 @@ interface TicketCache {
 const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
 const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
 
+const makeActivityCountCacheKey = (
+  customerId: number,
+  { withInitiatives }: { withInitiatives?: boolean }
+) => {
+  let suffix = '';
+  if (withInitiatives != null) {
+    suffix = withInitiatives ? ';withInitiatives' : ';withoutInitiatives';
+  }
+  return `${customerId};activityTotal${suffix}`;
+};
+const activityCountCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
+
 export const queryUser = async (
   email: string
 ): Promise<{ customerId: number; id: string; role: Role }> => {
@@ -424,6 +436,29 @@ export const fetchActivities = async ({
   }, retryProps('Retrying fetchActivities...'));
 };
 
+const fetchActivityTotal = async (
+  customerId: number,
+  withInitiatives?: boolean
+): Promise<number> => {
+  const cacheKey = makeActivityCountCacheKey(customerId, { withInitiatives });
+  const cache: number | undefined = activityCountCache.get(cacheKey);
+  if (cache != null) {
+    return cache;
+  }
+  return await retry(async () => {
+    const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
+    let activityQuery;
+    if (withInitiatives == null) {
+      activityQuery = activitiesCollection;
+    } else {
+      activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
+    }
+    const activityTotal = (await activityQuery.count().get()).data().count;
+    activityCountCache.set(cacheKey, activityTotal);
+    return activityTotal;
+  }, retryProps('Retrying fetchActivityTotal...'));
+};
+
 export const fetchActivitiesPage = async ({
   customerId,
   startAfter,
@@ -440,49 +475,46 @@ export const fetchActivitiesPage = async ({
   if (startAfter != null && endBefore != null) {
     throw Error('startAfter and endBefore are mutually exclusive params.');
   }
-  return await retry(async bail => {
-    const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
-    let activityQuery;
-    if (withInitiatives == null) {
-      activityQuery = activitiesCollection;
-    } else {
-      activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
+  const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
+  let activityQuery;
+  if (withInitiatives == null) {
+    activityQuery = activitiesCollection;
+  } else {
+    activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
+  }
+  let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
+  if (startAfter != null) {
+    activityPageQuery = activityPageQuery.startAfter(startAfter).limit(limit);
+  } else if (endBefore != null) {
+    activityPageQuery = activityPageQuery.endBefore(endBefore).limitToLast(limit);
+  } else {
+    activityPageQuery = activityPageQuery.limit(limit);
+  }
+  const activities: ActivityData[] = [];
+  const [activityPage, activityTotal] = await Promise.all([
+    retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
+    fetchActivityTotal(customerId, withInitiatives),
+  ]);
+  activityPage.forEach(activity => {
+    const props = schemas.activitySchema.safeParse(activity.data());
+    if (!props.success) {
+      throw new ParseError('Failed to parse activities. ' + props.error.message);
     }
-    let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
-    if (startAfter != null) {
-      activityPageQuery = activityPageQuery.startAfter(startAfter).limit(limit);
-    } else if (endBefore != null) {
-      activityPageQuery = activityPageQuery.endBefore(endBefore).limitToLast(limit);
-    } else {
-      activityPageQuery = activityPageQuery.limit(limit);
-    }
-    const activities: ActivityData[] = [];
-    const [activityPage, activityTotal] = await Promise.all([
-      activityPageQuery.get(),
-      activityQuery.count().get(),
-    ]);
-    activityPage.forEach(activity => {
-      const props = schemas.activitySchema.safeParse(activity.data());
-      if (!props.success) {
-        bail(new ParseError('Failed to parse activities. ' + props.error.message));
-        return emptyActivity; // not used, bail() will throw
-      }
-      activities.push({
-        id: activity.id,
-        action: props.data.action,
-        event: props.data.event,
-        actorId: props.data.actorAccountId,
-        artifact: props.data.artifact,
-        createdTimestamp: props.data.createdTimestamp,
-        priority: props.data.priority,
-        initiativeId: props.data.initiative,
-        metadata: props.data.metadata as ActivityMetadata,
-        note: props.data.note,
-        objectId: props.data.objectId, // for debugging
-      });
+    activities.push({
+      id: activity.id,
+      action: props.data.action,
+      event: props.data.event,
+      actorId: props.data.actorAccountId,
+      artifact: props.data.artifact,
+      createdTimestamp: props.data.createdTimestamp,
+      priority: props.data.priority,
+      initiativeId: props.data.initiative,
+      metadata: props.data.metadata as ActivityMetadata,
+      note: props.data.note,
+      objectId: props.data.objectId, // for debugging
     });
-    return { activities, activityTotal: activityTotal.data().count };
-  }, retryProps('Retrying fetchActivitiesPage...'));
+  });
+  return { activities, activityTotal };
 };
 
 export const fetchSummaries = async (
