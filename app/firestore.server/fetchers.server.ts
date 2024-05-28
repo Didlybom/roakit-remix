@@ -6,23 +6,23 @@ import pino from 'pino';
 import { firestore } from '../firebase.server';
 import { findTicket } from '../types/activityFeed';
 import * as schemas from '../types/schemas';
-import { displayName, emptyActivity } from '../types/typeUtils';
-import type {
-  AccountData,
-  AccountMap,
-  AccountToIdentityRecord,
-  ActivityData,
-  ActivityMap,
-  ActivityMetadata,
-  DaySummaries,
-  IdentityData,
-  InitiativeData,
-  InitiativeRecord,
-  Summary,
-  TicketRecord,
+import { parse } from '../types/schemas';
+import {
+  displayName,
+  type AccountData,
+  type AccountMap,
+  type AccountToIdentityRecord,
+  type ActivityData,
+  type ActivityMap,
+  type ActivityMetadata,
+  type DaySummaries,
+  type IdentityData,
+  type InitiativeData,
+  type InitiativeRecord,
+  type Summary,
+  type TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
-import { ParseError } from '../utils/errorUtils';
 import { FEED_TYPES } from '../utils/feedUtils';
 import { DEFAULT_ROLE, Role } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
@@ -37,43 +37,27 @@ const retryProps = (message: string) => ({
   onRetry: (e: unknown) => logger.warn(e, message),
 });
 
-interface TicketCache {
-  tickets: TicketRecord;
-  hasAllTickets?: boolean;
-}
-const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
-const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
-
-const makeActivityCountCacheKey = (
-  customerId: number,
-  { withInitiatives }: { withInitiatives?: boolean }
-) => {
-  let suffix = '';
-  if (withInitiatives != null) {
-    suffix = withInitiatives ? ';withInitiatives' : ';withoutInitiatives';
-  }
-  return `${customerId};activityTotal${suffix}`;
-};
-const activityCountCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
-
 export const queryUser = async (
   email: string
 ): Promise<{ customerId: number; id: string; role: Role }> => {
-  return await retry(async () => {
-    const userDocs = (await firestore.collection('users').where('email', '==', email).get()).docs;
-    if (userDocs.length === 0) {
-      throw Error('User not found');
-    }
-    if (userDocs.length > 1) {
-      throw Error('More than one User found');
-    }
-    const data = schemas.userSchema.parse(userDocs[0].data());
-    return {
-      customerId: data.customerId,
-      id: userDocs[0].id,
-      role: data.role! || DEFAULT_ROLE,
-    };
-  }, retryProps('Retrying queryUser...'));
+  const userDocs = (
+    await retry(
+      async () => firestore.collection('users').where('email', '==', email).get(),
+      retryProps('Retrying queryUser...')
+    )
+  ).docs;
+  if (userDocs.length === 0) {
+    throw Error('User not found');
+  }
+  if (userDocs.length > 1) {
+    throw Error('More than one User found');
+  }
+  const data = parse<schemas.UserType>(schemas.userSchema, userDocs[0].data(), 'user');
+  return {
+    customerId: data.customerId,
+    id: userDocs[0].id,
+    role: data.role! || DEFAULT_ROLE,
+  };
 };
 
 export const queryIdentity = async (
@@ -83,103 +67,106 @@ export const queryIdentity = async (
   if (!key.identityId && !key.email) {
     throw Error('queryIdentity missing param');
   }
-  return await retry(async () => {
-    let doc;
-    let id;
-    if (key.identityId) {
-      doc = await firestore.doc(`customers/${customerId}/identities/${key.identityId}`).get();
-      if (!doc.exists) {
-        throw Error('Identity not found');
-      }
-      id = key.identityId;
-    } else {
-      const docs = (
-        await firestore
-          .collection(`customers/${customerId}/identities`)
-          .where('email', '==', key.email)
-          .get()
-      ).docs;
-      if (docs.length === 0) {
-        throw Error('Identity not found');
-      }
-      if (docs.length > 1) {
-        throw Error('More than one Identity found');
-      }
-      id = docs[0].id;
-      doc = docs[0];
+  let doc;
+  let id;
+  if (key.identityId) {
+    doc = await firestore.doc(`customers/${customerId}/identities/${key.identityId}`).get();
+    if (!doc.exists) {
+      throw Error('Identity not found');
     }
-    const data = schemas.identitySchema.parse(doc.data());
-    return {
-      id,
-      email: data.email,
-      displayName: data.displayName,
-      managerId: data.managerId,
-      accounts: data.accounts ?? [],
-    };
-  }, retryProps('Retrying queryIdentity...'));
+    id = key.identityId;
+  } else {
+    const docs = (
+      await retry(
+        async () =>
+          await firestore
+            .collection(`customers/${customerId}/identities`)
+            .where('email', '==', key.email)
+            .get(),
+        retryProps('Retrying queryIdentity...')
+      )
+    ).docs;
+    if (docs.length === 0) {
+      throw Error('Identity not found');
+    }
+    if (docs.length > 1) {
+      throw Error('More than one Identity found');
+    }
+    id = docs[0].id;
+    doc = docs[0];
+  }
+  const data = parse<schemas.IdentityType>(schemas.identitySchema, doc.data()!, 'identity');
+  return {
+    id,
+    email: data.email,
+    displayName: data.displayName,
+    managerId: data.managerId,
+    accounts: data.accounts ?? [],
+  };
 };
 
 export const queryTeamIdentities = async (
   customerId: number,
   managerId: string
 ): Promise<IdentityData[]> => {
-  return await retry(async () => {
-    const identities: IdentityData[] = [];
-    (
-      await firestore
-        .collection(`customers/${customerId}/identities`)
-        .where('managerId', '==', managerId)
-        .get()
-    ).docs.forEach(doc => {
-      const data = schemas.identitySchema.parse(doc.data());
-      identities.push({
-        id: doc.id,
-        accounts: data.accounts ?? [],
-      });
-    });
-    return identities;
-  }, retryProps('Retrying queryTeamIdentities...'));
+  const identities: IdentityData[] = [];
+  (
+    await retry(
+      async () =>
+        await firestore
+          .collection(`customers/${customerId}/identities`)
+          .where('managerId', '==', managerId)
+          .get(),
+      retryProps('Retrying queryTeamIdentities...')
+    )
+  ).docs.forEach(doc => {
+    const data = parse<schemas.IdentityType>(schemas.identitySchema, doc.data(), 'identity');
+    identities.push({ id: doc.id, accounts: data.accounts ?? [] });
+  });
+  return identities;
 };
 
 export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
-  return await retry(async () => {
-    const initiatives: InitiativeData[] = [];
-    (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
-      initiative => {
-        const data = schemas.initiativeSchema.parse(initiative.data());
-        initiatives.push({
-          id: initiative.id,
-          label: data.label,
-          counters:
-            data.counters ?
-              { activities: data.counters.activities }
-            : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
-          countersLastUpdated: data.countersLastUpdated ?? 0,
-        });
-      }
-    );
-    return initiatives.sort((a, b) => a.id.localeCompare(b.id));
-  }, retryProps('Retrying fetchInitiatives...'));
+  const initiatives: InitiativeData[] = [];
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/initiatives`).get(),
+      retryProps('Retrying fetchInitiatives...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
+    initiatives.push({
+      id: doc.id,
+      label: data.label,
+      counters:
+        data.counters ?
+          { activities: data.counters.activities }
+        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+      countersLastUpdated: data.countersLastUpdated ?? 0,
+    });
+  });
+  return initiatives.sort((a, b) => a.id.localeCompare(b.id));
 };
 
 export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
-  return await retry(async () => {
-    const initiatives: InitiativeRecord = {};
-    (await firestore.collection(`customers/${customerId}/initiatives`).get()).forEach(
-      initiative => {
-        const data = schemas.initiativeSchema.parse(initiative.data());
-        initiatives[initiative.id] = {
-          label: data.label,
-          counters:
-            data.counters ?
-              { activities: data.counters.activities }
-            : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
-          countersLastUpdated: data.countersLastUpdated ?? 0,
-        };
-      }
-    );
-    return initiatives;
-  }, retryProps('Retrying fetchInitiativeMap...'));
+  const initiatives: InitiativeRecord = {};
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/initiatives`).get(),
+      retryProps('Retrying fetchInitiativeMap...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
+    initiatives[doc.id] = {
+      label: data.label,
+      counters:
+        data.counters ?
+          { activities: data.counters.activities }
+        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+      countersLastUpdated: data.countersLastUpdated ?? 0,
+    };
+  });
+  return initiatives;
 };
 
 const findIdentity = (identities: IdentityData[], id: string) => identities.find(i => i.id === id)!;
@@ -187,75 +174,93 @@ const findIdentity = (identities: IdentityData[], id: string) => identities.find
 export const fetchIdentities = async (
   customerId: number
 ): Promise<{ list: IdentityData[]; accountMap: AccountToIdentityRecord }> => {
-  return await retry(async () => {
-    const identities: IdentityData[] = [];
-    const accountMap: AccountToIdentityRecord = {};
+  const identities: IdentityData[] = [];
+  const accountMap: AccountToIdentityRecord = {};
 
-    const usersByEmail: Record<string, { id: string; role: Role }> = {};
-    (await firestore.collection('users').where('customerId', '==', customerId).get()).forEach(
-      user => {
-        const data = schemas.userSchema.parse(user.data());
-        usersByEmail[data.email] = { id: user.id, role: data.role ?? DEFAULT_ROLE };
+  const usersByEmail: Record<string, { id: string; role: Role }> = {};
+  (
+    await retry(
+      async () => await firestore.collection('users').where('customerId', '==', customerId).get(),
+      retryProps('Retrying fetchIdentities#users...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.UserType>(schemas.userSchema, doc.data(), 'user');
+    usersByEmail[data.email] = { id: doc.id, role: data.role ?? DEFAULT_ROLE };
+  });
+
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/identities`).get(),
+      retryProps('Retrying fetchIdentities...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.IdentityType>(schemas.identitySchema, doc.data(), 'user');
+    identities.push({
+      id: doc.id,
+      email: data.email,
+      displayName: data.displayName,
+      managerId: data.managerId,
+      user: usersByEmail[data.email ?? ''] ?? { role: DEFAULT_ROLE },
+      accounts: data.accounts ?? [],
+    });
+    // map accounts to identities
+    data.accounts?.forEach(account => {
+      if (account.id) {
+        accountMap[account.id] = doc.id;
+      } else if (account.name) {
+        accountMap[account.name] = doc.id;
       }
-    );
-
-    (await firestore.collection(`customers/${customerId}/identities`).get()).forEach(identity => {
-      const data = schemas.identitySchema.parse(identity.data());
-      identities.push({
-        id: identity.id,
-        email: data.email,
-        displayName: data.displayName,
-        managerId: data.managerId,
-        user: usersByEmail[data.email ?? ''] ?? { role: DEFAULT_ROLE },
-        accounts: data.accounts ?? [],
-      });
-      // map accounts to identities
-      data.accounts?.forEach(account => {
-        if (account.id) {
-          accountMap[account.id] = identity.id;
-        } else if (account.name) {
-          accountMap[account.name] = identity.id;
-        }
-      });
     });
-    // add the report member ids
-    identities.forEach(identity => {
-      identity.reportIds = identities
-        .filter(report => report.managerId === identity.id)
-        .map(i => i.id)
-        .sort((a, b) =>
-          (findIdentity(identities, a).displayName ?? '').localeCompare(
-            findIdentity(identities, b).displayName ?? ''
-          )
-        );
-    });
+  });
+  // add the report member ids
+  identities.forEach(identity => {
+    identity.reportIds = identities
+      .filter(report => report.managerId === identity.id)
+      .map(i => i.id)
+      .sort((a, b) =>
+        (findIdentity(identities, a).displayName ?? '').localeCompare(
+          findIdentity(identities, b).displayName ?? ''
+        )
+      );
+  });
 
-    return {
-      list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
-      accountMap,
-    };
-  }, retryProps('Retrying fetchIdentities...'));
+  return {
+    list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
+    accountMap,
+  };
 };
 
-export const fetchTicketPriorityMap = async (customerId: number): Promise<TicketRecord> => {
+interface TicketCache {
+  tickets: TicketRecord;
+  hasAllTickets?: boolean;
+}
+const makeTicketsCacheKey = (customerId: number) => `${customerId};tickets`;
+const ticketsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
+
+export const fetchTicketPriorityMapWithCache = async (
+  customerId: number
+): Promise<TicketRecord> => {
   const cacheKey = makeTicketsCacheKey(customerId);
   const cache: TicketCache | undefined = ticketsCache.get(cacheKey);
   if (cache?.hasAllTickets) {
     // hasAllTickets is false when fetchTicketPriorities() cached tickets, and the cache was empty
     return cache.tickets;
   }
-  return await retry(async () => {
-    const tickets: TicketRecord = {};
-    (await firestore.collection(`customers/${customerId}/tickets`).get()).forEach(ticket => {
-      const data = schemas.ticketSchema.parse(ticket.data());
-      tickets[ticket.id] = data.priority;
-    });
-    ticketsCache.set(cacheKey, { tickets, hasAllTickets: true });
-    return tickets;
-  }, retryProps('Retrying fetchTicketsMap...'));
+  const tickets: TicketRecord = {};
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/tickets`).get(),
+      retryProps('Retrying fetchTicketsMap...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.TicketType>(schemas.ticketSchema, doc.data(), 'ticket');
+    tickets[doc.id] = data.priority;
+  });
+  ticketsCache.set(cacheKey, { tickets, hasAllTickets: true });
+  return tickets;
 };
 
-export const fetchTicketPriorities = async (
+export const fetchTicketPrioritiesWithCache = async (
   customerId: number,
   ticketIds: string[]
 ): Promise<TicketRecord> => {
@@ -270,78 +275,88 @@ export const fetchTicketPriorities = async (
       }
     });
   }
-
-  return await retry(async () => {
-    const tickets: TicketRecord = {};
-    const batches = [];
-    while (ticketIds.length) {
-      // firestore supports up to 30 IN comparisons at a time
-      const batch = ticketIds.splice(0, 30);
-      batches.push(
-        firestore
-          .collection(`customers/${customerId}/tickets`)
-          .where(FieldPath.documentId(), 'in', [...batch])
-          .get()
-          .then(result =>
-            result.docs.map(ticket => {
-              const data = schemas.ticketSchema.parse(ticket.data());
-              tickets[ticket.id] = data.priority;
-            })
-          )
-      );
-    }
-    await Promise.all(batches);
-
-    // add to the cache freshly found tickets
-    ticketsCache.set(cacheKey, { tickets: { ...cache?.tickets, ...tickets } });
-
-    return { ...tickets, ...fromCache };
-  }, retryProps('Retrying fetchTickets...'));
+  const tickets: TicketRecord = {};
+  const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+  while (ticketIds.length) {
+    // firestore supports up to 30 IN comparisons at a time
+    const batch = ticketIds.splice(0, 30);
+    batches.push(
+      firestore
+        .collection(`customers/${customerId}/tickets`)
+        .where(FieldPath.documentId(), 'in', [...batch])
+        .get()
+    );
+  }
+  (await retry(async () => await Promise.all(batches), retryProps('Retrying fetchTickets...')))
+    .flatMap(t => t.docs)
+    .map(doc => {
+      const data = parse<schemas.TicketType>(schemas.ticketSchema, doc.data(), 'ticket');
+      tickets[doc.id] = data.priority;
+    });
+  // add to the cache freshly found tickets
+  ticketsCache.set(cacheKey, { tickets: { ...cache?.tickets, ...tickets } });
+  return { ...tickets, ...fromCache };
 };
 
 export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {
-  return await retry(async () => {
-    const accounts: AccountMap = new Map();
-    await Promise.all(
-      FEED_TYPES.map(async feed => {
-        (
-          await firestore.collection(`customers/${customerId}/feeds/${feed.id}/accounts`).get()
-        ).forEach(account => {
-          const data = schemas.accountSchema.parse(account.data());
-          accounts.set(account.id, {
-            type: feed.type,
-            name: data.accountName,
-            url: data.accountUri,
-          });
-        });
-      })
-    );
-    return accounts;
-  }, retryProps('Retrying fetchAccountMap...'));
+  const accounts: AccountMap = new Map();
+  (
+    await retry(
+      async () =>
+        await Promise.all(
+          FEED_TYPES.map(feed =>
+            (async () => ({
+              feedType: feed.type,
+              accounts: await firestore
+                .collection(`customers/${customerId}/feeds/${feed.id}/accounts`)
+                .get(),
+            }))()
+          )
+        ),
+      retryProps('Retrying fetchAccountMap...')
+    )
+  ).forEach(feed => {
+    feed.accounts.forEach(account => {
+      const data = parse<schemas.AccountType>(schemas.accountSchema, account.data(), 'account');
+      accounts.set(account.id, {
+        type: feed.feedType,
+        name: data.accountName,
+        url: data.accountUri,
+      });
+    });
+  });
+  return accounts;
 };
 
 export const fetchAccountsToReview = async (customerId: number): Promise<AccountData[]> => {
-  return await retry(async () => {
-    const accounts: AccountData[] = [];
-    await Promise.all(
-      FEED_TYPES.map(async feed => {
-        (
-          await firestore
-            .collection(`customers/${customerId}/feeds/${feed.id}/accountsToReview`)
-            .get()
-        ).forEach(account => {
-          const data = schemas.accountToReviewSchema.parse(account.data());
-          accounts.push({
-            id: account.id,
-            type: feed.type,
-            name: data.accountName,
-            url: data.accountUri,
-          });
-        });
-      })
-    );
-    return accounts;
-  }, retryProps('Retrying fetchAccountsToReview...'));
+  const accounts: AccountData[] = [];
+  (
+    await retry(
+      async () =>
+        await Promise.all(
+          FEED_TYPES.map(feed =>
+            (async () => ({
+              feedType: feed.type,
+              accounts: await firestore
+                .collection(`customers/${customerId}/feeds/${feed.id}/accountsToReview`)
+                .get(),
+            }))()
+          )
+        ),
+      retryProps('Retrying fetchAccountsToReview...')
+    )
+  ).forEach(feed => {
+    feed.accounts.forEach(account => {
+      const data = parse<schemas.AccountType>(schemas.accountSchema, account.data(), 'account');
+      accounts.push({
+        id: account.id,
+        type: feed.feedType,
+        name: data.accountName,
+        url: data.accountUri,
+      });
+    });
+  });
+  return accounts;
 };
 
 export const fetchActivities = async ({
@@ -357,11 +372,24 @@ export const fetchActivities = async ({
   userIds?: string[];
   options?: { includesMetadata?: boolean; findPriority?: boolean };
 }) => {
-  return await retry(async bail => {
-    const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
-    if (!userIds) {
+  const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+  if (!userIds) {
+    let query = firestore
+      .collection(`customers/${customerId}/activities`)
+      .orderBy('createdTimestamp')
+      .startAt(startDate)
+      .limit(20000); // FIXME limit
+    if (endDate) {
+      query = query.endAt(endDate);
+    }
+    batches.push(query.get());
+  } else {
+    while (userIds.length) {
+      // firestore supports up to 30 IN comparisons at a time
+      const batch = userIds.splice(0, 30);
       let query = firestore
         .collection(`customers/${customerId}/activities`)
+        .where('actorAccountId', 'in', [...batch])
         .orderBy('createdTimestamp')
         .startAt(startDate)
         .limit(20000); // FIXME limit
@@ -369,74 +397,71 @@ export const fetchActivities = async ({
         query = query.endAt(endDate);
       }
       batches.push(query.get());
-    } else {
-      while (userIds.length) {
-        // firestore supports up to 30 IN comparisons at a time
-        const batch = userIds.splice(0, 30);
-        let query = firestore
-          .collection(`customers/${customerId}/activities`)
-          .where('actorAccountId', 'in', [...batch])
-          .orderBy('createdTimestamp')
-          .startAt(startDate)
-          .limit(20000); // FIXME limit
-        if (endDate) {
-          query = query.endAt(endDate);
-        }
-        batches.push(query.get());
+    }
+  }
+
+  const activityDocs = (
+    await withMetricsAsync(
+      () =>
+        retry(async () => await Promise.all(batches), retryProps('Retrying queryActivities...')),
+      { metricsName: 'queryActivities' }
+    )
+  ).flatMap(a => a.docs);
+
+  const activities: ActivityMap = new Map();
+  const ticketPrioritiesToFetch = new Set<string>();
+  const activityTickets = new Map<string, string>();
+
+  activityDocs.forEach(doc => {
+    const data = parse<schemas.ActivityType>(schemas.activitySchema, doc.data(), 'activity');
+    const priority = data.priority;
+    if ((!priority || priority === -1) && options?.findPriority) {
+      // will find priority from metadata for activities missing one
+      const ticket = findTicket(data.metadata as ActivityMetadata);
+      if (ticket) {
+        ticketPrioritiesToFetch.add(ticket);
+        activityTickets.set(doc.id, ticket);
       }
     }
-
-    const activityDocs = (
-      await withMetricsAsync(() => Promise.all(batches), { metricsName: 'fetcher:getActivities' })
-    ).flatMap(a => a.docs);
-
-    const activities: ActivityMap = new Map();
-    const ticketPrioritiesToFetch = new Set<string>();
-    const activityTickets = new Map<string, string>();
-
-    activityDocs.forEach(activity => {
-      const props = schemas.activitySchema.safeParse(activity.data());
-      if (!props.success) {
-        bail(new ParseError('Failed to parse activities. ' + props.error.message));
-        return emptyActivity; // not used, bail() will throw
-      }
-      const priority = props.data.priority;
-      if ((!priority || priority === -1) && options?.findPriority) {
-        // will find priority from metadata for activities missing one
-        const ticket = findTicket(props.data.metadata as ActivityMetadata);
-        if (ticket) {
-          ticketPrioritiesToFetch.add(ticket);
-          activityTickets.set(activity.id, ticket);
-        }
-      }
-      activities.set(activity.id, {
-        action: props.data.action,
-        actorId: props.data.actorAccountId,
-        artifact: props.data.artifact,
-        createdTimestamp: props.data.createdTimestamp,
-        initiativeId: props.data.initiative,
-        priority, // see overwrite below
-        event: props.data.event,
-        ...(options?.includesMetadata && { metadata: props.data.metadata as ActivityMetadata }),
-        objectId: props.data.objectId, // for debugging
-      });
+    activities.set(doc.id, {
+      action: data.action,
+      actorId: data.actorAccountId,
+      artifact: data.artifact,
+      createdTimestamp: data.createdTimestamp,
+      initiativeId: data.initiative,
+      priority, // see overwrite below
+      event: data.event,
+      ...(options?.includesMetadata && { metadata: data.metadata as ActivityMetadata }),
+      objectId: data.objectId, // for debugging
     });
-    if (ticketPrioritiesToFetch.size > 0) {
-      const tickets = await fetchTicketPriorities(customerId, [...ticketPrioritiesToFetch]);
-      activityTickets.forEach((activityTicket, activityId) => {
-        // add the found priority to the activity
-        const activity = activities.get(activityId);
-        if (activity) {
-          activity.priority = tickets[activityTicket];
-        }
-      });
-    }
+  });
+  if (ticketPrioritiesToFetch.size > 0) {
+    const tickets = await fetchTicketPrioritiesWithCache(customerId, [...ticketPrioritiesToFetch]);
+    activityTickets.forEach((activityTicket, activityId) => {
+      // add the found priority to the activity
+      const activity = activities.get(activityId);
+      if (activity) {
+        activity.priority = tickets[activityTicket];
+      }
+    });
+  }
 
-    return activities;
-  }, retryProps('Retrying fetchActivities...'));
+  return activities;
 };
 
-const fetchActivityTotal = async (
+const makeActivityCountCacheKey = (
+  customerId: number,
+  { withInitiatives }: { withInitiatives?: boolean }
+) => {
+  let suffix = '';
+  if (withInitiatives != null) {
+    suffix = withInitiatives ? ';withInitiatives' : ';withoutInitiatives';
+  }
+  return `${customerId};activityTotal${suffix}`;
+};
+const activityCountCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
+
+const fetchActivityTotalWithCache = async (
   customerId: number,
   withInitiatives?: boolean
 ): Promise<number> => {
@@ -493,25 +518,22 @@ export const fetchActivitiesPage = async ({
   const activities: ActivityData[] = [];
   const [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
-    fetchActivityTotal(customerId, withInitiatives),
+    fetchActivityTotalWithCache(customerId, withInitiatives),
   ]);
-  activityPage.forEach(activity => {
-    const props = schemas.activitySchema.safeParse(activity.data());
-    if (!props.success) {
-      throw new ParseError('Failed to parse activities. ' + props.error.message);
-    }
+  activityPage.forEach(doc => {
+    const data = parse<schemas.ActivityType>(schemas.activitySchema, doc.data(), 'activity');
     activities.push({
-      id: activity.id,
-      action: props.data.action,
-      event: props.data.event,
-      actorId: props.data.actorAccountId,
-      artifact: props.data.artifact,
-      createdTimestamp: props.data.createdTimestamp,
-      priority: props.data.priority,
-      initiativeId: props.data.initiative,
-      metadata: props.data.metadata as ActivityMetadata,
-      note: props.data.note,
-      objectId: props.data.objectId, // for debugging
+      id: doc.id,
+      action: data.action,
+      event: data.event,
+      actorId: data.actorAccountId,
+      artifact: data.artifact,
+      createdTimestamp: data.createdTimestamp,
+      priority: data.priority,
+      initiativeId: data.initiative,
+      metadata: data.metadata as ActivityMetadata,
+      note: data.note,
+      objectId: data.objectId, // for debugging
     });
   });
   return { activities, activityTotal };
@@ -529,15 +551,13 @@ export const fetchSummaries = async (
   const documents = await retry(async () => {
     const days = date.day ? [date.day] : daysInMonth(dayjs(date.month));
     return await Promise.all(
-      days.map(async day => {
-        return {
-          day,
-          snapshot: await firestore
-            .collection(`customers/${customerId}/summaries/${day}/instances`)
-            .where('identityId', '==', identityId)
-            .get(),
-        };
-      })
+      days.map(async day => ({
+        day,
+        snapshot: await firestore
+          .collection(`customers/${customerId}/summaries/${day}/instances`)
+          .where('identityId', '==', identityId)
+          .get(),
+      }))
     );
   }, retryProps('Retrying fetchSummaries...'));
   documents.forEach(document => {
@@ -549,16 +569,17 @@ export const fetchSummaries = async (
         `Found more than one summary for customer ${customerId}, user ${identityId} on ${document.day}`
       );
     }
-    const props = schemas.summarySchema.safeParse(document.snapshot.docs[0].data());
-    if (!props.success) {
-      throw new ParseError('Failed to parse summary. ' + props.error.message);
-    }
+    const data = parse<schemas.SummaryType>(
+      schemas.summarySchema,
+      document.snapshot.docs[0].data(),
+      'summary'
+    );
     summaries[document.day] = {
-      identityId: props.data.identityId, // useless here
-      aiSummary: props.data.aiSummary,
-      userSummary: props.data.userSummary,
-      aiTeamSummary: props.data.aiTeamSummary,
-      userTeamSummary: props.data.userTeamSummary,
+      identityId: data.identityId, // useless here
+      aiSummary: data.aiSummary,
+      userSummary: data.userSummary,
+      aiTeamSummary: data.aiTeamSummary,
+      userTeamSummary: data.userTeamSummary,
     };
   });
   return summaries;
@@ -575,16 +596,13 @@ export const fetchAllSummaries = async (
     retryProps('Retrying fetchAllSummaries...')
   );
   documents.forEach(document => {
-    const props = schemas.summarySchema.safeParse(document.data());
-    if (!props.success) {
-      throw new ParseError('Failed to parse summary. ' + props.error.message);
-    }
+    const data = parse<schemas.SummaryType>(schemas.summarySchema, document.data(), 'summary');
     summaries.push({
-      identityId: props.data.identityId,
-      aiSummary: props.data.aiSummary,
-      userSummary: props.data.userSummary,
-      aiTeamSummary: props.data.aiTeamSummary,
-      userTeamSummary: props.data.userTeamSummary,
+      identityId: data.identityId,
+      aiSummary: data.aiSummary,
+      userSummary: data.userSummary,
+      aiTeamSummary: data.aiTeamSummary,
+      userTeamSummary: data.userTeamSummary,
     });
   });
   return summaries;

@@ -29,6 +29,8 @@ export interface IdentityData {
   accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
 }
 
+export const displayName = (id: IdentityData) => id.displayName || id.email || id.id;
+
 export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
 
 export type ActorData = {

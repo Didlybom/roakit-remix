@@ -35,7 +35,7 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
-  fetchTicketPriorityMap,
+  fetchTicketPriorityMapWithCache,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
@@ -75,7 +75,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
-      fetchTicketPriorityMap(sessionData.customerId!),
+      fetchTicketPriorityMapWithCache(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {

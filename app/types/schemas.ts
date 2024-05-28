@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ParseError } from '../utils/errorUtils';
 import { Roles } from '../utils/rbac';
 
 export const bannedRecordSchema = z.record(z.string(), z.boolean());
@@ -23,11 +24,13 @@ export const initiativeSchema = z.object({
     .optional(),
   countersLastUpdated: z.number().optional(),
 });
+export type InitiativeType = z.infer<typeof initiativeSchema>;
 
 export const accountSchema = z.object({
   accountName: z.string(),
   accountUri: z.string().optional(),
 });
+export type AccountType = z.infer<typeof accountSchema>;
 
 export const accountToReviewSchema = z.object({
   createdDate: z.number(),
@@ -40,6 +43,7 @@ export const userSchema = z.object({
   customerId: z.number(),
   role: z.enum(Roles).optional(),
 });
+export type UserType = z.infer<typeof userSchema>;
 
 export const identitySchema = z.object({
   email: z.string().optional(),
@@ -57,6 +61,7 @@ export const identitySchema = z.object({
     .optional(),
   lastLastUpdatedTimestamp: z.number().optional(),
 });
+export type IdentityType = z.infer<typeof identitySchema>;
 
 export const ticketSchema = z.object({
   id: z.string(),
@@ -68,6 +73,7 @@ export const ticketSchema = z.object({
     .optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });
+export type TicketType = z.infer<typeof ticketSchema>;
 
 export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
 
@@ -83,6 +89,7 @@ export const activitySchema = z.object({
   note: z.string().optional(),
   objectId: z.string().optional(), // for debugging
 });
+export type ActivityType = z.infer<typeof activitySchema>;
 
 export const summarySchema = z.object({
   identityId: z.string(),
@@ -93,3 +100,16 @@ export const summarySchema = z.object({
   createdTimestamp: z.number().optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });
+export type SummaryType = z.infer<typeof summarySchema>;
+
+export const parse = <T>(
+  schema: z.AnyZodObject,
+  data: FirebaseFirestore.DocumentData,
+  dataName: string
+): T => {
+  const props = schema.safeParse(data);
+  if (!props.success) {
+    throw new ParseError(`Failed to parse ${dataName}. ${props.error.message}`);
+  }
+  return props.data as T;
+};
