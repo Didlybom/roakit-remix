@@ -6,6 +6,7 @@ import {
   History as HistoryIcon,
   Science as ScienceIcon,
   Subject as SubjectIcon,
+  ShortText as SummariesIcon,
   EditNote as SummaryIcon,
 } from '@mui/icons-material';
 import {
@@ -118,7 +119,7 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Experiments
             </ListSubheader>
-            {listItem(View.SummaryMulti, '/summary/multi', SummaryIcon, 'Summaries', view)}
+            {listItem(View.SummaryMulti, '/summary/multi', SummariesIcon, 'Summaries', view)}
             {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
           </List>
         </>
