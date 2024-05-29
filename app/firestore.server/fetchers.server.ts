@@ -137,7 +137,11 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
     const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
     initiatives.push({
       id: doc.id,
+      key: data.key ?? doc.id,
       label: data.label,
+      tags: data.tags,
+      reference: data.reference,
+      url: data.url,
       counters:
         data.counters ?
           { activities: data.counters.activities }
@@ -158,6 +162,7 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
   ).forEach(doc => {
     const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
     initiatives[doc.id] = {
+      key: data.key ?? doc.id,
       label: data.label,
       counters:
         data.counters ?

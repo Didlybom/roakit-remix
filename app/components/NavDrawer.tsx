@@ -107,7 +107,7 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Administration
             </ListSubheader>
-            {listItem(View.Initiatives, '/initiatives', BusinessCenterIcon, 'Initiatives', view)}
+            {listItem(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
             {listItem(View.Users, '/users', BusinessIcon, 'Directory', view)}
           </List>
         </>

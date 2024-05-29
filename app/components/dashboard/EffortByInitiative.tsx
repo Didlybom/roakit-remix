@@ -16,13 +16,13 @@ export default function InitiativeEffort({ groupedActivities, initiatives, isLoa
     !!groupedActivities?.initiatives?.length && (
       <Box>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle('Effort by Initiative')}
+          {widgetTitle('Effort by Goal')}
           <PieChart
             series={[
               {
                 id: 'effort-by-initiative',
                 data: groupedActivities.initiatives.map(initiative => ({
-                  id: initiative.id,
+                  id: initiatives[initiative.id].key,
                   value: initiative.effort,
                   label: initiatives[initiative.id].label,
                 })),

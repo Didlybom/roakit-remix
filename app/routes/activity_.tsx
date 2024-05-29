@@ -278,14 +278,14 @@ export default function ActivityReview() {
       summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
       {
         field: 'initiativeId',
-        headerName: 'Initiative',
+        headerName: 'Goal',
         minWidth: 100,
         type: 'singleSelect',
         valueOptions: [
           { value: UNSET_INITIATIVE_ID, label: '[unset]' },
           ...Object.keys(loaderData.initiatives).map(initiativeId => {
             const initiative = loaderData.initiatives[initiativeId];
-            return { value: initiativeId, label: `[${initiativeId}] ${initiative.label}` };
+            return { value: initiativeId, label: `[${initiative.key}] ${initiative.label}` };
           }),
         ],
         editable: true,
@@ -331,7 +331,7 @@ export default function ActivityReview() {
           </Grid>
           <Grid>
             <FormControl size="small" sx={{ width: '100%' }}>
-              <InputLabel id="initiative">Add to initiative</InputLabel>
+              <InputLabel id="initiative">Add to goal</InputLabel>
               <Select
                 id="initiative-select"
                 value={bulkInitiative}
@@ -438,8 +438,8 @@ export default function ActivityReview() {
               selectedValue={activityFilter}
               items={[
                 { value: '', label: 'All', color: grey[500] },
-                { value: 'withoutInitiative', label: 'Without initiatives' },
-                { value: 'withInitiative', label: 'With initiatives' },
+                { value: 'withoutInitiative', label: 'Without goals' },
+                { value: 'withInitiative', label: 'With goals' },
               ]}
               onChange={e => {
                 setPaginationModel({ ...paginationModel, page: 0 });

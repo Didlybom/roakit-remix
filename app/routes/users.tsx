@@ -42,7 +42,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { ellipsisSx, internalLinkSx } from '../utils/jsxUtils';
+import { ellipsisSx, errorAlert, internalLinkSx } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
 import theme from '../utils/theme';
 
@@ -201,10 +201,6 @@ export default function Users() {
   useEffect(() => {
     setIdentities(loaderData.identities.list);
   }, [loaderData.identities.list]);
-
-  useEffect(() => {
-    setError(actionData?.error ?? '');
-  }, [actionData?.error]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -386,6 +382,8 @@ export default function Users() {
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle'}
     >
+      {errorAlert(actionData?.error)}
+      {errorAlert(error)}
       <Snackbar
         open={!!confirmation}
         autoHideDuration={3000}
@@ -409,11 +407,6 @@ export default function Users() {
       </Box>
       <TabPanel value={tabValue} index={UsersTab.Directory}>
         <Stack>
-          {!!error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
           <DataGridWithSingleClickEditing
             columns={identityCols}
             rows={identities.map(identity => ({

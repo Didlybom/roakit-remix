@@ -2,7 +2,11 @@ import type { Role } from '../utils/rbac';
 
 export type InitiativeData = {
   id: string;
+  key: string;
   label?: string;
+  tags?: string[] | null;
+  reference?: string;
+  url?: string;
   counters: {
     activities: ActivityCount;
   };

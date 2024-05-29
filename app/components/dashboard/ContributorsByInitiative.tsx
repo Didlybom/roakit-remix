@@ -32,7 +32,7 @@ export default function ContributorsByInitiative({
     !!initiatives &&
     !!groupedActivities?.initiatives?.length && (
       <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-        {widgetTitle('Contributors by Initiative')}
+        {widgetTitle('Contributors by Goal')}
         <BarChart
           series={[
             {
@@ -41,7 +41,12 @@ export default function ContributorsByInitiative({
               data: groupedActivities.initiatives.map(i => i.actorCount),
             },
           ]}
-          yAxis={[{ data: groupedActivities.initiatives.map(i => i.id), scaleType: 'band' }]}
+          yAxis={[
+            {
+              data: groupedActivities.initiatives.map(i => initiatives[i.id].key),
+              scaleType: 'band',
+            },
+          ]}
           xAxis={[{ tickMinStep: 1 }]}
           layout="horizontal"
           {...widgetSize}

@@ -253,9 +253,7 @@ export default function Dashboard() {
           defaultExpanded
           sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' }, border: 'none' }}
         >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activities by Initiative
-          </AccordionSummary>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Activities by Goal</AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Stack spacing={5}>
               <ActivitiesByInitiative
@@ -345,7 +343,7 @@ export default function Dashboard() {
                   label="All Activity"
                   icon={<HistoryIcon fontSize="small" />}
                 />{' '}
-                to assign initiatives to activities, and{' '}
+                to assign goals to activities, and{' '}
                 <SmallButton
                   href="/ai"
                   label="AI Playground"

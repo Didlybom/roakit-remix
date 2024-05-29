@@ -11,7 +11,11 @@ export const feedSchema = z.object({
 });
 
 export const initiativeSchema = z.object({
+  key: z.string().optional(),
   label: z.string().optional(),
+  tags: z.string().array().nullable().optional(),
+  reference: z.string().optional(),
+  url: z.string().optional(),
   counters: z
     .object({
       activities: z.object({

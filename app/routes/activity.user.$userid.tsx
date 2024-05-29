@@ -264,11 +264,13 @@ export default function UserActivity() {
       priorityColDef({ field: 'priority' }),
       {
         field: 'initiativeId',
-        headerName: 'Initiative',
+        headerName: 'Goal',
         renderCell: params => {
           const initiativeId = params.value as string;
           return initiativeId ?
-              <Box title={loaderData.initiatives[initiativeId]?.label}>{initiativeId}</Box>
+              <Box title={loaderData.initiatives[initiativeId]?.label}>
+                {loaderData.initiatives[initiativeId]?.key}
+              </Box>
             : <Box color={grey[400]}>unset</Box>;
         },
       },

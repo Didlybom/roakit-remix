@@ -282,6 +282,7 @@ type Priority = {
 
 type Initiative = {
   id: string;
+  key: string;
   count: ActivityCount;
   actorIds?: Set<string>; // will be removed before returning for serialization
   actorCount: number;
@@ -384,6 +385,7 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
       if (initiative === undefined) {
         initiative = {
           id: initiativeId,
+          key: '',
           count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 },
           actorIds: new Set<string>(),
           actorCount: 0,
@@ -398,9 +400,13 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
       initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
   });
-  initiatives = initiatives
-    .map(i => ({ id: i.id, count: i.count, actorCount: i.actorIds!.size, effort: i.effort }))
-    .sort((a, b) => a.id.localeCompare(b.id));
+  initiatives = initiatives.map(i => ({
+    id: i.id,
+    key: i.key,
+    count: i.count,
+    actorCount: i.actorIds!.size,
+    effort: i.effort,
+  }));
 
   Object.keys(topActors).forEach(action => {
     const actors = topActors[action];
