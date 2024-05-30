@@ -39,7 +39,7 @@ export default function GitHubSettings({
   const navigation = useNavigation();
   const submit = useSubmit();
   const serverData = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
-  const url = `https://ingest.roakit.com/github/${serverData.clientId}`;
+  const url = `https://ingest-frzqvloirq-uw.a.run.app/github/${serverData.clientId}`;
   const [secret, setSecret] = useState(serverData.secret);
 
   useEffect(() => {

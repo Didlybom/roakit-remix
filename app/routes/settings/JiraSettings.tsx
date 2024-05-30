@@ -26,7 +26,7 @@ export default function JiraSettings({
 }) {
   const serverData = settingsData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
 
-  const url = `https://ingest.roakit.com/jira/${serverData.clientId}`;
+  const url = `https://ingest-frzqvloirq-uw.a.run.app/jira/${serverData.clientId}`;
   const scope = 'all issues';
   const events = 'all events';
 
