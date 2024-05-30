@@ -7,6 +7,7 @@ export type InitiativeData = {
   tags?: string[] | null;
   reference?: string;
   url?: string;
+  activityMapper?: string;
   counters: {
     activities: ActivityCount;
   };
@@ -72,7 +73,7 @@ export type ActivityChangeLog = {
 
 export type ActivityMetadata = {
   codeAction?: string;
-  issue?: { key: string; summary?: string; uri?: string };
+  issue?: { key: string; summary?: string; uri?: string; project?: { id: string } };
   attachment?: { filename: string; mimeType?: string };
   sprint?: { name: string; state: string };
   worklog?: unknown;
