@@ -3,11 +3,10 @@ import {
   Cancel as CancelIcon,
   DeleteOutlined as DeleteIcon,
   Edit as EditIcon,
-  Link as LinkIcon,
-  ReportProblem as ReportProblemIcon,
+  OpenInNew as OpenInNewIcon,
   SaveOutlined as SaveIcon,
 } from '@mui/icons-material';
-import { Button, IconButton, Snackbar, Stack } from '@mui/material';
+import { Box, Button, Chip, IconButton, Snackbar, Stack, styled } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
@@ -79,6 +78,14 @@ interface ActionResponse {
   error?: string;
 }
 
+const splitTags = (value: string) =>
+  value
+    .split(',')
+    .map(t => t.trim())
+    .map(t => (t.startsWith('#') ? t : `#${t}`))
+    .filter(t => t !== '#')
+    .sort();
+
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
   const jsonRequest = (await request.json()) as JsonRequest;
@@ -111,6 +118,10 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
     }
   }
 };
+
+const StyledBox = styled('div')(({ theme }) => ({
+  '& .Mui-error': { backgroundColor: '#ffecf0', color: theme.palette.error.main },
+}));
 
 interface EditToolbarProps {
   setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
@@ -195,8 +206,8 @@ export default function Initiatives() {
     }
   };
 
-  const handleDeleteClick = (id: GridRowId, initiativeId: string) => {
-    setRows(rows.filter(row => row.id !== id));
+  const handleDeleteClick = (initiativeId: GridRowId) => {
+    setRows(rows.filter(row => row.id !== initiativeId));
     submit({ initiativeId }, deleteJsonOptions);
   };
 
@@ -206,13 +217,26 @@ export default function Initiatives() {
       headerName: 'Key',
       minWidth: 120,
       editable: true,
-      renderCell: params => {
-        const key = params.value as string;
-        return key || <ReportProblemIcon fontSize="small" />;
+      preProcessEditCellProps: params => {
+        return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
     { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
-    { field: 'tags', headerName: 'Tags', minWidth: 300, editable: true },
+    {
+      field: 'tags',
+      headerName: 'Tags',
+      minWidth: 300,
+      editable: true,
+      renderCell: params => {
+        return params.value ?
+            <Box display="flex" height="100%" alignItems="center">
+              {splitTags(params.value as string).map((tag, i) => (
+                <Chip key={i} variant="outlined" size="small" label={tag} sx={{ mr: '4px' }} />
+              ))}
+            </Box>
+          : null;
+      },
+    },
     {
       field: 'reference',
       headerName: 'Reference',
@@ -226,8 +250,8 @@ export default function Initiatives() {
       editable: true,
       renderCell: params => {
         return params.value ?
-            <IconButton href={params.value as string} target="_blank">
-              <LinkIcon fontSize="small" />
+            <IconButton href={params.value as string} target="_blank" sx={{ ml: -1 }}>
+              <OpenInNewIcon fontSize="small" />
             </IconButton>
           : null;
       },
@@ -275,7 +299,7 @@ export default function Initiatives() {
                 await confirm({
                   description: `Please confirm the deletion of initiative ${initiative.label || initiative.key}.`,
                 });
-                handleDeleteClick(params.id, initiative.key);
+                handleDeleteClick(params.id);
               } catch {
                 /* user cancelled */
               }
@@ -308,58 +332,48 @@ export default function Initiatives() {
         message={confirmation}
       />
       <Stack sx={{ m: 3 }}>
-        <DataGrid
-          columns={columns}
-          rows={rows}
-          {...dataGridCommonProps}
-          rowHeight={50}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
-          }}
-          editMode="row"
-          rowModesModel={rowModesModel}
-          onRowModesModelChange={handleRowModesModelChange}
-          onRowEditStop={handleRowEditStop}
-          slots={{ toolbar: EditToolbar as GridSlots['toolbar'] }}
-          slotProps={{ toolbar: { setRows, setRowModesModel } }}
-          processRowUpdate={(newRow: InitiativeRow) => {
-            if (!newRow.key) {
-              return newRow;
-            }
-            if (rows.find(r => r.key === newRow.key && r.id !== newRow.id)) {
-              return { ...newRow, key: '' };
-            }
-            const tags =
-              newRow.tags ?
-                [
-                  ...new Set(
-                    newRow.tags
-                      .split(',')
-                      .map(t => t.trim())
-                      .map(t => (t.startsWith('#') ? t : `#${t}`))
-                      .filter(t => t !== '#')
-                      .sort()
-                  ),
-                ]
-              : null;
-            const updatedRow = { ...newRow, tags: tags?.join(', ') ?? '', isNew: false };
-            setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
-            submit(
-              {
-                initiativeId: updatedRow.id,
-                key: updatedRow.key,
-                label: updatedRow.label ?? '',
-                tags,
-                reference: updatedRow.reference ?? '',
-                url: updatedRow.url ?? '',
-              },
-              postJsonOptions
-            );
-            return updatedRow;
-          }}
-          onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save goal'))}
-        />
+        <StyledBox>
+          <DataGrid
+            columns={columns}
+            rows={rows}
+            {...dataGridCommonProps}
+            rowHeight={50}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+              sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
+            }}
+            editMode="row"
+            rowModesModel={rowModesModel}
+            onRowModesModelChange={handleRowModesModelChange}
+            onRowEditStop={handleRowEditStop}
+            slots={{ toolbar: EditToolbar as GridSlots['toolbar'] }}
+            slotProps={{ toolbar: { setRows, setRowModesModel } }}
+            processRowUpdate={(newRow: InitiativeRow) => {
+              if (!newRow.key) {
+                return newRow;
+              }
+              if (rows.find(r => r.key === newRow.key && r.id !== newRow.id)) {
+                return { ...newRow, key: '' };
+              }
+              const tags = newRow.tags ? [...new Set(splitTags(newRow.tags))] : null;
+              const updatedRow = { ...newRow, tags: tags?.join(', ') ?? '', isNew: false };
+              setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
+              submit(
+                {
+                  initiativeId: updatedRow.id,
+                  key: updatedRow.key,
+                  label: updatedRow.label ?? '',
+                  tags,
+                  reference: updatedRow.reference ?? '',
+                  url: updatedRow.url ?? '',
+                },
+                postJsonOptions
+              );
+              return updatedRow;
+            }}
+            onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save goal'))}
+          />
+        </StyledBox>
       </Stack>
     </App>
   );

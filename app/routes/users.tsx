@@ -254,7 +254,7 @@ export default function Users() {
                         <JiraIcon />
                       </Box>
                     )}
-                    <Box> {account.id || 'n/a'}</Box>
+                    <Box>{account.id || 'n/a'}</Box>
                     {account.name && <Box sx={ellipsisSx}>{account.name}</Box>}
                     <Link
                       href={account.url}
@@ -306,18 +306,20 @@ export default function Users() {
               <Box whiteSpace="noWrap" sx={ellipsisSx}>
                 {params.value as string}
               </Box>
-            : <IconButton
-                title="Allow the user to login to ROAKIT"
-                onClick={() =>
-                  submit(
-                    { createFirebaseUserForEmail: (params.row as IdentityData).email ?? null },
-                    postJsonOptions
-                  )
-                }
-                sx={{ ml: -1 }}
-              >
-                <AddCircleIcon fontSize="small" />
-              </IconButton>;
+            : <Box display="flex" height="100%" alignItems="center">
+                <IconButton
+                  title="Allow the user to login to ROAKIT"
+                  onClick={() =>
+                    submit(
+                      { createFirebaseUserForEmail: (params.row as IdentityData).email ?? null },
+                      postJsonOptions
+                    )
+                  }
+                  sx={{ ml: -1 }}
+                >
+                  <AddCircleIcon fontSize="small" />
+                </IconButton>
+              </Box>;
         },
       },
       {
