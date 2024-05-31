@@ -77,10 +77,12 @@ export type ActivityMetadata = {
   attachment?: { filename: string; mimeType?: string };
   sprint?: { name: string; state: string };
   worklog?: unknown;
+  space?: { title: string; uri?: string };
+  page?: { title: string; uri?: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   commits?: { message: string; url?: string }[];
-  comment?: { body: string };
+  comment?: { body: string; uri?: string; parent?: { type: string; title: string; uri?: string } };
   changeLog?: ActivityChangeLog[];
 };
 

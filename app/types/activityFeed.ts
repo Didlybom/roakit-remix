@@ -76,6 +76,17 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
   if (metadata?.worklog) {
     return 'Worklog';
   }
+
+  if (metadata?.space) {
+    return `Space: ${metadata.space.title}`;
+  }
+  if (metadata?.page) {
+    return `${metadata.page.title}`;
+  }
+  if (metadata?.comment) {
+    return `Commented ${metadata.comment.parent?.title}`;
+  }
+
   if (metadata?.pullRequest) {
     return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
   }
@@ -186,6 +197,7 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
       });
       return actions.join(', ');
     }
+
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
       if (codeAction === 'opened') {
@@ -235,13 +247,33 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
 
 export const getUrl = (
   metadata: ActivityMetadata
-): { url: string; type: 'jira' | 'github' } | null => {
+): { url: string; type: 'jira' | 'confluence' | 'github' } | null => {
   if (metadata?.issue?.uri) {
     return {
       url: `${metadata.issue.uri.split('rest')[0]}browse/${metadata.issue.key}`,
       type: 'jira',
     };
   }
+
+  if (metadata?.space?.uri) {
+    return {
+      url: `${metadata.space.uri}`,
+      type: 'confluence',
+    };
+  }
+  if (metadata?.page?.uri) {
+    return {
+      url: `${metadata.page.uri}`,
+      type: 'confluence',
+    };
+  }
+  if (metadata?.comment?.uri) {
+    return {
+      url: `${metadata.comment.uri}`,
+      type: 'confluence',
+    };
+  }
+
   if (metadata?.pullRequest?.uri) {
     return {
       url: metadata.pullRequest.uri,

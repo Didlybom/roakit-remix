@@ -23,6 +23,7 @@ import {
 } from '@mui/x-data-grid';
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
+import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
 import { findTicket, getSummary, getSummaryAction, getUrl } from '../types/activityFeed';
 import type { AccountData, ActivityData } from '../types/types';
@@ -37,7 +38,7 @@ export const dataGridCommonProps = {
   slots: {
     noRowsOverlay: () => (
       <Box height="100px" display="flex" alignItems="center" justifyContent="center">
-        Nothing to show for these dates
+        Nothing to show
       </Box>
     ),
   },
@@ -147,17 +148,24 @@ export const summaryColDef = (
       const summary = getSummary(activity);
       const comment = activity.metadata?.comment?.body;
       const url = activity.metadata ? getUrl(activity.metadata) : undefined;
+      let icon;
+      let urlTitle;
+      if (url) {
+        if (url.type === 'jira') {
+          icon = <JiraIcon fontSize="small" color={theme.palette.primary.main} />;
+          urlTitle = 'Go to Jira page';
+        } else if (url.type === 'confluence') {
+          icon = <ConfluenceIcon fontSize="small" color={theme.palette.primary.main} />;
+          urlTitle = 'Go to Confluence page';
+        } else if (url.type === 'github') {
+          icon = <GitHubIcon fontSize="small" color="primary" />;
+          urlTitle = 'Go to Github page';
+        }
+      }
       const link =
-        url ?
-          <IconButton
-            href={url.url}
-            title={url.type === 'jira' ? 'Go to Jira page' : 'Go to GitHub page'}
-            target="_blank"
-            sx={{ mr: '4px' }}
-          >
-            {url.type === 'jira' ?
-              <JiraIcon fontSize="small" color={theme.palette.primary.main} />
-            : <GitHubIcon fontSize="small" color="primary" />}
+        url && icon ?
+          <IconButton href={url.url} title={urlTitle} target="_blank" sx={{ mr: '4px' }}>
+            {icon}
           </IconButton>
         : <></>;
 
