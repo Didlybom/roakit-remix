@@ -147,7 +147,7 @@ export const summaryColDef = (
       const activity = params.row as ActivityData;
       const summary = getSummary(activity);
       const comment = activity.metadata?.comment?.body;
-      const url = activity.metadata ? getUrl(activity.metadata) : undefined;
+      const url = activity.metadata ? getUrl(activity) : undefined;
       let icon;
       let urlTitle;
       if (url) {
@@ -176,13 +176,17 @@ export const summaryColDef = (
         <Stack direction="row">
           {link}
           {summaryAction || comment || commits ?
-            <Stack mt={'3px'} minWidth={0}>
+            <Stack mt={'3px'} pl={url && icon ? undefined : '40px'} minWidth={0}>
               <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
                 {summary}
               </Box>
               {summaryAction && (
                 <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
-                  {summaryAction}
+                  {summaryAction.startsWith('http') ?
+                    <Link href={summaryAction} target="_blank">
+                      {summaryAction}
+                    </Link>
+                  : summaryAction}
                 </Typography>
               )}
               {comment && (
@@ -221,7 +225,12 @@ export const summaryColDef = (
                 </Typography>
               )}
             </Stack>
-          : <Box fontSize="small" title={summary} sx={{ ...ellipsisSx }}>
+          : <Box
+              fontSize="small"
+              title={summary}
+              pl={url && icon ? undefined : '40px'}
+              sx={{ ...ellipsisSx }}
+            >
               {summary}
             </Box>
           }

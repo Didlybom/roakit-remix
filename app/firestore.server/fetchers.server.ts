@@ -145,7 +145,7 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
       counters:
         data.counters ?
           { activities: data.counters.activities }
-        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 } },
       countersLastUpdated: data.countersLastUpdated ?? 0,
     });
   });
@@ -167,7 +167,7 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
       counters:
         data.counters ?
           { activities: data.counters.activities }
-        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 } },
+        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 } },
       countersLastUpdated: data.countersLastUpdated ?? 0,
     };
   });
@@ -325,7 +325,7 @@ export const fetchAccountMap = async (customerId: number): Promise<AccountMap> =
       const data = parse<schemas.AccountType>(schemas.accountSchema, account.data(), 'account');
       accounts.set(account.id, {
         type: feed.feedType,
-        name: data.accountName,
+        name: data.accountName ?? '',
         url: data.accountUri,
       });
     });
@@ -356,7 +356,7 @@ export const fetchAccountsToReview = async (customerId: number): Promise<Account
       accounts.push({
         id: account.id,
         type: feed.feedType,
-        name: data.accountName,
+        name: data.accountName ?? '',
         url: data.accountUri,
       });
     });
@@ -435,6 +435,7 @@ export const fetchActivities = async ({
       createdTimestamp: data.createdTimestamp,
       initiativeId: data.initiative,
       priority, // see overwrite below
+      eventType: data.eventType,
       event: data.event,
       ...(options?.includesMetadata && { metadata: data.metadata as ActivityMetadata }),
       objectId: data.objectId, // for debugging
@@ -530,6 +531,7 @@ export const fetchActivitiesPage = async ({
     activities.push({
       id: doc.id,
       action: data.action,
+      eventType: data.eventType,
       event: data.event,
       actorId: data.actorAccountId,
       artifact: data.artifact,

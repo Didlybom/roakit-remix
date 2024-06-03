@@ -38,3 +38,34 @@ export const capitalizeAndUseSpaces = (data?: string) =>
 
 export const sortAndFormatRecord = <T>(data: Record<string, T>) =>
   JSON.stringify(data, Object.keys(data).sort(), 2);
+
+export const mimeTypeToType = (mimeType: string): string => {
+  if (mimeType.startsWith('image')) {
+    return 'image';
+  }
+  if (mimeType.startsWith('audio')) {
+    return 'audio';
+  }
+  if (mimeType.startsWith('video')) {
+    return 'video';
+  }
+  if (mimeType.includes('cal')) {
+    return 'calendar';
+  }
+  if (mimeType.startsWith('text')) {
+    return 'text';
+  }
+  if (mimeType.includes('zip') || mimeType.includes('compress')) {
+    return 'archive';
+  }
+  if (mimeType === 'application/pdf') {
+    return 'PDF';
+  }
+  if (mimeType === 'application/xml') {
+    return 'XML';
+  }
+  if (mimeType.startsWith('application')) {
+    return 'document';
+  }
+  return mimeType;
+};

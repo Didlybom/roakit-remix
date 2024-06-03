@@ -75,6 +75,7 @@ interface UserActivityRow {
   id: string;
   date: Date;
   action: string;
+  eventType?: string;
   event?: string;
   artifact: Artifact;
   initiativeId: string;
@@ -95,6 +96,7 @@ const userActivityRows = (
       id: activityId,
       date: new Date(activity.createdTimestamp),
       action: activity.action,
+      eventType: activity.eventType,
       event: activity.event,
       artifact: activity.artifact,
       initiativeId: activity.initiativeId,

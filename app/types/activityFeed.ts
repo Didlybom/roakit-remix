@@ -1,4 +1,4 @@
-import { findJiraTickets } from '../utils/stringUtils';
+import { findJiraTickets, mimeTypeToType } from '../utils/stringUtils';
 import type {
   AccountMap,
   AccountToIdentityRecord,
@@ -19,6 +19,7 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['task-disabled', { sortOrder: 4, label: 'Task (Jira) disable' }],
   ['taskOrg-created', { sortOrder: 5, label: 'Task org. (Jira) creation' }],
   ['taskOrg-updated', { sortOrder: 6, label: 'Task org. (Jira) update' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. (Jira) update' }],
   ['code-created', { sortOrder: 7, label: 'Code creation' }],
   ['code-updated', { sortOrder: 8, label: 'Code update' }],
   ['code-deleted', { sortOrder: 9, label: 'Code deletion' }],
@@ -26,6 +27,9 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-created', { sortOrder: 11, label: 'Code org. creation' }],
   ['codeOrg-updated', { sortOrder: 12, label: 'Code org. update' }],
   ['codeOrg-deleted', { sortOrder: 13, label: 'Code org. deletion' }],
+  ['docOrg-created', { sortOrder: 14, label: 'Doc org. (Confluence) creation' }],
+  ['doc-created', { sortOrder: 15, label: 'Doc (Confluence) creation' }],
+  ['doc-updated', { sortOrder: 16, label: 'Doc (Confluence) update' }],
 ]);
 
 // return the first ticket referenced from metadata fields
@@ -66,8 +70,9 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
     return metadata.issue.key + ' ' + metadata.issue.summary;
   }
   if (metadata?.attachment?.filename) {
-    return metadata.attachment.mimeType ?
-        `Attached ${metadata.attachment.filename} [${metadata.attachment.mimeType}]`
+    const type = metadata.attachment.mimeType ? mimeTypeToType(metadata.attachment.mimeType) : null;
+    return type ?
+        `Attached  ${type} ${metadata.attachment.filename}`
       : `Attached ${metadata.attachment.filename}`;
   }
   if (metadata?.sprint) {
@@ -85,6 +90,9 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
   }
   if (metadata?.comment) {
     return `Commented ${metadata.comment.parent?.title}`;
+  }
+  if (metadata?.label) {
+    return `Labeled ${metadata?.label.contentType} ${metadata?.label.name}`;
   }
 
   if (metadata?.pullRequest) {
@@ -197,6 +205,9 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
       });
       return actions.join(', ');
     }
+    if (metadata?.attachment) {
+      return metadata.attachment.uri;
+    }
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
@@ -246,51 +257,52 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
 };
 
 export const getUrl = (
-  metadata: ActivityMetadata
+  activity: ActivityData
 ): { url: string; type: 'jira' | 'confluence' | 'github' } | null => {
-  if (metadata?.issue?.uri) {
-    return {
-      url: `${metadata.issue.uri.split('rest')[0]}browse/${metadata.issue.key}`,
-      type: 'jira',
-    };
+  const metadata = activity.metadata;
+  let type: 'jira' | 'confluence' | 'github' | null = null;
+  if (activity.eventType === 'jira') {
+    type = 'jira';
+  } else if (activity.eventType === 'confluence') {
+    type = 'confluence';
+  } else if (activity.eventType === 'github') {
+    type = 'github';
   }
-
+  if (!type) {
+    // legacy mapping, before we had activity.eventType (introduced with Confluence)
+    if (metadata?.issue) {
+      type = 'jira';
+    } else if (metadata?.pullRequest || metadata?.pullRequestComment || metadata?.commits) {
+      type = 'github';
+    }
+  }
+  if (!type) {
+    return null;
+  }
+  if (metadata?.issue?.uri) {
+    return { url: `${metadata.issue.uri.split('rest')[0]}browse/${metadata.issue.key}`, type };
+  }
   if (metadata?.space?.uri) {
-    return {
-      url: `${metadata.space.uri}`,
-      type: 'confluence',
-    };
+    return { url: `${metadata.space.uri}`, type };
   }
   if (metadata?.page?.uri) {
-    return {
-      url: `${metadata.page.uri}`,
-      type: 'confluence',
-    };
+    return { url: `${metadata.page.uri}`, type };
   }
   if (metadata?.comment?.uri) {
-    return {
-      url: `${metadata.comment.uri}`,
-      type: 'confluence',
-    };
+    return { url: `${metadata.comment.uri}`, type };
+  }
+  if (metadata?.label?.contentUri) {
+    return { url: `${metadata.label.contentUri}`, type };
   }
 
   if (metadata?.pullRequest?.uri) {
-    return {
-      url: metadata.pullRequest.uri,
-      type: 'github',
-    };
+    return { url: metadata.pullRequest.uri, type };
   }
   if (metadata?.pullRequestComment?.uri) {
-    return {
-      url: metadata.pullRequestComment.uri,
-      type: 'github',
-    };
+    return { url: metadata.pullRequestComment.uri, type };
   }
   if (metadata?.commits?.length) {
-    return {
-      url: metadata.commits[0].url!,
-      type: 'github',
-    };
+    return { url: metadata.commits[0].url!, type };
   }
   return null;
 };
@@ -418,7 +430,7 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
         initiative = {
           id: initiativeId,
           key: '',
-          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0 },
+          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
           actorIds: new Set<string>(),
           actorCount: 0,
           effort: 0,

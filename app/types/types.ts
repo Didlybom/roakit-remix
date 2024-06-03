@@ -63,7 +63,8 @@ export type TicketData = {
 
 export type TicketRecord = Record<TicketData['key'], TicketData['priority']>;
 
-export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg';
+// this needs to be updated and deployed before ingestion adds new artifacts
+export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
 
 export type ActivityChangeLog = {
   field: string;
@@ -74,7 +75,7 @@ export type ActivityChangeLog = {
 export type ActivityMetadata = {
   codeAction?: string;
   issue?: { key: string; summary?: string; uri?: string; project?: { id: string } };
-  attachment?: { filename: string; mimeType?: string };
+  attachment?: { filename: string; mimeType?: string; uri?: string };
   sprint?: { name: string; state: string };
   worklog?: unknown;
   space?: { title: string; uri?: string };
@@ -83,12 +84,20 @@ export type ActivityMetadata = {
   pullRequestComment?: { body: string; uri?: string };
   commits?: { message: string; url?: string }[];
   comment?: { body: string; uri?: string; parent?: { type: string; title: string; uri?: string } };
+  label?: {
+    name: string;
+    contentType: string;
+    contentUri?: string;
+    uri?: string;
+    spaceKey?: string;
+  };
   changeLog?: ActivityChangeLog[];
 };
 
 export type ActivityData = {
   id: string;
   action: string;
+  eventType?: string;
   event?: string;
   actorId?: string;
   artifact: Artifact;
@@ -108,6 +117,8 @@ export type ActivityCount = {
   codeOrg: number;
   task: number;
   taskOrg: number;
+  doc: number;
+  docOrg: number;
 };
 
 export type SettingsData = {

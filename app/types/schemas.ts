@@ -19,10 +19,12 @@ export const initiativeSchema = z.object({
   counters: z
     .object({
       activities: z.object({
-        code: z.number(),
-        codeOrg: z.number(),
-        task: z.number(),
-        taskOrg: z.number(),
+        code: z.number().catch(0),
+        codeOrg: z.number().catch(0),
+        task: z.number().catch(0),
+        taskOrg: z.number().catch(0),
+        doc: z.number().catch(0),
+        docOrg: z.number().catch(0),
       }),
     })
     .optional(),
@@ -31,7 +33,7 @@ export const initiativeSchema = z.object({
 export type InitiativeType = z.infer<typeof initiativeSchema>;
 
 export const accountSchema = z.object({
-  accountName: z.string(),
+  accountName: z.string().optional(),
   accountUri: z.string().optional(),
 });
 export type AccountType = z.infer<typeof accountSchema>;
@@ -79,10 +81,12 @@ export const ticketSchema = z.object({
 });
 export type TicketType = z.infer<typeof ticketSchema>;
 
-export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg'] as const;
+// this needs to be updated and deployed before ingestion adds new artifacts
+export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg', 'doc', 'docOrg'] as const;
 
 export const activitySchema = z.object({
   action: z.string(),
+  eventType: z.string().optional(),
   event: z.string().optional(),
   actorAccountId: z.string().optional(),
   createdTimestamp: z.number(),

@@ -123,7 +123,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!activities || !initiativeId) {
       return null;
     }
-    const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0 };
+    const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 };
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (
