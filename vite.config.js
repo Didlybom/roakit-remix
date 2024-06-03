@@ -17,7 +17,7 @@ export default defineConfig({
       publicPath: '/',
       buildDirectory: 'functions/build/',
       serverBuildFile: 'remix.js',
-      future: { unstable_singleFetch: true },
+      future: { unstable_singleFetch: false },
     }),
   ],
   ssr: {
