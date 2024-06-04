@@ -6,7 +6,19 @@ import {
   OpenInNew as OpenInNewIcon,
   SaveOutlined as SaveIcon,
 } from '@mui/icons-material';
-import { Box, Button, Chip, IconButton, Snackbar, Stack, styled } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  InputBase,
+  Paper,
+  Popper,
+  Snackbar,
+  Stack,
+  styled,
+  type InputBaseProps,
+} from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
@@ -18,14 +30,17 @@ import {
   GridRowsProp,
   GridSortDirection,
   GridToolbarContainer,
+  useGridApiContext,
   type GridEventListener,
+  type GridRenderEditCellParams,
   type GridSlots,
 } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
+import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import App from '../components/App';
 import { firestore } from '../firebase.server';
@@ -34,8 +49,9 @@ import { loadSession } from '../utils/authUtils.server';
 import { dataGridCommonProps } from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
-import { errorAlert } from '../utils/jsxUtils';
+import { ellipsisSx, errorAlert } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
+import theme from '../utils/theme';
 
 const logger = pino({ name: 'route:initiatives' });
 
@@ -47,6 +63,7 @@ interface InitiativeRow {
   reference?: string;
   url?: string;
   tags?: string;
+  activityMapper?: string;
 }
 
 export const meta = () => [{ title: 'Goals Admin | ROAKIT' }];
@@ -71,6 +88,7 @@ interface JsonRequest {
   tags?: string[];
   reference: string;
   url: string;
+  activityMapper: string;
 }
 
 interface ActionResponse {
@@ -109,6 +127,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
           tags: jsonRequest.tags,
           reference: jsonRequest.reference,
           url: jsonRequest.url,
+          activityMapper: jsonRequest.activityMapper,
         },
         { merge: true }
       );
@@ -149,6 +168,69 @@ function EditToolbar(props: EditToolbarProps) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function EditTextarea(props: GridRenderEditCellParams<any, string>) {
+  const { id, field, value, colDef, hasFocus, error } = props;
+  const [valueState, setValueState] = useState(value);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>();
+  const [inputRef, setInputRef] = useState<HTMLInputElement | null>(null);
+  const apiRef = useGridApiContext();
+
+  useLayoutEffect(() => {
+    if (hasFocus && inputRef) {
+      inputRef.focus();
+    }
+  }, [hasFocus, inputRef]);
+
+  const handleRef = useCallback((el: HTMLElement | null) => {
+    setAnchorEl(el);
+  }, []);
+
+  const handleChange = useCallback<NonNullable<InputBaseProps['onChange']>>(
+    async event => {
+      const newValue = event.target.value;
+      setValueState(newValue);
+      await apiRef.current.setEditCellValue({ id, field, value: newValue, debounceMs: 200 }, event);
+    },
+    [apiRef, field, id]
+  );
+
+  return (
+    <div style={{ position: 'relative', alignSelf: 'flex-start' }}>
+      <div
+        ref={handleRef}
+        style={{
+          height: 1,
+          width: colDef.computedWidth,
+          display: 'block',
+          position: 'absolute',
+          top: 0,
+        }}
+      />
+      {anchorEl && (
+        <Popper open anchorEl={anchorEl} placement="bottom-start">
+          <Paper elevation={1} sx={{ p: 1, minWidth: colDef.computedWidth }}>
+            <InputBase
+              multiline
+              rows={4}
+              value={valueState}
+              sx={{
+                textarea: { resize: 'both' },
+                width: '100%',
+                fontFamily: 'Roboto Mono, monospace',
+                fontSize: '11px',
+                color: error ? theme.palette.error.main : undefined,
+              }}
+              onChange={handleChange}
+              inputRef={(ref: HTMLInputElement) => setInputRef(ref)}
+            />
+          </Paper>
+        </Popper>
+      )}
+    </div>
+  );
+}
+
 export default function Initiatives() {
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
@@ -163,6 +245,7 @@ export default function Initiatives() {
       tags: initiative.tags ? initiative.tags.sort().join(', ') : '',
       reference: initiative.reference,
       url: initiative.url,
+      activityMapper: initiative.activityMapper,
     }))
   );
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
@@ -231,7 +314,13 @@ export default function Initiatives() {
         return params.value ?
             <Box display="flex" height="100%" alignItems="center">
               {splitTags(params.value as string).map((tag, i) => (
-                <Chip key={i} variant="outlined" size="small" label={tag} sx={{ mr: '4px' }} />
+                <Chip
+                  key={i}
+                  variant="outlined"
+                  size="small"
+                  label={tag}
+                  sx={{ fontSize: '10px', mr: '4px' }}
+                />
               ))}
             </Box>
           : null;
@@ -246,7 +335,7 @@ export default function Initiatives() {
     {
       field: 'url',
       headerName: 'URL',
-      minWidth: 200,
+      minWidth: 120,
       editable: true,
       renderCell: params => {
         return params.value ?
@@ -254,6 +343,33 @@ export default function Initiatives() {
               <OpenInNewIcon fontSize="small" />
             </IconButton>
           : null;
+      },
+    },
+    {
+      field: 'activityMapper',
+      headerName: 'Activity Mapper',
+      minWidth: 300,
+      editable: true,
+      renderCell: params => (
+        <Box
+          title={params.value as string}
+          fontFamily="Roboto Mono, monospace"
+          fontSize="11px"
+          sx={ellipsisSx}
+        >
+          {(params.value as string) ?? '...'}
+        </Box>
+      ),
+      renderEditCell: params => <EditTextarea {...params} />,
+      preProcessEditCellProps: params => {
+        try {
+          if (params.props.value) {
+            compileExpression(params.props.value as string);
+          }
+          return { ...params.props, error: false };
+        } catch (e) {
+          return { ...params.props, error: true };
+        }
       },
     },
     {
@@ -366,6 +482,7 @@ export default function Initiatives() {
                   tags,
                   reference: updatedRow.reference ?? '',
                   url: updatedRow.url ?? '',
+                  activityMapper: updatedRow.activityMapper ?? '',
                 },
                 postJsonOptions
               );

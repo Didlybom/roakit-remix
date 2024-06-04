@@ -15,6 +15,7 @@ import {
   type ActivityData,
   type ActivityMap,
   type ActivityMetadata,
+  type Artifact,
   type DaySummaries,
   type IdentityData,
   type InitiativeData,
@@ -142,6 +143,7 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
       tags: data.tags,
       reference: data.reference,
       url: data.url,
+      activityMapper: data.activityMapper,
       counters:
         data.counters ?
           { activities: data.counters.activities }
@@ -164,6 +166,7 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
     initiatives[doc.id] = {
       key: data.key ?? doc.id,
       label: data.label,
+      activityMapper: data.activityMapper,
       counters:
         data.counters ?
           { activities: data.counters.activities }
@@ -431,7 +434,7 @@ export const fetchActivities = async ({
     activities.set(doc.id, {
       action: data.action,
       actorId: data.actorAccountId,
-      artifact: data.artifact,
+      artifact: data.artifact as Artifact,
       createdTimestamp: data.createdTimestamp,
       initiativeId: data.initiative,
       priority, // see overwrite below
@@ -534,7 +537,7 @@ export const fetchActivitiesPage = async ({
       eventType: data.eventType,
       event: data.event,
       actorId: data.actorAccountId,
-      artifact: data.artifact,
+      artifact: data.artifact as Artifact,
       createdTimestamp: data.createdTimestamp,
       priority: data.priority,
       initiativeId: data.initiative,

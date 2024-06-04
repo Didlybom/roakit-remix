@@ -8,10 +8,10 @@ export type InitiativeData = {
   reference?: string;
   url?: string;
   activityMapper?: string;
-  counters: {
+  counters?: {
     activities: ActivityCount;
   };
-  countersLastUpdated: number;
+  countersLastUpdated?: number;
 };
 
 export type InitiativeRecord = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
@@ -63,7 +63,6 @@ export type TicketData = {
 
 export type TicketRecord = Record<TicketData['key'], TicketData['priority']>;
 
-// this needs to be updated and deployed before ingestion adds new artifacts
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
 
 export type ActivityChangeLog = {

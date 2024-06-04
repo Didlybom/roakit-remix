@@ -35,6 +35,7 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
+import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
 import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
@@ -118,11 +119,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   // validate url
   const { searchParams } = new URL(request.url);
-  if (
-    searchParams.get(SEARCH_PARAM_ACTION) != null &&
-    ![...artifactActions.keys()].includes(searchParams.get(SEARCH_PARAM_ACTION)!)
-  ) {
-    throw Error('Invalid action param');
+  if (searchParams.get(SEARCH_PARAM_ACTION) != null) {
+    const allActions = [...artifactActions.keys()];
+    if (
+      !searchParams
+        .get(SEARCH_PARAM_ACTION)!
+        .split(',')
+        .every(actionParam => allActions.includes(actionParam))
+    ) {
+      throw Error('Invalid action param');
+    }
   }
 
   try {
@@ -161,7 +167,9 @@ export default function UserActivity() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activitiesFetcher = useFetcher();
   const activityResponse = activitiesFetcher.data as ActivityResponse;
-  const [actionFilter, setActionFilter] = useState(searchParams.get(SEARCH_PARAM_ACTION) ?? '');
+  const [actionFilter, setActionFilter] = useState(
+    searchParams.get(SEARCH_PARAM_ACTION)?.split(',') ?? []
+  );
   const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
@@ -179,18 +187,18 @@ export default function UserActivity() {
   const sortAndSetUserActivities = useCallback(() => {
     if (snapshot.current) {
       const filteredSnapshot: { key: string; values: UserActivityRow[] }[] = [];
-      if (actionFilter) {
-        snapshot.current.forEach(user => {
-          const values = user.values.filter(
-            a => buildArtifactActionKey(a.artifact, a.action) === actionFilter
+      if (actionFilter.length) {
+        snapshot.current.forEach(userSnapshot => {
+          const values = userSnapshot.values.filter(a =>
+            actionFilter.includes(buildArtifactActionKey(a.artifact, a.action))
           );
-          if (values.length > 0) {
-            filteredSnapshot.push({ key: user.key, values });
+          if (values.length) {
+            filteredSnapshot.push({ key: userSnapshot.key, values });
           }
         });
       }
       setActivities(
-        sortMap(actionFilter ? filteredSnapshot : snapshot.current, (a, b) =>
+        sortMap(actionFilter.length ? filteredSnapshot : snapshot.current, (a, b) =>
           sortAlphabetically ?
             caseInsensitiveCompare(
               loaderData.actors[a.key]?.name ?? '',
@@ -214,6 +222,13 @@ export default function UserActivity() {
     [loaderData.accountMap, sortAndSetUserActivities]
   );
 
+  useEffect(() => {
+    if (!loaderData.initiatives) {
+      return;
+    }
+    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
+  }, [loaderData.initiatives]);
+
   // load activities
   useEffect(() => {
     setGotSnapshot(false);
@@ -233,6 +248,11 @@ export default function UserActivity() {
   useEffect(() => {
     setGotSnapshot(false);
     if (activityResponse?.activities) {
+      Object.values(activityResponse?.activities).forEach(activity => {
+        if (!activity.initiativeId) {
+          activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+        }
+      });
       setRows(activityResponse.activities);
     }
   }, [activityResponse?.activities, setRows]);
@@ -345,7 +365,7 @@ export default function UserActivity() {
                   component="a"
                   href={
                     `/activity/user/${encodeURI(actorId)}` +
-                    (actionFilter ? `#${actionFilter}` : '')
+                    (actionFilter ? `#${actionFilter.join(',')}` : '')
                   }
                   size="small"
                 >
@@ -433,7 +453,9 @@ export default function UserActivity() {
                 {loaderData.userId !== ALL && (
                   <Button
                     variant="outlined"
-                    href={'/activity/user/*' + (actionFilter ? `?action=${actionFilter}` : '')}
+                    href={
+                      '/activity/user/*' + (actionFilter ? `?action=${actionFilter.join(',')}` : '')
+                    }
                     sx={{ textTransform: 'none', textWrap: 'nowrap' }}
                   >
                     {'See all contributors'}
@@ -442,19 +464,19 @@ export default function UserActivity() {
               </Grid>
               <Grid flex={1}>
                 <FilterMenu
+                  multiple
                   selectedValue={actionFilter ?? ''}
                   items={[
-                    { value: '', label: 'All', color: grey[500] },
                     ...[...artifactActions].map(([key, action]) => ({
                       value: key,
                       label: action.label,
                     })),
                   ]}
-                  onChange={e => {
-                    setActionFilter(e.target.value);
+                  onChange={values => {
+                    setActionFilter(values as string[]);
                     setSearchParams(prev => {
-                      if (e.target.value) {
-                        prev.set(SEARCH_PARAM_ACTION, e.target.value);
+                      if (values.length) {
+                        prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
                       } else {
                         prev.delete(SEARCH_PARAM_ACTION);
                       }

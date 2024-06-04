@@ -1,6 +1,6 @@
 import { GenerateContentResult } from '@google-cloud/vertexai';
 import { getSummary, getSummaryAction } from '../types/activityFeed';
-import type { ActivityData, ActorRecord } from '../types/types';
+import type { ActivityData, ActorRecord, InitiativeRecord } from '../types/types';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
@@ -10,6 +10,7 @@ export const DEFAULT_PROMPT =
 export const buildActivitySummaryPrompt = (
   activities: Omit<ActivityData, 'id'>[] | null,
   actors: ActorRecord | null,
+  initiatives: InitiativeRecord | null,
   options: {
     activityCount: number;
     inclDates: boolean;
@@ -57,6 +58,9 @@ export const buildActivitySummaryPrompt = (
           : '') +
           (summaryAction ? `\nAction: ${summaryAction}` : '') +
           (contributor ? `\nContributor: ${contributor}` : '') +
+          (activity.initiativeId && initiatives?.[activity.initiativeId] ?
+            `\nGoal: [${initiatives[activity.initiativeId].key}] ${initiatives[activity.initiativeId].label}`
+          : '') +
           '\n---\n';
       }
     });

@@ -46,10 +46,12 @@ import Markdown from '../components/MarkdownText';
 import {
   fetchAccountMap,
   fetchIdentities,
+  fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
+import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
@@ -79,13 +81,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     userIds: null,
     reportIds: null,
     actors: null,
+    initiatives: null,
   });
 
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
-    // retrieve  users
-    const [accounts, identities] = await Promise.all([
+    // retrieve users and initiatives
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -109,6 +113,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
+      initiatives,
       error: null,
     };
   } catch (e) {
@@ -199,6 +204,13 @@ export default function Summary() {
 
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
+  useEffect(() => {
+    if (!loaderData.initiatives) {
+      return;
+    }
+    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
+  }, [loaderData.initiatives]);
+
   // load activities for the selected day
   useEffect(() => {
     if (isNaN(selectedDay.toDate().getTime())) {
@@ -254,9 +266,16 @@ export default function Summary() {
     if (!fetchedActivities?.activities) {
       return;
     }
+    const activities = Object.values(fetchedActivities.activities);
+    activities.forEach(activity => {
+      if (!activity.initiativeId) {
+        activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+      }
+    });
     const activitiesPrompt = buildActivitySummaryPrompt(
-      Object.values(fetchedActivities.activities),
+      activities,
       loaderData.actors,
+      loaderData.initiatives,
       {
         activityCount: 300, // FIXME summary activity count
         inclDates: false,

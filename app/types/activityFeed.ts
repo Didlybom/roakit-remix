@@ -13,13 +13,13 @@ import type {
 } from './types';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
-  ['task-created', { sortOrder: 1, label: 'Task (Jira) creation' }],
-  ['task-updated', { sortOrder: 2, label: 'Task (Jira) update' }],
-  ['task-deleted', { sortOrder: 3, label: 'Task (Jira) deletion' }],
-  ['task-disabled', { sortOrder: 4, label: 'Task (Jira) disable' }],
-  ['taskOrg-created', { sortOrder: 5, label: 'Task org. (Jira) creation' }],
-  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. (Jira) update' }],
-  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. (Jira) update' }],
+  ['task-created', { sortOrder: 1, label: 'Task creation' }],
+  ['task-updated', { sortOrder: 2, label: 'Task update' }],
+  ['task-deleted', { sortOrder: 3, label: 'Task deletion' }],
+  ['task-disabled', { sortOrder: 4, label: 'Task disable' }],
+  ['taskOrg-created', { sortOrder: 5, label: 'Task org. creation' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. update' }],
+  ['taskOrg-updated', { sortOrder: 6, label: 'Task org. update' }],
   ['code-created', { sortOrder: 7, label: 'Code creation' }],
   ['code-updated', { sortOrder: 8, label: 'Code update' }],
   ['code-deleted', { sortOrder: 9, label: 'Code deletion' }],
@@ -27,9 +27,9 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['codeOrg-created', { sortOrder: 11, label: 'Code org. creation' }],
   ['codeOrg-updated', { sortOrder: 12, label: 'Code org. update' }],
   ['codeOrg-deleted', { sortOrder: 13, label: 'Code org. deletion' }],
-  ['docOrg-created', { sortOrder: 14, label: 'Doc org. (Confluence) creation' }],
-  ['doc-created', { sortOrder: 15, label: 'Doc (Confluence) creation' }],
-  ['doc-updated', { sortOrder: 16, label: 'Doc (Confluence) update' }],
+  ['docOrg-created', { sortOrder: 14, label: 'Doc org. creation' }],
+  ['doc-created', { sortOrder: 15, label: 'Doc creation' }],
+  ['doc-updated', { sortOrder: 16, label: 'Doc update' }],
 ]);
 
 // return the first ticket referenced from metadata fields
@@ -92,7 +92,7 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
     return `Commented ${metadata.comment.parent?.title}`;
   }
   if (metadata?.label) {
-    return `Labeled ${metadata?.label.contentType} ${metadata?.label.name}`;
+    return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType}` : ''}${metadata?.label.name}`;
   }
 
   if (metadata?.pullRequest) {

@@ -39,6 +39,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
+import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
 import type { AccountData, ActivityCount, ActivityData, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
@@ -175,6 +176,13 @@ export default function ActivityReview() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!loaderData.initiatives) {
+      return;
+    }
+    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
+  }, [loaderData.initiatives]);
+
+  useEffect(() => {
     setError('');
     let query = `/fetcher/activities/page?limit=${paginationModel.pageSize}`;
     if (activityFilter) {
@@ -215,7 +223,7 @@ export default function ActivityReview() {
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
           : undefined,
         priority,
-        initiativeId: activity.initiativeId || UNSET_INITIATIVE_ID,
+        initiativeId: activity.initiativeId || mapActivity(activity)?.[0] || UNSET_INITIATIVE_ID,
       });
     });
     setActivities(activityData);
@@ -363,7 +371,7 @@ export default function ActivityReview() {
                   {
                     initiativeId: bulkInitiative,
                     initiativeCountersLastUpdated:
-                      loaderData.initiatives[bulkInitiative]?.countersLastUpdated,
+                      loaderData.initiatives[bulkInitiative]?.countersLastUpdated ?? null,
                     activities: rowSelectionModel.map(id => ({
                       id,
                       artifact: activities.find(a => a.id === id)!.artifact,
@@ -441,9 +449,9 @@ export default function ActivityReview() {
                 { value: 'withoutInitiative', label: 'Without goals' },
                 { value: 'withInitiative', label: 'With goals' },
               ]}
-              onChange={e => {
+              onChange={value => {
                 setPaginationModel({ ...paginationModel, page: 0 });
-                setActivityFilter(e.target.value as ShowActivity);
+                setActivityFilter(value as ShowActivity);
               }}
             />
           </Grid>
@@ -468,7 +476,7 @@ export default function ActivityReview() {
                 {
                   initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
-                    loaderData.initiatives[updatedRow.initiativeId]?.countersLastUpdated,
+                    loaderData.initiatives[updatedRow.initiativeId]?.countersLastUpdated ?? null,
                   activities: [
                     {
                       id: updatedRow.id,

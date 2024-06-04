@@ -1,6 +1,11 @@
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
-import { fetchActivities, fetchIdentities } from '../firestore.server/fetchers.server';
+import {
+  fetchActivities,
+  fetchIdentities,
+  fetchInitiativeMap,
+} from '../firestore.server/fetchers.server';
+import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { groupActivities, identifyActivities, type GroupedActivities } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
@@ -30,16 +35,28 @@ export const loader = async ({
     return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
   }
   try {
-    const identities = await fetchIdentities(sessionData.customerId!);
     const startDate = dateFilterToStartDate(params.daterange as DateRange);
     if (!startDate) {
       return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
     }
-    const activities = await fetchActivities({
-      customerId: sessionData.customerId!,
-      startDate,
-      options: { findPriority: true },
+
+    const [initiatives, identities, activities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
+      fetchIdentities(sessionData.customerId!),
+      fetchActivities({
+        customerId: sessionData.customerId!,
+        startDate,
+        options: { findPriority: true, includesMetadata: true },
+      }),
+    ]);
+
+    compileInitiativeMappers(initiatives);
+    activities.forEach(activity => {
+      if (!activity.initiativeId) {
+        activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+      }
     });
+
     const groupedActivities = groupActivities(
       identifyActivities(activities, identities.accountMap)
     );

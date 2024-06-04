@@ -1,5 +1,6 @@
 import { FilterList as FilterListIcon } from '@mui/icons-material';
 import {
+  Checkbox,
   FormControl,
   InputLabel,
   MenuItem,
@@ -10,15 +11,17 @@ import {
   Theme,
 } from '@mui/material';
 
-export default function FilterMenu<T extends string>({
+export default function FilterMenu({
+  multiple,
   items,
   selectedValue,
   onChange,
   sx,
 }: {
-  items: { value: T; label: string; color?: string }[];
-  selectedValue: T;
-  onChange: (e: SelectChangeEvent) => void;
+  multiple?: boolean;
+  items: { value: string; label: string; color?: string }[];
+  selectedValue: string | string[];
+  onChange: (value: string | string[]) => void;
   sx?: SxProps<Theme>;
 }) {
   return (
@@ -27,14 +30,27 @@ export default function FilterMenu<T extends string>({
       <FormControl size="small">
         <InputLabel>Filter</InputLabel>
         <Select
-          id="activity-filter"
+          multiple={multiple}
           value={selectedValue}
           label="Filter"
+          size="small"
           sx={{ minWidth: 120 }}
-          onChange={onChange}
+          renderValue={
+            Array.isArray(selectedValue) ?
+              selectedValues =>
+                (selectedValues as string[])
+                  .map(v => items.find(i => i.value === v)?.label)
+                  .join(', ')
+            : undefined
+          }
+          onChange={(event: SelectChangeEvent<string | string[]>) => {
+            const value = event.target.value;
+            onChange(typeof value === 'string' ? value.split(',') : value);
+          }}
         >
           {items.map((item, i) => (
-            <MenuItem key={i} value={item.value} sx={{ color: item.color }}>
+            <MenuItem key={i} value={item.value} dense sx={{ color: item.color }}>
+              {multiple && <Checkbox size="small" checked={selectedValue.includes(item.value)} />}
               {item.label}
             </MenuItem>
           ))}

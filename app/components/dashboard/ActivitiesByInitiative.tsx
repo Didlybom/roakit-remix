@@ -20,7 +20,7 @@ export default function ActivitiesByInitiatives({
   return (
     !!initiatives &&
     groupedActivities?.initiatives?.map(initiative => {
-      const totalCounters = initiatives[initiative.id].counters.activities;
+      const totalCounters = initiatives[initiative.id].counters!.activities;
       return (
         <Paper key={initiative.id} variant="outlined" sx={commonPaperSx({ isLoading })}>
           {widgetTitle(initiatives[initiative.id]?.label ?? 'Unknown')}
@@ -33,6 +33,8 @@ export default function ActivitiesByInitiatives({
                   initiative.count.task,
                   initiative.count.codeOrg,
                   initiative.count.taskOrg,
+                  initiative.count.doc,
+                  initiative.count.docOrg,
                 ],
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: dateRangeLabel,
@@ -46,6 +48,8 @@ export default function ActivitiesByInitiatives({
                   Math.max(totalCounters.task, initiative.count.task),
                   Math.max(totalCounters.codeOrg, initiative.count.codeOrg),
                   Math.max(totalCounters.taskOrg, initiative.count.taskOrg),
+                  Math.max(totalCounters.codeOrg, initiative.count.doc),
+                  Math.max(totalCounters.taskOrg, initiative.count.docOrg),
                 ],
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: 'Total',
@@ -54,7 +58,7 @@ export default function ActivitiesByInitiatives({
             ]}
             xAxis={[
               {
-                data: ['Dev', 'Task', 'Dev Org', 'Task Org'],
+                data: ['Dev', 'Task', 'Dev Org', 'Task Org', 'Doc', 'Doc Org'],
                 scaleType: 'band',
                 tickLabelStyle: { angle: -45, textAnchor: 'end' },
                 tickMinStep: 1,

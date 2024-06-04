@@ -17,14 +17,14 @@ export const updateInitiativeCounters = async (
   }[] = [];
   Object.keys(initiatives).forEach(initiativeId => {
     const initiative = initiatives[initiativeId];
-    if (initiative.countersLastUpdated >= oneHourAgo) {
+    if (initiative.countersLastUpdated! >= oneHourAgo) {
       return;
     }
     ARTIFACTS.forEach(artifact => {
       flatCounters.push({
         initiativeId,
         artifact,
-        lastUpdated: initiative.countersLastUpdated,
+        lastUpdated: initiative.countersLastUpdated!,
       });
     });
   });
@@ -46,7 +46,7 @@ export const updateInitiativeCounters = async (
   );
   newFlatCounts.forEach(flatCount => {
     const initiative = initiatives[flatCount.initiativeId];
-    initiative.counters.activities[flatCount.artifact] += flatCount.count;
+    initiative.counters!.activities[flatCount.artifact] += flatCount.count;
   });
   void Promise.all(
     Object.keys(initiatives).map(initiativeId => {

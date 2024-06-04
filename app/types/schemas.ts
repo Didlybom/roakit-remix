@@ -16,6 +16,7 @@ export const initiativeSchema = z.object({
   tags: z.string().array().nullable().optional(),
   reference: z.string().optional(),
   url: z.string().optional(),
+  activityMapper: z.string().optional(),
   counters: z
     .object({
       activities: z.object({
@@ -90,7 +91,7 @@ export const activitySchema = z.object({
   event: z.string().optional(),
   actorAccountId: z.string().optional(),
   createdTimestamp: z.number(),
-  artifact: z.enum(ARTIFACTS),
+  artifact: z.string(), //z.enum(ARTIFACTS), // don't use an enum so ingestion backend can be deployed with new artifacts before updating frontend
   initiative: z.string(),
   priority: z.number().optional(),
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata

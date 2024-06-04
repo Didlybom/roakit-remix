@@ -24,6 +24,7 @@ import {
   fetchAccountMap,
   fetchActivities,
   fetchIdentities,
+  fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts, identifyActivities } from '../types/activityFeed';
@@ -46,8 +47,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Response(null, { status: 403 });
   }
   try {
-    // retrieve  users
-    const [accounts, identities] = await Promise.all([
+    // retrieve users and initiatives
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -67,6 +69,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ...sessionData,
       activities: [...activities].map(([, activity]) => activity),
       actors,
+      initiatives,
       error: null,
     };
   } catch (e) {
@@ -75,6 +78,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: errMsg(e, 'Failed to fetch activities'),
       activities: null,
       actors: null,
+      initiatives: null,
     };
   }
 };
@@ -121,12 +125,17 @@ export default function AIPlayground() {
   const [prompt, setPrompt] = useState('');
 
   useEffect(() => {
-    const activities = buildActivitySummaryPrompt(loaderData.activities, loaderData.actors, {
-      activityCount,
-      inclDates,
-      inclActions,
-      inclContributors,
-    });
+    const activities = buildActivitySummaryPrompt(
+      loaderData.activities,
+      loaderData.actors,
+      loaderData.initiatives,
+      {
+        activityCount,
+        inclDates,
+        inclActions,
+        inclContributors,
+      }
+    );
     setPrompt(activities);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityCount, inclDates, inclActions, inclContributors]); // sessionData must be omitted
