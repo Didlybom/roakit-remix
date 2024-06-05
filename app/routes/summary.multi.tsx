@@ -32,11 +32,11 @@ export default function SummariesEdit() {
   return (
     <App view={VIEW} isLoggedIn={true} role={loaderData.role} isNavOpen={loaderData.isNavOpen}>
       <Alert severity="info" icon={<ScienceIcon />}>
-        This page is for experimenting by impersonating contributors. Logged-in contributors will
-        land directly on their{' '}
+        This entry page is for experimenting by impersonating contributors. Logged-in contributors
+        will land directly on their{' '}
         <SmallButton
           href="/summary/"
-          label="Summary form"
+          label="Summary Form"
           icon={<SummaryIcon fontSize="small" />}
         />
         , as when you click on a user here.

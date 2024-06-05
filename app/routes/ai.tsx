@@ -1,3 +1,4 @@
+import { MenuBook as DocumentationIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -6,7 +7,6 @@ import {
   FormControlLabel,
   InputLabel,
   LinearProgress,
-  Link,
   MenuItem,
   Paper,
   Select,
@@ -267,14 +267,17 @@ export default function AIPlayground() {
               size="small"
               sx={{ width: '15ch' }}
             />
-            <Typography
-              component={Link}
-              variant="caption"
-              href="https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/design-multimodal-prompts#temperature"
-              target="_blank"
-            >
-              Documentation
+            <Typography variant="caption">
+              <Button
+                href="https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/design-multimodal-prompts#temperature"
+                target="_blank"
+                startIcon={<DocumentationIcon fontSize="small" />}
+                sx={{ textTransform: 'none' }}
+              >
+                Documentation
+              </Button>
             </Typography>
+
             <FormControl sx={{ width: 200, mt: 2 }}>
               <InputLabel>Model</InputLabel>
               <Select

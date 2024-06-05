@@ -454,7 +454,8 @@ export default function UserActivity() {
                   <Button
                     variant="outlined"
                     href={
-                      '/activity/user/*' + (actionFilter ? `?action=${actionFilter.join(',')}` : '')
+                      '/activity/user/*' +
+                      (actionFilter.length ? `?action=${actionFilter.join(',')}` : '')
                     }
                     sx={{ textTransform: 'none', textWrap: 'nowrap' }}
                   >

@@ -2,7 +2,7 @@ import { Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
 import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
-import { commonPaperSx, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
   groupedActivities: GroupedActivities;
@@ -78,6 +78,7 @@ export default function ActivitiesByInitiatives({
                 labelStyle: { fontSize: 12 },
               },
             }}
+            colors={pastelColors}
           />
         </Paper>
       );

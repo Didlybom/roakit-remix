@@ -75,6 +75,10 @@ export type ActivityMetadata = {
   codeAction?: string;
   issue?: { key: string; summary?: string; uri?: string; project?: { id: string } };
   attachment?: { filename: string; mimeType?: string; uri?: string };
+  attachments?: {
+    files: { filename: string; uri?: string }[];
+    parent?: { type: string; title: string; uri?: string };
+  };
   sprint?: { name: string; state: string };
   worklog?: unknown;
   space?: { title: string; uri?: string };

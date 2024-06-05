@@ -152,10 +152,19 @@ export const summaryColDef = (
       let urlTitle;
       if (url) {
         if (url.type === 'jira') {
-          icon = <JiraIcon fontSize="small" color={theme.palette.primary.main} />;
+          icon = (
+            <JiraIcon width={20} height={20} fontSize="small" color={theme.palette.primary.main} />
+          );
           urlTitle = 'Go to Jira page';
         } else if (url.type === 'confluence') {
-          icon = <ConfluenceIcon fontSize="small" color={theme.palette.primary.main} />;
+          icon = (
+            <ConfluenceIcon
+              width={20}
+              height={20}
+              fontSize="small"
+              color={theme.palette.primary.main}
+            />
+          );
           urlTitle = 'Go to Confluence page';
         } else if (url.type === 'github') {
           icon = <GitHubIcon fontSize="small" color="primary" />;
@@ -183,9 +192,11 @@ export const summaryColDef = (
               {summaryAction && (
                 <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
                   {summaryAction.startsWith('http') ?
-                    <Link href={summaryAction} target="_blank">
-                      {summaryAction}
-                    </Link>
+                    <Box maxWidth={'300px'} sx={ellipsisSx}>
+                      <Link href={summaryAction} target="_blank">
+                        {summaryAction}
+                      </Link>
+                    </Box>
                   : summaryAction}
                 </Typography>
               )}

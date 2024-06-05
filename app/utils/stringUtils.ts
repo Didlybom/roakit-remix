@@ -39,7 +39,7 @@ export const capitalizeAndUseSpaces = (data?: string) =>
 export const sortAndFormatRecord = <T>(data: Record<string, T>) =>
   JSON.stringify(data, Object.keys(data).sort(), 2);
 
-export const mimeTypeToType = (mimeType: string): string => {
+export const mimeTypeToType = (mimeType: string): string | undefined => {
   if (mimeType.startsWith('image')) {
     return 'image';
   }
@@ -67,5 +67,5 @@ export const mimeTypeToType = (mimeType: string): string => {
   if (mimeType.startsWith('application')) {
     return 'document';
   }
-  return mimeType;
+  return undefined;
 };

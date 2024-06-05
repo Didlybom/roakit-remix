@@ -60,7 +60,7 @@ import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
-import { errorAlert } from '../utils/jsxUtils';
+import { errorAlert, internalLinkSx } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
@@ -194,7 +194,11 @@ export default function Dashboard() {
                   {summary.aiSummary && (
                     <SummaryBox variant="outlined">
                       <Markdown markdownText={summary.aiSummary} />
-                      <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
+                      <IconIndicator
+                        icon={<AIIcon fontSize="small" />}
+                        title="AI powered"
+                        top={10}
+                      />
                     </SummaryBox>
                   )}
                   {summary.userSummary && (
@@ -205,14 +209,23 @@ export default function Dashboard() {
                   {summary.aiTeamSummary && (
                     <SummaryBox variant="outlined">
                       <Markdown markdownText={summary.aiTeamSummary} />
-                      <IconIndicator icon={<AIIcon fontSize="small" />} top={10} />
-                      <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} right={30} />
+                      <IconIndicator
+                        icon={<AIIcon fontSize="small" />}
+                        title="AI powered"
+                        top={10}
+                      />
+                      <IconIndicator
+                        icon={<TeamIcon fontSize="small" />}
+                        title="Team"
+                        top={10}
+                        right={30}
+                      />
                     </SummaryBox>
                   )}
                   {summary.userTeamSummary && (
                     <SummaryBox variant="outlined">
                       <Markdown markdownText={summary.userTeamSummary} />
-                      <IconIndicator icon={<TeamIcon fontSize="small" />} top={10} />
+                      <IconIndicator icon={<TeamIcon fontSize="small" />} title="Team" top={10} />
                     </SummaryBox>
                   )}
                 </>
@@ -294,7 +307,11 @@ export default function Dashboard() {
       role={loaderData.role}
       isLoggedIn={loaderData.isLoggedIn}
       isNavOpen={loaderData.isNavOpen}
-      showProgress={navigation.state !== 'idle' || groupedActivitiesFetcher.state !== 'idle'}
+      showProgress={
+        navigation.state !== 'idle' ||
+        summaryFetcher.state != 'idle' ||
+        groupedActivitiesFetcher.state !== 'idle'
+      }
     >
       {errorAlert(loaderData?.error)}
       {errorAlert(groupedActivitiesResponse?.error?.message)}
@@ -303,7 +320,7 @@ export default function Dashboard() {
         {(!useBottomNav || bottomNav === 'summaries') && (
           <Grid flex={1} m={3}>
             <Stack direction="row" spacing={2} display="flex" alignItems="center" mb={2}>
-              <Typography fontWeight={500}>Activity summaries for</Typography>
+              <Typography fontWeight={500}>Activities for</Typography>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   disableFuture={true}
@@ -328,7 +345,20 @@ export default function Dashboard() {
             </Stack>
             <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
               <Typography paragraph fontSize="small">
-                <b>Work in progress.</b> <Link href="?day=20240418">April 18 has some data</Link>.
+                <b>Work in progress.</b>{' '}
+                <Link
+                  onClick={() => {
+                    setSelectedDay(dayjs('20240418'));
+                    setSearchParams(prev => {
+                      prev.set(SEARCH_PARAM_DAY, '20240418');
+                      return prev;
+                    });
+                  }}
+                  sx={internalLinkSx}
+                >
+                  April 18 has some data
+                </Link>
+                .
               </Typography>
               <Typography fontSize="small">
                 See also{' '}

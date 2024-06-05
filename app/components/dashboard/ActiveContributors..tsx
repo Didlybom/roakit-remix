@@ -7,7 +7,7 @@ import {
 } from '../../types/activityFeed';
 import type { ActorRecord } from '../../types/types';
 import { windowOpen } from '../../utils/jsxUtils';
-import { commonPaperSx, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
   groupedActivities: GroupedActivities;
@@ -72,6 +72,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
             {...widgetSize}
             margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
             slotProps={{ legend: { hidden: true } }}
+            colors={pastelColors}
           />
         </Paper>
       ))

@@ -2,6 +2,7 @@ import {
   Add as AddIcon,
   Cancel as CancelIcon,
   DeleteOutlined as DeleteIcon,
+  MenuBook as DocumentationIcon,
   Edit as EditIcon,
   OpenInNew as OpenInNewIcon,
   SaveOutlined as SaveIcon,
@@ -16,6 +17,7 @@ import {
   Popper,
   Snackbar,
   Stack,
+  Typography,
   styled,
   type InputBaseProps,
 } from '@mui/material';
@@ -491,6 +493,16 @@ export default function Initiatives() {
             onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save goal'))}
           />
         </StyledBox>
+        <Typography variant="caption" mt={3} align="right">
+          <Button
+            href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"
+            target="_blank"
+            startIcon={<DocumentationIcon fontSize="small" />}
+            sx={{ textTransform: 'none' }}
+          >
+            Activity Mapper documentation
+          </Button>
+        </Typography>
       </Stack>
     </App>
   );

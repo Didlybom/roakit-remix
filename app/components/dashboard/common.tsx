@@ -24,3 +24,15 @@ export const widgetTitle = (title: string) => (
     {title}
   </Typography>
 );
+
+export const pastelColors = [
+  '#8bd3c7',
+  '#beb9db',
+  '#fd7f6f',
+  '#7eb0d5',
+  '#b2e061',
+  '#bd7ebe',
+  '#ffb55a',
+  '#ffee65',
+  '#fdcce5',
+];

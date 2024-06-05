@@ -72,7 +72,7 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
   if (metadata?.attachment?.filename) {
     const type = metadata.attachment.mimeType ? mimeTypeToType(metadata.attachment.mimeType) : null;
     return type ?
-        `Attached  ${type} ${metadata.attachment.filename}`
+        `Attached ${type} ${metadata.attachment.filename}`
       : `Attached ${metadata.attachment.filename}`;
   }
   if (metadata?.sprint) {
@@ -92,7 +92,11 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
     return `Commented ${metadata.comment.parent?.title}`;
   }
   if (metadata?.label) {
-    return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType}` : ''}${metadata?.label.name}`;
+    return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
+  }
+  if (metadata?.attachments) {
+    const files = metadata.attachments.files.map(f => f.filename).join(', ');
+    return `Attached ${files} to ${metadata.attachments.parent?.type} ${metadata.attachments.parent?.title}`;
   }
 
   if (metadata?.pullRequest) {
@@ -208,6 +212,9 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
     if (metadata?.attachment) {
       return metadata.attachment.uri;
     }
+    if (metadata?.attachments?.files?.length) {
+      return metadata.attachments.files[0].uri;
+    }
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
@@ -293,6 +300,9 @@ export const getUrl = (
   }
   if (metadata?.label?.contentUri) {
     return { url: `${metadata.label.contentUri}`, type };
+  }
+  if (metadata?.attachments?.parent?.uri) {
+    return { url: `${metadata.attachments.parent.uri}`, type };
   }
 
   if (metadata?.pullRequest?.uri) {

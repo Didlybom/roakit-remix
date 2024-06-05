@@ -1,8 +1,8 @@
 import { Box, Paper, Typography } from '@mui/material';
-import { PieChart, cheerfulFiestaPalette, pieArcLabelClasses } from '@mui/x-charts';
+import { PieChart, pieArcLabelClasses } from '@mui/x-charts';
 import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
-import { commonPaperSx, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
   groupedActivities: GroupedActivities;
@@ -35,7 +35,7 @@ export default function InitiativeEffort({ groupedActivities, initiatives, isLoa
             sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
             {...widgetSize}
             slotProps={{ legend: { hidden: true } }}
-            colors={cheerfulFiestaPalette}
+            colors={pastelColors}
           />
         </Paper>
         <Typography variant="caption" justifyContent="center" sx={{ mt: -3, display: 'flex' }}>

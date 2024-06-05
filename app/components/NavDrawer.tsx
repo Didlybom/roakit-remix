@@ -117,7 +117,7 @@ export default function NavDrawer({
           <Divider />
           <List>
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
-              Experiments
+              Lab
             </ListSubheader>
             {listItem(View.SummaryMulti, '/summary/multi', SummariesIcon, 'Summaries', view)}
             {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
