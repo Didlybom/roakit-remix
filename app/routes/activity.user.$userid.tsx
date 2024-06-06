@@ -26,27 +26,28 @@ import {
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import {
-  fetchAccountMap,
-  fetchIdentities,
-  fetchInitiativeMap,
-} from '../firestore.server/fetchers.server';
-import JiraIcon from '../icons/Jira';
-import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
-import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
-import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
-import {
   actionColDef,
   dataGridCommonProps,
   dateColdDef,
+  descriptionColDef,
   metadataActionsColDef,
   priorityColDef,
-  summaryColDef,
-} from '../utils/dataGridUtils';
+} from '../components/datagrid/dataGridCommon';
+import {
+  fetchAccountMap,
+  fetchIdentities,
+  fetchInitiativeMap,
+  fetchLaunchItemMap,
+} from '../firestore.server/fetchers.server';
+import JiraIcon from '../icons/Jira';
+import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
+import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
+import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { internalLinkSx, stickySx } from '../utils/jsxUtils';
@@ -80,6 +81,7 @@ interface UserActivityRow {
   event?: string;
   artifact: Artifact;
   initiativeId: string;
+  launchItemId: string;
   priority?: number;
   actorId?: string;
   metadata: unknown;
@@ -101,6 +103,7 @@ const userActivityRows = (
       event: activity.event,
       artifact: activity.artifact,
       initiativeId: activity.initiativeId,
+      launchItemId: activity.launchItemId,
       priority: activity.priority,
       metadata: activity.metadata,
       actorId:
@@ -132,9 +135,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 
   try {
-    // retrieve initiatives and users
-    const [initiatives, accounts, identities] = await Promise.all([
+    const [initiatives, launchItems, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
+      fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -151,6 +154,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userId,
       activityUserIds,
       initiatives,
+      launchItems,
       actors,
       accountMap: identities.accountMap,
     };
@@ -223,11 +227,13 @@ export default function UserActivity() {
   );
 
   useEffect(() => {
-    if (!loaderData.initiatives) {
-      return;
+    if (loaderData.initiatives) {
+      compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
     }
-    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
-  }, [loaderData.initiatives]);
+    if (loaderData.launchItems) {
+      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
+    }
+  }, [loaderData.initiatives, loaderData.launchItems]);
 
   // load activities
   useEffect(() => {
@@ -249,8 +255,14 @@ export default function UserActivity() {
     setGotSnapshot(false);
     if (activityResponse?.activities) {
       Object.values(activityResponse?.activities).forEach(activity => {
-        if (!activity.initiativeId) {
-          activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+        if (!activity.initiativeId || !activity.launchItemId) {
+          const mapping = mapActivity(activity);
+          if (!activity.initiativeId) {
+            activity.initiativeId = mapping.initiatives[0] ?? '';
+          }
+          if (!activity.launchItemId) {
+            activity.launchItemId = mapping.launchItems[0] ?? '';
+          }
         }
       });
       setRows(activityResponse.activities);
@@ -285,6 +297,18 @@ export default function UserActivity() {
       actionColDef({ field: 'action' }),
       priorityColDef({ field: 'priority' }),
       {
+        field: 'launchItemId',
+        headerName: 'Launch',
+        renderCell: params => {
+          const launchItemId = params.value as string;
+          return launchItemId ?
+              <Box title={loaderData.launchItems[launchItemId]?.label}>
+                {loaderData.launchItems[launchItemId]?.key}
+              </Box>
+            : <Box color={grey[400]}>unset</Box>;
+        },
+      },
+      {
         field: 'initiativeId',
         headerName: 'Goal',
         renderCell: params => {
@@ -296,12 +320,15 @@ export default function UserActivity() {
             : <Box color={grey[400]}>unset</Box>;
         },
       },
-      summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
+
+      descriptionColDef({ field: 'metadata' }, (element, content) =>
+        setPopover({ element, content })
+      ),
       metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
         setCodePopover({ element, content: metadata })
       ),
     ],
-    [loaderData.initiatives]
+    [loaderData.initiatives, loaderData.launchItems]
   );
 
   let activityCount = 0;

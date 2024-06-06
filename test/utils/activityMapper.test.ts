@@ -1,8 +1,9 @@
 import {
-  clearInitiativeMapperCache,
-  compileInitiativeMappers,
+  MapperType,
+  clearActivityMapperCache,
+  compileActivityMappers,
   mapActivity,
-} from '../../app/initiativeMapper/initiativeMapper';
+} from '../../app/activityMapper/activityMapper';
 import type { ActivityData } from '../../app/types/types';
 
 test('evalActivity', () => {
@@ -23,11 +24,12 @@ test('evalActivity', () => {
     },
     'ini-6': { key: 'k6', activityMapper: `metadata.label.name ~= "qwer"` },
   };
-  clearInitiativeMapperCache();
-  compileInitiativeMappers(mappers);
+  clearActivityMapperCache();
+  compileActivityMappers(MapperType.Initiative, mappers);
 
   const activity: ActivityData = {
     initiativeId: '',
+    launchItemId: '',
     id: 'id',
     action: 'action',
     createdTimestamp: 0,
@@ -36,20 +38,20 @@ test('evalActivity', () => {
     metadata: { issue: { key: 'iss-a', project: { id: 'proj-a' } } },
   };
 
-  expect(mapActivity(activity)).toEqual(['ini-1', 'ini-2', 'ini-3', 'ini-4', 'ini-5']);
-  expect(mapActivity({ ...activity, event: 'x' })).toEqual(['ini-2', 'ini-3', 'ini-5']);
+  expect(mapActivity(activity).initiatives).toEqual(['ini-1', 'ini-2', 'ini-3', 'ini-4', 'ini-5']);
+  expect(mapActivity({ ...activity, event: 'x' }).initiatives).toEqual(['ini-2', 'ini-3', 'ini-5']);
   expect(
     mapActivity({
       ...activity,
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    })
+    }).initiatives
   ).toEqual(['ini-1', 'ini-3', 'ini-5']);
   expect(
     mapActivity({
       ...activity,
       event: 'x',
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    })
+    }).initiatives
   ).toEqual(['ini-5']);
   expect(
     mapActivity({
@@ -57,18 +59,18 @@ test('evalActivity', () => {
       artifact: 'task',
       event: 'x',
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    })
+    }).initiatives
   ).toEqual([]);
   expect(
     mapActivity({
       ...activity,
       metadata: { label: { contentType: 'page', name: 'qwerty' } },
-    })
+    }).initiatives
   ).toEqual(['ini-1', 'ini-3', 'ini-5', 'ini-6']);
   expect(
     mapActivity({
       ...activity,
       metadata: { label: { contentType: 'page', name: 'x' } },
-    })
+    }).initiatives
   ).toEqual(['ini-1', 'ini-3', 'ini-5']);
 });

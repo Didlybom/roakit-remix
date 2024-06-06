@@ -1,11 +1,12 @@
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
+import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import {
   fetchActivities,
   fetchIdentities,
   fetchInitiativeMap,
+  fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
-import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { groupActivities, identifyActivities, type GroupedActivities } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
@@ -40,8 +41,9 @@ export const loader = async ({
       return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
     }
 
-    const [initiatives, identities, activities] = await Promise.all([
+    const [initiatives, launchItems, identities, activities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
+      fetchLaunchItemMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
       fetchActivities({
         customerId: sessionData.customerId!,
@@ -50,10 +52,18 @@ export const loader = async ({
       }),
     ]);
 
-    compileInitiativeMappers(initiatives);
+    compileActivityMappers(MapperType.Initiative, initiatives);
+    compileActivityMappers(MapperType.LaunchItem, launchItems);
     activities.forEach(activity => {
+      let mapping;
+      if (!activity.initiativeId || !activity.launchItemId) {
+        mapping = mapActivity(activity);
+      }
       if (!activity.initiativeId) {
-        activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+        activity.initiativeId = mapping?.initiatives[0] ?? '';
+      }
+      if (!activity.launchItemId) {
+        activity.launchItemId = mapping?.launchItems[0] ?? '';
       }
     });
 

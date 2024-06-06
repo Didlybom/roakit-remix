@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from '@mui/material';
+import { Unstable_Grid2 as Grid, Paper, Typography } from '@mui/material';
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts';
 import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
@@ -14,7 +14,7 @@ export default function InitiativeEffort({ groupedActivities, initiatives, isLoa
   return (
     !!initiatives &&
     !!groupedActivities?.initiatives?.length && (
-      <Box>
+      <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
           {widgetTitle('Effort by Goal')}
           <PieChart
@@ -41,7 +41,7 @@ export default function InitiativeEffort({ groupedActivities, initiatives, isLoa
         <Typography variant="caption" justifyContent="center" sx={{ mt: -3, display: 'flex' }}>
           simulated data
         </Typography>
-      </Box>
+      </Grid>
     )
   );
 }

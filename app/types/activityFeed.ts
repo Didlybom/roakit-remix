@@ -347,6 +347,7 @@ export type GroupedActivities = {
   topActors?: TopActorsMap;
   priorities?: Priority[];
   initiatives?: Initiative[];
+  launchItems?: Initiative[];
 };
 
 export const identifyAccounts = (
@@ -403,9 +404,17 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
   const topActors: TopActorsMap = {};
   const priorities: Priority[] = [];
   let initiatives: Initiative[] = [];
+  let launchItems: Initiative[] = [];
 
   activities.forEach(activity => {
-    const { actorId, initiativeId, priority: priorityId, artifact, action } = activity;
+    const {
+      actorId,
+      initiativeId,
+      launchItemId,
+      priority: priorityId,
+      artifact,
+      action,
+    } = activity;
 
     // top actors
     if (actorId !== undefined) {
@@ -449,12 +458,43 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
       }
       initiative.count[artifact]++;
       if (actorId !== undefined) {
-        initiative.actorIds!.add(actorId); // set dedupes
+        initiative.actorIds!.add(actorId); // the set dedupes
       }
       initiative.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
     }
+
+    // launch items
+    let launchItem;
+    if (launchItemId) {
+      launchItem = launchItems.find(i => i.id === launchItemId);
+      if (launchItem === undefined) {
+        launchItem = {
+          id: launchItemId,
+          key: '',
+          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
+          actorIds: new Set<string>(),
+          actorCount: 0,
+          effort: 0,
+        };
+        launchItems.push(launchItem);
+      }
+      launchItem.count[artifact]++;
+      if (actorId !== undefined) {
+        launchItem.actorIds!.add(actorId); // the set dedupes
+      }
+      launchItem.effort = Math.floor(Math.random() * 10) + 1; // FIXME effort
+    }
   });
+
   initiatives = initiatives.map(i => ({
+    id: i.id,
+    key: i.key,
+    count: i.count,
+    actorCount: i.actorIds!.size,
+    effort: i.effort,
+  }));
+
+  launchItems = launchItems.map(i => ({
     id: i.id,
     key: i.key,
     count: i.count,
@@ -478,5 +518,5 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
     }
   });
 
-  return { topActors, priorities, initiatives };
+  return { topActors, priorities, initiatives, launchItems };
 };

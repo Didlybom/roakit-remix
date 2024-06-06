@@ -1,4 +1,4 @@
-import { Paper } from '@mui/material';
+import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import {
   BarChart,
   DefaultChartsAxisTooltipContent,
@@ -9,12 +9,15 @@ import type { InitiativeRecord } from '../../types/types';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
+  type: 'initiatives' | 'launchItems';
+
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
 };
 
 export default function ContributorsByInitiative({
+  type,
   groupedActivities,
   initiatives,
   isLoading,
@@ -28,22 +31,24 @@ export default function ContributorsByInitiative({
       : <DefaultChartsAxisTooltipContent {...props} />;
   };
 
+  if (!initiatives || !groupedActivities?.[type]?.length) {
+    return null;
+  }
   return (
-    !!initiatives &&
-    !!groupedActivities?.initiatives?.length && (
+    <Grid>
       <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-        {widgetTitle('Contributors by Goal')}
+        {widgetTitle(type === 'initiatives' ? 'Contributors by Goal' : 'Launch Contributors')}
         <BarChart
           series={[
             {
-              id: 'contributors-by-initiative',
+              id: `contributors-${type}`,
               valueFormatter: value => `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-              data: groupedActivities.initiatives.map(i => i.actorCount),
+              data: groupedActivities[type]!.map(i => i.actorCount),
             },
           ]}
           yAxis={[
             {
-              data: groupedActivities.initiatives.map(i => initiatives[i.id].key),
+              data: groupedActivities[type]!.map(i => initiatives[i.id].key),
               scaleType: 'band',
             },
           ]}
@@ -55,6 +60,6 @@ export default function ContributorsByInitiative({
           tooltip={{ trigger: 'axis', axisContent: ContributorsByInitiativeTooltipContent }}
         />
       </Paper>
-    )
+    </Grid>
   );
 }

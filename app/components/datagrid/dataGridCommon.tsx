@@ -23,13 +23,13 @@ import {
 } from '@mui/x-data-grid';
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
-import ConfluenceIcon from '../icons/Confluence';
-import JiraIcon from '../icons/Jira';
-import { findTicket, getSummary, getSummaryAction, getUrl } from '../types/activityFeed';
-import type { AccountData, ActivityData } from '../types/types';
-import { formatMonthDayTime, formatRelative } from './dateUtils';
-import { ellipsisSx } from './jsxUtils';
-import theme, { priorityColors, priorityLabels } from './theme';
+import ConfluenceIcon from '../../icons/Confluence';
+import JiraIcon from '../../icons/Jira';
+import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/activityFeed';
+import type { AccountData, ActivityData } from '../../types/types';
+import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
+import { ellipsisSx } from '../../utils/jsxUtils';
+import theme, { priorityColors, priorityLabels } from '../../utils/theme';
 
 export const dataGridCommonProps = {
   autosizeOnMount: true,
@@ -134,12 +134,12 @@ export const priorityColDef = (colDef?: GridColDef) =>
 
 const pluralizeMemo = memoize(pluralize);
 
-export const summaryColDef = (
+export const descriptionColDef = (
   colDef?: GridColDef,
   setPopover?: (element: HTMLElement, content: JSX.Element) => void
 ) =>
   ({
-    headerName: 'Summary',
+    headerName: 'Description',
     minWidth: 300,
     flex: 1,
     valueGetter: (_, row: ActivityData) => findTicket(row.metadata) ?? getSummary(row),
@@ -190,7 +190,12 @@ export const summaryColDef = (
                 {summary}
               </Box>
               {summaryAction && (
-                <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
+                <Typography
+                  component="div"
+                  title={summaryAction}
+                  fontSize="smaller"
+                  sx={{ ...ellipsisSx }}
+                >
                   {summaryAction.startsWith('http') ?
                     <Box maxWidth={'300px'} sx={ellipsisSx}>
                       <Link href={summaryAction} target="_blank">

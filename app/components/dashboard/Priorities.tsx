@@ -1,4 +1,4 @@
-import { Paper } from '@mui/material';
+import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, type PieValueType } from '@mui/x-charts';
 import type { GroupedActivities } from '../../types/activityFeed';
 import { priorityColors, priorityLabels } from '../../utils/theme';
@@ -17,25 +17,27 @@ type Props = { groupedActivities: GroupedActivities; isLoading?: boolean };
 export default function Priorities({ groupedActivities, isLoading }: Props) {
   return (
     !!groupedActivities?.priorities?.length && (
-      <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-        {widgetTitle('Activities by Priority')}
-        <PieChart
-          series={[
-            {
-              id: 'activity-by-priority',
-              valueFormatter: item => `${item.value} ${pluralizeMemo('activity', item.value)}`,
-              data: groupedActivities.priorities.map(p => ({
-                value: p.count,
-                ...priorityDefs[p.id],
-              })),
-              outerRadius: 100,
-            },
-          ]}
-          margin={{ left: 100 }}
-          {...widgetSize}
-          slotProps={{ legend: { hidden: true } }}
-        />
-      </Paper>
+      <Grid>
+        <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
+          {widgetTitle('Activities by Priority')}
+          <PieChart
+            series={[
+              {
+                id: 'activity-by-priority',
+                valueFormatter: item => `${item.value} ${pluralizeMemo('activity', item.value)}`,
+                data: groupedActivities.priorities.map(p => ({
+                  value: p.count,
+                  ...priorityDefs[p.id],
+                })),
+                outerRadius: 100,
+              },
+            ]}
+            margin={{ left: 100 }}
+            {...widgetSize}
+            slotProps={{ legend: { hidden: true } }}
+          />
+        </Paper>
+      </Grid>
     )
   );
 }

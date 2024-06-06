@@ -106,6 +106,7 @@ export type ActivityData = {
   artifact: Artifact;
   createdTimestamp: number;
   initiativeId: string;
+  launchItemId: string;
   priority?: number;
   metadata?: ActivityMetadata;
   note?: string;

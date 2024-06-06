@@ -39,6 +39,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
+import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
@@ -47,11 +48,11 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
+  fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
@@ -82,14 +83,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     reportIds: null,
     actors: null,
     initiatives: null,
+    launchItems: null,
   });
 
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
-    // retrieve users and initiatives
-    const [initiatives, accounts, identities] = await Promise.all([
+    const [initiatives, launchItems, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
+      fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -114,6 +116,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       reportIds: userIdentity.reportIds,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       initiatives,
+      launchItems,
       error: null,
     };
   } catch (e) {
@@ -205,11 +208,13 @@ export default function Summary() {
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
   useEffect(() => {
-    if (!loaderData.initiatives) {
-      return;
+    if (loaderData.initiatives) {
+      compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
     }
-    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
-  }, [loaderData.initiatives]);
+    if (loaderData.launchItems) {
+      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
+    }
+  }, [loaderData.initiatives, loaderData.launchItems]);
 
   // load activities for the selected day
   useEffect(() => {
@@ -268,8 +273,14 @@ export default function Summary() {
     }
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
-      if (!activity.initiativeId) {
-        activity.initiativeId = mapActivity(activity)?.[0] ?? '';
+      if (!activity.initiativeId || !activity.launchItemId) {
+        const mapping = mapActivity(activity);
+        if (!activity.initiativeId) {
+          activity.initiativeId = mapping.initiatives[0] ?? '';
+        }
+        if (!activity.launchItemId) {
+          activity.launchItemId = mapping.launchItems[0] ?? '';
+        }
       }
     });
     const activitiesPrompt = buildActivitySummaryPrompt(

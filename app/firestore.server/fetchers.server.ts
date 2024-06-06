@@ -127,8 +127,8 @@ export const queryTeamIdentities = async (
   return identities;
 };
 
-export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
-  const initiatives: InitiativeData[] = [];
+export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
+  const initiatives: InitiativeRecord = {};
   (
     await retry(
       async () => await firestore.collection(`customers/${customerId}/initiatives`).get(),
@@ -136,8 +136,7 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
     )
   ).forEach(doc => {
     const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
-    initiatives.push({
-      id: doc.id,
+    initiatives[doc.id] = {
       key: data.key ?? doc.id,
       label: data.label,
       tags: data.tags,
@@ -149,21 +148,28 @@ export const fetchInitiatives = async (customerId: number): Promise<InitiativeDa
           { activities: data.counters.activities }
         : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 } },
       countersLastUpdated: data.countersLastUpdated ?? 0,
-    });
+    };
   });
-  return initiatives.sort((a, b) => a.id.localeCompare(b.id));
+  return initiatives;
 };
 
-export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
-  const initiatives: InitiativeRecord = {};
+export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
+  const initiatives: InitiativeData[] = [];
+  const initiativeMap = await fetchInitiativeMap(customerId);
+  Object.keys(initiativeMap).forEach(id => initiatives.push({ ...initiativeMap[id], id }));
+  return initiatives.sort((a, b) => a.key.localeCompare(b.key));
+};
+
+export const fetchLaunchItemMap = async (customerId: number): Promise<InitiativeRecord> => {
+  const launchItems: InitiativeRecord = {};
   (
     await retry(
-      async () => await firestore.collection(`customers/${customerId}/initiatives`).get(),
-      retryProps('Retrying fetchInitiativeMap...')
+      async () => await firestore.collection(`customers/${customerId}/launchItems`).get(),
+      retryProps('Retrying fetchLaunchItems...')
     )
   ).forEach(doc => {
-    const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
-    initiatives[doc.id] = {
+    const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'launch item');
+    launchItems[doc.id] = {
       key: data.key ?? doc.id,
       label: data.label,
       activityMapper: data.activityMapper,
@@ -174,7 +180,14 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
       countersLastUpdated: data.countersLastUpdated ?? 0,
     };
   });
-  return initiatives;
+  return launchItems;
+};
+
+export const fetchLaunchItems = async (customerId: number): Promise<InitiativeData[]> => {
+  const launchItems: InitiativeData[] = [];
+  const launchItemMap = await fetchLaunchItemMap(customerId);
+  Object.keys(launchItemMap).forEach(id => launchItems.push({ ...launchItemMap[id], id }));
+  return launchItems.sort((a, b) => a.key.localeCompare(b.key));
 };
 
 const findIdentity = (identities: IdentityData[], id: string) => identities.find(i => i.id === id)!;
@@ -437,6 +450,7 @@ export const fetchActivities = async ({
       artifact: data.artifact as Artifact,
       createdTimestamp: data.createdTimestamp,
       initiativeId: data.initiative,
+      launchItemId: '', // FIXME launch item
       priority, // see overwrite below
       eventType: data.eventType,
       event: data.event,
@@ -514,6 +528,7 @@ export const fetchActivitiesPage = async ({
   if (withInitiatives == null) {
     activityQuery = activitiesCollection;
   } else {
+    console.log('wwwww:' + withInitiatives);
     activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
   }
   let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
@@ -541,6 +556,7 @@ export const fetchActivitiesPage = async ({
       createdTimestamp: data.createdTimestamp,
       priority: data.priority,
       initiativeId: data.initiative,
+      launchItemId: '', // FIXME launch item
       metadata: data.metadata as ActivityMetadata,
       note: data.note,
       objectId: data.objectId, // for debugging

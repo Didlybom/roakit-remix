@@ -4,6 +4,8 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
   History as HistoryIcon,
+  RocketLaunch as LaunchIcon,
+  PeopleOutline as PeopleIcon,
   Science as ScienceIcon,
   Subject as SubjectIcon,
   ShortText as SummariesIcon,
@@ -29,7 +31,7 @@ import { Role, View } from '../utils/rbac';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
 
-const listItem = (
+const item = (
   view: View | null,
   url: string,
   Icon: OverridableComponent<SvgIconTypeMap>,
@@ -86,20 +88,21 @@ export default function NavDrawer({
       {(role === Role.Admin || role === Role.Monitor) && (
         <>
           <List>
-            {listItem(View.Dashboard, '/dashboard', DashboardIcon, 'Dashboard', view)}
-            {listItem(
-              View.ActivityUser,
-              '/activity/user/*',
-              SubjectIcon,
-              'Contributor Activity',
+            {item(View.Dashboard, '/dashboard', DashboardIcon, 'Dashboard', view)}
+            {item(
+              View.ActivitySummaries,
+              '/activity/summary',
+              SummariesIcon,
+              'Activity Summary',
               view
             )}
-            {listItem(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
+            {item(View.ActivityUser, '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
+            {item(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
           </List>
           <Divider />
         </>
       )}
-      <List>{listItem(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}</List>
+      <List>{item(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}</List>
       {role === Role.Admin && (
         <>
           <Divider />
@@ -107,8 +110,9 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Administration
             </ListSubheader>
-            {listItem(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
-            {listItem(View.Users, '/users', BusinessIcon, 'Directory', view)}
+            {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
+            {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
+            {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
           </List>
         </>
       )}
@@ -119,8 +123,8 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Lab
             </ListSubheader>
-            {listItem(View.SummaryMulti, '/summary/multi', SummariesIcon, 'Summaries', view)}
-            {listItem(null, '/ai', ScienceIcon, 'AI Playground', view)}
+            {item(View.SummaryMulti, '/summary/multi', PeopleIcon, 'Summary Forms', view)}
+            {item(null, '/ai', ScienceIcon, 'AI Playground', view)}
           </List>
         </>
       )}

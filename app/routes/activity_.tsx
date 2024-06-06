@@ -26,31 +26,32 @@ import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
+import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
-import DataGridWithSingleClickEditing from '../components/DataGridWithSingleClickEditing';
 import FilterMenu from '../components/FilterMenu';
+import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import {
+  actionColDef,
+  actorColdDef,
+  dateColdDef,
+  descriptionColDef,
+  metadataActionsColDef,
+  priorityColDef,
+} from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
+  fetchLaunchItemMap,
   fetchTicketPriorityMapWithCache,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
-import { compileInitiativeMappers, mapActivity } from '../initiativeMapper/initiativeMapper';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
 import type { AccountData, ActivityCount, ActivityData, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
-import {
-  actionColDef,
-  actorColdDef,
-  dateColdDef,
-  metadataActionsColDef,
-  priorityColDef,
-  summaryColDef,
-} from '../utils/dataGridUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { errorAlert, internalLinkSx } from '../utils/jsxUtils';
@@ -71,9 +72,9 @@ const VIEW = View.Activity;
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
-    // retrieve initiatives, tickets, and users
-    const [initiatives, accounts, identities, tickets] = await Promise.all([
+    const [initiatives, launchItems, accounts, identities, tickets] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
+      fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
       fetchTicketPriorityMapWithCache(sessionData.customerId!),
@@ -82,6 +83,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return {
       ...sessionData,
       initiatives,
+      launchItems,
       actors,
       accountMap: identities.accountMap,
       tickets,
@@ -154,7 +156,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
-type ShowActivity = '' | 'withInitiative' | 'withoutInitiative';
+type ShowActivity = '' | 'withInitiatives' | 'withoutInitiatives';
 
 export default function ActivityReview() {
   const navigation = useNavigation();
@@ -176,17 +178,19 @@ export default function ActivityReview() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!loaderData.initiatives) {
-      return;
+    if (loaderData.initiatives) {
+      compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
     }
-    compileInitiativeMappers(loaderData.initiatives); // uses a cache internally
-  }, [loaderData.initiatives]);
+    if (loaderData.launchItems) {
+      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
+    }
+  }, [loaderData.initiatives, loaderData.launchItems]);
 
   useEffect(() => {
     setError('');
     let query = `/fetcher/activities/page?limit=${paginationModel.pageSize}`;
     if (activityFilter) {
-      query += `&withInitiatives=${activityFilter === 'withInitiative' ? true : false}`;
+      query += `&withInitiatives=${activityFilter == 'withInitiatives' ? true : false}`;
     }
     if (prevPaginationModel && activities?.length && paginationModel.page > 0) {
       // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
@@ -216,6 +220,10 @@ export default function ActivityReview() {
       if (priority === undefined || priority === -1) {
         priority = inferPriority(loaderData.tickets, activity.metadata!);
       }
+      let mapping;
+      if (!activity.initiativeId || !activity.launchItemId) {
+        mapping = mapActivity(activity);
+      }
       activityData.push({
         ...activity,
         actorId:
@@ -223,7 +231,8 @@ export default function ActivityReview() {
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
           : undefined,
         priority,
-        initiativeId: activity.initiativeId || mapActivity(activity)?.[0] || UNSET_INITIATIVE_ID,
+        initiativeId: activity.initiativeId || mapping?.initiatives[0] || UNSET_INITIATIVE_ID,
+        launchItemId: activity.launchItemId || mapping?.launchItems[0] || '',
       });
     });
     setActivities(activityData);
@@ -283,7 +292,21 @@ export default function ActivityReview() {
       }),
       actionColDef({ field: 'action' }),
       priorityColDef({ field: 'priority' }),
-      summaryColDef({ field: 'metadata' }, (element, content) => setPopover({ element, content })),
+      descriptionColDef({ field: 'metadata' }, (element, content) =>
+        setPopover({ element, content })
+      ),
+      {
+        field: 'launchItemId',
+        headerName: 'Launch',
+        renderCell: params => {
+          const launchItemId = params.value as string;
+          return launchItemId ?
+              <Box title={loaderData.launchItems[launchItemId]?.label}>
+                {loaderData.launchItems[launchItemId]?.key}
+              </Box>
+            : <Box color={grey[400]}>unset</Box>;
+        },
+      },
       {
         field: 'initiativeId',
         headerName: 'Goal',
@@ -446,8 +469,8 @@ export default function ActivityReview() {
               selectedValue={activityFilter}
               items={[
                 { value: '', label: 'All', color: grey[500] },
-                { value: 'withoutInitiative', label: 'Without goals' },
-                { value: 'withInitiative', label: 'With goals' },
+                { value: 'withoutInitiatives', label: 'Without goals' },
+                { value: 'withInitiatives', label: 'With goals' },
               ]}
               onChange={value => {
                 setPaginationModel({ ...paginationModel, page: 0 });

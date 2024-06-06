@@ -1,10 +1,11 @@
-import { Paper } from '@mui/material';
+import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
 import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
+  type: 'initiatives' | 'launchItems';
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   dateRangeLabel: string;
@@ -12,17 +13,20 @@ type Props = {
 };
 
 export default function ActivitiesByInitiatives({
+  type,
   groupedActivities,
   initiatives,
   dateRangeLabel,
   isLoading,
 }: Props) {
-  return (
-    !!initiatives &&
-    groupedActivities?.initiatives?.map(initiative => {
-      const totalCounters = initiatives[initiative.id].counters!.activities;
-      return (
-        <Paper key={initiative.id} variant="outlined" sx={commonPaperSx({ isLoading })}>
+  if (!initiatives || !groupedActivities?.[type]?.length) {
+    return null;
+  }
+  return groupedActivities[type]!.map(initiative => {
+    const totalCounters = initiatives[initiative.id].counters!.activities;
+    return (
+      <Grid key={initiative.id}>
+        <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
           {widgetTitle(initiatives[initiative.id]?.label ?? 'Unknown')}
           <BarChart
             series={[
@@ -81,7 +85,7 @@ export default function ActivitiesByInitiatives({
             colors={pastelColors}
           />
         </Paper>
-      );
-    })
-  );
+      </Grid>
+    );
+  });
 }
