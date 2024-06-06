@@ -163,9 +163,9 @@ export default function LaunchItems() {
     }
   };
 
-  const handleDeleteClick = (initiativeId: GridRowId) => {
-    setRows(rows.filter(row => row.id !== initiativeId));
-    submit({ initiativeId }, deleteJsonOptions);
+  const handleDeleteClick = (launchItemId: GridRowId) => {
+    setRows(rows.filter(row => row.id !== launchItemId));
+    submit({ launchItemId }, deleteJsonOptions);
   };
 
   const columns: GridColDef[] = [
