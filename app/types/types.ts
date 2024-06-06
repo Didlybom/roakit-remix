@@ -21,6 +21,7 @@ export type AccountData = {
   type: string;
   name: string;
   url?: string;
+  createdTimestamp?: number;
 };
 export type AccountMap = Map<AccountData['id'], Omit<AccountData, 'id'>>;
 

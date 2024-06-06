@@ -374,6 +374,7 @@ export const fetchAccountsToReview = async (customerId: number): Promise<Account
         type: feed.feedType,
         name: data.accountName ?? '',
         url: data.accountUri,
+        createdTimestamp: data.createdDate,
       });
     });
   });
@@ -528,7 +529,6 @@ export const fetchActivitiesPage = async ({
   if (withInitiatives == null) {
     activityQuery = activitiesCollection;
   } else {
-    console.log('wwwww:' + withInitiatives);
     activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
   }
   let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');

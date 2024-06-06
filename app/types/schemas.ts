@@ -34,16 +34,11 @@ export const initiativeSchema = z.object({
 export type InitiativeType = z.infer<typeof initiativeSchema>;
 
 export const accountSchema = z.object({
+  createdDate: z.number().optional(),
   accountName: z.string().optional(),
   accountUri: z.string().optional(),
 });
 export type AccountType = z.infer<typeof accountSchema>;
-
-export const accountToReviewSchema = z.object({
-  createdDate: z.number(),
-  accountName: z.string(),
-  accountUri: z.string().optional(),
-});
 
 export const userSchema = z.object({
   email: z.string(),

@@ -34,11 +34,11 @@ import { useEffect, useMemo, useState } from 'react';
 import App from '../components/App';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
-import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
+import { dataGridCommonProps, dateColdDef } from '../components/datagrid/dataGridCommon';
 import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import type { IdentityData } from '../types/types';
+import type { AccountData, IdentityData } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -72,10 +72,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Response(null, { status: 403 });
   }
   try {
-    const [identities, accountsToReview] = await Promise.all([
+    const [identities, fetchedAccountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
       fetchAccountsToReview(sessionData.customerId!),
     ]);
+    const accountsFromIdentities = Object.keys(identities.accountMap);
+    const dedupe = new Set<string>();
+    const accountsToReview: AccountData[] = [];
+
+    fetchedAccountsToReview.forEach(account => {
+      if (dedupe.has(account.id)) {
+        return;
+      }
+      dedupe.add(account.id);
+      if (!accountsFromIdentities.includes(account.id)) {
+        accountsToReview.push(account);
+      }
+    });
     return { ...sessionData, identities, accountsToReview };
   } catch (e) {
     logger.error(e);
@@ -348,12 +361,10 @@ export default function Users() {
 
   const accountReviewCols = useMemo<GridColDef[]>(
     () => [
-      { field: 'id', headerName: 'Account ID', minWidth: 200 },
-      { field: 'type', headerName: 'Source', minWidth: 80 },
       {
-        field: 'name',
-        headerName: 'Name',
-        minWidth: 250,
+        field: 'id',
+        headerName: 'Account ID',
+        minWidth: 200,
         renderCell: params => {
           const id = (params.row as IdentityData).id;
           return (
@@ -367,6 +378,12 @@ export default function Users() {
           );
         },
       },
+      { field: 'type', headerName: 'Source', minWidth: 80 },
+      { field: 'name', headerName: 'Name', minWidth: 250 },
+      dateColdDef({
+        field: 'createdTimestamp',
+        valueGetter: value => (value ? new Date(value) : value),
+      }),
     ],
     []
   );
@@ -514,7 +531,9 @@ export default function Users() {
           rowHeight={50}
           initialState={{
             pagination: { paginationModel: { pageSize: 25 } },
-            sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
+            sorting: {
+              sortModel: [{ field: 'createdTimestamp', sort: 'desc' as GridSortDirection }],
+            },
           }}
         />
       </TabPanel>
