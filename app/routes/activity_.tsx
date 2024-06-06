@@ -350,7 +350,7 @@ export default function ActivityReview() {
         setCodePopover({ element, content: metadata })
       ),
     ],
-    [loaderData.actors, loaderData.initiatives]
+    [loaderData.actors, loaderData.initiatives, loaderData.launchItems]
   );
 
   function BulkToolbar() {
