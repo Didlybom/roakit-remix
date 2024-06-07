@@ -1,4 +1,4 @@
-import { compileExpression, useDotAccessOperatorAndOptionalChaining } from 'filtrex';
+import { compileExpression } from 'filtrex';
 import stringify from 'json-stable-stringify';
 import type { ActivityData, InitiativeData, InitiativeRecord } from '../types/types';
 
@@ -31,6 +31,38 @@ export const clearActivityMapperCache = () => {
     [MapperType.LaunchItem]: '',
   };
 };
+
+// Adapted from https://github.com/m93a/filtrex/blob/main/src/filtrex.mjs#L208
+// The original code returns null when obj is null, but this breaks when evaluating a regexp with ~=,
+// so we return a "__NULL__" string instead.
+function useDotAccessOperatorAndOptionalChaining(
+  name: string,
+  get: (name: string) => unknown,
+  obj: unknown,
+  type: 'unescaped' | 'single-quoted'
+) {
+  if (obj === null || obj === undefined) {
+    return '__NULL__';
+  }
+
+  // ignore dots inside escaped symbol
+  if (type === 'single-quoted') {
+    return get(name);
+  }
+
+  const parts = name.split('.');
+
+  for (const propertyName of parts) {
+    if (obj === null || obj === undefined) {
+      return '__NULL__';
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      obj = (obj as any)[propertyName];
+    }
+  }
+
+  return obj ?? '__NULL__';
+}
 
 export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) => {
   const hash = stringify(
@@ -66,7 +98,6 @@ export const mapActivity = (activity: ActivityData | Omit<ActivityData, 'id'>) =
       initiatives.push(id);
     }
   });
-
   Object.keys(compiledExpressions[MapperType.LaunchItem]).forEach(id => {
     if (compiledExpressions[MapperType.LaunchItem][id](activity) === true) {
       launchItems.push(id);
