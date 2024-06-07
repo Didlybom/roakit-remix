@@ -7,6 +7,7 @@ import App from '../components/App';
 import SmallButton from '../components/SmallButton';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
+import { loaderErrorResponse } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:summaries.edit' });
@@ -22,7 +23,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { ...sessionData, identities };
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw loaderErrorResponse(e);
   }
 };
 

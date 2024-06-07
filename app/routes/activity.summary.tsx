@@ -10,7 +10,13 @@ import { grey } from '@mui/material/colors';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LoaderFunctionArgs } from '@remix-run/node';
-import { useFetcher, useLoaderData, useNavigation, useSearchParams } from '@remix-run/react';
+import {
+  useFetcher,
+  useLoaderData,
+  useNavigate,
+  useNavigation,
+  useSearchParams,
+} from '@remix-run/react';
 import dayjs, { type Dayjs } from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
@@ -23,8 +29,12 @@ import {} from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
-import { errorAlert, internalLinkSx } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  internalLinkSx,
+  loaderErrorResponse,
+  loginWithRedirect,
+} from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
 import type { SummariesResponse } from './fetcher.summaries.($userid)';
@@ -47,14 +57,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       fetchIdentities(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    return { ...sessionData, actors, error: null };
+    return { ...sessionData, actors };
   } catch (e) {
     logger.error(e);
-    return {
-      ...sessionData,
-      error: errMsg(e, 'Failed to fetch data'),
-      actors: null,
-    };
+    throw loaderErrorResponse(e);
   }
 };
 
@@ -70,6 +76,7 @@ const SummaryBox = styled(Paper)(({ theme }) => ({
 
 export default function Dashboard() {
   const navigation = useNavigation();
+  const navigate = useNavigate();
   const loaderData = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const summaryFetcher = useFetcher();
@@ -93,6 +100,12 @@ export default function Dashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDay]); // summaryFetcher must be omitted
+
+  useEffect(() => {
+    if (fetchedSummaries?.error?.status === 401) {
+      navigate(loginWithRedirect());
+    }
+  }, [fetchedSummaries?.error, navigate]);
 
   const summaries = (
     <Stack fontSize="small" sx={{ opacity: summaryFetcher.state === 'loading' ? 0.4 : 1 }}>
@@ -176,7 +189,6 @@ export default function Dashboard() {
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle' || summaryFetcher.state != 'idle'}
     >
-      {errorAlert(loaderData?.error)}
       {errorAlert(fetchedSummaries?.error?.message)}
       {errorAlert(error)}
       <Box flex={1} m={3}>

@@ -42,7 +42,7 @@ import type { AccountData, IdentityData } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { ellipsisSx, errorAlert, internalLinkSx } from '../utils/jsxUtils';
+import { ellipsisSx, errorAlert, internalLinkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
 import theme from '../utils/theme';
 
@@ -92,7 +92,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { ...sessionData, identities, accountsToReview };
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw loaderErrorResponse(e);
   }
 };
 

@@ -1,4 +1,5 @@
 import { Alert, SxProps } from '@mui/material';
+import { errMsg } from './errorUtils';
 
 export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
@@ -39,3 +40,9 @@ export const errorAlert = (message?: string | null) =>
       {message}
     </Alert>
   );
+
+export const loaderErrorResponse = (e: unknown) =>
+  new Response(`Failed to load data. ${errMsg(e)}`, { status: 500 });
+
+export const loginWithRedirect = () =>
+  `/login?redirect=${encodeURI(location.pathname + location.search)}`;

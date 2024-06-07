@@ -1,6 +1,5 @@
 import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import {
-  Alert,
   Box,
   Button,
   FormControlLabel,
@@ -50,7 +49,13 @@ import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
-import { internalLinkSx, stickySx } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  internalLinkSx,
+  loaderErrorResponse,
+  loginWithRedirect,
+  stickySx,
+} from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
@@ -130,7 +135,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         .split(',')
         .every(actionParam => allActions.includes(actionParam))
     ) {
-      throw Error('Invalid action param');
+      throw new Response('Invalid action param', { status: 400 });
     }
   }
 
@@ -160,7 +165,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     };
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw loaderErrorResponse(e);
   }
 };
 
@@ -170,7 +175,7 @@ export default function UserActivity() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activitiesFetcher = useFetcher();
-  const activityResponse = activitiesFetcher.data as ActivityResponse;
+  const fetchedActivity = activitiesFetcher.data as ActivityResponse;
   const [actionFilter, setActionFilter] = useState(
     searchParams.get(SEARCH_PARAM_ACTION)?.split(',') ?? []
   );
@@ -246,15 +251,15 @@ export default function UserActivity() {
   }, [dateFilter]); // activitiesFetcher must be omitted
 
   useEffect(() => {
-    if (activityResponse?.error?.status === 401) {
-      navigate('/login');
+    if (fetchedActivity?.error?.status === 401) {
+      navigate(loginWithRedirect());
     }
-  }, [activityResponse?.error, navigate]);
+  }, [fetchedActivity?.error, navigate]);
 
   useEffect(() => {
     setGotSnapshot(false);
-    if (activityResponse?.activities) {
-      Object.values(activityResponse?.activities).forEach(activity => {
+    if (fetchedActivity?.activities) {
+      Object.values(fetchedActivity?.activities).forEach(activity => {
         if (!activity.initiativeId || !activity.launchItemId) {
           const mapping = mapActivity(activity);
           if (!activity.initiativeId) {
@@ -265,9 +270,9 @@ export default function UserActivity() {
           }
         }
       });
-      setRows(activityResponse.activities);
+      setRows(fetchedActivity.activities);
     }
-  }, [activityResponse?.activities, setRows]);
+  }, [fetchedActivity?.activities, setRows]);
 
   useEffect(() => {
     sortAndSetUserActivities();
@@ -428,6 +433,7 @@ export default function UserActivity() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={!gotSnapshot || navigation.state !== 'idle'}
     >
+      {errorAlert(fetchedActivity?.error?.message)}
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}
@@ -525,11 +531,6 @@ export default function UserActivity() {
             {grids}
           </Stack>
         </Stack>
-        {activityResponse?.error?.message && (
-          <Alert severity="error" sx={{ mb: 1 }}>
-            {activityResponse.error.message}
-          </Alert>
-        )}
       </Stack>
     </App>
   );

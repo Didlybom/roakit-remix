@@ -13,7 +13,7 @@ export const meta = () => [{ title: 'Logout | ROAKIT' }];
 const VIEW = View.Logout;
 
 export const action = async () =>
-  redirect('/', {
+  redirect('/login', {
     headers: { 'Set-Cookie': await sessionCookie.serialize('', { expires: new Date(0) }) },
   });
 

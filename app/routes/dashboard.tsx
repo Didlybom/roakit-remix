@@ -26,8 +26,7 @@ import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
-import { errorAlert } from '../utils/jsxUtils';
+import { errorAlert, loaderErrorResponse, loginWithRedirect } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
 
@@ -54,16 +53,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    return { ...sessionData, actors, initiatives, launchItems, error: null };
+    return { ...sessionData, actors, initiatives, launchItems };
   } catch (e) {
     logger.error(e);
-    return {
-      ...sessionData,
-      error: errMsg(e, 'Failed to fetch data'),
-      actors: null,
-      initiatives: null,
-      launchItems: null,
-    };
+    throw loaderErrorResponse(e);
   }
 };
 
@@ -84,7 +77,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (groupedActivitiesResponse?.error?.status === 401) {
-      navigate('/login');
+      navigate(loginWithRedirect());
     }
   }, [groupedActivitiesResponse?.error, navigate]);
 
@@ -187,7 +180,6 @@ export default function Dashboard() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={navigation.state !== 'idle' || groupedActivitiesFetcher.state !== 'idle'}
     >
-      {errorAlert(loaderData?.error)}
       {errorAlert(groupedActivitiesResponse?.error?.message)}
       {charts}
     </App>

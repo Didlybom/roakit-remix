@@ -31,8 +31,7 @@ import { identifyAccounts, identifyActivities } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
-import { formatJson } from '../utils/jsxUtils';
+import { formatJson, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
 
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
@@ -70,16 +69,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       activities: [...activities].map(([, activity]) => activity),
       actors,
       initiatives,
-      error: null,
     };
   } catch (e) {
-    return {
-      ...sessionData,
-      error: errMsg(e, 'Failed to fetch activities'),
-      activities: null,
-      actors: null,
-      initiatives: null,
-    };
+    throw loaderErrorResponse(e);
   }
 };
 

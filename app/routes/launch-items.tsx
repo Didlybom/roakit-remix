@@ -33,7 +33,7 @@ import { fetchLaunchItems } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
-import { ellipsisSx, errorAlert } from '../utils/jsxUtils';
+import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:launch-items' });
@@ -57,7 +57,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { ...sessionData, launchItems };
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw loaderErrorResponse(e);
   }
 };
 

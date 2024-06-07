@@ -18,6 +18,11 @@ export const loadSession = async (request: Request, view: View, params?: Params<
     checkAccess(view, sessionData, request, params);
     return sessionData;
   } else {
-    throw redirect('/login');
+    const requestPathname = new URL(request.url).pathname;
+    if (requestPathname.length > 1) {
+      throw redirect('/login?redirect=' + encodeURI(requestPathname));
+    } else {
+      throw redirect('/login');
+    }
   }
 };

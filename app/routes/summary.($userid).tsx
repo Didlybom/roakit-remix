@@ -32,6 +32,7 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
+  useNavigate,
   useNavigation,
   useSearchParams,
   useSubmit,
@@ -58,9 +59,8 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { errorAlert } from '../utils/jsxUtils';
+import { errorAlert, loaderErrorResponse, loginWithRedirect } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { SessionData } from '../utils/sessionCookie.server';
 import { ActivityResponse } from './fetcher.activities.($userid)';
 import { SummariesResponse } from './fetcher.summaries.($userid)';
 
@@ -74,18 +74,6 @@ const VIEW = View.Summary;
 const SEARCH_PARAM_DAY = 'day';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const errorResponse = (sessionData: SessionData, error: string) => ({
-    ...sessionData,
-    error,
-    userId: null,
-    userDisplayName: null,
-    userIds: null,
-    reportIds: null,
-    actors: null,
-    initiatives: null,
-    launchItems: null,
-  });
-
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
@@ -106,7 +94,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       }
     });
     if (!userIdentity) {
-      return errorResponse(sessionData, 'Identity not found');
+      throw new Response('Identity not found', { status: 500 });
     }
 
     return {
@@ -117,11 +105,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       initiatives,
       launchItems,
-      error: null,
     };
   } catch (e) {
     logger.error(e);
-    return errorResponse(sessionData, 'Failed to fetch users');
+    throw loaderErrorResponse(e);
   }
 };
 
@@ -182,6 +169,7 @@ export const action = async ({
 
 export default function Summary() {
   const navigation = useNavigation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
   const activitiesFetcher = useFetcher();
@@ -208,12 +196,8 @@ export default function Summary() {
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
   useEffect(() => {
-    if (loaderData.initiatives) {
-      compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
-    }
-    if (loaderData.launchItems) {
-      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-    }
+    compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
+    compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
   }, [loaderData.initiatives, loaderData.launchItems]);
 
   // load activities for the selected day
@@ -310,6 +294,12 @@ export default function Summary() {
     setHighlightedDays(fetchedSummaries?.summaries ? Object.keys(fetchedSummaries?.summaries) : []);
   }, [fetchedSummaries?.summaries, selectedDay, showTeam]);
 
+  useEffect(() => {
+    if (fetchedActivities?.error?.status === 401 || fetchedSummaries?.error?.status === 401) {
+      navigate(loginWithRedirect());
+    }
+  }, [fetchedActivities?.error, fetchedSummaries?.error?.status, navigate]);
+
   return (
     <App
       view={VIEW}
@@ -322,7 +312,6 @@ export default function Summary() {
         summaryFetcher.state !== 'idle'
       }
     >
-      {errorAlert(loaderData?.error)}
       {errorAlert(fetchedActivities?.error?.message)}
       {errorAlert(fetchedSummaries?.error?.message)}
       {errorAlert(error)}
@@ -362,43 +351,41 @@ export default function Summary() {
                 onMonthChange={setSelectedMonth}
               />
             </LocalizationProvider>
-            {loaderData.actors && (
-              <Stack spacing={1} sx={{ ml: 3 }}>
-                <Typography fontWeight={500}>Activities for…</Typography>
-                <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
-                  <Chip size="small" label={loaderData.userDisplayName} />
-                </Box>
-                {!!loaderData.reportIds?.length && (
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={showTeam}
-                        onChange={e => {
-                          setShowTeam(e.target.checked);
-                          setActivitiesText('');
-                          setAiSummaryTexts([]);
-                        }}
-                      />
-                    }
-                    label={
-                      <Typography fontSize="small" fontWeight={500}>
-                        Team
-                      </Typography>
-                    }
-                  />
-                )}
-                {loaderData.reportIds?.map(reportId => (
-                  <Link
-                    href={`/summary/${encodeURI(reportId)}`}
-                    target="_blank"
-                    key={reportId}
-                    sx={{ opacity: showTeam ? undefined : 0.3 }}
-                  >
-                    <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
-                  </Link>
-                ))}
-              </Stack>
-            )}
+            <Stack spacing={1} sx={{ ml: 3 }}>
+              <Typography fontWeight={500}>Activities for…</Typography>
+              <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
+                <Chip size="small" label={loaderData.userDisplayName} />
+              </Box>
+              {!!loaderData.reportIds?.length && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTeam}
+                      onChange={e => {
+                        setShowTeam(e.target.checked);
+                        setActivitiesText('');
+                        setAiSummaryTexts([]);
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography fontSize="small" fontWeight={500}>
+                      Team
+                    </Typography>
+                  }
+                />
+              )}
+              {loaderData.reportIds?.map(reportId => (
+                <Link
+                  href={`/summary/${encodeURI(reportId)}`}
+                  target="_blank"
+                  key={reportId}
+                  sx={{ opacity: showTeam ? undefined : 0.3 }}
+                >
+                  <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
+                </Link>
+              ))}
+            </Stack>
           </Stack>
         </Grid>
         <Grid flex={1} minWidth={300}>
@@ -542,8 +529,7 @@ export default function Summary() {
                       title="Save the AI summary and your input"
                       disabled={
                         navigation.state !== 'idle' ||
-                        (!aiSummaryTexts[aiSummaryPage - 1] && !userSummaryText) ||
-                        !!loaderData?.error
+                        (!aiSummaryTexts[aiSummaryPage - 1] && !userSummaryText)
                       }
                       endIcon={<DoneIcon />}
                       onClick={() =>

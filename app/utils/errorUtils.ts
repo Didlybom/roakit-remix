@@ -1,4 +1,4 @@
-export const errMsg = (e: unknown, fallbackMessage: string) =>
+export const errMsg = (e: unknown, fallbackMessage = '') =>
   e instanceof Error ? e.message : fallbackMessage;
 
 export class ParseError extends Error {

@@ -22,7 +22,7 @@ import {
   GridToolbarContainer,
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
-import { useFetcher, useLoaderData, useNavigation } from '@remix-run/react';
+import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
@@ -54,7 +54,12 @@ import type { AccountData, ActivityCount, ActivityData, Artifact } from '../type
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { errorAlert, internalLinkSx } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  internalLinkSx,
+  loaderErrorResponse,
+  loginWithRedirect,
+} from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
 import type { ActivityPageResponse } from './fetcher.activities.page';
@@ -90,7 +95,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw loaderErrorResponse(e);
   }
 };
 
@@ -152,7 +157,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return null;
   } catch (e) {
     logger.error(e);
-    throw e;
+    throw new Response(`Failed to save data. ${errMsg(e)}`, { status: 500 });
   }
 };
 
@@ -160,6 +165,7 @@ type ShowActivity = '' | 'withInitiatives' | 'withoutInitiatives';
 
 export default function ActivityReview() {
   const navigation = useNavigation();
+  const navigate = useNavigate();
   const assignInitiativeFetcher = useFetcher();
   const loaderData = useLoaderData<typeof loader>();
   const activitiesFetcher = useFetcher();
@@ -185,6 +191,12 @@ export default function ActivityReview() {
       compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
     }
   }, [loaderData.initiatives, loaderData.launchItems]);
+
+  useEffect(() => {
+    if (fetchedActivities?.error?.status === 401) {
+      navigate(loginWithRedirect());
+    }
+  }, [fetchedActivities?.error, navigate]);
 
   useEffect(() => {
     setError('');

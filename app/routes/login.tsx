@@ -51,7 +51,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
   const now = new Date();
   const expires = new Date(now.setDate(now.getDate() + 1)); // 1 day, matching JWT expiration above
-  throw redirect('/', {
+
+  const { searchParams } = new URL(request.url);
+  const redirectUrl = searchParams.get('redirect');
+  throw redirect(redirectUrl || '/', {
     headers: {
       'Set-Cookie': await sessionCookie.serialize(
         { jwt, expires: expires.getTime() /* allow the server to read the expires value */ },
