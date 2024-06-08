@@ -220,6 +220,7 @@ export default function Users() {
       setConfirmation('');
     } else if (actionData?.status?.message) {
       setConfirmation(actionData?.status?.message);
+      setImports('');
     }
   }, [actionData?.status]);
 
