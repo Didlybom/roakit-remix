@@ -1,6 +1,6 @@
 import { Box, styled } from '@mui/material';
 import { ReactNode, useState } from 'react';
-import { DateRange } from '../utils/dateUtils';
+import { type DateRangeEnding } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
 import { DEFAULT_ROLE, type Role, type View } from '../utils/rbac';
 import Header from './Header';
@@ -43,8 +43,8 @@ export default function App({
   isLoggedIn: boolean;
   role?: Role;
   view: View;
-  dateRange?: DateRange;
-  onDateRangeSelect?: (dateRange: DateRange) => void;
+  dateRange?: DateRangeEnding;
+  onDateRangeSelect?: (dateRangeEnding: DateRangeEnding) => void;
   showProgress?: boolean;
   showPulse?: boolean;
   isNavOpen?: boolean;

@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
+import dayjs from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
@@ -25,10 +26,10 @@ import {
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateRangeLabels } from '../utils/dateUtils';
+import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirect } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { GroupedActivitiesResponse } from './fetcher.grouped-activities.$daterange';
+import { GroupedActivitiesResponse } from './fetcher.grouped-activities';
 
 const logger = pino({ name: 'route:dashboard' });
 
@@ -66,12 +67,16 @@ export default function Dashboard() {
   const loaderData = useLoaderData<typeof loader>();
   const groupedActivitiesFetcher = useFetcher();
   const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivitiesResponse;
-  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
-  const dateRangeLabel = dateRangeLabels[dateFilter];
+  const [dateFilter, setDateFilter] = useState(
+    loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
+  );
+  const dateRangeLabel = dateRangeLabels[dateFilter.dateRange];
 
   // load grouped activities
   useEffect(() => {
-    groupedActivitiesFetcher.load(`/fetcher/grouped-activities/${dateFilter}`);
+    groupedActivitiesFetcher.load(
+      `/fetcher/grouped-activities/?dateRange=${dateFilter.dateRange}&endDay=${dateFilter.endDay}`
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
 
@@ -148,25 +153,26 @@ export default function Dashboard() {
           </AccordionDetails>
         </Accordion>
       )}
-      {!!groupedActivitiesResponse?.topActors && (
-        <Accordion
-          variant="outlined"
-          disableGutters
-          defaultExpanded
-          sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              <ActiveContributors
-                groupedActivities={groupedActivitiesResponse}
-                actors={loaderData.actors}
-                isLoading={groupedActivitiesFetcher.state === 'loading'}
-              />
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-      )}
+      {groupedActivitiesResponse?.topActors &&
+        Object.keys(groupedActivitiesResponse.topActors).length > 0 && (
+          <Accordion
+            variant="outlined"
+            disableGutters
+            defaultExpanded
+            sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
+            <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+              <Grid container spacing={5}>
+                <ActiveContributors
+                  groupedActivities={groupedActivitiesResponse}
+                  actors={loaderData.actors}
+                  isLoading={groupedActivitiesFetcher.state === 'loading'}
+                />
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        )}
     </Stack>
   );
 

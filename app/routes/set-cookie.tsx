@@ -5,6 +5,7 @@ import { parseCookie, sessionCookie } from '../utils/sessionCookie.server';
 interface JsonRequest {
   isNavOpen?: boolean;
   dateRange?: DateRangeValue;
+  endDay?: string;
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -16,6 +17,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   if (jsonReq.dateRange != null) {
     cookie.dateRange = jsonReq.dateRange;
+  }
+  if (jsonReq.endDay != null) {
+    cookie.endDay = jsonReq.endDay;
   }
   return cookie.isNavOpen != null || cookie.dateRange != null ?
       json(null, {

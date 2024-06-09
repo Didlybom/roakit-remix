@@ -1,9 +1,13 @@
 import dayjs, { Dayjs } from 'dayjs';
+import isTodayPlugin from 'dayjs/plugin/isToday';
+import isYesterdayPlugin from 'dayjs/plugin/isYesterday';
 import localizedFormatPlugin from 'dayjs/plugin/localizedFormat';
 import relativeTimePlugin from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(localizedFormatPlugin);
 dayjs.extend(relativeTimePlugin);
+dayjs.extend(isTodayPlugin);
+dayjs.extend(isYesterdayPlugin);
 
 export const ONE_HOUR = 60 * 60 * 1000;
 export const ONE_DAY = 24 * ONE_HOUR;
@@ -19,6 +23,11 @@ export const formatMonthDayTime = (date: Date) =>
 export const formatMonthDay = (date: Date) =>
   date.toLocaleDateString('en-us', { month: 'short', day: 'numeric' });
 
+export const isToday = (date: Dayjs) => date.isToday();
+export const isYesterday = (date: Dayjs) => date.isYesterday();
+
+export const endOfDay = (date: Dayjs) => Math.min(Date.now(), date.endOf('day').valueOf());
+
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',
   OneWeek = 'OneWeek',
@@ -27,24 +36,26 @@ export enum DateRange {
 }
 export type DateRangeValue = DateRange.TwoWeeks | DateRange.OneWeek | DateRange.OneDay;
 
+export type DateRangeEnding = { dateRange: DateRange; endDay: string /* YYYYMMDD*/ };
+
 export const dateRangeLabels: Record<DateRange, string> = {
-  [DateRange.TwoWeeks]: 'Last 14 days',
-  [DateRange.OneWeek]: 'Last 7 days',
-  [DateRange.TwoDays]: 'Last 48 hours',
-  [DateRange.OneDay]: 'Last 24 hours',
+  [DateRange.TwoWeeks]: '14 days',
+  [DateRange.OneWeek]: '7 days',
+  [DateRange.TwoDays]: '2 days',
+  [DateRange.OneDay]: '1 day',
 };
 
-export const dateFilterToStartDate = (dateFilter: DateRange) => {
-  const now = Date.now();
-  switch (dateFilter) {
+export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
+  const ending = endOfDay(endDay);
+  switch (dateRange) {
     case DateRange.TwoWeeks:
-      return now - 14 * ONE_DAY;
+      return ending - 14 * ONE_DAY;
     case DateRange.OneWeek:
-      return now - 7 * ONE_DAY;
+      return ending - 7 * ONE_DAY;
     case DateRange.TwoDays:
-      return now - 2 * ONE_DAY;
+      return ending - 2 * ONE_DAY;
     case DateRange.OneDay:
-      return now - ONE_DAY;
+      return ending - ONE_DAY;
     default:
       return null;
   }

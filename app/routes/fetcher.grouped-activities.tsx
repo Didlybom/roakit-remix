@@ -1,4 +1,5 @@
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
+import dayjs from 'dayjs';
 import pino from 'pino';
 import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import {
@@ -9,7 +10,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { groupActivities, identifyActivities, type GroupedActivities } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate, endOfDay } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 import { View } from '../utils/rbac';
@@ -22,8 +23,10 @@ export const shouldRevalidate = () => false;
 
 const VIEW = View.FetcherGroupedActivities;
 
+const SEARCH_PARAM_DATERANGE = 'dateRange';
+const SEARCH_PARAM_ENDDAY = 'endDay';
+
 export const loader = async ({
-  params,
   request,
 }: LoaderFunctionArgs): Promise<TypedResponse<GroupedActivitiesResponse>> => {
   let sessionData;
@@ -32,11 +35,21 @@ export const loader = async ({
   } catch (e) {
     return errorJsonResponse('Fetching grouped activities failed. Invalid session.', 401);
   }
-  if (!params.daterange) {
-    return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
+
+  const { searchParams } = new URL(request.url);
+  if (
+    searchParams.get(SEARCH_PARAM_DATERANGE) == null ||
+    searchParams.get(SEARCH_PARAM_ENDDAY) == null
+  ) {
+    return errorJsonResponse('Fetching grouped activities failed. Missing params.', 400);
+  }
+  const dateRange = searchParams.get(SEARCH_PARAM_DATERANGE) as DateRange;
+  const endDay = dayjs(searchParams.get(SEARCH_PARAM_ENDDAY));
+  if (isNaN(endDay.toDate().getTime())) {
+    return errorJsonResponse('Fetching grouped activities failed. Invalid endDay param.', 400);
   }
   try {
-    const startDate = dateFilterToStartDate(params.daterange as DateRange);
+    const startDate = dateFilterToStartDate(dateRange, endDay);
     if (!startDate) {
       return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
     }
@@ -48,6 +61,7 @@ export const loader = async ({
       fetchActivities({
         customerId: sessionData.customerId!,
         startDate,
+        endDate: endOfDay(endDay),
         options: { findPriority: true, includesMetadata: true },
       }),
     ]);

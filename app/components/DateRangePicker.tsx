@@ -5,17 +5,20 @@ import {
   DateRange as MediumDateRangeIcon,
   Today as SmallDateRangeIcon,
 } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-} from '@mui/material';
+import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Stack } from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useState } from 'react';
-import { DateRange, dateRangeLabels } from '../utils/dateUtils';
+import {
+  DateRange,
+  dateRangeLabels,
+  formatYYYYMMDD,
+  isToday,
+  isYesterday,
+  type DateRangeEnding,
+} from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
 
 const icons: Record<DateRange, JSX.Element> = {
@@ -27,64 +30,102 @@ const icons: Record<DateRange, JSX.Element> = {
 
 export default function DateRangePicker({
   dateRange,
+  endDay = dayjs(),
   onSelect,
-  showProgress,
+  color = 'white',
 }: {
   dateRange: DateRange;
-  onSelect: (dateRange: DateRange) => void;
-  showProgress?: boolean;
+  endDay: Dayjs;
+  onSelect: (dateRangeEnding: DateRangeEnding) => void;
+  color?: string;
 }) {
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
+  const [range, setRange] = useState<DateRange>(dateRange);
+  const [day, setDay] = useState<Dayjs>(endDay);
 
-  const onDateClick = async (dateRange: DateRange) => {
+  const handleDateRangeClick = async (dateRange: DateRange) => {
     setMenuEl(null);
-    onSelect(dateRange);
-    await postJson('/set-cookie', { dateRange });
+    setRange(dateRange);
+    const endDay = formatYYYYMMDD(day);
+    onSelect({ dateRange, endDay });
+    await postJson('/set-cookie', { dateRange, endDay });
   };
 
+  const handleEndDayClick = async (day: Dayjs | null) => {
+    if (!day || isNaN(day.toDate().getTime())) {
+      return;
+    }
+    setMenuEl(null);
+    setDay(day);
+    const endDay = formatYYYYMMDD(day);
+    onSelect({ dateRange: range, endDay });
+    await postJson('/set-cookie', { dateRange: range, endDay: endDay });
+  };
+
+  let datePickerFormat = 'MMM Do';
+  if (isToday(day)) {
+    datePickerFormat = 'Today';
+  } else if (isYesterday(day)) {
+    datePickerFormat = 'Yesterday';
+  }
+
   return (
-    <Box mx={2}>
+    <Stack direction="row" alignItems="center" useFlexGap mx={2}>
       <Button
-        color="inherit"
-        startIcon={icons[dateRange]}
-        endIcon={menuEl ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
+        endIcon={
+          menuEl ? <ArrowDropUpIcon sx={{ ml: -1 }} /> : <ArrowDropDownIcon sx={{ ml: -1 }} />
+        }
         onClick={e => setMenuEl(e.currentTarget)}
-        sx={{ textWrap: 'nowrap', textTransform: 'none' }}
+        sx={{
+          color,
+          fontWeight: '400',
+          fontSize: ' small',
+          textWrap: 'nowrap',
+          textTransform: 'none',
+        }}
       >
         {dateRangeLabels[dateRange]}
       </Button>
-      <Menu
-        id="date-range"
-        open={!!menuEl}
-        anchorEl={menuEl}
-        onClose={() => setMenuEl(null)}
-        sx={{ color: 'inherit' }}
-      >
-        {(Object.keys(dateRangeLabels) as DateRange[]).map((date, i) => (
+      <Menu open={!!menuEl} anchorEl={menuEl} onClose={() => setMenuEl(null)} sx={{ color }}>
+        {(Object.keys(dateRangeLabels) as DateRange[]).map((rangeOption, i) => (
           <MenuItem
             key={i}
-            value={date}
-            selected={date === dateRange}
-            onClick={() => onDateClick(date)}
+            value={rangeOption}
+            selected={rangeOption === range}
+            onClick={() => handleDateRangeClick(rangeOption)}
           >
-            <ListItemIcon>{icons[date]}</ListItemIcon>
-            <ListItemText>{dateRangeLabels[date]}</ListItemText>
+            <ListItemIcon>{icons[rangeOption]}</ListItemIcon>
+            <ListItemText>{dateRangeLabels[rangeOption]}</ListItemText>
           </MenuItem>
         ))}
       </Menu>
-      {showProgress && (
-        <CircularProgress
-          size={30}
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            marginTop: '-15px',
-            marginLeft: '-15px',
-            color: 'inherit',
-          }}
-        />
-      )}
-    </Box>
+      <Box fontSize="small" display={{ xs: 'none', sm: 'flex' }}>
+        {'ending'}
+      </Box>
+      <Box mt="1px">
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            disableFuture={true}
+            slots={{ toolbar: undefined }}
+            slotProps={{
+              actionBar: { actions: [] },
+              toolbar: undefined,
+              textField: {
+                size: 'small',
+                sx: {
+                  width: '120px',
+                  input: { color, fontSize: 'small', pl: 1 },
+                  '& fieldset': { border: 'none' },
+                },
+              },
+              openPickerButton: { sx: { color, '& svg': { fontSize: '1.25rem' } } },
+            }}
+            value={day}
+            format={datePickerFormat}
+            onChange={handleEndDayClick}
+          />
+        </LocalizationProvider>
+      </Box>
+    </Stack>
   );
 }

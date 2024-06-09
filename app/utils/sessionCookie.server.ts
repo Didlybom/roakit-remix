@@ -1,9 +1,10 @@
 import { createCookie } from '@remix-run/node';
+import dayjs from 'dayjs';
 import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
-import { DateRange, DateRangeValue } from './dateUtils';
+import { DateRange, DateRangeValue, formatYYYYMM, type DateRangeEnding } from './dateUtils';
 import type { Role } from './rbac';
 
 const logger = pino({ name: 'utils:session-cookie' });
@@ -16,7 +17,7 @@ export interface SessionData {
   userId?: string;
   role?: Role;
   isNavOpen?: boolean;
-  dateFilter?: DateRange;
+  dateFilter?: DateRangeEnding;
 }
 
 export interface CookieData {
@@ -24,6 +25,7 @@ export interface CookieData {
   jwt?: string;
   isNavOpen?: boolean;
   dateRange?: DateRangeValue;
+  endDay?: string;
 }
 
 export const sessionCookie = createCookie('__session', {
@@ -38,11 +40,10 @@ export const parseCookie = async (request: Request) => {
 };
 
 export const getSessionData = async (request: Request): Promise<SessionData> => {
-  const { jwt, isNavOpen, dateRange } = await parseCookie(request);
+  const { jwt, isNavOpen, dateRange, endDay } = await parseCookie(request);
   if (!jwt) {
     return { isLoggedIn: false };
   }
-
   let sessionData: SessionData;
   let token;
   try {
@@ -53,7 +54,10 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
       isLoggedIn: true,
       email: token.email,
       isNavOpen: isMobile ? false : isNavOpen,
-      dateFilter: dateRange,
+      dateFilter: {
+        dateRange: dateRange ?? DateRange.OneDay,
+        endDay: endDay ?? formatYYYYMM(dayjs()),
+      },
     };
   } catch (e) {
     logger.error(e, 'Error verifying session');

@@ -22,6 +22,7 @@ import {
   useNavigation,
   useSearchParams,
 } from '@remix-run/react';
+import dayjs from 'dayjs';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -47,7 +48,7 @@ import JiraIcon from '../icons/Jira';
 import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
 import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate, endOfDay, formatYYYYMMDD } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
   errorAlert,
@@ -179,7 +180,9 @@ export default function UserActivity() {
   const [actionFilter, setActionFilter] = useState(
     searchParams.get(SEARCH_PARAM_ACTION)?.split(',') ?? []
   );
-  const [dateFilter, setDateFilter] = useState(loaderData.dateFilter ?? DateRange.OneDay);
+  const [dateFilter, setDateFilter] = useState(
+    loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
+  );
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
   const [showOnlyActor, setShowOnlyActor] = useState<string | undefined>(undefined);
@@ -244,8 +247,10 @@ export default function UserActivity() {
   useEffect(() => {
     setGotSnapshot(false);
     const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
+    const endDay = dayjs(dateFilter.endDay);
     activitiesFetcher.load(
-      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter)!}`
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endOfDay(endDay)}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]); // activitiesFetcher must be omitted

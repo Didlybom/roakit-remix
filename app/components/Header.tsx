@@ -15,7 +15,8 @@ import {
   Typography,
   styled,
 } from '@mui/material';
-import { DateRange } from '../utils/dateUtils';
+import dayjs from 'dayjs';
+import { type DateRangeEnding } from '../utils/dateUtils';
 import { Role, View } from '../utils/rbac';
 import DateRangePicker from './DateRangePicker';
 
@@ -56,8 +57,8 @@ export default function Header({
   isLoggedIn: boolean;
   role: Role;
   view: View;
-  dateRange?: DateRange;
-  onDateRangeSelect?: (dateRange: DateRange) => void;
+  dateRange?: DateRangeEnding;
+  onDateRangeSelect?: (dateRangeEnding: DateRangeEnding) => void;
   showProgress?: boolean;
   navbarWidth: number;
   navbarOpen?: boolean;
@@ -91,7 +92,11 @@ export default function Header({
           <>
             <Box flex={1} ml={2}>
               {dateRange && onDateRangeSelect && (
-                <DateRangePicker dateRange={dateRange} onSelect={onDateRangeSelect} />
+                <DateRangePicker
+                  dateRange={dateRange.dateRange}
+                  endDay={dayjs(dateRange.endDay)}
+                  onSelect={onDateRangeSelect}
+                />
               )}
             </Box>
             {isLoggedIn && role === Role.Admin && (
