@@ -157,7 +157,9 @@ export const action = async ({
     const dateCreated = Date.now();
     let importCount = 0;
     for (const account of accounts) {
-      const [managerId, email, jiraId, jiraName, gitHubId] = account.split(',');
+      const [managerId, email, displayName, jiraId, gitHubId] = account
+        .split(',')
+        .map(f => f.trim());
       if (!email || gitHubId == null) {
         continue;
       }
@@ -165,10 +167,10 @@ export const action = async ({
       batch.set(identitiesColl.doc(), {
         dateCreated,
         managerId,
-        displayName: jiraName,
+        displayName,
         ...(email && { email }),
         accounts: [
-          { feedId: 2, type: 'jira', id: jiraId, name: jiraName },
+          { feedId: 2, type: 'jira', id: jiraId, name: displayName },
           { feedId: 1, type: 'github', id: gitHubId, name: '' },
         ],
       });
@@ -490,9 +492,9 @@ export default function Users() {
             multiline
             minRows={5}
             maxRows={15}
-            helperText="manager ID,email,Jira ID,Jira name,GitHub username"
-            placeholder="x7jfRAz1sSko911234,jdoe@example.com,l1b78K4798TBj3pPe47k,John Doe,jdoe
-,jsmith@example.com,qyXNw7qryWGENPNbTnZW,Jane Smith,jsmith"
+            helperText="manager ID, email, name, Jira ID, GitHub username"
+            placeholder="x7jfRAz1sSko911234, jdoe@example.com, John Doe, l1b78K4798TBj3pPe47k, jdoe
+, jsmith@example.com, Jane Smith, qyXNw7qryWGENPNbTnZW, jsmith"
             size="small"
             onChange={e => {
               setError('');

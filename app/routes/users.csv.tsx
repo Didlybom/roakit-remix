@@ -14,13 +14,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
-    let csv = 'ID,managerID,email,jiraID,jiraName,githubUsername\n';
+    let csv = 'ID,managerID,email,name,jiraID,githubUsername\n';
     identities.list.forEach(identity => {
-      csv += identity.id + ',' + (identity.managerId ?? '') + ',';
-      csv += (identity.email ?? '') + ',';
       const jiraAccount = identity.accounts.find(account => account.type === JIRA_FEED_TYPE);
       const githubAccount = identity.accounts.find(account => account.type === GITHUB_FEED_TYPE);
-      csv += (jiraAccount?.id ?? '') + ',' + (jiraAccount?.name ?? '') + ',';
+      csv += identity.id + ',' + (identity.managerId ?? '') + ',';
+      csv += (identity.email ?? '') + ',';
+      csv += (identity.displayName || jiraAccount?.name || '') + ',';
+      csv += (jiraAccount?.id ?? '') + ',';
       csv += (githubAccount?.id ?? '') + '\n';
     });
     const date = new Date().toLocaleDateString().replaceAll('/', '-');
