@@ -16,6 +16,7 @@ import {
   dateRangeLabels,
   formatYYYYMMDD,
   isToday,
+  isValidDate,
   isYesterday,
   type DateRangeEnding,
 } from '../utils/dateUtils';
@@ -52,7 +53,7 @@ export default function DateRangePicker({
   };
 
   const handleEndDayClick = async (day: Dayjs | null) => {
-    if (!day || isNaN(day.toDate().getTime())) {
+    if (!day || !isValidDate(day)) {
       return;
     }
     setMenuEl(null);
@@ -70,7 +71,7 @@ export default function DateRangePicker({
   }
 
   return (
-    <Stack direction="row" alignItems="center" useFlexGap mx={2}>
+    <Stack direction="row" alignItems="center" useFlexGap>
       <Button
         endIcon={
           menuEl ? <ArrowDropUpIcon sx={{ ml: -1 }} /> : <ArrowDropDownIcon sx={{ ml: -1 }} />
@@ -99,7 +100,7 @@ export default function DateRangePicker({
           </MenuItem>
         ))}
       </Menu>
-      <Box fontSize="small" display={{ xs: 'none', sm: 'flex' }}>
+      <Box fontSize="small" mr={1}>
         {'ending'}
       </Box>
       <Box mt="1px">
@@ -114,8 +115,12 @@ export default function DateRangePicker({
                 size: 'small',
                 sx: {
                   width: '120px',
-                  input: { color, fontSize: 'small', pl: 1 },
-                  '& fieldset': { border: 'none' },
+                  input: { color, fontSize: 'small', py: '4px', pl: '8px' },
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': { borderColor: color, opacity: 0.7 },
+                    '&:hover fieldset': { borderColor: color, opacity: 0.7 },
+                    '&.Mui-focused fieldset': { borderColor: color, opacity: 0.7 },
+                  },
                 },
               },
               openPickerButton: { sx: { color, '& svg': { fontSize: '1.25rem' } } },

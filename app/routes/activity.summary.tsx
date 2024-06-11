@@ -28,12 +28,12 @@ import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.s
 import {} from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { formatYYYYMMDD } from '../utils/dateUtils';
+import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import {
   errorAlert,
   internalLinkSx,
   loaderErrorResponse,
-  loginWithRedirect,
+  loginWithRedirectUrl,
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   // load summaries
   useEffect(() => {
-    if (isNaN(selectedDay.toDate().getTime())) {
+    if (!isValidDate(selectedDay)) {
       setError('Invalid date');
       return;
     }
@@ -103,7 +103,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (fetchedSummaries?.error?.status === 401) {
-      navigate(loginWithRedirect());
+      navigate(loginWithRedirectUrl());
     }
   }, [fetchedSummaries?.error, navigate]);
 

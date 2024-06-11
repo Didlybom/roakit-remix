@@ -10,7 +10,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { groupActivities, identifyActivities, type GroupedActivities } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate, endOfDay } from '../utils/dateUtils';
+import { DateRange, dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
 import { View } from '../utils/rbac';
@@ -45,7 +45,7 @@ export const loader = async ({
   }
   const dateRange = searchParams.get(SEARCH_PARAM_DATERANGE) as DateRange;
   const endDay = dayjs(searchParams.get(SEARCH_PARAM_ENDDAY));
-  if (isNaN(endDay.toDate().getTime())) {
+  if (!isValidDate(endDay)) {
     return errorJsonResponse('Fetching grouped activities failed. Invalid endDay param.', 400);
   }
   try {

@@ -27,7 +27,7 @@ import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
-import { errorAlert, loaderErrorResponse, loginWithRedirect } from '../utils/jsxUtils';
+import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { GroupedActivitiesResponse } from './fetcher.grouped-activities';
 
@@ -82,7 +82,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (groupedActivitiesResponse?.error?.status === 401) {
-      navigate(loginWithRedirect());
+      navigate(loginWithRedirectUrl());
     }
   }, [groupedActivitiesResponse?.error, navigate]);
 

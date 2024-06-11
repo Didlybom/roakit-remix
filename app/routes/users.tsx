@@ -34,7 +34,7 @@ import { useEffect, useMemo, useState } from 'react';
 import App from '../components/App';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
-import { dataGridCommonProps, dateColdDef } from '../components/datagrid/dataGridCommon';
+import { dataGridCommonProps, dateColDef } from '../components/datagrid/dataGridCommon';
 import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
@@ -383,7 +383,7 @@ export default function Users() {
       },
       { field: 'type', headerName: 'Source', minWidth: 80 },
       { field: 'name', headerName: 'Name', minWidth: 250 },
-      dateColdDef({
+      dateColDef({
         field: 'createdTimestamp',
         valueGetter: value => (value ? new Date(value) : value),
       }),

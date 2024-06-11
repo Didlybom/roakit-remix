@@ -4,7 +4,13 @@ import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
-import { DateRange, DateRangeValue, formatYYYYMM, type DateRangeEnding } from './dateUtils';
+import {
+  DateRange,
+  DateRangeValue,
+  formatYYYYMMDD,
+  isValidDate,
+  type DateRangeEnding,
+} from './dateUtils';
 import type { Role } from './rbac';
 
 const logger = pino({ name: 'utils:session-cookie' });
@@ -56,7 +62,7 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
       isNavOpen: isMobile ? false : isNavOpen,
       dateFilter: {
         dateRange: dateRange ?? DateRange.OneDay,
-        endDay: endDay ?? formatYYYYMM(dayjs()),
+        endDay: !endDay || !isValidDate(dayjs(endDay)) ? formatYYYYMMDD(dayjs()) : endDay,
       },
     };
   } catch (e) {

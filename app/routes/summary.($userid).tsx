@@ -57,9 +57,9 @@ import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../types/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
-import { formatDayLocal, formatYYYYMM, formatYYYYMMDD } from '../utils/dateUtils';
+import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { errorAlert, loaderErrorResponse, loginWithRedirect } from '../utils/jsxUtils';
+import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { ActivityResponse } from './fetcher.activities.($userid)';
 import { SummariesResponse } from './fetcher.summaries.($userid)';
@@ -202,7 +202,7 @@ export default function Summary() {
 
   // load activities for the selected day
   useEffect(() => {
-    if (isNaN(selectedDay.toDate().getTime())) {
+    if (!isValidDate(selectedDay)) {
       setError('Invalid date');
       return;
     }
@@ -214,7 +214,7 @@ export default function Summary() {
 
   // load the summaries for the selected month (to be able to highlight days with summaries)
   useEffect(() => {
-    if (isNaN(selectedMonth.toDate().getTime())) {
+    if (!isValidDate(selectedMonth)) {
       setError('Invalid date');
       return;
     }
@@ -296,7 +296,7 @@ export default function Summary() {
 
   useEffect(() => {
     if (fetchedActivities?.error?.status === 401 || fetchedSummaries?.error?.status === 401) {
-      navigate(loginWithRedirect());
+      navigate(loginWithRedirectUrl());
     }
   }, [fetchedActivities?.error, fetchedSummaries?.error?.status, navigate]);
 

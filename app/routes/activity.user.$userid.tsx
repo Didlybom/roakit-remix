@@ -1,4 +1,9 @@
-import { GitHub as GitHubIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
+import {
+  AccountTree as CategorizeIcon,
+  GitHub as GitHubIcon,
+  OpenInNew as OpenInNewIcon,
+  Search as SearchIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -6,14 +11,16 @@ import {
   FormGroup,
   Unstable_Grid2 as Grid,
   IconButton,
+  InputAdornment,
   Link,
   Popover,
   Stack,
   Switch,
+  TextField,
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
 import { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import {
   useFetcher,
@@ -26,14 +33,16 @@ import dayjs from 'dayjs';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import App from '../components/App';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import {
   actionColDef,
+  actorColDef,
   dataGridCommonProps,
-  dateColdDef,
+  dateColDef,
   descriptionColDef,
   metadataActionsColDef,
   priorityColDef,
@@ -45,8 +54,18 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../types/activityFeed';
-import type { AccountToIdentityRecord, ActivityRecord, Artifact } from '../types/types';
+import {
+  artifactActions,
+  buildArtifactActionKey,
+  getSummary,
+  identifyAccounts,
+} from '../types/activityFeed';
+import type {
+  AccountData,
+  AccountToIdentityRecord,
+  ActivityData,
+  ActivityRecord,
+} from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, endOfDay, formatYYYYMMDD } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
@@ -54,7 +73,7 @@ import {
   errorAlert,
   internalLinkSx,
   loaderErrorResponse,
-  loginWithRedirect,
+  loginWithRedirectUrl,
   stickySx,
 } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
@@ -78,50 +97,32 @@ const VIEW = View.ActivityUser;
 
 const ALL = '*';
 const SEARCH_PARAM_ACTION = 'action';
-
-interface UserActivityRow {
-  id: string;
-  date: Date;
-  action: string;
-  eventType?: string;
-  event?: string;
-  artifact: Artifact;
-  initiativeId: string;
-  launchItemId: string;
-  priority?: number;
-  actorId?: string;
-  metadata: unknown;
-  objectId?: string;
-}
+const SEARCH_PARAM_GROUPBY = 'groupby';
 
 const userActivityRows = (
   snapshot: ActivityRecord,
   accountMap: AccountToIdentityRecord
-): UserActivityRow[] => {
-  const rows: UserActivityRow[] = [];
+): ActivityData[] => {
+  const rows: ActivityData[] = [];
   Object.keys(snapshot).forEach(activityId => {
     const activity = snapshot[activityId];
-    const row: UserActivityRow = {
+    const row: ActivityData = {
       id: activityId,
-      date: new Date(activity.createdTimestamp),
-      action: activity.action,
-      eventType: activity.eventType,
-      event: activity.event,
-      artifact: activity.artifact,
-      initiativeId: activity.initiativeId,
-      launchItemId: activity.launchItemId,
-      priority: activity.priority,
-      metadata: activity.metadata,
+      ...activity,
       actorId:
         activity.actorId ?
           accountMap[activity.actorId] ?? activity.actorId // resolve identity
         : undefined,
-      objectId: activity.objectId,
     };
     rows.push(row);
   });
   return rows;
 };
+
+enum GroupBy {
+  Contributor = 'contributor',
+  Launch = 'launch',
+}
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
@@ -138,6 +139,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     ) {
       throw new Response('Invalid action param', { status: 400 });
     }
+  }
+  if (
+    searchParams.get(SEARCH_PARAM_GROUPBY) &&
+    !Object.values<string>(GroupBy).includes(searchParams.get(SEARCH_PARAM_GROUPBY)!)
+  ) {
+    throw new Response('Invalid groupby param', { status: 400 });
   }
 
   try {
@@ -180,25 +187,35 @@ export default function UserActivity() {
   const [actionFilter, setActionFilter] = useState(
     searchParams.get(SEARCH_PARAM_ACTION)?.split(',') ?? []
   );
+  const [groupBy, setGroupBy] = useState(
+    (searchParams.get(SEARCH_PARAM_GROUPBY) as GroupBy) ?? GroupBy.Contributor
+  );
+  const [searchFilter, setSearchFilter] = useState<string | null>(null);
+  const [searchTerm] = useDebounce(searchFilter, 50);
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
-  const [scrollToActor, setScrollToActor] = useState<string | undefined>(undefined);
+  const [scrollToGroup, setScrollToGroup] = useState<string | undefined>(undefined);
   const [showOnlyActor, setShowOnlyActor] = useState<string | undefined>(undefined);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
     null
   );
-  const [gotSnapshot, setGotSnapshot] = useState(false);
-  const snapshot = useRef<{ key: string; values: UserActivityRow[] }[]>();
-  const [activities, setActivities] = useState<Map<string, UserActivityRow[]>>(new Map());
+  const [isRendering, setIsRendering] = useState(false);
+  const snapshot = useRef<{ key: string; values: ActivityData[] }[]>();
+  const [activities, setActivities] = useState<Map<string, ActivityData[]>>(new Map());
 
-  const actorElementId = (actor: string) => `ACTOR-${removeSpaces(actor)}`;
+  const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
 
   const sortAndSetUserActivities = useCallback(() => {
+    const getLabelForKey = (key: string) =>
+      groupBy === GroupBy.Contributor ?
+        loaderData.actors[key]?.name ?? 'ZZZ'
+      : loaderData.launchItems[key]?.label ?? 'ZZZ';
+
     if (snapshot.current) {
-      const filteredSnapshot: { key: string; values: UserActivityRow[] }[] = [];
+      const filteredSnapshot: { key: string; values: ActivityData[] }[] = [];
       if (actionFilter.length) {
         snapshot.current.forEach(userSnapshot => {
           const values = userSnapshot.values.filter(a =>
@@ -212,27 +229,12 @@ export default function UserActivity() {
       setActivities(
         sortMap(actionFilter.length ? filteredSnapshot : snapshot.current, (a, b) =>
           sortAlphabetically ?
-            caseInsensitiveCompare(
-              loaderData.actors[a.key]?.name ?? '',
-              loaderData.actors[b.key]?.name ?? ''
-            )
-          : b.count - a.count
+            caseInsensitiveCompare(getLabelForKey(a.key), getLabelForKey(b.key))
+          : (b.key ? b.count : 0) - (a.key ? a.count : 0)
         )
       );
     }
-  }, [loaderData.actors, actionFilter, sortAlphabetically]);
-
-  const setRows = useCallback(
-    (querySnapshot: ActivityRecord) => {
-      snapshot.current = groupByArray(
-        userActivityRows(querySnapshot, loaderData.accountMap),
-        'actorId'
-      );
-      sortAndSetUserActivities();
-      setGotSnapshot(true);
-    },
-    [loaderData.accountMap, sortAndSetUserActivities]
-  );
+  }, [groupBy, loaderData.actors, loaderData.launchItems, actionFilter, sortAlphabetically]);
 
   useEffect(() => {
     if (loaderData.initiatives) {
@@ -245,11 +247,10 @@ export default function UserActivity() {
 
   // load activities
   useEffect(() => {
-    setGotSnapshot(false);
+    setIsRendering(false);
     const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
     const endDay = dayjs(dateFilter.endDay);
     activitiesFetcher.load(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endOfDay(endDay)}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,14 +258,13 @@ export default function UserActivity() {
 
   useEffect(() => {
     if (fetchedActivity?.error?.status === 401) {
-      navigate(loginWithRedirect());
+      navigate(loginWithRedirectUrl());
     }
   }, [fetchedActivity?.error, navigate]);
 
   useEffect(() => {
-    setGotSnapshot(false);
     if (fetchedActivity?.activities) {
-      Object.values(fetchedActivity?.activities).forEach(activity => {
+      Object.values(fetchedActivity.activities).forEach(activity => {
         if (!activity.initiativeId || !activity.launchItemId) {
           const mapping = mapActivity(activity);
           if (!activity.initiativeId) {
@@ -275,9 +275,14 @@ export default function UserActivity() {
           }
         }
       });
-      setRows(fetchedActivity.activities);
+      snapshot.current = groupByArray(
+        userActivityRows(fetchedActivity.activities, loaderData.accountMap),
+        groupBy === GroupBy.Contributor ? 'actorId' : 'launchItemId'
+      );
+      sortAndSetUserActivities();
+      setIsRendering(true);
     }
-  }, [fetchedActivity?.activities, setRows]);
+  }, [fetchedActivity?.activities, groupBy, loaderData.accountMap, sortAndSetUserActivities]);
 
   useEffect(() => {
     sortAndSetUserActivities();
@@ -285,9 +290,9 @@ export default function UserActivity() {
 
   // Auto scrollers
   useEffect(() => {
-    if (scrollToActor) {
-      const element = document.getElementById(actorElementId(scrollToActor));
-      setScrollToActor(undefined);
+    if (scrollToGroup != null) {
+      const element = document.getElementById(groupElementId(scrollToGroup));
+      setScrollToGroup(undefined);
       if (element) {
         setTimeout(
           () =>
@@ -299,25 +304,46 @@ export default function UserActivity() {
         );
       }
     }
-  }, [scrollToActor]);
+  }, [scrollToGroup]);
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef({ field: 'date' }),
+      dateColDef({
+        field: 'createdTimestamp',
+        valueGetter: value => (value ? new Date(value) : value),
+      }),
+      ...(groupBy !== GroupBy.Contributor && loaderData.userId === ALL ?
+        [
+          actorColDef({
+            field: 'actorId',
+            valueGetter: (value: string) =>
+              value ?
+                ({
+                  id: value,
+                  name: loaderData.actors[value]?.name ?? 'unknown',
+                } as AccountData)
+              : '',
+          }),
+        ]
+      : []),
       actionColDef({ field: 'action' }),
       priorityColDef({ field: 'priority' }),
-      {
-        field: 'launchItemId',
-        headerName: 'Launch',
-        renderCell: params => {
-          const launchItemId = params.value as string;
-          return launchItemId ?
-              <Box title={loaderData.launchItems[launchItemId]?.label}>
-                {loaderData.launchItems[launchItemId]?.key}
-              </Box>
-            : <Box color={grey[400]}>unset</Box>;
-        },
-      },
+      ...(groupBy !== GroupBy.Launch ?
+        [
+          {
+            field: 'launchItemId',
+            headerName: 'Launch',
+            renderCell: (params: GridRenderCellParams) => {
+              const launchItemId = params.value as string;
+              return launchItemId ?
+                  <Box title={loaderData.launchItems[launchItemId]?.label}>
+                    {loaderData.launchItems[launchItemId]?.key}
+                  </Box>
+                : <Box color={grey[400]}>unset</Box>;
+            },
+          },
+        ]
+      : []),
       {
         field: 'initiativeId',
         headerName: 'Goal',
@@ -330,7 +356,6 @@ export default function UserActivity() {
             : <Box color={grey[400]}>unset</Box>;
         },
       },
-
       descriptionColDef({ field: 'metadata' }, (element, content) =>
         setPopover({ element, content })
       ),
@@ -338,95 +363,220 @@ export default function UserActivity() {
         setCodePopover({ element, content: metadata })
       ),
     ],
-    [loaderData.initiatives, loaderData.launchItems]
+    [groupBy, loaderData.userId, loaderData.actors, loaderData.launchItems, loaderData.initiatives]
   );
 
-  let activityCount = 0;
-
-  const actorList = [...activities.keys()].map((actorId, i) => {
-    const actorActivityCount = activities.get(actorId)?.length ?? 0;
-    activityCount += actorActivityCount;
-    return (
-      <Box key={i} sx={{ mb: i === 9 ? 2 : undefined }}>
-        <Link
-          sx={internalLinkSx}
-          onClick={() => {
-            if (i <= 9 && !showOnlyActor) {
-              setScrollToActor(actorId);
-            } else {
-              setShowOnlyActor(actorId);
-            }
-          }}
-        >
-          {loaderData.actors[actorId]?.name ?? 'Unknown'}
-        </Link>
-        {` (${actorActivityCount})`}
-      </Box>
-    );
-  });
-
-  const grids = [...activities]
-    .filter(([actorId]) => !showOnlyActor || actorId === showOnlyActor)
-    .filter((_, i) => showOnlyActor || i <= 9)
-    .map(([actorId, rows], i) => {
-      const actor = loaderData.actors[actorId];
+  const [actorList, actorActivityCount] = useMemo(() => {
+    if (loaderData.userId !== ALL || groupBy !== GroupBy.Contributor) {
+      return [null, null];
+    }
+    let activityCount = 0;
+    const actorList = [...activities.keys()].map((actorId, i) => {
+      const actorActivityCount = activities.get(actorId)?.length ?? 0;
+      activityCount += actorActivityCount;
       return (
-        !!rows.length && (
-          <Stack id={actorElementId(actorId ?? '-')} key={i} sx={{ mb: 3 }}>
-            <Typography
-              variant="h6"
-              display="flex"
-              alignItems="center"
-              color={grey[600]}
-              fontSize="1.1rem"
-              mb={1}
-            >
-              <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
-              {actor?.accounts
-                ?.filter(account => account.url)
-                .map((account, i) => (
-                  <IconButton
-                    key={i}
-                    component="a"
-                    href={account.url}
-                    target="_blank"
-                    size="small"
-                    color="primary"
-                  >
-                    {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
-                    {account.type === 'jira' && <JiraIcon width={15} height={15} />}
-                  </IconButton>
-                ))}
-              {loaderData.userId === ALL && actorId && (
-                <IconButton
-                  component="a"
-                  href={
-                    `/activity/user/${encodeURI(actorId)}` +
-                    (actionFilter ? `#${actionFilter.join(',')}` : '')
-                  }
-                  size="small"
-                >
-                  <OpenInNewIcon sx={{ width: 15, height: 15 }} />
-                </IconButton>
-              )}
-            </Typography>
-            <DataGrid
-              columns={columns}
-              rows={rows}
-              {...dataGridCommonProps}
-              rowHeight={50}
-              slots={{
-                noRowsOverlay: () => (
-                  <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-                    No activity for these dates
-                  </Box>
-                ),
-              }}
-            />
-          </Stack>
-        )
+        <Box
+          key={i}
+          mb={!sortAlphabetically && i === 9 ? 2 : undefined}
+          color={actorId ? undefined : grey[500]}
+        >
+          <Link
+            sx={internalLinkSx}
+            color={actorId ? undefined : grey[500]}
+            onClick={() => {
+              if (!sortAlphabetically && i <= 9 && showOnlyActor == null) {
+                setScrollToGroup(actorId);
+              } else {
+                setShowOnlyActor(actorId ?? '');
+              }
+            }}
+          >
+            {loaderData.actors[actorId]?.name ?? 'Unknown'}
+          </Link>
+          {` (${actorActivityCount})`}
+        </Box>
       );
     });
+    return [actorList, activityCount];
+  }, [
+    activities,
+    groupBy,
+    loaderData.actors,
+    loaderData.userId,
+    showOnlyActor,
+    sortAlphabetically,
+  ]);
+
+  const [launchList, launchActivityCount] = useMemo(() => {
+    if (loaderData.userId !== ALL || groupBy !== GroupBy.Launch) {
+      return [null, null];
+    }
+    let activityCount = 0;
+    const launchList = [...activities.keys()].map((launchId, i) => {
+      const launchActivityCount = activities.get(launchId)?.length ?? 0;
+      activityCount += launchActivityCount;
+      let label;
+      if (!launchId) {
+        label = 'No launch item';
+      } else {
+        label = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+      }
+      return (
+        <Box
+          key={i}
+          mb={i === 9 ? 2 : undefined}
+          mt={launchId ? undefined : 2}
+          color={launchId ? undefined : grey[500]}
+        >
+          <Link
+            sx={internalLinkSx}
+            color={launchId ? undefined : grey[500]}
+            onClick={() => setScrollToGroup(launchId)}
+          >
+            {label}
+          </Link>
+          {` (${launchActivityCount})`}
+        </Box>
+      );
+    });
+    return [launchList, activityCount];
+  }, [activities, groupBy, loaderData.launchItems, loaderData.userId]);
+
+  const activityCount = actorActivityCount ?? launchActivityCount;
+
+  const actorHeader = useCallback(
+    (actorId: string) => {
+      const actor = loaderData.actors[actorId];
+      return (
+        <Typography
+          variant="h6"
+          display="flex"
+          alignItems="center"
+          color={grey[600]}
+          fontSize="1.1rem"
+          mb={1}
+        >
+          <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
+          {actor?.accounts
+            ?.filter(account => account.url)
+            .map((account, i) => (
+              <IconButton
+                key={i}
+                component="a"
+                href={account.url}
+                target="_blank"
+                size="small"
+                color="primary"
+              >
+                {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                {account.type === 'jira' && <JiraIcon width={15} height={15} />}
+              </IconButton>
+            ))}
+          {loaderData.userId === ALL && actorId && (
+            <IconButton
+              component="a"
+              href={
+                `/activity/user/${encodeURI(actorId)}` +
+                (actionFilter ? `#${actionFilter.join(',')}` : '')
+              }
+              size="small"
+            >
+              <OpenInNewIcon sx={{ width: 15, height: 15 }} />
+            </IconButton>
+          )}
+        </Typography>
+      );
+    },
+    [actionFilter, loaderData.actors, loaderData.userId]
+  );
+
+  const gridsByContributor = useCallback(
+    () =>
+      groupBy === GroupBy.Contributor ?
+        [...activities]
+          .filter(([actorId]) => showOnlyActor == null || (actorId ?? '') === showOnlyActor)
+          .filter((_, i) => showOnlyActor != null || i <= 9)
+          .map(([actorId, rows], i) => {
+            const search = searchTerm?.trim().toLowerCase();
+            const filteredRows =
+              search ?
+                rows.filter(activity => {
+                  if (!activity.metadata) {
+                    return false;
+                  }
+                  const summary = getSummary(activity); // FIXME consider precalculating the summary
+                  return summary && summary.toLowerCase().indexOf(search) >= 0;
+                })
+              : rows;
+            return filteredRows.length === 0 ?
+                null
+              : <Stack id={groupElementId(actorId)} key={i} sx={{ mb: 3 }}>
+                  {actorHeader(actorId)}
+                  <DataGrid
+                    columns={columns}
+                    rows={filteredRows}
+                    {...dataGridCommonProps}
+                    rowHeight={50}
+                  />
+                </Stack>;
+          })
+      : null,
+    [activities, actorHeader, columns, groupBy, searchTerm, showOnlyActor]
+  );
+
+  const gridsByLaunch = useCallback(() => {
+    return groupBy === GroupBy.Launch ?
+        <Stack>
+          {loaderData.userId !== ALL && <Box mb={1}>{actorHeader(loaderData.userId!)}</Box>}
+          {[...activities].map(([launchId, rows], i) => {
+            let launchLabel;
+            if (!launchId) {
+              launchLabel = 'No launch item';
+            } else {
+              launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+            }
+            const search = searchTerm?.trim().toLowerCase();
+            const filteredRows =
+              search ?
+                rows.filter(activity => {
+                  if (!activity.metadata) {
+                    return false;
+                  }
+                  const summary = getSummary(activity); // FIXME consider precalculating the summary
+                  return summary && summary.toLowerCase().indexOf(search) >= 0;
+                })
+              : rows;
+            return filteredRows.length === 0 ?
+                null
+              : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
+                  <Typography
+                    variant="h6"
+                    color={grey[launchId ? 600 : 400]}
+                    fontSize="1.1rem"
+                    mb={1}
+                    sx={{ textWrap: 'nowrap' }}
+                  >
+                    {launchLabel}
+                  </Typography>
+                  <DataGrid
+                    columns={columns}
+                    rows={filteredRows}
+                    {...dataGridCommonProps}
+                    rowHeight={50}
+                  />
+                </Stack>;
+          })}
+        </Stack>
+      : null;
+  }, [
+    activities,
+    actorHeader,
+    columns,
+    groupBy,
+    loaderData.launchItems,
+    loaderData.userId,
+    searchTerm,
+  ]);
 
   return (
     <App
@@ -436,7 +586,7 @@ export default function UserActivity() {
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      showProgress={!gotSnapshot || navigation.state !== 'idle'}
+      showProgress={!isRendering || navigation.state !== 'idle'}
     >
       {errorAlert(fetchedActivity?.error?.message)}
       <CodePopover
@@ -458,7 +608,7 @@ export default function UserActivity() {
       <Stack m={3}>
         <Stack direction="row">
           {loaderData.userId === ALL && (
-            <Box display="flex" mr={2}>
+            <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
               <Box sx={{ position: 'relative' }}>
                 <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
@@ -469,6 +619,7 @@ export default function UserActivity() {
                             size="small"
                             checked={sortAlphabetically}
                             onChange={e => {
+                              setIsRendering(false);
                               setSortAlphabetically(e.target.checked);
                               window.scrollTo({ top: 0 });
                             }}
@@ -481,12 +632,13 @@ export default function UserActivity() {
                     )}
                   </FormGroup>
                   {actorList}
+                  {launchList}
                 </Box>
               </Box>
             </Box>
           )}
           <Stack flex={1} minWidth={0}>
-            <Grid container columns={2} spacing={2} alignItems="center" mb={1}>
+            <Grid container columns={3} spacing={2} alignItems="center" mb={1}>
               <Grid>
                 {loaderData.userId !== ALL && (
                   <Button
@@ -501,29 +653,81 @@ export default function UserActivity() {
                   </Button>
                 )}
               </Grid>
-              <Grid flex={1}>
-                <FilterMenu
-                  multiple
-                  selectedValue={actionFilter ?? ''}
-                  items={[
-                    ...[...artifactActions].map(([key, action]) => ({
-                      value: key,
-                      label: action.label,
-                    })),
-                  ]}
-                  onChange={values => {
-                    setActionFilter(values as string[]);
-                    setSearchParams(prev => {
-                      if (values.length) {
-                        prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
-                      } else {
-                        prev.delete(SEARCH_PARAM_ACTION);
-                      }
-                      return prev;
-                    });
-                  }}
-                  sx={{ justifyContent: 'right' }}
-                />
+              <Grid flex={1} />
+              <Grid>
+                <Grid container spacing={3}>
+                  <Grid>
+                    <TextField
+                      autoComplete="off"
+                      value={searchFilter}
+                      size="small"
+                      sx={{ width: '16ch', minWidth: '150px' }}
+                      placeholder="Search"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon />
+                          </InputAdornment>
+                        ),
+                      }}
+                      onChange={e => setSearchFilter(e.target.value)}
+                      title="Search descriptions"
+                    />
+                  </Grid>
+                  <Grid>
+                    <FilterMenu
+                      selectedValue={groupBy}
+                      items={[
+                        {
+                          value: GroupBy.Contributor,
+                          label: loaderData.userId === ALL ? 'by Contributor' : 'None',
+                          color: loaderData.userId === ALL ? undefined : grey[500],
+                        },
+                        { value: GroupBy.Launch, label: 'by Launch' },
+                      ]}
+                      onChange={value => {
+                        setActivities(new Map());
+                        setIsRendering(false);
+                        setGroupBy(value as GroupBy);
+                        setSearchParams(prev => {
+                          if (loaderData.userId !== ALL && value == GroupBy.Contributor) {
+                            prev.delete(SEARCH_PARAM_GROUPBY);
+                          } else {
+                            prev.set(SEARCH_PARAM_GROUPBY, value as string);
+                          }
+                          return prev;
+                        });
+                      }}
+                      label="Group"
+                      icon={<CategorizeIcon />}
+                      sx={{ justifyContent: 'right' }}
+                    />
+                  </Grid>
+                  <Grid>
+                    <FilterMenu
+                      multiple
+                      selectedValue={actionFilter}
+                      items={[
+                        ...[...artifactActions].map(([key, action]) => ({
+                          value: key,
+                          label: action.label,
+                        })),
+                      ]}
+                      onChange={values => {
+                        setActionFilter(values as string[]);
+                        setSearchParams(prev => {
+                          if (values.length) {
+                            prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
+                          } else {
+                            prev.delete(SEARCH_PARAM_ACTION);
+                          }
+                          return prev;
+                        });
+                      }}
+                      sx={{ justifyContent: 'right' }}
+                    />
+                  </Grid>
+                </Grid>
               </Grid>
             </Grid>
             <Box display="flex" justifyContent="right">
@@ -533,7 +737,7 @@ export default function UserActivity() {
                 </Typography>
               )}
             </Box>
-            {grids}
+            {groupBy === GroupBy.Contributor ? gridsByContributor() : gridsByLaunch()}
           </Stack>
         </Stack>
       </Stack>

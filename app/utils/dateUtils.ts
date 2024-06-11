@@ -78,3 +78,5 @@ export const daysInMonth = (date: Dayjs) => {
     .map(i => formatYYYYMMDD(date.startOf('month').add(i, 'days')))
     .filter(d => d <= today);
 };
+
+export const isValidDate = (date: Dayjs) => !isNaN(date.toDate().getTime());

@@ -10,29 +10,34 @@ import {
   SxProps,
   Theme,
 } from '@mui/material';
+import type { ReactElement } from 'react';
 
 export default function FilterMenu({
-  multiple,
+  multiple = false,
   items,
   selectedValue,
   onChange,
+  label,
+  icon,
   sx,
 }: {
   multiple?: boolean;
   items: { value: string; label: string; color?: string }[];
   selectedValue: string | string[];
   onChange: (value: string | string[]) => void;
+  label?: string;
+  icon?: ReactElement;
   sx?: SxProps<Theme>;
 }) {
   return (
     <Stack direction="row" spacing={1} alignItems="center" sx={sx}>
-      <FilterListIcon />
+      {icon ?? <FilterListIcon />}
       <FormControl size="small">
-        <InputLabel>Filter</InputLabel>
+        <InputLabel>{label ?? 'Filter'}</InputLabel>
         <Select
           multiple={multiple}
           value={selectedValue}
-          label="Filter"
+          label={label ?? 'Filter'}
           size="small"
           sx={{ minWidth: 120 }}
           renderValue={
@@ -45,7 +50,7 @@ export default function FilterMenu({
           }
           onChange={(event: SelectChangeEvent<string | string[]>) => {
             const value = event.target.value;
-            onChange(typeof value === 'string' ? value.split(',') : value);
+            onChange(multiple && typeof value === 'string' ? value.split(',') : value);
           }}
         >
           {items.map((item, i) => (

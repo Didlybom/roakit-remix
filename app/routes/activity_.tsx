@@ -33,8 +33,8 @@ import FilterMenu from '../components/FilterMenu';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
   actionColDef,
-  actorColdDef,
-  dateColdDef,
+  actorColDef,
+  dateColDef,
   descriptionColDef,
   metadataActionsColDef,
   priorityColDef,
@@ -58,7 +58,7 @@ import {
   errorAlert,
   internalLinkSx,
   loaderErrorResponse,
-  loginWithRedirect,
+  loginWithRedirectUrl,
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
@@ -194,7 +194,7 @@ export default function ActivityReview() {
 
   useEffect(() => {
     if (fetchedActivities?.error?.status === 401) {
-      navigate(loginWithRedirect());
+      navigate(loginWithRedirectUrl());
     }
   }, [fetchedActivities?.error, navigate]);
 
@@ -257,13 +257,6 @@ export default function ActivityReview() {
     autosizeOnMount: true,
     autoHeight: true, // otherwise empty state looks ugly
     sx: { fontSize: 'small' },
-    slots: {
-      noRowsOverlay: () => (
-        <Box height="75px" display="flex" alignItems="center" justifyContent="center">
-          Nothing to show
-        </Box>
-      ),
-    },
     density: 'compact' as GridDensity,
     disableRowSelectionOnClick: true,
     disableColumnMenu: true,
@@ -275,10 +268,9 @@ export default function ActivityReview() {
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      dateColdDef({ field: 'createdTimestamp', valueGetter: value => new Date(value) }),
-      actorColdDef({
+      dateColDef({ field: 'createdTimestamp', valueGetter: value => new Date(value) }),
+      actorColDef({
         field: 'actor',
-        headerName: 'Contributor',
         valueGetter: (_, row) => {
           const fields = row as ActivityData;
           return fields.actorId ?

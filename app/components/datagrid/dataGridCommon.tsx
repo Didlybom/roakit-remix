@@ -37,7 +37,7 @@ export const dataGridCommonProps = {
   sx: { fontSize: 'small' },
   slots: {
     noRowsOverlay: () => (
-      <Box height="100px" display="flex" alignItems="center" justifyContent="center">
+      <Box height="75px" display="flex" alignItems="center" justifyContent="center">
         Nothing to show
       </Box>
     ),
@@ -54,7 +54,7 @@ export const dataGridCommonProps = {
   },
 };
 
-export const dateColdDef = (colDef?: GridColDef) =>
+export const dateColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Date',
     type: 'dateTime',
@@ -69,9 +69,9 @@ export const dateColdDef = (colDef?: GridColDef) =>
     ...colDef,
   }) as GridColDef;
 
-export const actorColdDef = (colDef?: GridColDef) =>
+export const actorColDef = (colDef?: GridColDef) =>
   ({
-    headerName: 'Author',
+    headerName: 'Contributor',
     sortComparator: (a: AccountData, b: AccountData) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
     renderCell: (params: GridRenderCellParams) => {

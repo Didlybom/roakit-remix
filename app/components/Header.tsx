@@ -82,15 +82,12 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Typography fontWeight={500} display={{ xs: 'none', sm: 'flex' }}>
+        <Typography fontWeight={500} mr={2} display={{ xs: 'none', sm: 'flex' }}>
           ROAKIT
-        </Typography>
-        <Typography fontWeight={500} display={{ xs: 'flex', sm: 'none' }}>
-          RKT
         </Typography>
         {view !== View.Login && view !== View.Logout && (
           <>
-            <Box flex={1} ml={2}>
+            <Box flex={1} mr={2}>
               {dateRange && onDateRangeSelect && (
                 <DateRangePicker
                   dateRange={dateRange.dateRange}
