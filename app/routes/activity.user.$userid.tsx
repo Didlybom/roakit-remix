@@ -1,5 +1,4 @@
 import {
-  AccountTree as CategorizeIcon,
   GitHub as GitHubIcon,
   OpenInNew as OpenInNewIcon,
   Search as SearchIcon,
@@ -190,7 +189,7 @@ export default function UserActivity() {
   const [groupBy, setGroupBy] = useState(
     (searchParams.get(SEARCH_PARAM_GROUPBY) as GroupBy) ?? GroupBy.Contributor
   );
-  const [searchFilter, setSearchFilter] = useState<string | null>(null);
+  const [searchFilter, setSearchFilter] = useState<string>('');
   const [searchTerm] = useDebounce(searchFilter, 50);
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
@@ -497,7 +496,7 @@ export default function UserActivity() {
           .filter(([actorId]) => showOnlyActor == null || (actorId ?? '') === showOnlyActor)
           .filter((_, i) => showOnlyActor != null || i <= 9)
           .map(([actorId, rows], i) => {
-            const search = searchTerm?.trim().toLowerCase();
+            const search = searchTerm.trim().toLowerCase();
             const filteredRows =
               search ?
                 rows.filter(activity => {
@@ -535,7 +534,7 @@ export default function UserActivity() {
             } else {
               launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
             }
-            const search = searchTerm?.trim().toLowerCase();
+            const search = searchTerm.trim().toLowerCase();
             const filteredRows =
               search ?
                 rows.filter(activity => {
@@ -660,9 +659,10 @@ export default function UserActivity() {
                     <TextField
                       autoComplete="off"
                       value={searchFilter}
+                      placeholder="Search"
+                      title="Search descriptions"
                       size="small"
                       sx={{ width: '16ch', minWidth: '150px' }}
-                      placeholder="Search"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -671,7 +671,6 @@ export default function UserActivity() {
                         ),
                       }}
                       onChange={e => setSearchFilter(e.target.value)}
-                      title="Search descriptions"
                     />
                   </Grid>
                   <Grid>
@@ -699,7 +698,6 @@ export default function UserActivity() {
                         });
                       }}
                       label="Group"
-                      icon={<CategorizeIcon />}
                       sx={{ justifyContent: 'right' }}
                     />
                   </Grid>
