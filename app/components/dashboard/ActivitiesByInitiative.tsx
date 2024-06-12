@@ -22,6 +22,9 @@ export default function ActivitiesByInitiatives({
   if (!initiatives || !groupedActivities?.[type]?.length) {
     return null;
   }
+
+  const SHOW_TOTAL = false;
+
   return groupedActivities[type]!.map(initiative => {
     const totalCounters = initiatives[initiative.id].counters!.activities;
     return (
@@ -42,23 +45,28 @@ export default function ActivitiesByInitiatives({
                 ],
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: dateRangeLabel,
-                stack: 'total',
+                stack: 'stack',
               },
-              {
-                id: `${initiative.id} total`,
-                data: [
-                  // max() is useful is totalCounters are behind (updated every hour only)
-                  Math.max(totalCounters.code, initiative.count.code),
-                  Math.max(totalCounters.task, initiative.count.task),
-                  Math.max(totalCounters.codeOrg, initiative.count.codeOrg),
-                  Math.max(totalCounters.taskOrg, initiative.count.taskOrg),
-                  Math.max(totalCounters.codeOrg, initiative.count.doc),
-                  Math.max(totalCounters.taskOrg, initiative.count.docOrg),
-                ],
-                valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                label: 'Total',
-                stack: 'total',
-              },
+              ...(SHOW_TOTAL ?
+                [
+                  {
+                    id: `${initiative.id} total`,
+                    data: [
+                      // max() is useful is totalCounters are behind (updated every hour only)
+                      Math.max(totalCounters.code, initiative.count.code),
+                      Math.max(totalCounters.task, initiative.count.task),
+                      Math.max(totalCounters.codeOrg, initiative.count.codeOrg),
+                      Math.max(totalCounters.taskOrg, initiative.count.taskOrg),
+                      Math.max(totalCounters.codeOrg, initiative.count.doc),
+                      Math.max(totalCounters.taskOrg, initiative.count.docOrg),
+                    ],
+                    valueFormatter: (value: number | null) =>
+                      `${value} ${pluralizeMemo('activity', value ?? 0)}`,
+                    label: 'Total',
+                    stack: 'stack',
+                  },
+                ]
+              : []),
             ]}
             xAxis={[
               {
@@ -74,6 +82,7 @@ export default function ActivitiesByInitiatives({
             margin={{ bottom: 60 }}
             slotProps={{
               legend: {
+                hidden: !SHOW_TOTAL,
                 direction: 'row',
                 position: { vertical: 'top', horizontal: 'middle' },
                 itemMarkHeight: 10,
