@@ -44,7 +44,6 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                   scaleType: 'band',
                 },
               ]}
-              xAxis={[{ tickMinStep: 1 }]}
               onItemClick={(event, data) => {
                 if (data) {
                   windowOpen(
@@ -53,7 +52,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                       data.dataIndex === 10 ?
                         '*'
                       : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
-                    }#${action}`
+                    }?action=${action}`
                   );
                 }
               }}
@@ -65,13 +64,14 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                       data.dataIndex === 10 ?
                         '*'
                       : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
-                    }#${action}`
+                    }?action=${action}`
                   );
                 }
               }}
+              xAxis={[{ tickMinStep: 1 }]}
               layout="horizontal"
               {...widgetSize}
-              margin={{ top: 10, right: 20, bottom: 30, left: 170 }}
+              margin={{ top: 15, right: 20, bottom: 30, left: 170 }}
               slotProps={{ legend: { hidden: true } }}
               colors={pastelColors}
             />

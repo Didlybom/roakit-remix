@@ -4,13 +4,13 @@ import {
   DefaultChartsAxisTooltipContent,
   type ChartsAxisContentProps,
 } from '@mui/x-charts';
+import { useCallback } from 'react';
 import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
   type: 'initiatives' | 'launchItems';
-
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
@@ -22,14 +22,19 @@ export default function ContributorsByInitiative({
   initiatives,
   isLoading,
 }: Props) {
-  const ContributorsByInitiativeTooltipContent = (props: ChartsAxisContentProps) => {
-    return initiatives ?
+  const TooltipContent = useCallback(
+    (props: ChartsAxisContentProps) =>
+      initiatives ?
         <DefaultChartsAxisTooltipContent
           {...props}
-          axisValue={initiatives[props.axisValue as string]?.label ?? (props.axisValue as string)}
+          axisValue={
+            Object.values(initiatives).find(i => i.key === props.axisValue)?.label ??
+            props.axisValue
+          }
         />
-      : <DefaultChartsAxisTooltipContent {...props} />;
-  };
+      : <DefaultChartsAxisTooltipContent {...props} />,
+    [initiatives]
+  );
 
   if (!initiatives || !groupedActivities?.[type]?.length) {
     return null;
@@ -55,9 +60,10 @@ export default function ContributorsByInitiative({
           xAxis={[{ tickMinStep: 1 }]}
           layout="horizontal"
           {...widgetSize}
+          margin={{ top: 15, right: 20, bottom: 30, left: 70 }}
           slotProps={{ legend: { hidden: true } }}
           colors={pastelColors}
-          tooltip={{ trigger: 'axis', axisContent: ContributorsByInitiativeTooltipContent }}
+          tooltip={{ trigger: 'axis', axisContent: TooltipContent }}
         />
       </Paper>
     </Grid>
