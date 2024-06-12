@@ -18,6 +18,7 @@ import {
 import { grey } from '@mui/material/colors';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
+import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import Markdown from '../components/MarkdownText';
 import {
@@ -54,7 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ]);
 
     // retrieve last day activities
-    const startDate = dateFilterToStartDate(DateRange.OneDay)!;
+    const startDate = dateFilterToStartDate(DateRange.OneDay, dayjs())!;
     const activities = identifyActivities(
       await fetchActivities({
         customerId: sessionData.customerId!,

@@ -46,7 +46,9 @@ export default function Info() {
           <Grid>{loaderData.email}</Grid>
           <Grid>{loaderData.role}</Grid>
           <Grid>{loaderData.customerId}</Grid>
-          <Grid>{loaderData.dateFilter}</Grid>
+          <Grid>
+            {loaderData.dateFilter?.dateRange} {loaderData.dateFilter?.endDay}
+          </Grid>
         </Grid>
       </Grid>
     </App>
