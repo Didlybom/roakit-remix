@@ -158,6 +158,14 @@ export default function Initiatives() {
   const handleRowEditStop: GridEventListener<'rowEditStop'> = (params, event) => {
     if (params.reason === GridRowEditStopReasons.rowFocusOut) {
       event.defaultMuiPrevented = true;
+      return;
+    }
+    if (params.reason !== GridRowEditStopReasons.enterKeyDown) {
+      return;
+    }
+    const keyEvent = event as KeyboardEvent;
+    if (keyEvent.key && !keyEvent.ctrlKey && !keyEvent.metaKey) {
+      event.defaultMuiPrevented = true;
     }
   };
 
