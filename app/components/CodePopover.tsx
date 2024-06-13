@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
 import { formatJson, internalLinkSx } from '../utils/jsxUtils';
 
-const ACTIVITYID_REGEXP = /(?<="id": ")(.*)(?=")/;
+const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const OBJECTID_REGEXP = /(?<="objectId": ")(.*)(?=")/;
 
 export interface CodePopoverContent {
@@ -57,7 +57,7 @@ export default function CodePopover({
       </Stack>
       <Typography
         component="pre"
-        fontSize="small"
+        fontSize="11px"
         fontFamily="Roboto Mono, monospace"
         color={grey[700]}
         sx={{

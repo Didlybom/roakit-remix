@@ -186,11 +186,12 @@ export default function LaunchItems() {
         return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
-    { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
+    { field: 'label', headerName: 'Label', minWidth: 300, editable: true },
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',
-      minWidth: 300,
+      minWidth: 600,
+      flex: 1,
       editable: true,
       renderCell: params => (
         <Box
@@ -255,7 +256,7 @@ export default function LaunchItems() {
             onClick={async () => {
               try {
                 await confirm({
-                  description: `Please confirm the deletion of launch item ${launchItem.label || launchItem.key}.`,
+                  description: `Please confirm the deletion of launch item "${launchItem.label || launchItem.key}".`,
                 });
                 handleDeleteClick(params.id);
               } catch {

@@ -43,8 +43,8 @@ import {
   dataGridCommonProps,
   dateColDef,
   descriptionColDef,
-  metadataActionsColDef,
   priorityColDef,
+  viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import {
   fetchAccountMap,
@@ -62,7 +62,7 @@ import {
 import type {
   AccountData,
   AccountToIdentityRecord,
-  ActivityData,
+  Activity,
   ActivityRecord,
 } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
@@ -101,11 +101,11 @@ const SEARCH_PARAM_GROUPBY = 'groupby';
 const userActivityRows = (
   snapshot: ActivityRecord,
   accountMap: AccountToIdentityRecord
-): ActivityData[] => {
-  const rows: ActivityData[] = [];
+): Activity[] => {
+  const rows: Activity[] = [];
   Object.keys(snapshot).forEach(activityId => {
     const activity = snapshot[activityId];
-    const row: ActivityData = {
+    const row: Activity = {
       id: activityId,
       ...activity,
       actorId:
@@ -202,8 +202,9 @@ export default function UserActivity() {
     null
   );
   const [isRendering, setIsRendering] = useState(false);
-  const snapshot = useRef<{ key: string; values: ActivityData[] }[]>();
-  const [activities, setActivities] = useState<Map<string, ActivityData[]>>(new Map());
+  const snapshot = useRef<{ key: string; values: Activity[] }[]>();
+  const [activities, setActivities] = useState<Map<string, Activity[]>>(new Map());
+  const [totalActivityCount, setTotalActivityCount] = useState<number | null>(null);
 
   const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
 
@@ -214,7 +215,7 @@ export default function UserActivity() {
       : loaderData.launchItems[key]?.label ?? 'ZZZ';
 
     if (snapshot.current) {
-      const filteredSnapshot: { key: string; values: ActivityData[] }[] = [];
+      const filteredSnapshot: { key: string; values: Activity[] }[] = [];
       if (actionFilter.length) {
         snapshot.current.forEach(userSnapshot => {
           const values = userSnapshot.values.filter(a =>
@@ -246,7 +247,7 @@ export default function UserActivity() {
 
   // load activities
   useEffect(() => {
-    setIsRendering(false);
+    setIsRendering(true);
     const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
     const endDay = dayjs(dateFilter.endDay);
     activitiesFetcher.load(
@@ -263,7 +264,9 @@ export default function UserActivity() {
 
   useEffect(() => {
     if (fetchedActivity?.activities) {
+      let activityCount = 0;
       Object.values(fetchedActivity.activities).forEach(activity => {
+        activityCount++;
         if (!activity.initiativeId || !activity.launchItemId) {
           const mapping = mapActivity(activity);
           if (!activity.initiativeId) {
@@ -274,12 +277,13 @@ export default function UserActivity() {
           }
         }
       });
+      setTotalActivityCount(activityCount);
       snapshot.current = groupByArray(
         userActivityRows(fetchedActivity.activities, loaderData.accountMap),
         groupBy === GroupBy.Contributor ? 'actorId' : 'launchItemId'
       );
       sortAndSetUserActivities();
-      setIsRendering(true);
+      setIsRendering(false);
     }
   }, [fetchedActivity?.activities, groupBy, loaderData.accountMap, sortAndSetUserActivities]);
 
@@ -358,11 +362,58 @@ export default function UserActivity() {
       descriptionColDef({ field: 'metadata' }, (element, content) =>
         setPopover({ element, content })
       ),
-      metadataActionsColDef({}, (element: HTMLElement, metadata: unknown) =>
-        setCodePopover({ element, content: metadata })
-      ),
+      viewJsonActionsColDef({}, (element: HTMLElement, data: unknown) => {
+        const { id, ...content } = data as Activity;
+        setCodePopover({ element, content: { ...content, activityId: id } });
+      }),
     ],
     [groupBy, loaderData.userId, loaderData.actors, loaderData.launchItems, loaderData.initiatives]
+  );
+
+  const actorHeader = useCallback(
+    (actorId: string) => {
+      const actor = loaderData.actors[actorId];
+      return (
+        <Typography
+          variant="h6"
+          display="flex"
+          alignItems="center"
+          color={grey[600]}
+          fontSize="1.1rem"
+          mb={1}
+        >
+          <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
+          {actor?.accounts
+            ?.filter(account => account.url)
+            .map((account, i) => (
+              <IconButton
+                key={i}
+                component="a"
+                href={account.url}
+                target="_blank"
+                size="small"
+                color="primary"
+              >
+                {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                {account.type === 'jira' && <JiraIcon width={15} height={15} />}
+              </IconButton>
+            ))}
+          {loaderData.userId === ALL && actorId && (
+            <IconButton
+              component="a"
+              href={
+                `/activity/user/${encodeURI(actorId)}` +
+                (actionFilter ? `?action=${actionFilter.join(',')}` : '')
+              }
+              size="small"
+            >
+              <OpenInNewIcon sx={{ width: 15, height: 15 }} />
+            </IconButton>
+          )}
+        </Typography>
+      );
+    },
+    [actionFilter, loaderData.actors, loaderData.userId]
   );
 
   const [actorList, actorActivityCount] = useMemo(() => {
@@ -443,130 +494,86 @@ export default function UserActivity() {
 
   const activityCount = actorActivityCount ?? launchActivityCount;
 
-  const actorHeader = useCallback(
-    (actorId: string) => {
-      const actor = loaderData.actors[actorId];
-      return (
-        <Typography
-          variant="h6"
-          display="flex"
-          alignItems="center"
-          color={grey[600]}
-          fontSize="1.1rem"
-          mb={1}
-        >
-          <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
-          {actor?.accounts
-            ?.filter(account => account.url)
-            .map((account, i) => (
-              <IconButton
-                key={i}
-                component="a"
-                href={account.url}
-                target="_blank"
-                size="small"
-                color="primary"
-              >
-                {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
-                {account.type === 'jira' && <JiraIcon width={15} height={15} />}
-              </IconButton>
-            ))}
-          {loaderData.userId === ALL && actorId && (
-            <IconButton
-              component="a"
-              href={
-                `/activity/user/${encodeURI(actorId)}` +
-                (actionFilter ? `#${actionFilter.join(',')}` : '')
+  const gridsByContributor = useMemo(() => {
+    if (groupBy !== GroupBy.Contributor) {
+      return null;
+    }
+    return [...activities]
+      .filter(([actorId]) => showOnlyActor == null || (actorId ?? '') === showOnlyActor)
+      .filter((_, i) => showOnlyActor != null || i <= 9)
+      .map(([actorId, rows], i) => {
+        const search = searchTerm.trim().toLowerCase();
+        const filteredRows =
+          search ?
+            rows.filter(activity => {
+              if (!activity.metadata) {
+                return false;
               }
-              size="small"
-            >
-              <OpenInNewIcon sx={{ width: 15, height: 15 }} />
-            </IconButton>
-          )}
-        </Typography>
-      );
-    },
-    [actionFilter, loaderData.actors, loaderData.userId]
-  );
+              const summary = getSummary(activity); // FIXME consider precalculating the summary
+              return summary && summary.toLowerCase().indexOf(search) >= 0;
+            })
+          : rows;
+        return filteredRows.length === 0 ?
+            null
+          : <Stack id={groupElementId(actorId)} key={i} sx={{ mb: 3 }}>
+              {actorHeader(actorId)}
+              <DataGrid
+                columns={columns}
+                rows={filteredRows}
+                {...dataGridCommonProps}
+                rowHeight={50}
+              />
+            </Stack>;
+      });
+  }, [activities, actorHeader, columns, groupBy, searchTerm, showOnlyActor]);
 
-  const gridsByContributor = useCallback(
-    () =>
-      groupBy === GroupBy.Contributor ?
-        [...activities]
-          .filter(([actorId]) => showOnlyActor == null || (actorId ?? '') === showOnlyActor)
-          .filter((_, i) => showOnlyActor != null || i <= 9)
-          .map(([actorId, rows], i) => {
-            const search = searchTerm.trim().toLowerCase();
-            const filteredRows =
-              search ?
-                rows.filter(activity => {
-                  if (!activity.metadata) {
-                    return false;
-                  }
-                  const summary = getSummary(activity); // FIXME consider precalculating the summary
-                  return summary && summary.toLowerCase().indexOf(search) >= 0;
-                })
-              : rows;
-            return filteredRows.length === 0 ?
-                null
-              : <Stack id={groupElementId(actorId)} key={i} sx={{ mb: 3 }}>
-                  {actorHeader(actorId)}
-                  <DataGrid
-                    columns={columns}
-                    rows={filteredRows}
-                    {...dataGridCommonProps}
-                    rowHeight={50}
-                  />
-                </Stack>;
-          })
-      : null,
-    [activities, actorHeader, columns, groupBy, searchTerm, showOnlyActor]
-  );
-
-  const gridsByLaunch = useCallback(() => {
-    return groupBy === GroupBy.Launch ?
-        <Stack>
-          {loaderData.userId !== ALL && <Box mb={1}>{actorHeader(loaderData.userId!)}</Box>}
-          {[...activities].map(([launchId, rows], i) => {
-            let launchLabel;
-            if (!launchId) {
-              launchLabel = 'No launch item';
-            } else {
-              launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
-            }
-            const search = searchTerm.trim().toLowerCase();
-            const filteredRows =
-              search ?
-                rows.filter(activity => {
-                  if (!activity.metadata) {
-                    return false;
-                  }
-                  const summary = getSummary(activity); // FIXME consider precalculating the summary
-                  return summary && summary.toLowerCase().indexOf(search) >= 0;
-                })
-              : rows;
-            return filteredRows.length === 0 ?
-                null
-              : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
-                  <Typography
-                    variant="h6"
-                    color={grey[launchId ? 600 : 400]}
-                    fontSize="1.1rem"
-                    mb={1}
-                    sx={{ textWrap: 'nowrap' }}
-                  >
-                    {launchLabel}
-                  </Typography>
-                  <DataGrid
-                    columns={columns}
-                    rows={filteredRows}
-                    {...dataGridCommonProps}
-                    rowHeight={50}
-                  />
-                </Stack>;
-          })}
-        </Stack>
-      : null;
+  const gridsByLaunch = useMemo(() => {
+    if (groupBy !== GroupBy.Launch) {
+      return null;
+    }
+    return (
+      <Stack>
+        {loaderData.userId !== ALL && <Box mb={1}>{actorHeader(loaderData.userId!)}</Box>}
+        {[...activities].map(([launchId, rows], i) => {
+          let launchLabel;
+          if (!launchId) {
+            launchLabel = 'No launch item';
+          } else {
+            launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+          }
+          const search = searchTerm.trim().toLowerCase();
+          const filteredRows =
+            search ?
+              rows.filter(activity => {
+                if (!activity.metadata) {
+                  return false;
+                }
+                const summary = getSummary(activity); // FIXME consider precalculating the summary
+                return summary && summary.toLowerCase().indexOf(search) >= 0;
+              })
+            : rows;
+          return filteredRows.length === 0 ?
+              null
+            : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
+                <Typography
+                  variant="h6"
+                  color={grey[launchId ? 600 : 400]}
+                  fontSize="1.1rem"
+                  mb={1}
+                  sx={{ textWrap: 'nowrap' }}
+                >
+                  {launchLabel}
+                </Typography>
+                <DataGrid
+                  columns={columns}
+                  rows={filteredRows}
+                  {...dataGridCommonProps}
+                  rowHeight={50}
+                />
+              </Stack>;
+        })}
+      </Stack>
+    );
   }, [
     activities,
     actorHeader,
@@ -585,7 +592,7 @@ export default function UserActivity() {
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      showProgress={!isRendering || navigation.state !== 'idle'}
+      showProgress={isRendering || navigation.state !== 'idle'}
     >
       {errorAlert(fetchedActivity?.error?.message)}
       <CodePopover
@@ -618,7 +625,7 @@ export default function UserActivity() {
                             size="small"
                             checked={sortAlphabetically}
                             onChange={e => {
-                              setIsRendering(false);
+                              setIsRendering(true);
                               setSortAlphabetically(e.target.checked);
                               window.scrollTo({ top: 0 });
                             }}
@@ -675,6 +682,7 @@ export default function UserActivity() {
                   </Grid>
                   <Grid>
                     <FilterMenu
+                      label="Group"
                       selectedValue={groupBy}
                       items={[
                         {
@@ -686,8 +694,9 @@ export default function UserActivity() {
                       ]}
                       onChange={value => {
                         setActivities(new Map());
-                        setIsRendering(false);
-                        setGroupBy(value as GroupBy);
+                        setTotalActivityCount(null);
+                        setIsRendering(true);
+                        setGroupBy(value as GroupBy); // will trigger effect to re-set activities
                         setSearchParams(prev => {
                           if (loaderData.userId !== ALL && value == GroupBy.Contributor) {
                             prev.delete(SEARCH_PARAM_GROUPBY);
@@ -697,12 +706,11 @@ export default function UserActivity() {
                           return prev;
                         });
                       }}
-                      label="Group"
-                      sx={{ justifyContent: 'right' }}
                     />
                   </Grid>
                   <Grid>
                     <FilterMenu
+                      label="Activity Type"
                       multiple
                       selectedValue={actionFilter}
                       items={[
@@ -722,20 +730,28 @@ export default function UserActivity() {
                           return prev;
                         });
                       }}
-                      sx={{ justifyContent: 'right' }}
                     />
                   </Grid>
                 </Grid>
               </Grid>
             </Grid>
             <Box display="flex" justifyContent="right">
-              {!!activityCount && (
+              {activityCount != null &&
+                totalActivityCount != null &&
+                activityCount !== totalActivityCount && (
+                  <Typography variant="subtitle2">
+                    {activityCount.toLocaleString()} / {totalActivityCount.toLocaleString()}{' '}
+                    {pluralize('activity', totalActivityCount)}
+                  </Typography>
+                )}
+              {activityCount != null && activityCount === totalActivityCount && (
                 <Typography variant="subtitle2">
                   {activityCount.toLocaleString()} {pluralize('activity', activityCount)}
                 </Typography>
               )}
             </Box>
-            {groupBy === GroupBy.Contributor ? gridsByContributor() : gridsByLaunch()}
+            {gridsByContributor}
+            {gridsByLaunch}
           </Stack>
         </Stack>
       </Stack>

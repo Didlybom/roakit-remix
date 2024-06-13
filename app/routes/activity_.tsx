@@ -36,8 +36,8 @@ import {
   actorColDef,
   dateColDef,
   descriptionColDef,
-  metadataActionsColDef,
   priorityColDef,
+  viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import {
@@ -50,7 +50,7 @@ import {
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
-import type { AccountData, ActivityCount, ActivityData, Artifact } from '../types/types';
+import type { AccountData, Activity, ActivityCount, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -99,7 +99,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-type ActivityRow = ActivityData & { note?: string };
+type ActivityRow = Activity & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 interface JsonRequest {
@@ -226,11 +226,11 @@ export default function ActivityReview() {
     if (!fetchedActivities?.activities || fetchedActivities?.activityTotal == null) {
       return;
     }
-    const activityData: ActivityData[] = [];
-    fetchedActivities.activities.forEach(activity => {
+    const activityData: Activity[] = [];
+    fetchedActivities.activities.forEach((activity: Activity) => {
       let priority = activity.priority;
-      if (priority === undefined || priority === -1) {
-        priority = inferPriority(loaderData.tickets, activity.metadata!);
+      if ((priority == null || priority === -1) && activity.metadata) {
+        priority = inferPriority(loaderData.tickets, activity.metadata);
       }
       let mapping;
       if (!activity.initiativeId || !activity.launchItemId) {
@@ -272,7 +272,7 @@ export default function ActivityReview() {
       actorColDef({
         field: 'actor',
         valueGetter: (_, row) => {
-          const fields = row as ActivityData;
+          const fields = row as Activity;
           return fields.actorId ?
               ({
                 id: fields.actorId,
@@ -350,9 +350,10 @@ export default function ActivityReview() {
           </Box>
         ),
       },
-      metadataActionsColDef({}, (element, metadata) =>
-        setCodePopover({ element, content: metadata })
-      ),
+      viewJsonActionsColDef({}, (element: HTMLElement, data: unknown) => {
+        const { id, ...content } = data as Activity;
+        setCodePopover({ element, content: { ...content, activityId: id } });
+      }),
     ],
     [loaderData.actors, loaderData.initiatives, loaderData.launchItems]
   );
@@ -463,12 +464,13 @@ export default function ActivityReview() {
           <Grid>
             {!!rowTotal && (
               <Typography variant="subtitle2">
-                {rowTotal.toLocaleString()} {pluralize('activity', rowTotal)}
+                {rowTotal.toLocaleString()} total {pluralize('activity', rowTotal)}
               </Typography>
             )}
           </Grid>
           <Grid flex={1}>
             <FilterMenu
+              label="Goal Filter"
               sx={{ justifyContent: 'right' }}
               selectedValue={activityFilter}
               items={[

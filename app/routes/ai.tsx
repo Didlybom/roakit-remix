@@ -60,14 +60,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       await fetchActivities({
         customerId: sessionData.customerId!,
         startDate,
-        options: { includesMetadata: true },
+        options: { includeMetadata: true },
       }),
       identities.accountMap
     );
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
       ...sessionData,
-      activities: [...activities].map(([, activity]) => activity),
+      activities,
       actors,
       initiatives,
     };

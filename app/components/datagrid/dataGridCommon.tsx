@@ -26,7 +26,7 @@ import pluralize from 'pluralize';
 import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
 import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/activityFeed';
-import type { AccountData, ActivityData } from '../../types/types';
+import type { AccountData, Activity } from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, priorityLabels } from '../../utils/theme';
@@ -88,31 +88,36 @@ export const actorColDef = (colDef?: GridColDef) =>
 export const actionColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Action',
-    valueGetter: (value, row: ActivityData) => `${row.artifact} ${value as string}`,
+    valueGetter: (value, row: Activity) => `${row.artifact} ${value as string}`,
     renderCell: (params: GridRenderCellParams) => {
       const action = params.value as string;
-      const activity = params.row as ActivityData;
+      const activity = params.row as Activity;
       const event = activity.event;
       const codeAction = activity.metadata?.codeAction;
-      return !event ? action : (
-          <Stack mt="3px">
-            <Typography
-              fontSize="small"
-              color={action === 'unknown' ? grey[400] : undefined}
-              lineHeight={1}
-            >
-              {action}
-            </Typography>
-            <Typography
-              fontSize="smaller"
-              title={`${event} ${codeAction ?? ''}`}
-              variant="caption"
-              sx={ellipsisSx}
-            >
-              {event} {codeAction}
-            </Typography>
-          </Stack>
-        );
+      if (!event) {
+        return action;
+      }
+      const caption = `${event} ${
+        codeAction ?
+          Array.isArray(codeAction) ?
+            codeAction.join(', ')
+          : codeAction
+        : ''
+      }`;
+      return (
+        <Stack mt="3px">
+          <Typography
+            fontSize="small"
+            color={action === 'unknown' ? grey[400] : undefined}
+            lineHeight={1}
+          >
+            {action}
+          </Typography>
+          <Typography fontSize="smaller" title={caption} variant="caption" sx={ellipsisSx}>
+            {caption}
+          </Typography>
+        </Stack>
+      );
     },
     ...colDef,
   }) as GridColDef;
@@ -142,9 +147,9 @@ export const descriptionColDef = (
     headerName: 'Description',
     minWidth: 300,
     flex: 1,
-    valueGetter: (_, row: ActivityData) => findTicket(row.metadata) ?? getSummary(row),
+    valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getSummary(row),
     renderCell: params => {
-      const activity = params.row as ActivityData;
+      const activity = params.row as Activity;
       const summary = getSummary(activity);
       const comment = activity.metadata?.comment?.body;
       const url = activity.metadata ? getUrl(activity) : undefined;
@@ -256,7 +261,7 @@ export const descriptionColDef = (
     ...colDef,
   }) as GridColDef;
 
-export const metadataActionsColDef = (
+export const viewJsonActionsColDef = (
   colDef: Omit<GridColDef, 'field'>,
   onClick: (element: HTMLElement, data: unknown) => void
 ) =>
@@ -269,7 +274,7 @@ export const metadataActionsColDef = (
         <GridActionsCellItem
           key={1}
           icon={<DataObjectIcon />}
-          label="View metadata"
+          label="View JSON"
           onClick={e => onClick(e.currentTarget, params.row)}
         />,
       ];

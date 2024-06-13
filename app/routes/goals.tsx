@@ -207,7 +207,7 @@ export default function Initiatives() {
         return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
-    { field: 'label', headerName: 'Label', minWidth: 300, flex: 1, editable: true },
+    { field: 'label', headerName: 'Label', minWidth: 300, editable: true },
     {
       field: 'tags',
       headerName: 'Tags',
@@ -251,7 +251,8 @@ export default function Initiatives() {
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',
-      minWidth: 300,
+      minWidth: 400,
+      flex: 1,
       editable: true,
       renderCell: params => (
         <Box
@@ -316,7 +317,7 @@ export default function Initiatives() {
             onClick={async () => {
               try {
                 await confirm({
-                  description: `Please confirm the deletion of initiative ${initiative.label || initiative.key}.`,
+                  description: `Please confirm the deletion of goal "${initiative.label || initiative.key}".`,
                 });
                 handleDeleteClick(params.id);
               } catch {
