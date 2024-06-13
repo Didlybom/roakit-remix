@@ -1,6 +1,6 @@
 import { compileExpression } from 'filtrex';
 import stringify from 'json-stable-stringify';
-import type { ActivityData, InitiativeData, InitiativeRecord } from '../types/types';
+import type { Activity, InitiativeData, InitiativeRecord } from '../types/types';
 
 // see https://github.com/joewalnes/filtrex
 
@@ -87,7 +87,7 @@ export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) 
   expressionsHash[type] = hash;
 };
 
-export const mapActivity = (activity: ActivityData | Omit<ActivityData, 'id'>) => {
+export const mapActivity = (activity: Activity | Omit<Activity, 'id'>) => {
   const initiatives: string[] = [];
   const launchItems: string[] = [];
 

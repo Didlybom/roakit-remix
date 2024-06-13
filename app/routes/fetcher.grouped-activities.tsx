@@ -62,7 +62,7 @@ export const loader = async ({
         customerId: sessionData.customerId!,
         startDate,
         endDate: endOfDay(endDay),
-        options: { findPriority: true, includesMetadata: true },
+        options: { findPriority: true, includeMetadata: true },
       }),
     ]);
 

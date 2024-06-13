@@ -4,7 +4,7 @@ import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
-import { findTicket } from '../types/activityFeed';
+import { consolidateAndPushActivity, findTicket } from '../types/activityFeed';
 import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
 import {
@@ -12,8 +12,7 @@ import {
   type AccountData,
   type AccountMap,
   type AccountToIdentityRecord,
-  type ActivityData,
-  type ActivityMap,
+  type Activity,
   type ActivityMetadata,
   type Artifact,
   type DaySummaries,
@@ -392,7 +391,7 @@ export const fetchActivities = async ({
   startDate: number;
   endDate?: number;
   userIds?: string[];
-  options?: { includesMetadata?: boolean; findPriority?: boolean };
+  options?: { includeMetadata?: boolean; findPriority?: boolean; consolidate?: boolean };
 }) => {
   const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
   if (!userIds) {
@@ -430,7 +429,7 @@ export const fetchActivities = async ({
     )
   ).flatMap(a => a.docs);
 
-  const activities: ActivityMap = new Map();
+  const activities: Activity[] = [];
   const ticketPrioritiesToFetch = new Set<string>();
   const activityTickets = new Map<string, string>();
 
@@ -445,25 +444,30 @@ export const fetchActivities = async ({
         activityTickets.set(doc.id, ticket);
       }
     }
-    activities.set(doc.id, {
-      action: data.action,
-      actorId: data.actorAccountId,
-      artifact: data.artifact as Artifact,
-      createdTimestamp: data.createdTimestamp,
-      initiativeId: data.initiative,
-      launchItemId: '', // FIXME launch item
-      priority, // see overwrite below
-      eventType: data.eventType,
-      event: data.event,
-      ...(options?.includesMetadata && { metadata: data.metadata as ActivityMetadata }),
-      objectId: data.objectId, // for debugging
-    });
+    consolidateAndPushActivity(
+      {
+        id: doc.id,
+        action: data.action,
+        actorId: data.actorAccountId,
+        artifact: data.artifact as Artifact,
+        createdTimestamp: data.createdTimestamp,
+        initiativeId: data.initiative,
+        launchItemId: '', // FIXME launch item
+        priority, // see overwrite below
+        eventType: data.eventType,
+        event: data.event,
+        ...(options?.includeMetadata && { metadata: data.metadata as ActivityMetadata }),
+        objectId: data.objectId, // for debugging
+      },
+      activities
+    );
   });
+
   if (ticketPrioritiesToFetch.size > 0) {
     const tickets = await fetchTicketPrioritiesWithCache(customerId, [...ticketPrioritiesToFetch]);
     activityTickets.forEach((activityTicket, activityId) => {
       // add the found priority to the activity
-      const activity = activities.get(activityId);
+      const activity = activities.find(a => (a.id = activityId));
       if (activity) {
         activity.priority = tickets[activityTicket];
       }
@@ -539,7 +543,7 @@ export const fetchActivitiesPage = async ({
   } else {
     activityPageQuery = activityPageQuery.limit(limit);
   }
-  const activities: ActivityData[] = [];
+  const activities: Activity[] = [];
   const [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
     fetchActivityTotalWithCache(customerId, withInitiatives),

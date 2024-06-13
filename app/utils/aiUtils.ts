@@ -1,6 +1,6 @@
 import { GenerateContentResult } from '@google-cloud/vertexai';
 import { getSummary, getSummaryAction } from '../types/activityFeed';
-import type { ActivityData, ActorRecord, InitiativeRecord } from '../types/types';
+import type { Activity, ActorRecord, InitiativeRecord } from '../types/types';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
@@ -8,7 +8,7 @@ export const DEFAULT_PROMPT =
   'Output a categorized summary of these activities. Remove duplicates. Without title, introduction, notes and conclusion. Output markdown.';
 
 export const buildActivitySummaryPrompt = (
-  activities: Omit<ActivityData, 'id'>[] | null,
+  activities: Omit<Activity, 'id'>[] | null,
   actors: ActorRecord | null,
   initiatives: InitiativeRecord | null,
   options: {

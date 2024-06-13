@@ -2,10 +2,9 @@ import { findJiraTickets, mimeTypeToType } from '../utils/stringUtils';
 import type {
   AccountMap,
   AccountToIdentityRecord,
+  Activity,
   ActivityChangeLog,
   ActivityCount,
-  ActivityData,
-  ActivityMap,
   ActivityMetadata,
   ActorRecord,
   IdentityData,
@@ -64,7 +63,7 @@ export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata)
   return tickets[ticket] ?? -1;
 };
 
-export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
+export const getSummary = (activity: Omit<Activity, 'id'>) => {
   const metadata = activity.metadata;
   if (metadata?.issue) {
     return metadata.issue.key + ' ' + metadata.issue.summary;
@@ -125,6 +124,45 @@ export const getSummary = (activity: Omit<ActivityData, 'id'>) => {
 
 const transitionString = (prefix: string, changeLog: ActivityChangeLog) =>
   prefix + changeLog.oldValue + ' → ' + changeLog.newValue;
+
+const codeActionString = (codeAction: string, metadata: ActivityMetadata) => {
+  if (codeAction === 'opened') {
+    return 'opened';
+  }
+  if (codeAction === 'ready_for_review') {
+    return 'ready for review';
+  }
+  if (codeAction === 'review_requested') {
+    return 'review requested';
+  }
+  if (codeAction === 'submitted') {
+    return 'submitted';
+  }
+  if (codeAction === 'assigned') {
+    return 'assigned';
+  }
+  if (codeAction === 'resolved') {
+    return 'discussion resolved';
+  }
+  if (codeAction === 'edited') {
+    return 'edited';
+  }
+  if (codeAction === 'labeled') {
+    return 'labeled';
+  }
+  if (codeAction === 'closed') {
+    return 'closed';
+  }
+  if (codeAction === 'dismissed') {
+    return 'dismissed';
+  }
+  if (codeAction === 'created' && metadata.pullRequestComment) {
+    return 'commented';
+  }
+  if (codeAction === 'deleted' && metadata.pullRequestComment) {
+    return 'comment deleted';
+  }
+};
 
 export const getSummaryAction = (metadata: ActivityMetadata) => {
   try {
@@ -218,38 +256,10 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
-      if (codeAction === 'opened') {
-        return 'PR opened';
-      }
-      if (codeAction === 'ready_for_review') {
-        return 'PR ready for review';
-      }
-      if (codeAction === 'review_requested') {
-        return 'PR review requested';
-      }
-      if (codeAction === 'submitted') {
-        return 'PR submitted';
-      }
-      if (codeAction === 'assigned') {
-        return 'PR assigned';
-      }
-      if (codeAction === 'resolved') {
-        return 'PR discussion resolved';
-      }
-      if (codeAction === 'edited') {
-        return 'PR edited';
-      }
-      if (codeAction === 'labeled') {
-        return 'PR labeled';
-      }
-      if (codeAction === 'closed') {
-        return 'PR closed';
-      }
-      if (codeAction === 'dismissed') {
-        return 'PR dismissed';
-      }
-      if (codeAction === 'created' && metadata.pullRequestComment) {
-        return 'PR commented';
+      if (Array.isArray(codeAction)) {
+        return 'PR ' + codeAction.map(a => codeActionString(a, metadata)).join(', ');
+      } else {
+        return 'PR ' + codeActionString(codeAction, metadata);
       }
     }
     if (metadata?.codeAction === 'member_invited') {
@@ -264,7 +274,7 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
 };
 
 export const getUrl = (
-  activity: ActivityData
+  activity: Activity
 ): { url: string; type: 'jira' | 'confluence' | 'github' } | null => {
   const metadata = activity.metadata;
   let type: 'jira' | 'confluence' | 'github' | null = null;
@@ -388,10 +398,7 @@ export const identifyAccounts = (
   return actors;
 };
 
-export const identifyActivities = (
-  activities: ActivityMap,
-  accountMap: AccountToIdentityRecord
-) => {
+export const identifyActivities = (activities: Activity[], accountMap: AccountToIdentityRecord) => {
   activities.forEach(activity => {
     if (activity.actorId && accountMap[activity.actorId]) {
       activity.actorId = accountMap[activity.actorId];
@@ -400,7 +407,7 @@ export const identifyActivities = (
   return activities;
 };
 
-export const groupActivities = (activities: ActivityMap): GroupedActivities => {
+export const groupActivities = (activities: Activity[]): GroupedActivities => {
   const topActors: TopActorsMap = {};
   const priorities: Priority[] = [];
   let initiatives: Initiative[] = [];
@@ -519,4 +526,33 @@ export const groupActivities = (activities: ActivityMap): GroupedActivities => {
   });
 
   return { topActors, priorities, initiatives, launchItems };
+};
+
+export const consolidateAndPushActivity = (activity: Activity, activities: Activity[]) => {
+  // assumes the activities are ordered by decreasing dates
+  if (!activity.metadata?.codeAction) {
+    activities.push(activity);
+    return activities;
+  }
+  const foundActivity = activities.find(
+    a =>
+      a.action === activity.action &&
+      a.actorId === activity.actorId &&
+      a.artifact === activity.artifact &&
+      a.event === activity.event &&
+      a.metadata?.pullRequest?.uri &&
+      a.metadata.pullRequest.uri === activity.metadata?.pullRequest?.uri
+  );
+  if (!foundActivity?.metadata?.codeAction) {
+    activities.push(activity);
+    return activities;
+  }
+  const codeActions = new Set<string>(
+    Array.isArray(foundActivity.metadata.codeAction) ?
+      foundActivity.metadata.codeAction
+    : [foundActivity.metadata.codeAction]
+  );
+  codeActions.add(activity.metadata.codeAction as string);
+  foundActivity.metadata.codeAction = [...codeActions];
+  return activities;
 };

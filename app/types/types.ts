@@ -73,7 +73,7 @@ export type ActivityChangeLog = {
 };
 
 export type ActivityMetadata = {
-  codeAction?: string;
+  codeAction?: string | string[];
   issue?: { key: string; summary?: string; uri?: string; project?: { id: string } };
   attachment?: { filename: string; mimeType?: string; uri?: string };
   attachments?: {
@@ -98,7 +98,7 @@ export type ActivityMetadata = {
   changeLog?: ActivityChangeLog[];
 };
 
-export type ActivityData = {
+export type Activity = {
   id: string;
   action: string;
   eventType?: string;
@@ -114,8 +114,7 @@ export type ActivityData = {
   objectId?: string; // for debugging
 };
 
-export type ActivityMap = Map<ActivityData['id'], Omit<ActivityData, 'id'>>;
-export type ActivityRecord = Record<ActivityData['id'], Omit<ActivityData, 'id'>>;
+export type ActivityRecord = Record<Activity['id'], Omit<Activity, 'id'>>;
 
 export type ActivityCount = {
   code: number;

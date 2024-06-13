@@ -4,7 +4,7 @@ import {
   compileActivityMappers,
   mapActivity,
 } from '../../app/activityMapper/activityMapper';
-import type { ActivityData } from '../../app/types/types';
+import type { Activity } from '../../app/types/types';
 
 test('evalActivity', () => {
   const mappers = {
@@ -27,7 +27,7 @@ test('evalActivity', () => {
   clearActivityMapperCache();
   compileActivityMappers(MapperType.Initiative, mappers);
 
-  const activity: ActivityData = {
+  const activity: Activity = {
     initiativeId: '',
     launchItemId: '',
     id: 'id',

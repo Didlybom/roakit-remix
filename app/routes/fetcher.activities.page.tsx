@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchActivitiesPage } from '../firestore.server/fetchers.server';
-import type { ActivityData } from '../types/types';
+import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
@@ -11,7 +11,7 @@ const logger = pino({ name: 'route:fetcher.activities.page' });
 
 export interface ActivityPageResponse {
   error?: ErrorField;
-  activities?: ActivityData[];
+  activities?: Activity[];
   activityTotal?: number;
 }
 

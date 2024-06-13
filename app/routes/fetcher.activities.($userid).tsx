@@ -73,10 +73,10 @@ export const loader = async ({
       startDate,
       endDate,
       userIds,
-      options: { includesMetadata: true, findPriority: true },
+      options: { includeMetadata: true, findPriority: true, consolidate: true },
     });
     const activityRecord: ActivityRecord = {};
-    [...activities].forEach(([activityId, activity]) => (activityRecord[activityId] = activity));
+    activities.forEach(activity => (activityRecord[activity.id] = activity));
     return json({ activities: activityRecord });
   } catch (e) {
     logger.error(e);
