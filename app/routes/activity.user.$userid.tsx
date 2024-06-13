@@ -403,7 +403,7 @@ export default function UserActivity() {
               component="a"
               href={
                 `/activity/user/${encodeURI(actorId)}` +
-                (actionFilter ? `?action=${actionFilter.join(',')}` : '')
+                (actionFilter.length ? `?action=${actionFilter.join(',')}` : '')
               }
               size="small"
             >

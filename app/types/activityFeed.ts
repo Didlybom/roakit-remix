@@ -199,6 +199,9 @@ export const getSummaryAction = (metadata: ActivityMetadata) => {
         if (changeLog.field === 'Platform' && changeLog.newValue) {
           actions.push('Platform: ' + changeLog.newValue);
         }
+        if (changeLog.field === 'Fix Version' && changeLog.newValue) {
+          actions.push('Fix Version: ' + changeLog.newValue);
+        }
         if (changeLog.field === 'Epic Link' && changeLog.newValue) {
           actions.push('Epic Link');
         }
@@ -529,30 +532,51 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
 };
 
 export const consolidateAndPushActivity = (activity: Activity, activities: Activity[]) => {
-  // assumes the activities are ordered by decreasing dates
-  if (!activity.metadata?.codeAction) {
+  // the code below assumes the activities are ordered by decreasing dates
+
+  if (!activity.metadata) {
     activities.push(activity);
     return activities;
   }
-  const foundActivity = activities.find(
+
+  // PR
+  const foundPRActivity = activities.find(
     a =>
       a.action === activity.action &&
       a.actorId === activity.actorId &&
       a.artifact === activity.artifact &&
       a.event === activity.event &&
       a.metadata?.pullRequest?.uri &&
-      a.metadata.pullRequest.uri === activity.metadata?.pullRequest?.uri
+      a.metadata.pullRequest.uri === activity.metadata?.pullRequest?.uri &&
+      a.metadata?.codeAction
   );
-  if (!foundActivity?.metadata?.codeAction) {
-    activities.push(activity);
+  if (foundPRActivity && activity.metadata.codeAction) {
+    const foundCodeAction = foundPRActivity.metadata!.codeAction!;
+    const codeActions = new Set<string>(
+      Array.isArray(foundCodeAction) ? foundCodeAction : [foundCodeAction]
+    );
+    codeActions.add(activity.metadata.codeAction as string);
+    foundPRActivity.metadata!.codeAction = [...codeActions];
     return activities;
   }
-  const codeActions = new Set<string>(
-    Array.isArray(foundActivity.metadata.codeAction) ?
-      foundActivity.metadata.codeAction
-    : [foundActivity.metadata.codeAction]
+
+  // Issue changelog
+  const foundIssueActivity = activities.find(
+    a =>
+      a.action === activity.action &&
+      a.actorId === activity.actorId &&
+      a.artifact === activity.artifact &&
+      a.event === activity.event &&
+      a.metadata?.issue?.key &&
+      a.metadata.issue.key === activity.metadata?.issue?.key &&
+      a.metadata?.changeLog
   );
-  codeActions.add(activity.metadata.codeAction as string);
-  foundActivity.metadata.codeAction = [...codeActions];
+  if (foundIssueActivity && activity.metadata.changeLog) {
+    foundIssueActivity.metadata!.changeLog!.push(...activity.metadata.changeLog);
+    return activities;
+  }
+
+  // no similar activity found, push it as new
+  activities.push(activity);
   return activities;
 };
