@@ -32,7 +32,7 @@
     "@emotion/styled": "^11.11.5",
     "@google-cloud/secret-manager": "^5.6.0",
     "@google-cloud/vertexai": "^1.2.0",
-    "@mui/material": "^5.15.19",
+    "@mui/material": "^5.15.20",
     "@mui/x-charts": "^7.6.2",
     "@mui/x-data-grid": "^7.6.2",
     "@mui/x-date-pickers": "^7.6.2",
@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^8.57.0",
-    "@mui/icons-material": "^5.15.19",
+    "@mui/icons-material": "^5.15.20",
     "@remix-run/dev": "^2.9.2",
     "@remix-run/serve": "^2.9.2",
     "@stylistic/eslint-plugin": "^2.1.0",
