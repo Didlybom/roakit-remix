@@ -5,9 +5,7 @@ module.exports = {
     node: true,
   },
   settings: {
-    react: {
-      version: 'detect',
-    },
+    react: { version: 'detect' },
   },
   extends: [
     'eslint:recommended',
@@ -21,9 +19,7 @@ module.exports = {
   parserOptions: {
     project: ['tsconfig.json', 'tsconfig.dev.json'],
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    },
+    ecmaFeatures: { jsx: true },
   },
   ignorePatterns: ['/build/**/*', '/app/proto/**/*'],
   plugins: ['@typescript-eslint', '@stylistic', 'react', 'react-hooks', 'jest'],
@@ -35,11 +31,7 @@ module.exports = {
     'arrow-parens': ['error', 'as-needed'],
     '@typescript-eslint/no-misused-promises': [
       'error',
-      {
-        checksVoidReturn: {
-          attributes: false,
-        },
-      },
+      { checksVoidReturn: { attributes: false } },
     ],
   },
 };

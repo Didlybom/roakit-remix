@@ -531,52 +531,70 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   return { topActors, priorities, initiatives, launchItems };
 };
 
-export const consolidateAndPushActivity = (activity: Activity, activities: Activity[]) => {
-  // the code below assumes the activities are ordered by decreasing dates
-
-  if (!activity.metadata) {
-    activities.push(activity);
+export const consolidateAndPushActivity = (newActivity: Activity, activities: Activity[]) => {
+  if (!newActivity.metadata) {
+    activities.push(newActivity);
     return activities;
   }
 
   // PR
-  const foundPRActivity = activities.find(
+  const indexPRActivity = activities.findLastIndex(
     a =>
-      a.action === activity.action &&
-      a.actorId === activity.actorId &&
-      a.artifact === activity.artifact &&
-      a.event === activity.event &&
+      a.action === newActivity.action &&
+      a.actorId === newActivity.actorId &&
+      a.artifact === newActivity.artifact &&
+      a.event === newActivity.event &&
       a.metadata?.pullRequest?.uri &&
-      a.metadata.pullRequest.uri === activity.metadata?.pullRequest?.uri &&
+      a.metadata.pullRequest.uri === newActivity.metadata?.pullRequest?.uri &&
       a.metadata?.codeAction
   );
-  if (foundPRActivity && activity.metadata.codeAction) {
-    const foundCodeAction = foundPRActivity.metadata!.codeAction!;
+  if (indexPRActivity >= 0 && newActivity.metadata.codeAction) {
+    const foundActivity = activities[indexPRActivity];
+
+    const foundCodeAction = foundActivity.metadata!.codeAction!;
     const codeActions = new Set<string>(
       Array.isArray(foundCodeAction) ? foundCodeAction : [foundCodeAction]
     );
-    codeActions.add(activity.metadata.codeAction as string);
-    foundPRActivity.metadata!.codeAction = [...codeActions];
+    codeActions.add(newActivity.metadata.codeAction as string);
+
+    if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+      newActivity.metadata.codeAction = [...codeActions];
+      activities.splice(indexPRActivity, 1);
+      activities.push(newActivity);
+    } else {
+      foundActivity.metadata!.codeAction = [...codeActions];
+    }
     return activities;
   }
 
   // Issue changelog
-  const foundIssueActivity = activities.find(
+  const indexIssueActivity = activities.findLastIndex(
     a =>
-      a.action === activity.action &&
-      a.actorId === activity.actorId &&
-      a.artifact === activity.artifact &&
-      a.event === activity.event &&
+      a.action === newActivity.action &&
+      a.actorId === newActivity.actorId &&
+      a.artifact === newActivity.artifact &&
+      a.event === newActivity.event &&
       a.metadata?.issue?.key &&
-      a.metadata.issue.key === activity.metadata?.issue?.key &&
+      a.metadata.issue.key === newActivity.metadata?.issue?.key &&
       a.metadata?.changeLog
   );
-  if (foundIssueActivity && activity.metadata.changeLog) {
-    foundIssueActivity.metadata!.changeLog!.push(...activity.metadata.changeLog);
+  if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
+    const foundActivity = activities[indexIssueActivity];
+
+    if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+      newActivity.metadata.changeLog = [
+        ...foundActivity.metadata!.changeLog!,
+        ...newActivity.metadata.changeLog,
+      ];
+      activities.splice(indexIssueActivity, 1);
+      activities.push(newActivity);
+    } else {
+      foundActivity.metadata!.changeLog!.push(...newActivity.metadata.changeLog);
+    }
     return activities;
   }
 
   // no similar activity found, push it as new
-  activities.push(activity);
+  activities.push(newActivity);
   return activities;
 };
