@@ -538,60 +538,96 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
   }
 
   // PR
-  const indexPRActivity = activities.findLastIndex(
-    a =>
-      a.action === newActivity.action &&
-      a.actorId === newActivity.actorId &&
-      a.artifact === newActivity.artifact &&
-      a.event === newActivity.event &&
-      a.metadata?.pullRequest?.uri &&
-      a.metadata.pullRequest.uri === newActivity.metadata?.pullRequest?.uri &&
-      a.metadata?.codeAction
-  );
-  if (indexPRActivity >= 0 && newActivity.metadata.codeAction) {
-    const foundActivity = activities[indexPRActivity];
-
-    const foundCodeAction = foundActivity.metadata!.codeAction!;
-    const codeActions = new Set<string>(
-      Array.isArray(foundCodeAction) ? foundCodeAction : [foundCodeAction]
+  if (newActivity.metadata?.pullRequest?.uri) {
+    const indexPRActivity = activities.findLastIndex(
+      a =>
+        a.action === newActivity.action &&
+        a.actorId === newActivity.actorId &&
+        a.artifact === newActivity.artifact &&
+        a.event === newActivity.event &&
+        a.metadata?.pullRequest?.uri &&
+        a.metadata.pullRequest.uri === newActivity.metadata?.pullRequest?.uri &&
+        a.metadata?.codeAction
     );
-    codeActions.add(newActivity.metadata.codeAction as string);
+    if (indexPRActivity >= 0 && newActivity.metadata.codeAction) {
+      const foundActivity = activities[indexPRActivity];
 
-    if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
-      newActivity.metadata.codeAction = [...codeActions];
-      activities.splice(indexPRActivity, 1);
-      activities.push(newActivity);
-    } else {
-      foundActivity.metadata!.codeAction = [...codeActions];
+      const foundCodeAction = foundActivity.metadata!.codeAction!;
+      const codeActions = new Set<string>(
+        Array.isArray(foundCodeAction) ? foundCodeAction : [foundCodeAction]
+      );
+      codeActions.add(newActivity.metadata.codeAction as string);
+
+      if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+        newActivity.metadata.codeAction = [...codeActions];
+        activities.splice(indexPRActivity, 1);
+        activities.push(newActivity);
+      } else {
+        foundActivity.metadata!.codeAction = [...codeActions];
+      }
+      return activities;
     }
-    return activities;
+  }
+
+  // Code push
+  if (newActivity.metadata?.commits?.length) {
+    const indexPushActivity = activities.findLastIndex(
+      a =>
+        a.event === 'push' &&
+        a.event === newActivity.event &&
+        a.action === newActivity.action &&
+        a.actorId === newActivity.actorId &&
+        a.artifact === newActivity.artifact &&
+        a.event === newActivity.event &&
+        a.metadata?.commits
+    );
+    if (indexPushActivity >= 0) {
+      const foundActivity = activities[indexPushActivity];
+      const urls = foundActivity.metadata!.commits!.map(c => c.url);
+      // if at least one commit is identical, we consolidate the 2 activities
+      if (newActivity.metadata.commits.some(a => urls.indexOf(a.url) !== -1)) {
+        const commits = [...foundActivity.metadata!.commits!];
+        newActivity.metadata.commits.forEach(commit => {
+          if (!commits.some(c => c.url === commit.url)) {
+            commits.push(commit);
+          }
+        });
+        if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+          newActivity.metadata.commits = commits;
+          activities.splice(indexPushActivity, 1);
+          activities.push(newActivity);
+        } else {
+          foundActivity.metadata!.commits = commits;
+        }
+        return activities;
+      }
+    }
   }
 
   // Issue changelog
-  const indexIssueActivity = activities.findLastIndex(
-    a =>
-      a.action === newActivity.action &&
-      a.actorId === newActivity.actorId &&
-      a.artifact === newActivity.artifact &&
-      a.event === newActivity.event &&
-      a.metadata?.issue?.key &&
-      a.metadata.issue.key === newActivity.metadata?.issue?.key &&
-      a.metadata?.changeLog
-  );
-  if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
-    const foundActivity = activities[indexIssueActivity];
+  if (newActivity.metadata?.issue?.key && newActivity.metadata.changeLog) {
+    const indexIssueActivity = activities.findLastIndex(
+      a =>
+        a.action === newActivity.action &&
+        a.actorId === newActivity.actorId &&
+        a.artifact === newActivity.artifact &&
+        a.event === newActivity.event &&
+        a.metadata?.issue?.key &&
+        a.metadata.issue.key === newActivity.metadata?.issue?.key &&
+        a.metadata?.changeLog
+    );
+    if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
+      const foundActivity = activities[indexIssueActivity];
 
-    if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
-      newActivity.metadata.changeLog = [
-        ...foundActivity.metadata!.changeLog!,
-        ...newActivity.metadata.changeLog,
-      ];
-      activities.splice(indexIssueActivity, 1);
-      activities.push(newActivity);
-    } else {
-      foundActivity.metadata!.changeLog!.push(...newActivity.metadata.changeLog);
+      if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+        newActivity.metadata.changeLog.push(...foundActivity.metadata!.changeLog!);
+        activities.splice(indexIssueActivity, 1);
+        activities.push(newActivity);
+      } else {
+        foundActivity.metadata!.changeLog!.push(...newActivity.metadata.changeLog);
+      }
+      return activities;
     }
-    return activities;
   }
 
   // no similar activity found, push it as new
