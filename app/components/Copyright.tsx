@@ -16,7 +16,7 @@ export default function Copyright() {
     >
       <Grid>
         <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-          {'Copyright © ROAKIT'} {new Date().getFullYear()}.
+          {'Copyright © Roakit'} {new Date().getFullYear()}.
         </Typography>
       </Grid>
       <Grid>

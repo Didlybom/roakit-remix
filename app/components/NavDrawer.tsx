@@ -131,7 +131,7 @@ export default function NavDrawer({
       <Box flexGrow={1} />
       <Box p={1} sx={{ backgroundColor: grey[50] }} borderTop="solid 1px" borderColor={grey[200]}>
         <Typography variant="body2" color="text.secondary" pl={1}>
-          {'© ROAKIT'} {new Date().getFullYear()}.
+          {'© Roakit'} {new Date().getFullYear()}.
         </Typography>
         <Typography variant="body2" color="text.disabled" pl={1}>
           Work in progress.
