@@ -19,7 +19,13 @@ export const groupBy = <T>(array: T[], key: keyof T): Record<string, T[]> =>
     {} as Record<string, T[]>
   );
 
-export const groupByArray = <T>(array: T[], key: keyof T): { key: string; values: T[] }[] => {
+export const groupByArray = <T>(
+  array: T[],
+  key: keyof T | null
+): { key: string | null; values: T[] }[] => {
+  if (!key) {
+    return [{ key: null, values: array }];
+  }
   return array.reduce(
     (acc, value) => {
       const recordKey = value[key] as string;
@@ -33,18 +39,20 @@ export const groupByArray = <T>(array: T[], key: keyof T): { key: string; values
       }
       return acc;
     },
-    [] as { key: string; values: T[] }[]
+    [] as { key: string | null; values: T[] }[]
   );
 };
 
 export const sortMap = <T>(
-  arrayMap: { key: string; values: T[] }[],
-  compare: (a: { key: string; count: number }, b: { key: string; count: number }) => number
-): Map<string, T[]> => {
-  arrayMap.sort((a, b) =>
-    compare({ key: a.key, count: a.values.length }, { key: b.key, count: b.values.length })
-  );
-  const sorted = new Map<string, T[]>();
+  arrayMap: { key: string | null; values: T[] }[],
+  compare: ((a: { key: string; count: number }, b: { key: string; count: number }) => number) | null
+): Map<string | null, T[]> => {
+  if (compare) {
+    arrayMap.sort((a, b) =>
+      compare({ key: a.key!, count: a.values.length }, { key: b.key!, count: b.values.length })
+    );
+  }
+  const sorted = new Map<string | null, T[]>();
   arrayMap.forEach(v => sorted.set(v.key, v.values));
   return sorted;
 };
@@ -53,4 +61,4 @@ export const groupByAndSort = <T>(
   array: T[],
   key: keyof T,
   compare: (a: { key: string; count: number }, b: { key: string; count: number }) => number
-): Map<string, T[]> => sortMap(groupByArray(array, key), compare);
+): Map<string | null, T[]> => sortMap(groupByArray(array, key), compare);
