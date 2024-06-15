@@ -645,7 +645,7 @@ export default function UserActivity() {
       </Popover>
       <Stack m={3}>
         <Stack direction="row">
-          {(loaderData.userId === ALL || (groupBy && groupBy !== GroupBy.Contributor)) && (
+          {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (
             <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
               <Box sx={{ position: 'relative' }}>
                 <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
