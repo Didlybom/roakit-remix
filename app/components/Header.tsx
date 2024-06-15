@@ -12,10 +12,10 @@ import {
   IconButton,
   LinearProgress,
   Toolbar,
-  Typography,
   styled,
 } from '@mui/material';
 import dayjs from 'dayjs';
+import RoakitIcon from '../icons/Roakit';
 import { type DateRangeEnding } from '../utils/dateUtils';
 import { Role, View } from '../utils/rbac';
 import DateRangePicker from './DateRangePicker';
@@ -82,9 +82,9 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Typography fontWeight={500} mr={2} display={{ xs: 'none', sm: 'flex' }}>
-          ROAKIT
-        </Typography>
+        <Box title="Roakit" mr={2} display={{ xs: 'none', sm: 'flex' }}>
+          <RoakitIcon width="50px" height="22px" />
+        </Box>
         {view !== View.Login && view !== View.Logout && (
           <>
             <Box flex={1} mr={2}>
