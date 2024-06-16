@@ -544,6 +544,7 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
+        a.eventType === newActivity.eventType &&
         a.event === newActivity.event &&
         a.metadata?.pullRequest?.uri &&
         a.metadata.pullRequest.uri === newActivity.metadata?.pullRequest?.uri &&
@@ -558,7 +559,7 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
       );
       codeActions.add(newActivity.metadata.codeAction as string);
 
-      if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+      if (newActivity.timestamp >= foundActivity.timestamp) {
         newActivity.metadata.codeAction = [...codeActions];
         activities.splice(indexPRActivity, 1);
         activities.push(newActivity);
@@ -578,6 +579,7 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
+        a.eventType === newActivity.eventType &&
         a.event === newActivity.event &&
         a.metadata?.commits
     );
@@ -592,7 +594,7 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
             commits.push(commit);
           }
         });
-        if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+        if (newActivity.timestamp >= foundActivity.timestamp) {
           newActivity.metadata.commits = commits;
           activities.splice(indexPushActivity, 1);
           activities.push(newActivity);
@@ -611,6 +613,7 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
+        a.eventType === newActivity.eventType &&
         a.event === newActivity.event &&
         a.metadata?.issue?.key &&
         a.metadata.issue.key === newActivity.metadata?.issue?.key &&
@@ -619,12 +622,35 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
     if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
       const foundActivity = activities[indexIssueActivity];
 
-      if (newActivity.createdTimestamp >= foundActivity.createdTimestamp) {
+      if (newActivity.timestamp >= foundActivity.timestamp) {
         newActivity.metadata.changeLog.push(...foundActivity.metadata!.changeLog!);
         activities.splice(indexIssueActivity, 1);
         activities.push(newActivity);
       } else {
         foundActivity.metadata!.changeLog!.push(...newActivity.metadata.changeLog);
+      }
+      return activities;
+    }
+  }
+
+  // Confluence page
+  if (newActivity.metadata?.page?.id) {
+    const indexPageActivity = activities.findLastIndex(
+      a =>
+        a.action === newActivity.action &&
+        a.actorId === newActivity.actorId &&
+        a.artifact === newActivity.artifact &&
+        a.eventType === newActivity.eventType &&
+        a.event === newActivity.event &&
+        a.metadata?.page &&
+        a.metadata.page.id === newActivity.metadata?.page?.id &&
+        a.metadata.page.version === newActivity.metadata?.page?.version
+    );
+    if (indexPageActivity >= 0) {
+      const foundActivity = activities[indexPageActivity];
+      if (newActivity.timestamp >= foundActivity.timestamp) {
+        activities.splice(indexPageActivity, 1);
+        activities.push(newActivity);
       }
       return activities;
     }
