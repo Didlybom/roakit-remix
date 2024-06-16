@@ -208,9 +208,9 @@ export default function ActivityReview() {
       // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
       // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
       if (prevPaginationModel.page < paginationModel.page) {
-        query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
+        query += `&startAfter=${activities[activities.length - 1].timestamp}`;
       } else if (prevPaginationModel.page > paginationModel.page) {
-        query += `&endBefore=${activities[0].createdTimestamp}`;
+        query += `&endBefore=${activities[0].timestamp}`;
       } else {
         // reachable on dev hot reload, then page is the same but we are reloading UI
         return;
@@ -268,7 +268,7 @@ export default function ActivityReview() {
 
   const columns = useMemo<GridColDef[]>(
     () => [
-      dateColDef({ field: 'createdTimestamp', valueGetter: value => new Date(value) }),
+      dateColDef({ field: 'timestamp', valueGetter: value => new Date(value) }),
       actorColDef({
         field: 'actor',
         valueGetter: (_, row) => {
@@ -295,10 +295,10 @@ export default function ActivityReview() {
         },
       }),
       actionColDef({ field: 'action' }),
-      priorityColDef({ field: 'priority' }),
       descriptionColDef({ field: 'metadata' }, (element, content) =>
         setPopover({ element, content })
       ),
+      priorityColDef({ field: 'priority' }),
       {
         field: 'launchItemId',
         headerName: 'Launch',
@@ -308,7 +308,7 @@ export default function ActivityReview() {
               <Box title={loaderData.launchItems[launchItemId]?.label}>
                 {loaderData.launchItems[launchItemId]?.key}
               </Box>
-            : <Box color={grey[400]}>unset</Box>;
+            : null;
         },
       },
       {
@@ -510,7 +510,7 @@ export default function ActivityReview() {
                     {
                       id: updatedRow.id,
                       artifact: updatedRow.artifact,
-                      createdTimestamp: updatedRow.createdTimestamp,
+                      createdTimestamp: updatedRow.timestamp,
                     },
                   ] as ActivityPayload,
                 },

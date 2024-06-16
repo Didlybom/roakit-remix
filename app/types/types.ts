@@ -83,7 +83,7 @@ export type ActivityMetadata = {
   sprint?: { name: string; state: string };
   worklog?: unknown;
   space?: { title: string; uri?: string };
-  page?: { title: string; uri?: string };
+  page?: { id: string; title: string; version?: number; uri?: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   commits?: { message: string; url?: string }[];
@@ -105,7 +105,7 @@ export type Activity = {
   event?: string;
   actorId?: string;
   artifact: Artifact;
-  createdTimestamp: number;
+  timestamp: number;
   initiativeId: string;
   launchItemId: string;
   priority?: number;

@@ -29,7 +29,7 @@ import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/ac
 import type { AccountData, Activity } from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx } from '../../utils/jsxUtils';
-import theme, { priorityColors, priorityLabels } from '../../utils/theme';
+import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 
 export const dataGridCommonProps = {
   autosizeOnMount: true,
@@ -113,7 +113,13 @@ export const actionColDef = (colDef?: GridColDef) =>
           >
             {action}
           </Typography>
-          <Typography fontSize="smaller" title={caption} variant="caption" sx={ellipsisSx}>
+          <Typography
+            fontSize="smaller"
+            title={caption}
+            variant="caption"
+            color={grey[500]}
+            sx={ellipsisSx}
+          >
             {caption}
           </Typography>
         </Stack>
@@ -124,13 +130,19 @@ export const actionColDef = (colDef?: GridColDef) =>
 
 export const priorityColDef = (colDef?: GridColDef) =>
   ({
-    headerName: 'Priority',
+    headerName: 'Prio.',
     sortComparator: (a: number, b: number) => (b ?? 999) - (a ?? 999),
     renderCell: params => {
       const priority = params.value as number;
       return (
-        <Box fontSize="small" color={priorityColors[priority] ?? grey[400]}>
-          {priorityLabels[priority] ?? 'unknown'}
+        <Box
+          fontSize="large"
+          fontWeight="600"
+          color={priorityColors[priority] ?? undefined}
+          display="flex"
+          justifyContent="center"
+        >
+          {prioritySymbols[priority] ?? ''}
         </Box>
       );
     },
@@ -157,22 +169,13 @@ export const descriptionColDef = (
       let urlTitle;
       if (url) {
         if (url.type === 'jira') {
-          icon = (
-            <JiraIcon width={20} height={20} fontSize="small" color={theme.palette.primary.main} />
-          );
+          icon = <JiraIcon width="18px" height="18px" color={theme.palette.primary.main} />;
           urlTitle = 'Go to Jira page';
         } else if (url.type === 'confluence') {
-          icon = (
-            <ConfluenceIcon
-              width={20}
-              height={20}
-              fontSize="small"
-              color={theme.palette.primary.main}
-            />
-          );
+          icon = <ConfluenceIcon width="18px" height="18px" color={theme.palette.primary.main} />;
           urlTitle = 'Go to Confluence page';
         } else if (url.type === 'github') {
-          icon = <GitHubIcon fontSize="small" color="primary" />;
+          icon = <GitHubIcon color="primary" sx={{ width: '18px', height: '18px' }} />;
           urlTitle = 'Go to Github page';
         }
       }
@@ -199,6 +202,7 @@ export const descriptionColDef = (
                   component="div"
                   title={summaryAction}
                   fontSize="smaller"
+                  color={grey[500]}
                   sx={{ ...ellipsisSx }}
                 >
                   {summaryAction.startsWith('http') ?
@@ -211,7 +215,12 @@ export const descriptionColDef = (
                 </Typography>
               )}
               {comment && (
-                <Typography title={comment} fontSize="smaller" sx={{ ...ellipsisSx }}>
+                <Typography
+                  title={comment}
+                  fontSize="smaller"
+                  color={grey[500]}
+                  sx={{ ...ellipsisSx }}
+                >
                   {comment}
                 </Typography>
               )}
@@ -241,7 +250,12 @@ export const descriptionColDef = (
                 </Link>
               )}
               {commits && commits.length === 1 && (
-                <Typography title={summaryAction} fontSize="smaller" sx={{ ...ellipsisSx }}>
+                <Typography
+                  title={summaryAction}
+                  fontSize="smaller"
+                  color={grey[500]}
+                  sx={{ ...ellipsisSx }}
+                >
                   {'Committed'}
                 </Typography>
               )}

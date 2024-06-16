@@ -450,7 +450,7 @@ export const fetchActivities = async ({
         action: data.action,
         actorId: data.actorAccountId,
         artifact: data.artifact as Artifact,
-        createdTimestamp: data.createdTimestamp,
+        timestamp: data.eventTimestamp ?? data.createdTimestamp,
         initiativeId: data.initiative,
         launchItemId: '', // FIXME launch item
         priority, // see overwrite below
@@ -557,7 +557,7 @@ export const fetchActivitiesPage = async ({
       event: data.event,
       actorId: data.actorAccountId,
       artifact: data.artifact as Artifact,
-      createdTimestamp: data.createdTimestamp,
+      timestamp: data.eventTimestamp ?? data.createdTimestamp,
       priority: data.priority,
       initiativeId: data.initiative,
       launchItemId: '', // FIXME launch item

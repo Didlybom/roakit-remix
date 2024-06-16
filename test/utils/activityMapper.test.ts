@@ -32,7 +32,7 @@ test('evalActivity', () => {
     launchItemId: '',
     id: 'id',
     action: 'action',
-    createdTimestamp: 0,
+    timestamp: 0,
     artifact: 'code',
     event: 'abc',
     metadata: { issue: { key: 'iss-a', project: { id: 'proj-a' } } },

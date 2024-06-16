@@ -86,6 +86,7 @@ export const activitySchema = z.object({
   event: z.string().optional(),
   actorAccountId: z.string().optional(),
   createdTimestamp: z.number(),
+  eventTimestamp: z.number().optional(),
   artifact: z.string(), //z.enum(ARTIFACTS), // don't use an enum so ingestion backend can be deployed with new artifacts before updating frontend
   initiative: z.string(),
   priority: z.number().optional(),

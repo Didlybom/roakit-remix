@@ -326,7 +326,7 @@ export default function UserActivity() {
   const columns = useMemo<GridColDef[]>(
     () => [
       dateColDef({
-        field: 'createdTimestamp',
+        field: 'timestamp',
         valueGetter: value => (value ? new Date(value) : value),
       }),
       ...(groupBy !== GroupBy.Contributor && loaderData.userId === ALL ?
@@ -344,7 +344,6 @@ export default function UserActivity() {
         ]
       : []),
       actionColDef({ field: 'action' }),
-      priorityColDef({ field: 'priority' }),
       ...(groupBy !== GroupBy.Launch ?
         [
           {
@@ -356,7 +355,7 @@ export default function UserActivity() {
                   <Box title={loaderData.launchItems[launchItemId]?.label}>
                     {loaderData.launchItems[launchItemId]?.key}
                   </Box>
-                : <Box color={grey[400]}>unset</Box>;
+                : null;
             },
           },
         ]
@@ -370,12 +369,13 @@ export default function UserActivity() {
               <Box title={loaderData.initiatives[initiativeId]?.label}>
                 {loaderData.initiatives[initiativeId]?.key}
               </Box>
-            : <Box color={grey[400]}>unset</Box>;
+            : null;
         },
       },
       descriptionColDef({ field: 'metadata' }, (element, content) =>
         setPopover({ element, content })
       ),
+      priorityColDef({ field: 'priority' }),
       viewJsonActionsColDef({}, (element: HTMLElement, data: unknown) => {
         const { id, ...content } = data as Activity;
         setCodePopover({ element, content: { ...content, activityId: id } });
@@ -472,7 +472,7 @@ export default function UserActivity() {
   ]);
 
   const [launchList, launchActivityCount] = useMemo(() => {
-    if (loaderData.userId !== ALL && groupBy === GroupBy.Contributor) {
+    if (groupBy !== GroupBy.Launch) {
       return [null, null];
     }
     let activityCount = 0;
@@ -504,7 +504,7 @@ export default function UserActivity() {
       );
     });
     return [launchList, activityCount];
-  }, [activities, groupBy, loaderData.launchItems, loaderData.userId]);
+  }, [activities, groupBy, loaderData.launchItems]);
 
   const activityCount = actorActivityCount ?? launchActivityCount;
 
@@ -613,7 +613,13 @@ export default function UserActivity() {
       : rows;
     return !filteredRows?.length ?
         null
-      : <DataGrid columns={columns} rows={filteredRows} {...dataGridCommonProps} rowHeight={50} />;
+      : <DataGrid
+          columns={columns}
+          rows={filteredRows}
+          {...dataGridCommonProps}
+          rowHeight={50}
+          sx={{ mt: 1 }}
+        />;
   }, [activities, columns, groupBy, searchTerm]);
 
   return (

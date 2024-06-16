@@ -27,7 +27,7 @@ export const buildActivitySummaryPrompt = (
   let activitiesString = '';
   const dedupe = new Set<string>();
   activityList
-    .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
+    .sort((a, b) => a.timestamp - b.timestamp)
     .forEach(activity => {
       if (!activity.metadata) {
         return;
@@ -53,9 +53,7 @@ export const buildActivitySummaryPrompt = (
         dedupe.add(activityStringDedupe);
         activitiesString +=
           summary +
-          (options.inclDates ?
-            `\nDate: ${new Date(activity.createdTimestamp).toLocaleString()}`
-          : '') +
+          (options.inclDates ? `\nDate: ${new Date(activity.timestamp).toLocaleString()}` : '') +
           (summaryAction ? `\nAction: ${summaryAction}` : '') +
           (contributor ? `\nContributor: ${contributor}` : '') +
           (activity.initiativeId && initiatives?.[activity.initiativeId] ?
