@@ -83,7 +83,7 @@ export default function Header({
           </IconButton>
         )}
         <Box title="Roakit" mr={2} display={{ xs: 'none', sm: 'flex' }}>
-          <RoakitIcon width="50px" height="22px" />
+          <RoakitIcon width="45px" height="20px" />
         </Box>
         {view !== View.Login && view !== View.Logout && (
           <>
