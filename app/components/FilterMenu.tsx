@@ -54,8 +54,10 @@ export default function FilterMenu({
               selectedValues => (
                 <Box fontSize="small">
                   {(selectedValues as string[])
+                    .slice(0, 2)
                     .map(v => items.find(i => i.value === v)?.label)
-                    .join(', ')}
+                    .join(', ') +
+                    (selectedValues.length > 2 ? `, and ${selectedValues.length - 2} more` : '')}
                 </Box>
               )
             : value => <Box fontSize="small">{items.find(i => i.value === value)?.label}</Box>
