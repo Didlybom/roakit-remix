@@ -6,13 +6,13 @@ import {
 import {
   Box,
   Button,
+  Divider,
   FormControlLabel,
   FormGroup,
   Unstable_Grid2 as Grid,
   IconButton,
   InputAdornment,
   Link,
-  Popover,
   Stack,
   Switch,
   TextField,
@@ -35,6 +35,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import App from '../components/App';
+import type { BoxPopoverContent } from '../components/BoxPopover';
+import BoxPopover from '../components/BoxPopover';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import {
@@ -198,9 +200,7 @@ export default function UserActivity() {
   const [scrollToGroup, setScrollToGroup] = useState<string | null>(null);
   const [showOnlyActor, setShowOnlyActor] = useState<string | null>(null);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
-  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
-    null
-  );
+  const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [isRendering, setIsRendering] = useState(false);
   const snapshot = useRef<{ key: string | null; values: Activity[] }[]>();
   const [activities, setActivities] = useState<Map<string | null, Activity[]>>(new Map());
@@ -350,7 +350,7 @@ export default function UserActivity() {
                   <Link
                     onClick={() => {
                       setGroupBy(GroupBy.Launch);
-                      setScrollToGroup(launchItemId);
+                      setTimeout(() => setScrollToGroup(launchItemId), 0);
                     }}
                     title={loaderData.launchItems[launchItemId]?.label}
                     sx={internalLinkSx}
@@ -486,7 +486,7 @@ export default function UserActivity() {
       if (!launchId) {
         label = 'No launch item';
       } else {
-        label = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+        label = loaderData.launchItems[launchId]?.label || 'Unknown launch item';
       }
       return (
         <Box
@@ -551,10 +551,13 @@ export default function UserActivity() {
       <Stack>
         {loaderData.userId !== ALL && <Box mb={1}>{actorHeader(loaderData.userId!)}</Box>}
         {[...activities].map(([launchId, rows], i) => {
+          let launchKey;
           let launchLabel;
           if (!launchId) {
+            launchKey = '';
             launchLabel = 'No launch item';
           } else {
+            launchKey = loaderData.launchItems[launchId]?.key ?? '';
             launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
           }
           const filteredRows =
@@ -570,15 +573,22 @@ export default function UserActivity() {
           return !filteredRows?.length || launchId == null ?
               null
             : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
-                <Typography
-                  variant="h6"
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  divider={<Divider orientation="vertical" flexItem />}
                   color={grey[launchId ? 600 : 400]}
                   fontSize="1.1rem"
                   mb={1}
                   sx={{ textWrap: 'nowrap' }}
                 >
-                  {launchLabel}
-                </Typography>
+                  {launchKey && (
+                    <Typography variant="h6" fontWeight={600}>
+                      {launchKey}
+                    </Typography>
+                  )}
+                  <Typography variant="h6">{launchLabel}</Typography>
+                </Stack>
                 <DataGrid
                   columns={columns}
                   rows={filteredRows}
@@ -642,16 +652,7 @@ export default function UserActivity() {
         customerId={loaderData.customerId}
         options={{ linkifyBuckets: true }}
       />
-      <Popover
-        id={popover?.element ? 'popover' : undefined}
-        open={!!popover?.element}
-        anchorEl={popover?.element}
-        onClose={() => setPopover(null)}
-        onClick={() => setPopover(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Box py={1}>{popover?.content}</Box>
-      </Popover>
+      <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>
         <Stack direction="row">
           {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (

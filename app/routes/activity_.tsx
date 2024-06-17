@@ -7,7 +7,6 @@ import {
   InputLabel,
   Link,
   MenuItem,
-  Popover,
   Select,
   Stack,
   Typography,
@@ -28,6 +27,7 @@ import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
 import App from '../components/App';
+import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
@@ -178,9 +178,7 @@ export default function ActivityReview() {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const prevPaginationModel = usePrevious(paginationModel);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
-  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
-    null
-  );
+  const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -449,16 +447,7 @@ export default function ActivityReview() {
         customerId={loaderData.customerId}
         options={{ linkifyBuckets: true }}
       />
-      <Popover
-        id={popover?.element ? 'popover' : undefined}
-        open={!!popover?.element}
-        anchorEl={popover?.element}
-        onClose={() => setPopover(null)}
-        onClick={() => setPopover(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Box py={1}>{popover?.content}</Box>
-      </Popover>
+      <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>
         <Grid container columns={2} spacing={2} alignItems="center" mb={2}>
           <Grid>

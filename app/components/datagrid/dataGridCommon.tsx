@@ -6,7 +6,6 @@ import {
   Link,
   List,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
   Stack,
@@ -232,12 +231,12 @@ export const descriptionColDef = (
                       <List dense={true} disablePadding>
                         {commits?.map((commit, i) => (
                           <ListItem key={i} sx={{ alignContent: 'top' }}>
-                            <ListItemButton component="a" href={commit.url} target="_blank">
+                            <Link href={commit.url} target="_blank">
                               <ListItemIcon sx={{ minWidth: '28px' }}>
                                 <GitHubIcon fontSize="small" color="primary" />
                               </ListItemIcon>
-                              <ListItemText>{commit.message}</ListItemText>
-                            </ListItemButton>
+                            </Link>
+                            <ListItemText>{commit.message}</ListItemText>
                           </ListItem>
                         ))}
                       </List>

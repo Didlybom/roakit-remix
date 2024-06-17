@@ -4,7 +4,6 @@ import {
   GlobalStyles,
   IconButton,
   Paper,
-  Popover,
   Snackbar,
   SxProps,
   Tab,
@@ -18,6 +17,7 @@ import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../../components/App';
+import BoxPopover, { type BoxPopoverContent } from '../../components/BoxPopover';
 import TabPanel from '../../components/TabPanel';
 import { firestore } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
@@ -175,9 +175,7 @@ export default function Settings() {
   const [tabValue, setTabValue] = useState(0);
   const [showCopyConfirmation, setShowCopyConfirmation] = useState<string | null>(null);
   const [showError, setShowError] = useState<string | null>(actionData?.error ?? null);
-  const [popover, setPopover] = useState<{ element: HTMLElement; content: JSX.Element } | null>(
-    null
-  );
+  const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
 
   const handleCopy = (content?: string) => {
     if (!content) {
@@ -192,16 +190,7 @@ export default function Settings() {
   return (
     <App view={VIEW} role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
       {globalStyles}
-      <Popover
-        id={popover?.element ? 'popover' : undefined}
-        open={!!popover?.element}
-        anchorEl={popover?.element}
-        onClose={() => setPopover(null)}
-        onClick={() => setPopover(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Box sx={{ p: 2, overflow: 'scroll' }}>{popover?.content}</Box>
-      </Popover>
+      <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Paper variant="outlined" sx={{ backgroundColor: grey[50], m: 2 }}>
         <Typography variant="h6" pl={2} pt={2} pb={1}>
           Webhook Settings
