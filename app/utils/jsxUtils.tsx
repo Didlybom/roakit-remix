@@ -3,7 +3,7 @@ import { errMsg } from './errorUtils';
 
 export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
-export const stickySx: SxProps = {
+export const verticalStickyBarSx: SxProps = {
   textWrap: 'nowrap',
   position: 'sticky',
   top: 60, // depends on header height

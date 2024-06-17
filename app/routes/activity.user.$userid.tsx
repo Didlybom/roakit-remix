@@ -73,7 +73,7 @@ import {
   internalLinkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
-  stickySx,
+  verticalStickyBarSx,
 } from '../utils/jsxUtils';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
@@ -655,7 +655,7 @@ export default function UserActivity() {
           {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (
             <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
               <Box sx={{ position: 'relative' }}>
-                <Box fontSize="small" color={grey[700]} sx={stickySx}>
+                <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
                     {activities.size > 0 && (
                       <FormControlLabel
