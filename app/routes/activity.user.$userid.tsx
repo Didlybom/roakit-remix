@@ -452,6 +452,7 @@ export default function UserActivity() {
                 setScrollToGroup(actorId);
               } else {
                 setShowOnlyActor(actorId ?? '');
+                window.scrollTo({ top: 0 });
               }
             }}
           >
@@ -654,7 +655,7 @@ export default function UserActivity() {
           {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (
             <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
               <Box sx={{ position: 'relative' }}>
-                <Box fontSize="small" color={grey[700]} sx={{ ...stickySx }}>
+                <Box fontSize="small" color={grey[700]} sx={stickySx}>
                   <FormGroup sx={{ mb: 2, ml: 2 }}>
                     {activities.size > 0 && (
                       <FormControlLabel
