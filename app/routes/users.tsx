@@ -8,6 +8,7 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
   IconButton,
   Link,
   Snackbar,
@@ -18,7 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import { DataGrid, GridColDef, GridSortDirection } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, GridColDef, GridSortDirection } from '@mui/x-data-grid';
 import {
   Link as RemixLink,
   ShouldRevalidateFunction,
@@ -41,6 +42,12 @@ import JiraIcon from '../icons/Jira';
 import type { AccountData, IdentityData } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
+import {
+  CONFLUENCE_FEED_TYPE,
+  FEED_TYPES,
+  GITHUB_FEED_TYPE,
+  JIRA_FEED_TYPE,
+} from '../utils/feedUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, internalLinkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
@@ -50,6 +57,8 @@ const logger = pino({ name: 'route:identities' });
 
 const MAX_IMPORT = 500;
 const UNSET_MANAGER_ID = '_UNSET_MANAGER_';
+
+const UNKNOWN_EMAIL_IMPORT = '<EMAIL_REPLACE_ME>';
 
 const roleLabels = [
   { value: Role.Admin, label: 'Administrator' },
@@ -157,10 +166,10 @@ export const action = async ({
     const dateCreated = Date.now();
     let importCount = 0;
     for (const account of accounts) {
-      const [managerId, email, displayName, jiraId, gitHubId] = account
+      const [email, displayName, managerId, jiraId, gitHubId] = account
         .split(',')
         .map(f => f.trim());
-      if (!email || gitHubId == null) {
+      if (!email || email === UNKNOWN_EMAIL_IMPORT) {
         continue;
       }
       importCount++;
@@ -168,7 +177,7 @@ export const action = async ({
         dateCreated,
         managerId,
         displayName,
-        ...(email && { email }),
+        email,
         accounts: [
           { feedId: 2, type: 'jira', id: jiraId, name: displayName },
           { feedId: 1, type: 'github', id: gitHubId, name: '' },
@@ -311,7 +320,7 @@ export default function Users() {
           </Box>
         ),
       },
-      { field: 'id', headerName: 'Tracking ID', minWidth: 150 },
+      { field: 'id', headerName: 'Roakit ID', minWidth: 150 },
       {
         field: 'firebaseId',
         headerName: 'Login ID',
@@ -367,7 +376,7 @@ export default function Users() {
       {
         field: 'id',
         headerName: 'Account ID',
-        minWidth: 200,
+        flex: 1,
         renderCell: params => {
           const id = (params.row as IdentityData).id;
           return (
@@ -381,14 +390,45 @@ export default function Users() {
           );
         },
       },
-      { field: 'type', headerName: 'Source', minWidth: 80 },
+      {
+        field: 'type',
+        headerName: 'Source',
+        minWidth: 80,
+        valueGetter: value => (value ? FEED_TYPES.find(f => f.type === value)?.label : value),
+      },
       { field: 'name', headerName: 'Name', minWidth: 250 },
       dateColDef({
         field: 'createdTimestamp',
         valueGetter: value => (value ? new Date(value) : value),
       }),
+      {
+        field: 'actions',
+        type: 'actions',
+        getActions: params => [
+          <GridActionsCellItem
+            key={1}
+            icon={<UploadIcon fontSize="small" />}
+            onClick={() => {
+              const account = params.row as AccountData;
+              setImports(
+                (imports ? `${imports}\n` : '') +
+                  UNKNOWN_EMAIL_IMPORT +
+                  ',' +
+                  (account.name ?? '') +
+                  ',' +
+                  (account.type === JIRA_FEED_TYPE || account.type === CONFLUENCE_FEED_TYPE ?
+                    account.id
+                  : '') +
+                  ',' +
+                  (account.type === GITHUB_FEED_TYPE ? account.id : '')
+              );
+            }}
+            label="Prefill Import List"
+          />,
+        ],
+      },
     ],
-    []
+    [imports]
   );
 
   enum UsersTab {
@@ -417,84 +457,35 @@ export default function Users() {
         }}
         message={confirmation}
       />
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
-        <Tabs
-          variant="scrollable"
-          value={tabValue}
-          onChange={(_, newValue: number) => setTabValue(newValue)}
-        >
-          <Tab label="Directory" id={`tab-${UsersTab.Directory}`} />
-          <Tab label="To Review" id={`tab-${UsersTab.NeedsReview}`} />
-        </Tabs>
-      </Box>
-      <TabPanel value={tabValue} index={UsersTab.Directory}>
-        <Stack>
-          <DataGridWithSingleClickEditing
-            columns={identityCols}
-            rows={identities.map(identity => ({
-              ...identity,
-              managerId: identity.managerId ?? UNSET_MANAGER_ID,
-            }))}
-            {...dataGridCommonProps}
-            rowHeight={65}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25 } },
-              sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
-            }}
-            processRowUpdate={(updatedRow: IdentityData, oldRow: IdentityData) => {
-              if (updatedRow.managerId !== oldRow.managerId) {
-                setIdentities(
-                  identities.map(identity =>
-                    identity.id === updatedRow.id ?
-                      { ...identity, managerId: updatedRow.managerId }
-                    : identity
-                  )
-                );
-                submit(
-                  { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
-                  postJsonOptions
-                );
-              } else if (updatedRow.user?.role && updatedRow.user.role !== oldRow.user?.role) {
-                if (!oldRow.user?.id) {
-                  return oldRow;
-                }
-                setIdentities(
-                  identities.map(identity =>
-                    identity.id === updatedRow.id ?
-                      { ...identity, user: updatedRow.user }
-                    : identity
-                  )
-                );
-                submit(
-                  { userId: updatedRow.user.id ?? null, role: updatedRow.user.role ?? null },
-                  postJsonOptions
-                );
-              }
-              return updatedRow;
-            }}
-          />
-          <Box>
-            <Button
-              component={RemixLink}
-              to="csv"
-              reloadDocument
-              variant="text"
-              sx={{ mt: 1, textWrap: 'nowrap' }}
-              startIcon={<DownloadIcon />}
-            >
-              Download as CSV
-            </Button>
-          </Box>
+      <Stack>
+        <Stack direction="row" mx={3}>
           <TextField
             label=" CSV list to import"
             value={imports}
             fullWidth
             multiline
-            minRows={5}
+            minRows={3}
             maxRows={15}
-            helperText="manager ID, email, name, Jira ID, GitHub username"
-            placeholder="x7jfRAz1sSko911234, jdoe@example.com, John Doe, l1b78K4798TBj3pPe47k, jdoe
-, jsmith@example.com, Jane Smith, qyXNw7qryWGENPNbTnZW, jsmith"
+            helperText={
+              <Stack direction="row">
+                <Box fontWeight={600} mr={2}>
+                  Format:
+                </Box>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  divider={<Divider orientation="vertical" flexItem />}
+                >
+                  <Box>email (required)</Box>
+                  <Box>name</Box>
+                  <Box>manager Roakit ID</Box>
+                  <Box>Jira ID</Box>
+                  <Box>GitHub username</Box>
+                </Stack>
+              </Stack>
+            }
+            placeholder="jdoe@example.com, John Doe, x7jfRAz1sSko911234, l1b78K4798TBj3pPe47k, jdoe
+jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
             size="small"
             onChange={e => {
               setError('');
@@ -504,13 +495,13 @@ export default function Users() {
               style: {
                 fontFamily: 'Roboto Mono, monospace',
                 fontSize: '.8rem',
-                backgroundColor: grey[200],
+                backgroundColor: grey[100],
                 padding: '5px',
               },
             }}
             sx={{ mt: 5 }}
           />
-          <Box flex={0}>
+          <Box ml={3} mb={4} alignSelf="flex-end">
             <Button
               variant="contained"
               disabled={navigation.state !== 'idle'}
@@ -522,24 +513,94 @@ export default function Users() {
             </Button>
           </Box>
         </Stack>
-      </TabPanel>
-      <TabPanel value={tabValue} index={UsersTab.NeedsReview}>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          We found activity for these accounts although they are not listed in the directory.
-        </Alert>
-        <DataGrid
-          columns={accountReviewCols}
-          rows={loaderData.accountsToReview}
-          {...dataGridCommonProps}
-          rowHeight={50}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 25 } },
-            sorting: {
-              sortModel: [{ field: 'createdTimestamp', sort: 'desc' as GridSortDirection }],
-            },
-          }}
-        />
-      </TabPanel>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
+          <Tabs
+            variant="scrollable"
+            value={tabValue}
+            onChange={(_, newValue: number) => setTabValue(newValue)}
+          >
+            <Tab label="Directory" id={`tab-${UsersTab.Directory}`} />
+            <Tab label="Needs Review" id={`tab-${UsersTab.NeedsReview}`} />
+          </Tabs>
+        </Box>
+        <TabPanel value={tabValue} index={UsersTab.Directory}>
+          <Stack>
+            <DataGridWithSingleClickEditing
+              columns={identityCols}
+              rows={identities.map(identity => ({
+                ...identity,
+                managerId: identity.managerId ?? UNSET_MANAGER_ID,
+              }))}
+              {...dataGridCommonProps}
+              rowHeight={65}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 25 } },
+                sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
+              }}
+              processRowUpdate={(updatedRow: IdentityData, oldRow: IdentityData) => {
+                if (updatedRow.managerId !== oldRow.managerId) {
+                  setIdentities(
+                    identities.map(identity =>
+                      identity.id === updatedRow.id ?
+                        { ...identity, managerId: updatedRow.managerId }
+                      : identity
+                    )
+                  );
+                  submit(
+                    { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
+                    postJsonOptions
+                  );
+                } else if (updatedRow.user?.role && updatedRow.user.role !== oldRow.user?.role) {
+                  if (!oldRow.user?.id) {
+                    return oldRow;
+                  }
+                  setIdentities(
+                    identities.map(identity =>
+                      identity.id === updatedRow.id ?
+                        { ...identity, user: updatedRow.user }
+                      : identity
+                    )
+                  );
+                  submit(
+                    { userId: updatedRow.user.id ?? null, role: updatedRow.user.role ?? null },
+                    postJsonOptions
+                  );
+                }
+                return updatedRow;
+              }}
+            />
+            <Box>
+              <Button
+                component={RemixLink}
+                to="csv"
+                reloadDocument
+                variant="text"
+                sx={{ mt: 1, textWrap: 'nowrap' }}
+                startIcon={<DownloadIcon />}
+              >
+                Download as CSV
+              </Button>
+            </Box>
+          </Stack>
+        </TabPanel>
+        <TabPanel value={tabValue} index={UsersTab.NeedsReview}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            We found activity for these accounts although they are not listed in the directory.
+          </Alert>
+          <DataGrid
+            columns={accountReviewCols}
+            rows={loaderData.accountsToReview}
+            {...dataGridCommonProps}
+            rowHeight={50}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 25 } },
+              sorting: {
+                sortModel: [{ field: 'createdTimestamp', sort: 'desc' as GridSortDirection }],
+              },
+            }}
+          />
+        </TabPanel>
+      </Stack>
     </App>
   );
 }

@@ -14,13 +14,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
-    let csv = 'ID,managerID,email,name,jiraID,githubUsername\n';
+    let csv = 'ID,email,name,managerID,jiraID,githubUsername\n';
     identities.list.forEach(identity => {
       const jiraAccount = identity.accounts.find(account => account.type === JIRA_FEED_TYPE);
       const githubAccount = identity.accounts.find(account => account.type === GITHUB_FEED_TYPE);
-      csv += identity.id + ',' + (identity.managerId ?? '') + ',';
-      csv += (identity.email ?? '') + ',';
+      csv += identity.id + ',' + (identity.email ?? '') + ',';
       csv += (identity.displayName || jiraAccount?.name || '') + ',';
+      csv += (identity.managerId ?? '') + ',';
       csv += (jiraAccount?.id ?? '') + ',';
       csv += (githubAccount?.id ?? '') + '\n';
     });
