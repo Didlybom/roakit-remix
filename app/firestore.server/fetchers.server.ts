@@ -9,15 +9,15 @@ import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
 import {
   displayName,
-  type AccountData,
+  type Account,
   type AccountMap,
   type AccountToIdentityRecord,
   type Activity,
   type ActivityMetadata,
   type Artifact,
   type DaySummaries,
-  type IdentityData,
-  type InitiativeData,
+  type Identity,
+  type Initiative,
   type InitiativeRecord,
   type Summary,
   type TicketRecord,
@@ -63,7 +63,7 @@ export const queryUser = async (
 export const queryIdentity = async (
   customerId: number,
   key: { identityId?: string; email?: string }
-): Promise<IdentityData> => {
+): Promise<Identity> => {
   if (!key.identityId && !key.email) {
     throw Error('queryIdentity missing param');
   }
@@ -108,8 +108,8 @@ export const queryIdentity = async (
 export const queryTeamIdentities = async (
   customerId: number,
   managerId: string
-): Promise<IdentityData[]> => {
-  const identities: IdentityData[] = [];
+): Promise<Identity[]> => {
+  const identities: Identity[] = [];
   (
     await retry(
       async () =>
@@ -152,8 +152,8 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
   return initiatives;
 };
 
-export const fetchInitiatives = async (customerId: number): Promise<InitiativeData[]> => {
-  const initiatives: InitiativeData[] = [];
+export const fetchInitiatives = async (customerId: number): Promise<Initiative[]> => {
+  const initiatives: Initiative[] = [];
   const initiativeMap = await fetchInitiativeMap(customerId);
   Object.keys(initiativeMap).forEach(id => initiatives.push({ ...initiativeMap[id], id }));
   return initiatives.sort((a, b) => a.key.localeCompare(b.key));
@@ -182,19 +182,19 @@ export const fetchLaunchItemMap = async (customerId: number): Promise<Initiative
   return launchItems;
 };
 
-export const fetchLaunchItems = async (customerId: number): Promise<InitiativeData[]> => {
-  const launchItems: InitiativeData[] = [];
+export const fetchLaunchItems = async (customerId: number): Promise<Initiative[]> => {
+  const launchItems: Initiative[] = [];
   const launchItemMap = await fetchLaunchItemMap(customerId);
   Object.keys(launchItemMap).forEach(id => launchItems.push({ ...launchItemMap[id], id }));
   return launchItems.sort((a, b) => a.key.localeCompare(b.key));
 };
 
-const findIdentity = (identities: IdentityData[], id: string) => identities.find(i => i.id === id)!;
+const findIdentity = (identities: Identity[], id: string) => identities.find(i => i.id === id)!;
 
 export const fetchIdentities = async (
   customerId: number
-): Promise<{ list: IdentityData[]; accountMap: AccountToIdentityRecord }> => {
-  const identities: IdentityData[] = [];
+): Promise<{ list: Identity[]; accountMap: AccountToIdentityRecord }> => {
+  const identities: Identity[] = [];
   const accountMap: AccountToIdentityRecord = {};
 
   const usersByEmail: Record<string, { id: string; role: Role }> = {};
@@ -348,8 +348,8 @@ export const fetchAccountMap = async (customerId: number): Promise<AccountMap> =
   return accounts;
 };
 
-export const fetchAccountsToReview = async (customerId: number): Promise<AccountData[]> => {
-  const accounts: AccountData[] = [];
+export const fetchAccountsToReview = async (customerId: number): Promise<Account[]> => {
+  const accounts: Account[] = [];
   (
     await retry(
       async () =>

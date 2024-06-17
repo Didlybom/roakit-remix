@@ -39,7 +39,7 @@ import { dataGridCommonProps, dateColDef } from '../components/datagrid/dataGrid
 import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import type { AccountData, IdentityData } from '../types/types';
+import type { Account, Identity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import {
@@ -87,7 +87,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ]);
     const accountsFromIdentities = Object.keys(identities.accountMap);
     const dedupe = new Set<string>();
-    const accountsToReview: AccountData[] = [];
+    const accountsToReview: Account[] = [];
 
     fetchedAccountsToReview.forEach(account => {
       if (dedupe.has(account.id)) {
@@ -244,7 +244,7 @@ export default function Users() {
         headerName: 'Name',
         minWidth: 200,
         renderCell: params => {
-          const id = (params.row as IdentityData).id;
+          const id = (params.row as Identity).id;
           return (
             <Link
               href={`/activity/user/${encodeURI(id)}`}
@@ -264,7 +264,7 @@ export default function Users() {
         flex: 1,
         sortable: false,
         renderCell: params => {
-          return (params.value as IdentityData['accounts']).map((account, i) => {
+          return (params.value as Identity['accounts']).map((account, i) => {
             return (
               <Stack key={i} direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
                 <Typography
@@ -308,7 +308,7 @@ export default function Users() {
         valueOptions: params => [
           { value: UNSET_MANAGER_ID, label: '[unset]' },
           ...loaderData.identities.list
-            .filter(i => i.id !== (params.row as IdentityData).id)
+            .filter(i => i.id !== (params.row as Identity).id)
             .map(identity => ({ value: identity.id, label: identity.displayName })),
         ],
         editable: true,
@@ -325,7 +325,7 @@ export default function Users() {
         field: 'firebaseId',
         headerName: 'Login ID',
         minWidth: 150,
-        valueGetter: (_, row: IdentityData) => row.user!.id,
+        valueGetter: (_, row: Identity) => row.user!.id,
         renderCell: params => {
           return params.value ?
               <Box whiteSpace="noWrap" sx={ellipsisSx}>
@@ -336,7 +336,7 @@ export default function Users() {
                   title="Allow the user to login to ROAKIT"
                   onClick={() =>
                     submit(
-                      { createFirebaseUserForEmail: (params.row as IdentityData).email ?? null },
+                      { createFirebaseUserForEmail: (params.row as Identity).email ?? null },
                       postJsonOptions
                     )
                   }
@@ -353,14 +353,14 @@ export default function Users() {
         minWidth: 150,
         type: 'singleSelect',
         editable: true,
-        valueGetter: (v_, row: IdentityData) => row.user!.role,
-        valueSetter: (value: Role, row: IdentityData) => ({
+        valueGetter: (v_, row: Identity) => row.user!.role,
+        valueSetter: (value: Role, row: Identity) => ({
           ...row,
           user: { ...row.user, role: value },
         }),
         valueOptions: () => roleLabels,
         renderCell: params => {
-          const user = (params.row as IdentityData).user;
+          const user = (params.row as Identity).user;
           return user?.id ?
               <Box color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
                 {roleLabels.find(r => r.value === params.value)?.label}
@@ -378,7 +378,7 @@ export default function Users() {
         headerName: 'Account ID',
         flex: 1,
         renderCell: params => {
-          const id = (params.row as IdentityData).id;
+          const id = (params.row as Identity).id;
           return (
             <Link
               href={`/activity/user/${encodeURI(id)}`}
@@ -409,7 +409,7 @@ export default function Users() {
             key={1}
             icon={<UploadIcon fontSize="small" />}
             onClick={() => {
-              const account = params.row as AccountData;
+              const account = params.row as Account;
               setImports(
                 (imports ? `${imports}\n` : '') +
                   UNKNOWN_EMAIL_IMPORT +
@@ -537,7 +537,7 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                 pagination: { paginationModel: { pageSize: 25 } },
                 sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
               }}
-              processRowUpdate={(updatedRow: IdentityData, oldRow: IdentityData) => {
+              processRowUpdate={(updatedRow: Identity, oldRow: Identity) => {
                 if (updatedRow.managerId !== oldRow.managerId) {
                   setIdentities(
                     identities.map(identity =>

@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { SettingsData } from '../../types/types';
+import type { Settings } from '../../types/types';
 import * as feedUtils from '../../utils/feedUtils';
 import BannedItems from './BannedItems.';
 import jiraImage from './images/jira-webhook.png';
@@ -20,7 +20,7 @@ export default function JiraSettings({
   handleCopy,
   setPopover,
 }: {
-  settingsData: SettingsData;
+  settingsData: Settings;
   handleCopy: (content?: string) => void;
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {

@@ -1,6 +1,6 @@
 import { compileExpression } from 'filtrex';
 import stringify from 'json-stable-stringify';
-import type { Activity, InitiativeData, InitiativeRecord } from '../types/types';
+import type { Activity, Initiative, InitiativeRecord } from '../types/types';
 
 // see https://github.com/joewalnes/filtrex
 
@@ -9,10 +9,7 @@ export enum MapperType {
   LaunchItem,
 }
 
-let compiledExpressions: Record<
-  MapperType,
-  Record<InitiativeData['id'], (obj: unknown) => unknown>
-> = {
+let compiledExpressions: Record<MapperType, Record<Initiative['id'], (obj: unknown) => unknown>> = {
   [MapperType.Initiative]: {},
   [MapperType.LaunchItem]: {},
 };

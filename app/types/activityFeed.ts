@@ -7,7 +7,7 @@ import type {
   ActivityCount,
   ActivityMetadata,
   ActorRecord,
-  IdentityData,
+  Identity,
   TicketRecord,
 } from './types';
 
@@ -362,7 +362,7 @@ export type GroupedActivities = {
 
 export const identifyAccounts = (
   accounts: AccountMap,
-  identities: IdentityData[],
+  identities: Identity[],
   identityAccountMap: AccountToIdentityRecord
 ) => {
   const actors: ActorRecord = {};

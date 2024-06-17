@@ -59,12 +59,7 @@ import {
   getSummary,
   identifyAccounts,
 } from '../types/activityFeed';
-import type {
-  AccountData,
-  AccountToIdentityRecord,
-  Activity,
-  ActivityRecord,
-} from '../types/types';
+import type { Account, AccountToIdentityRecord, Activity, ActivityRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, endOfDay, formatYYYYMMDD } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
@@ -338,7 +333,7 @@ export default function UserActivity() {
                 ({
                   id: value,
                   name: loaderData.actors[value]?.name ?? 'unknown',
-                } as AccountData)
+                } as Account)
               : '',
           }),
         ]
@@ -352,9 +347,16 @@ export default function UserActivity() {
             renderCell: (params: GridRenderCellParams) => {
               const launchItemId = params.value as string;
               return launchItemId ?
-                  <Box title={loaderData.launchItems[launchItemId]?.label}>
+                  <Link
+                    onClick={() => {
+                      setGroupBy(GroupBy.Launch);
+                      setScrollToGroup(launchItemId);
+                    }}
+                    title={loaderData.launchItems[launchItemId]?.label}
+                    sx={internalLinkSx}
+                  >
                     {loaderData.launchItems[launchItemId]?.key}
-                  </Box>
+                  </Link>
                 : null;
             },
           },

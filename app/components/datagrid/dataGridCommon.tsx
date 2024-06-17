@@ -26,9 +26,9 @@ import pluralize from 'pluralize';
 import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
 import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/activityFeed';
-import type { AccountData, Activity } from '../../types/types';
+import type { Account, Activity } from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
-import { ellipsisSx } from '../../utils/jsxUtils';
+import { ellipsisSx, internalLinkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 
 export const dataGridCommonProps = {
@@ -61,7 +61,7 @@ export const dateColDef = (colDef?: GridColDef) =>
     valueFormatter: (value: Date) => formatRelative(value),
     renderCell: (params: GridRenderCellParams) => (
       <Tooltip title={formatMonthDayTime(params.value as Date)}>
-        <Box fontSize="small" sx={{ ...ellipsisSx }}>
+        <Box fontSize="small" sx={ellipsisSx}>
           {formatRelative(params.value as Date)}
         </Box>
       </Tooltip>
@@ -72,14 +72,18 @@ export const dateColDef = (colDef?: GridColDef) =>
 export const actorColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Contributor',
-    sortComparator: (a: AccountData, b: AccountData) =>
+    sortComparator: (a: Account, b: Account) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
     renderCell: (params: GridRenderCellParams) => {
-      const fields = params.value as AccountData;
-      return !fields ? '' : (
-          <Box sx={{ ...ellipsisSx }} title={fields.name ?? fields.id}>
-            {fields.name}
-          </Box>
+      const account = params.value as Account;
+      return !account ? '' : (
+          <Link
+            href={'/activity/user/' + encodeURI(account.id)}
+            title={account.name}
+            sx={internalLinkSx}
+          >
+            {account.name}
+          </Link>
         );
     },
     ...colDef,
@@ -194,7 +198,7 @@ export const descriptionColDef = (
           {link}
           {summaryAction || comment || commits ?
             <Stack mt={'3px'} pl={url && icon ? undefined : '40px'} minWidth={0}>
-              <Box title={summary} fontSize="small" lineHeight={1.1} sx={{ ...ellipsisSx }}>
+              <Box title={summary} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
                 {summary}
               </Box>
               {summaryAction && (
@@ -203,7 +207,7 @@ export const descriptionColDef = (
                   title={summaryAction}
                   fontSize="smaller"
                   color={grey[500]}
-                  sx={{ ...ellipsisSx }}
+                  sx={ellipsisSx}
                 >
                   {summaryAction.startsWith('http') ?
                     <Box maxWidth={'300px'} sx={ellipsisSx}>
@@ -215,12 +219,7 @@ export const descriptionColDef = (
                 </Typography>
               )}
               {comment && (
-                <Typography
-                  title={comment}
-                  fontSize="smaller"
-                  color={grey[500]}
-                  sx={{ ...ellipsisSx }}
-                >
+                <Typography title={comment} fontSize="smaller" color={grey[500]} sx={ellipsisSx}>
                   {comment}
                 </Typography>
               )}
@@ -254,7 +253,7 @@ export const descriptionColDef = (
                   title={summaryAction}
                   fontSize="smaller"
                   color={grey[500]}
-                  sx={{ ...ellipsisSx }}
+                  sx={ellipsisSx}
                 >
                   {'Committed'}
                 </Typography>
@@ -264,7 +263,7 @@ export const descriptionColDef = (
               fontSize="small"
               title={summary}
               pl={url && icon ? undefined : '40px'}
-              sx={{ ...ellipsisSx }}
+              sx={ellipsisSx}
             >
               {summary}
             </Box>

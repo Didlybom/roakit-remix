@@ -1,10 +1,10 @@
 import {
   BusinessCenter as BusinessCenterIcon,
   Business as BusinessIcon,
-  ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
   History as HistoryIcon,
   RocketLaunch as LaunchIcon,
+  Menu as MenuIcon,
   PeopleOutline as PeopleIcon,
   Science as ScienceIcon,
   Subject as SubjectIcon,
@@ -27,26 +27,10 @@ import {
 } from '@mui/material';
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
+import { useCallback } from 'react';
 import { Role, View } from '../utils/rbac';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
-
-const item = (
-  view: View | null,
-  url: string,
-  Icon: OverridableComponent<SvgIconTypeMap>,
-  label: string,
-  currentView: View
-) => (
-  <ListItem key={view} disablePadding>
-    <ListItemButton href={url} target={view ? '_self' : '_blank'} selected={currentView === view}>
-      <ListItemIcon sx={{ minWidth: '30px' }}>
-        <Icon fontSize="small" />
-      </ListItemIcon>
-      <ListItemText primary={label} primaryTypographyProps={{ fontSize: 'smaller' }} />
-    </ListItemButton>
-  </ListItem>
-);
 
 export default function NavDrawer({
   role,
@@ -63,6 +47,30 @@ export default function NavDrawer({
   open: boolean;
   onClose: () => void;
 }) {
+  const item = useCallback(
+    (
+      view: View | null,
+      url: string,
+      Icon: OverridableComponent<SvgIconTypeMap>,
+      label: string,
+      currentView: View
+    ) => (
+      <ListItem key={view} disablePadding>
+        <ListItemButton
+          href={url}
+          target={view ? '_self' : '_blank'}
+          selected={currentView === view}
+        >
+          <ListItemIcon sx={{ minWidth: '30px' }}>
+            <Icon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary={label} primaryTypographyProps={{ fontSize: 'smaller' }} />
+        </ListItemButton>
+      </ListItem>
+    ),
+    []
+  );
+
   return (
     <Drawer
       sx={{
@@ -81,7 +89,7 @@ export default function NavDrawer({
         )}
         <Box sx={{ flex: 1 }} />
         <IconButton onClick={onClose}>
-          <ChevronLeftIcon />
+          <MenuIcon />
         </IconButton>
       </DrawerHeader>
       <Divider />

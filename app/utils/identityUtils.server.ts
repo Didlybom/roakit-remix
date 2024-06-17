@@ -1,11 +1,11 @@
-import type { AccountToIdentityRecord, IdentityData } from '../types/types';
+import type { AccountToIdentityRecord, Identity } from '../types/types';
 
 /**
  *  Returns all user ids candidate as activity keys (activities can use both identityIds and accountIds)
  */
 export const getAllPossibleActivityUserIds = (
   knownUserId: string,
-  identities: IdentityData[],
+  identities: Identity[],
   accountMap: AccountToIdentityRecord
 ) => {
   const userIds = new Set([knownUserId]);

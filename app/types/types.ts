@@ -1,6 +1,6 @@
 import type { Role } from '../utils/rbac';
 
-export type InitiativeData = {
+export type Initiative = {
   id: string;
   key: string;
   label?: string;
@@ -14,40 +14,40 @@ export type InitiativeData = {
   countersLastUpdated?: number;
 };
 
-export type InitiativeRecord = Record<InitiativeData['id'], Omit<InitiativeData, 'id'>>;
+export type InitiativeRecord = Record<Initiative['id'], Omit<Initiative, 'id'>>;
 
-export type AccountData = {
+export type Account = {
   id: string;
   type: string;
   name: string;
   url?: string;
   createdTimestamp?: number;
 };
-export type AccountMap = Map<AccountData['id'], Omit<AccountData, 'id'>>;
+export type AccountMap = Map<Account['id'], Omit<Account, 'id'>>;
 
-export interface IdentityData {
+export interface Identity {
   id: string;
   email?: string;
   displayName?: string;
   managerId?: string;
   reportIds?: string[];
   user?: { id: string; role?: Role };
-  accounts: { feedId: number; type: string; id: AccountData['id']; name?: string; url?: string }[];
+  accounts: { feedId: number; type: string; id: Account['id']; name?: string; url?: string }[];
 }
 
-export const displayName = (id: IdentityData) => id.displayName || id.email || id.id;
+export const displayName = (id: Identity) => id.displayName || id.email || id.id;
 
-export type AccountToIdentityRecord = Record<AccountData['id'], IdentityData['id']>;
+export type AccountToIdentityRecord = Record<Account['id'], Identity['id']>;
 
-export type ActorData = {
+export type Actor = {
   id: string;
   name: string;
   email?: string;
   accounts?: { id: string; type: string; url?: string }[];
 };
-export type ActorRecord = Record<ActorData['id'], Omit<ActorData, 'id'>>;
+export type ActorRecord = Record<Actor['id'], Omit<Actor, 'id'>>;
 
-export type TicketData = {
+export type Ticket = {
   key: string;
   id?: string;
   summary?: string;
@@ -62,7 +62,7 @@ export type TicketData = {
   lastUpdatedTimestamp?: number;
 };
 
-export type TicketRecord = Record<TicketData['key'], TicketData['priority']>;
+export type TicketRecord = Record<Ticket['key'], Ticket['priority']>;
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
 
@@ -125,7 +125,7 @@ export type ActivityCount = {
   docOrg: number;
 };
 
-export type SettingsData = {
+export type Settings = {
   feeds: {
     secret?: string | undefined;
     feedId: string;
@@ -134,7 +134,7 @@ export type SettingsData = {
     bannedEvents?: Record<string, boolean>;
     bannedAccounts?: Record<string, boolean>;
   }[];
-  initiatives: InitiativeData[];
+  initiatives: Initiative[];
 };
 
 export type Summary = {

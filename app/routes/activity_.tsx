@@ -50,7 +50,7 @@ import {
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
 import { identifyAccounts, inferPriority } from '../types/activityFeed';
-import type { AccountData, Activity, ActivityCount, Artifact } from '../types/types';
+import type { Account, Activity, ActivityCount, Artifact } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -277,11 +277,11 @@ export default function ActivityReview() {
               ({
                 id: fields.actorId,
                 name: loaderData.actors[fields.actorId]?.name ?? 'unknown',
-              } as AccountData)
+              } as Account)
             : '';
         },
         renderCell: params => {
-          const fields = params.value as AccountData;
+          const fields = params.value as Account;
           return (
             <Link
               fontSize="small"

@@ -20,7 +20,7 @@ import {
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { SettingsData } from '../../types/types';
+import type { Settings } from '../../types/types';
 import * as feedUtils from '../../utils/feedUtils';
 import { postJsonOptions } from '../../utils/httpUtils';
 import BannedItems from './BannedItems.';
@@ -32,7 +32,7 @@ export default function GitHubSettings({
   handleCopy,
   setPopover,
 }: {
-  settingsData: SettingsData;
+  settingsData: Settings;
   handleCopy: (content?: string) => void;
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
