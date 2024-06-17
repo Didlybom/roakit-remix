@@ -3,11 +3,32 @@ import isTodayPlugin from 'dayjs/plugin/isToday';
 import isYesterdayPlugin from 'dayjs/plugin/isYesterday';
 import localizedFormatPlugin from 'dayjs/plugin/localizedFormat';
 import relativeTimePlugin from 'dayjs/plugin/relativeTime';
+import updateLocalePlugin from 'dayjs/plugin/updateLocale';
 
 dayjs.extend(localizedFormatPlugin);
+dayjs.extend(updateLocalePlugin);
 dayjs.extend(relativeTimePlugin);
 dayjs.extend(isTodayPlugin);
 dayjs.extend(isYesterdayPlugin);
+
+// see https://day.js.org/docs/en/customization/relative-time
+dayjs.updateLocale('en', {
+  relativeTime: {
+    future: 'in %s',
+    past: '%s ago',
+    s: 'a few secs',
+    m: 'a min',
+    mm: '%d mins',
+    h: 'an hour',
+    hh: '%d hours',
+    d: 'a day',
+    dd: '%d days',
+    M: 'a month',
+    MM: '%d months',
+    y: 'a year',
+    yy: '%d years',
+  },
+});
 
 export const ONE_HOUR = 60 * 60 * 1000;
 export const ONE_DAY = 24 * ONE_HOUR;

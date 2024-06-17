@@ -2,7 +2,6 @@ import DataObjectIcon from '@mui/icons-material/DataObject';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import {
   Box,
-  IconButton,
   Link,
   List,
   ListItem,
@@ -27,6 +26,7 @@ import JiraIcon from '../../icons/Jira';
 import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/activityFeed';
 import type { Account, Activity } from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
+import { CONFLUENCE_FEED_TYPE, GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../../utils/feedUtils';
 import { ellipsisSx, internalLinkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 
@@ -169,34 +169,41 @@ export const descriptionColDef = (
       const comment = activity.metadata?.comment?.body;
       const url = activity.metadata ? getUrl(activity) : undefined;
       let icon;
-      let urlTitle;
+      let urlTitle = '';
       if (url) {
-        if (url.type === 'jira') {
-          icon = <JiraIcon width="18px" height="18px" color={theme.palette.primary.main} />;
+        if (url.type === JIRA_FEED_TYPE) {
+          icon = <JiraIcon color={theme.palette.primary.main} />;
           urlTitle = 'Go to Jira page';
-        } else if (url.type === 'confluence') {
-          icon = <ConfluenceIcon width="18px" height="18px" color={theme.palette.primary.main} />;
+        } else if (url.type === CONFLUENCE_FEED_TYPE) {
+          icon = <ConfluenceIcon color={theme.palette.primary.main} />;
           urlTitle = 'Go to Confluence page';
-        } else if (url.type === 'github') {
-          icon = <GitHubIcon color="primary" sx={{ width: '18px', height: '18px' }} />;
+        } else if (url.type === GITHUB_FEED_TYPE) {
+          icon = <GitHubIcon color="primary" />;
           urlTitle = 'Go to Github page';
         }
       }
       const link =
         url && icon ?
-          <IconButton href={url.url} title={urlTitle} target="_blank" sx={{ mr: '4px' }}>
-            {icon}
-          </IconButton>
-        : <></>;
+          <Box mr="4px" mt="2px">
+            <GridActionsCellItem
+              icon={icon}
+              label={urlTitle}
+              // @ts-expect-error weird compile error with href
+              href={url.url}
+              title={urlTitle}
+              target="_blank"
+            />
+          </Box>
+        : null;
 
       const summaryAction = activity.metadata ? getSummaryAction(activity.metadata) : undefined;
 
       const commits = activity.metadata?.commits;
       return (
-        <Stack direction="row">
+        <Stack direction="row" useFlexGap>
           {link}
           {summaryAction || comment || commits ?
-            <Stack mt={'3px'} pl={url && icon ? undefined : '40px'} minWidth={0}>
+            <Stack mt={'3px'} pl={url && icon ? undefined : '32px'} minWidth={0}>
               <Box title={summary} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
                 {summary}
               </Box>
@@ -261,7 +268,7 @@ export const descriptionColDef = (
           : <Box
               fontSize="small"
               title={summary}
-              pl={url && icon ? undefined : '40px'}
+              pl={url && icon ? undefined : '35px'}
               sx={ellipsisSx}
             >
               {summary}
