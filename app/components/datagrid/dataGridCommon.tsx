@@ -50,7 +50,7 @@ export const dataGridCommonProps = {
   sortingOrder: ['asc', 'desc'] as GridSortDirection[],
   initialState: {
     pagination: { paginationModel: { pageSize: 25 } },
-    sorting: { sortModel: [{ field: 'createdTimestamp', sort: 'desc' as GridSortDirection }] },
+    sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
   },
 };
 
