@@ -1,5 +1,6 @@
 import { ActionFunctionArgs, json } from '@remix-run/server-runtime';
-import { DateRangeValue } from '../utils/dateUtils';
+import dayjs from 'dayjs';
+import { DateRangeValue, isToday } from '../utils/dateUtils';
 import { parseCookie, sessionCookie } from '../utils/sessionCookie.server';
 
 interface JsonRequest {
@@ -19,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     cookie.dateRange = jsonReq.dateRange;
   }
   if (jsonReq.endDay != null) {
-    cookie.endDay = jsonReq.endDay;
+    cookie.endDay = isToday(dayjs(jsonReq.endDay)) ? undefined : jsonReq.endDay;
   }
   return cookie.isNavOpen != null || cookie.dateRange != null ?
       json(null, {
