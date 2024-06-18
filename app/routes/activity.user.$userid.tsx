@@ -3,6 +3,7 @@ import {
   AccountTree as GroupIcon,
   OpenInNew as OpenInNewIcon,
   Search as SearchIcon,
+  ZoomOutMap as ZoomOutIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -47,6 +48,7 @@ import {
   dateColDef,
   descriptionColDef,
   priorityColDef,
+  sortComparatorKeepingNullAtTheBottom,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import {
@@ -341,18 +343,20 @@ export default function UserActivity() {
           {
             field: 'launchItemId',
             headerName: 'Launch',
+            valueGetter: (value: string) => loaderData.launchItems[value]?.key,
+            getSortComparator: sortComparatorKeepingNullAtTheBottom,
             renderCell: (params: GridRenderCellParams) => {
-              const launchItemId = params.value as string;
-              return launchItemId ?
+              const activity = params.row as Activity;
+              return activity.launchItemId ?
                   <Link
                     onClick={() => {
                       setGroupBy(GroupBy.Launch);
-                      setTimeout(() => setScrollToGroup(launchItemId), 0);
+                      setTimeout(() => setScrollToGroup(activity.launchItemId), 0);
                     }}
-                    title={loaderData.launchItems[launchItemId]?.label}
+                    title={loaderData.launchItems[activity.launchItemId]?.label}
                     sx={internalLinkSx}
                   >
-                    {loaderData.launchItems[launchItemId]?.key}
+                    {params.value}
                   </Link>
                 : null;
             },
@@ -362,12 +366,12 @@ export default function UserActivity() {
       {
         field: 'initiativeId',
         headerName: 'Goal',
-        renderCell: params => {
-          const initiativeId = params.value as string;
-          return initiativeId ?
-              <Box title={loaderData.initiatives[initiativeId]?.label}>
-                {loaderData.initiatives[initiativeId]?.key}
-              </Box>
+        valueGetter: (value: string) => loaderData.initiatives[value]?.key,
+        getSortComparator: sortComparatorKeepingNullAtTheBottom,
+        renderCell: (params: GridRenderCellParams) => {
+          const activity = params.row as Activity;
+          return activity.initiativeId ?
+              <Box title={loaderData.initiatives[activity.initiativeId]?.label}>{params.value}</Box>
             : null;
         },
       },
@@ -387,12 +391,11 @@ export default function UserActivity() {
       const actor = loaderData.actors[actorId];
       return (
         <Typography
-          variant="h6"
+          variant={loaderData.userId === ALL ? 'h6' : 'h2'}
           display="flex"
           alignItems="center"
           color={grey[600]}
           fontSize="1.1rem"
-          mb={1}
         >
           <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
           {actor?.accounts
@@ -401,7 +404,11 @@ export default function UserActivity() {
               <IconButton
                 key={i}
                 component="a"
-                href={account.url}
+                href={
+                  account.type === 'jira' || account.type === 'confluence' ?
+                    `${account.url!.split('rest')[0]}people/${account.id}`
+                  : account.url
+                }
                 target="_blank"
                 size="small"
                 color="primary"
@@ -528,7 +535,7 @@ export default function UserActivity() {
         return !filteredRows?.length || actorId == null ?
             null
           : <Stack id={groupElementId(actorId)} key={i} sx={{ mb: 3 }}>
-              {actorHeader(actorId)}
+              <Box mb={1}>{actorHeader(actorId)}</Box>
               <DataGrid
                 columns={columns}
                 rows={filteredRows}
@@ -571,16 +578,17 @@ export default function UserActivity() {
               spacing={1}
               divider={<Divider orientation="vertical" flexItem />}
               color={grey[launchId ? 600 : 400]}
-              fontSize="1.1rem"
               mb={1}
               sx={{ textWrap: 'nowrap' }}
             >
               {launchKey && (
-                <Typography variant="h6" fontWeight={600}>
+                <Typography variant="h6" fontSize="1.1rem" fontWeight={600}>
                   {launchKey}
                 </Typography>
               )}
-              <Typography variant="h6">{launchLabel}</Typography>
+              <Typography variant="h6" fontSize="1.1rem">
+                {launchLabel}
+              </Typography>
             </Stack>
             <DataGrid
               columns={columns}
@@ -669,7 +677,15 @@ export default function UserActivity() {
             </Box>
           )}
           <Stack flex={1} minWidth={0}>
-            <Grid container columns={3} spacing={2} alignItems="center" mb={1}>
+            <Grid
+              container
+              columns={loaderData.userId !== ALL ? 4 : 3}
+              spacing={2}
+              alignItems="center"
+              mb={1}
+            >
+              {loaderData.userId !== ALL && <Grid>{actorHeader(loaderData.userId!)}</Grid>}
+              <Grid flex={1} />
               <Grid>
                 {loaderData.userId !== ALL && (
                   <Button
@@ -679,13 +695,13 @@ export default function UserActivity() {
                       (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
                       (actionFilter.length ? `&action=${actionFilter.join(',')}` : '')
                     }
-                    sx={{ textTransform: 'none', textWrap: 'nowrap' }}
+                    endIcon={<ZoomOutIcon fontSize="small" />}
+                    sx={{ mr: 1, textTransform: 'none', textWrap: 'nowrap' }}
                   >
-                    {'See all contributors'}
+                    {'All contributors'}
                   </Button>
                 )}
               </Grid>
-              <Grid flex={1} />
               <Grid>
                 <Grid container spacing={3}>
                   <Grid>
@@ -776,7 +792,6 @@ export default function UserActivity() {
                 </Typography>
               )}
             </Box>
-            {loaderData.userId !== ALL && actorHeader(loaderData.userId!)}
             {gridsByContributor}
             {gridsByLaunch}
             {gridsUngrouped}
