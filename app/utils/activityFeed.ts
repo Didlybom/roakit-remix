@@ -260,6 +260,18 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   return { topActors, priorities, initiatives, launchItems };
 };
 
+const consolidateToNewActivity = (
+  activities: Activity[],
+  oldActivityIndex: number,
+  oldActivity: Activity,
+  newActivity: Activity
+) => {
+  newActivity.consolidatedIds = oldActivity.consolidatedIds ?? [];
+  newActivity.consolidatedIds.push(oldActivity.id);
+  activities.splice(oldActivityIndex, 1);
+  activities.push(newActivity);
+};
+
 export const consolidateAndPushActivity = (newActivity: Activity, activities: Activity[]) => {
   if (!newActivity.metadata) {
     activities.push(newActivity);
@@ -287,13 +299,12 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         Array.isArray(foundCodeAction) ? foundCodeAction : [foundCodeAction]
       );
       codeActions.add(newActivity.metadata.codeAction as string);
-
       if (newActivity.timestamp >= foundActivity.timestamp) {
         newActivity.metadata.codeAction = [...codeActions];
-        activities.splice(indexPRActivity, 1);
-        activities.push(newActivity);
+        consolidateToNewActivity(activities, indexPRActivity, foundActivity, newActivity);
       } else {
         foundActivity.metadata!.codeAction = [...codeActions];
+        foundActivity.consolidatedIds = [...(foundActivity.consolidatedIds ?? []), newActivity.id];
       }
       return activities;
     }
@@ -325,10 +336,13 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         });
         if (newActivity.timestamp >= foundActivity.timestamp) {
           newActivity.metadata.commits = commits;
-          activities.splice(indexPushActivity, 1);
-          activities.push(newActivity);
+          consolidateToNewActivity(activities, indexPushActivity, foundActivity, newActivity);
         } else {
           foundActivity.metadata!.commits = commits;
+          foundActivity.consolidatedIds = [
+            ...(foundActivity.consolidatedIds ?? []),
+            newActivity.id,
+          ];
         }
         return activities;
       }
@@ -350,13 +364,12 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
     );
     if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
       const foundActivity = activities[indexIssueActivity];
-
       if (newActivity.timestamp >= foundActivity.timestamp) {
         newActivity.metadata.changeLog.push(...foundActivity.metadata!.changeLog!);
-        activities.splice(indexIssueActivity, 1);
-        activities.push(newActivity);
+        consolidateToNewActivity(activities, indexIssueActivity, foundActivity, newActivity);
       } else {
         foundActivity.metadata!.changeLog!.push(...newActivity.metadata.changeLog);
+        foundActivity.consolidatedIds = [...(foundActivity.consolidatedIds ?? []), newActivity.id];
       }
       return activities;
     }
@@ -372,14 +385,26 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
         a.eventType === newActivity.eventType &&
         a.event === newActivity.event &&
         a.metadata?.page &&
-        a.metadata.page.id === newActivity.metadata?.page?.id &&
-        a.metadata.page.version === newActivity.metadata?.page?.version
+        a.metadata.page.id === newActivity.metadata?.page?.id
     );
     if (indexPageActivity >= 0) {
       const foundActivity = activities[indexPageActivity];
       if (newActivity.timestamp >= foundActivity.timestamp) {
-        activities.splice(indexPageActivity, 1);
-        activities.push(newActivity);
+        if (
+          newActivity.metadata.page.version &&
+          newActivity.metadata.page.version != foundActivity.metadata!.page!.version
+        ) {
+          newActivity.metadata.page.version += ', ' + foundActivity.metadata!.page!.version;
+        }
+        consolidateToNewActivity(activities, indexPageActivity, foundActivity, newActivity);
+      } else {
+        if (
+          newActivity.metadata.page.version &&
+          newActivity.metadata.page.version != foundActivity.metadata!.page!.version
+        ) {
+          foundActivity.metadata!.page!.version += ', ' + newActivity.metadata?.page.version;
+        }
+        foundActivity.consolidatedIds = [...(foundActivity.consolidatedIds ?? []), newActivity.id];
       }
       return activities;
     }

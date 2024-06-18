@@ -194,6 +194,9 @@ export const getActivityActionDescription = (metadata: ActivityMetadata) => {
     if (metadata?.attachments?.files?.length) {
       return metadata.attachments.files[0].uri;
     }
+    if (metadata?.page?.version) {
+      return `Version ${metadata.page.version}`;
+    }
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
