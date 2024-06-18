@@ -5,7 +5,7 @@ export enum View {
   Index,
 
   Dashboard,
-  ActivitySummaries,
+  ActivitySummary,
   Activity,
   ActivityUser,
 
@@ -56,7 +56,7 @@ export const checkAccess = (
 ) => {
   switch (view) {
     case View.Dashboard:
-    case View.ActivitySummaries:
+    case View.ActivitySummary:
     case View.Activity:
     case View.ActivityUser:
     case View.FetcherActivitiesPage:

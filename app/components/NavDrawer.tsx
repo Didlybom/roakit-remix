@@ -97,30 +97,31 @@ export default function NavDrawer({
         <>
           <List>
             {item(View.Dashboard, '/dashboard', DashboardIcon, 'Dashboard', view)}
-            {item(
-              View.ActivitySummaries,
-              '/activity/summary',
-              SummariesIcon,
-              'Activity Summary',
-              view
-            )}
             {item(View.ActivityUser, '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
-            {item(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
           </List>
           <Divider />
         </>
       )}
-      <List>{item(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}</List>
-      {role === Role.Admin && (
+      <List>
+        {(role === Role.Admin || role === Role.Monitor) &&
+          item(View.ActivitySummary, '/activity/summary', SummariesIcon, 'Activity Summary', view)}
+        {item(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}
+      </List>
+      {(role === Role.Admin || role === Role.Monitor) && (
         <>
           <Divider />
           <List>
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Administration
             </ListSubheader>
-            {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
-            {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
-            {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
+            {item(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
+            {role === Role.Admin && (
+              <>
+                {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
+                {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
+                {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
+              </>
+            )}
           </List>
         </>
       )}

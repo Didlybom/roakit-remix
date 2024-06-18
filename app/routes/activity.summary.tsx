@@ -45,7 +45,7 @@ export const meta = () => [{ title: 'Activity Summary | ROAKIT' }];
 
 export const shouldRevalidate = () => false;
 
-const VIEW = View.ActivitySummaries;
+const VIEW = View.ActivitySummary;
 const SEARCH_PARAM_DAY = 'day';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
