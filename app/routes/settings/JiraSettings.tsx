@@ -9,8 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { Settings } from '../../types/types';
-import * as feedUtils from '../../utils/feedUtils';
+import { JIRA_FEED_TYPE, type Settings } from '../../types/types';
 import BannedItems from './BannedItems.';
 import jiraImage from './images/jira-webhook.png';
 import { actionIcon, screenshotThumbSx } from './route';
@@ -24,7 +23,7 @@ export default function JiraSettings({
   handleCopy: (content?: string) => void;
   setPopover: ({ element, content }: { element: HTMLElement; content: JSX.Element }) => void;
 }) {
-  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.JIRA_FEED_TYPE)[0];
+  const serverData = settingsData.feeds.filter(f => f.type === JIRA_FEED_TYPE)[0];
 
   const url = `https://ingest-frzqvloirq-uw.a.run.app/jira/${serverData.clientId}`;
   const scope = 'all issues';

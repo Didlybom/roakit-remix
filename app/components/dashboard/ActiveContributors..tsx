@@ -1,11 +1,11 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
+import type { ActorRecord } from '../../types/types';
 import {
   TOP_ACTORS_OTHERS_ID,
   artifactActions,
   type GroupedActivities,
-} from '../../types/activityFeed';
-import type { ActorRecord } from '../../types/types';
+} from '../../utils/activityFeed';
 import { windowOpen } from '../../utils/jsxUtils';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 

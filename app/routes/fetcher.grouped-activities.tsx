@@ -8,7 +8,7 @@ import {
   fetchInitiativeMap,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
-import { groupActivities, identifyActivities, type GroupedActivities } from '../types/activityFeed';
+import { groupActivities, identifyActivities, type GroupedActivities } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';

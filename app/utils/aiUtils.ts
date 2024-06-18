@@ -1,6 +1,6 @@
 import { GenerateContentResult } from '@google-cloud/vertexai';
-import { getSummary, getSummaryAction } from '../types/activityFeed';
 import type { Activity, ActorRecord, InitiativeRecord } from '../types/types';
+import { getActivityActionDescription, getActivityDescription } from './activityDescription';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
@@ -32,12 +32,13 @@ export const buildActivitySummaryPrompt = (
       if (!activity.metadata) {
         return;
       }
-      const summary = getSummary(activity);
+      const description = getActivityDescription(activity);
       // filter out uninteresting activities FIXME
-      if (!summary || summary.startsWith('Attached')) {
+      if (!description || description.startsWith('Attached')) {
         return;
       }
-      const summaryAction = options.inclActions ? getSummaryAction(activity.metadata) : undefined;
+      const actionDescription =
+        options.inclActions ? getActivityActionDescription(activity.metadata) : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?
           (
@@ -48,13 +49,13 @@ export const buildActivitySummaryPrompt = (
           )?.name ?? undefined
         : undefined;
 
-      const activityStringDedupe = summary + (summaryAction ?? '') + (contributor ?? '');
+      const activityStringDedupe = description + (actionDescription ?? '') + (contributor ?? '');
       if (!dedupe.has(activityStringDedupe)) {
         dedupe.add(activityStringDedupe);
         activitiesString +=
-          summary +
+          description +
           (options.inclDates ? `\nDate: ${new Date(activity.timestamp).toLocaleString()}` : '') +
-          (summaryAction ? `\nAction: ${summaryAction}` : '') +
+          (actionDescription ? `\nAction: ${actionDescription}` : '') +
           (contributor ? `\nContributor: ${contributor}` : '') +
           (activity.initiativeId && initiatives?.[activity.initiativeId] ?
             `\nGoal: [${initiatives[activity.initiativeId].key}] ${initiatives[activity.initiativeId].label}`

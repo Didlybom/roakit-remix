@@ -26,7 +26,7 @@ import Markdown from '../components/MarkdownText';
 import SmallButton from '../components/SmallButton';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import {} from '../firestore.server/updaters.server';
-import { identifyAccounts } from '../types/activityFeed';
+import { identifyAccounts } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import {

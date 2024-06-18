@@ -23,10 +23,14 @@ import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
-import { findTicket, getSummary, getSummaryAction, getUrl } from '../../types/activityFeed';
 import type { Account, Activity } from '../../types/types';
+import {
+  getActivityActionDescription,
+  getActivityDescription,
+  getActivityUrl,
+} from '../../utils/activityDescription';
+import { findTicket } from '../../utils/activityFeed';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
-import { CONFLUENCE_FEED_TYPE, GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../../utils/feedUtils';
 import { ellipsisSx, internalLinkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 
@@ -162,22 +166,22 @@ export const descriptionColDef = (
     headerName: 'Description',
     minWidth: 300,
     flex: 1,
-    valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getSummary(row),
+    valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getActivityDescription(row),
     renderCell: params => {
       const activity = params.row as Activity;
-      const summary = getSummary(activity);
+      const description = getActivityDescription(activity);
       const comment = activity.metadata?.comment?.body;
-      const url = activity.metadata ? getUrl(activity) : undefined;
+      const url = activity.metadata ? getActivityUrl(activity) : undefined;
       let icon;
       let urlTitle = '';
       if (url) {
-        if (url.type === JIRA_FEED_TYPE) {
+        if (url.type === 'jira') {
           icon = <JiraIcon color={theme.palette.primary.main} />;
           urlTitle = 'Go to Jira page';
-        } else if (url.type === CONFLUENCE_FEED_TYPE) {
+        } else if (url.type === 'confluence') {
           icon = <ConfluenceIcon color={theme.palette.primary.main} />;
           urlTitle = 'Go to Confluence page';
-        } else if (url.type === GITHUB_FEED_TYPE) {
+        } else if (url.type === 'github') {
           icon = <GitHubIcon color="primary" />;
           urlTitle = 'Go to Github page';
         }
@@ -196,32 +200,33 @@ export const descriptionColDef = (
           </Box>
         : null;
 
-      const summaryAction = activity.metadata ? getSummaryAction(activity.metadata) : undefined;
+      const actionDescription =
+        activity.metadata ? getActivityActionDescription(activity.metadata) : undefined;
 
       const commits = activity.metadata?.commits;
       return (
         <Stack direction="row" useFlexGap>
           {link}
-          {summaryAction || comment || commits ?
+          {actionDescription || comment || commits ?
             <Stack mt={'3px'} pl={url && icon ? undefined : '32px'} minWidth={0}>
-              <Box title={summary} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
-                {summary}
+              <Box title={description} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
+                {description}
               </Box>
-              {summaryAction && (
+              {actionDescription && (
                 <Typography
                   component="div"
-                  title={summaryAction}
+                  title={actionDescription}
                   fontSize="smaller"
                   color={grey[500]}
                   sx={ellipsisSx}
                 >
-                  {summaryAction.startsWith('http') ?
+                  {actionDescription.startsWith('http') ?
                     <Box maxWidth={'300px'} sx={ellipsisSx}>
-                      <Link href={summaryAction} target="_blank">
-                        {summaryAction}
+                      <Link href={actionDescription} target="_blank">
+                        {actionDescription}
                       </Link>
                     </Box>
-                  : summaryAction}
+                  : actionDescription}
                 </Typography>
               )}
               {comment && (
@@ -256,7 +261,7 @@ export const descriptionColDef = (
               )}
               {commits && commits.length === 1 && (
                 <Typography
-                  title={summaryAction}
+                  title={actionDescription}
                   fontSize="smaller"
                   color={grey[500]}
                   sx={ellipsisSx}
@@ -267,11 +272,11 @@ export const descriptionColDef = (
             </Stack>
           : <Box
               fontSize="small"
-              title={summary}
+              title={description}
               pl={url && icon ? undefined : '35px'}
               sx={ellipsisSx}
             >
-              {summary}
+              {description}
             </Box>
           }
         </Stack>
@@ -288,15 +293,13 @@ export const viewJsonActionsColDef = (
     field: 'actions',
     type: 'actions',
     cellClassName: 'actions',
-    getActions: params => {
-      return [
-        <GridActionsCellItem
-          key={1}
-          icon={<DataObjectIcon />}
-          label="View JSON"
-          onClick={e => onClick(e.currentTarget, params.row)}
-        />,
-      ];
-    },
+    getActions: params => [
+      <GridActionsCellItem
+        key={1}
+        icon={<DataObjectIcon />}
+        label="View JSON"
+        onClick={e => onClick(e.currentTarget, params.row)}
+      />,
+    ],
     ...colDef,
   }) as GridColDef;

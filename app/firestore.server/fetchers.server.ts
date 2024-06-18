@@ -4,10 +4,10 @@ import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
 import { firestore } from '../firebase.server';
-import { consolidateAndPushActivity, findTicket } from '../types/activityFeed';
 import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
 import {
+  FEED_TYPES,
   displayName,
   type Account,
   type AccountMap,
@@ -22,8 +22,8 @@ import {
   type Summary,
   type TicketRecord,
 } from '../types/types';
+import { consolidateAndPushActivity, findTicket } from '../utils/activityFeed';
 import { daysInMonth } from '../utils/dateUtils';
-import { FEED_TYPES } from '../utils/feedUtils';
 import { DEFAULT_ROLE, Role } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 

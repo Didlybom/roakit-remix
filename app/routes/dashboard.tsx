@@ -24,7 +24,7 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
-import { identifyAccounts } from '../types/activityFeed';
+import { identifyAccounts } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';

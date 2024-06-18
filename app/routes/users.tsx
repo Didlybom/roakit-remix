@@ -1,5 +1,6 @@
 import {
   AddCircle as AddCircleIcon,
+  ArrowDropDown as ArrowDropDownIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
   Upload as UploadIcon,
@@ -33,25 +34,30 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import App from '../components/App';
+import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
-import { dataGridCommonProps, dateColDef } from '../components/datagrid/dataGridCommon';
+import {
+  dataGridCommonProps,
+  dateColDef,
+  viewJsonActionsColDef,
+} from '../components/datagrid/dataGridCommon';
 import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import type { Account, Identity } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
-import { errMsg } from '../utils/errorUtils';
 import {
   CONFLUENCE_FEED_TYPE,
   FEED_TYPES,
   GITHUB_FEED_TYPE,
   JIRA_FEED_TYPE,
-} from '../utils/feedUtils';
+  type Account,
+  type Identity,
+} from '../types/types';
+import { loadSession } from '../utils/authUtils.server';
+import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, internalLinkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
-import theme from '../utils/theme';
 
 const logger = pino({ name: 'route:identities' });
 
@@ -218,7 +224,7 @@ export default function Users() {
   const [tabValue, setTabValue] = useState(0);
   const [identities, setIdentities] = useState(loaderData.identities.list);
   const [imports, setImports] = useState('');
-
+  const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
 
@@ -242,7 +248,6 @@ export default function Users() {
       {
         field: 'displayName',
         headerName: 'Name',
-        minWidth: 200,
         renderCell: params => {
           const id = (params.row as Identity).id;
           return (
@@ -256,11 +261,10 @@ export default function Users() {
           );
         },
       },
-      { field: 'email', headerName: 'Email', minWidth: 250 },
+      { field: 'email', headerName: 'Email' },
       {
         field: 'accounts',
         headerName: 'Accounts',
-        minWidth: 200,
         flex: 1,
         sortable: false,
         renderCell: params => {
@@ -298,7 +302,6 @@ export default function Users() {
       {
         field: 'managerId',
         headerName: 'Team',
-        minWidth: 200,
         type: 'singleSelect',
         sortComparator: (a: string, b: string) => {
           const aName = a === UNSET_MANAGER_ID ? 'ZZZ' : findManagerName(a);
@@ -313,10 +316,12 @@ export default function Users() {
         ],
         editable: true,
         renderCell: params => (
-          <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
-            {params.value && params.value !== UNSET_MANAGER_ID ?
-              findManagerName(params.value as string)
-            : '...'}
+          <Box height="45px" display="flex" alignItems="center">
+            <Button endIcon={<ArrowDropDownIcon />} sx={{ ml: -1, textTransform: 'none' }}>
+              {params.value && params.value !== UNSET_MANAGER_ID ?
+                findManagerName(params.value as string)
+              : '...'}
+            </Button>
           </Box>
         ),
       },
@@ -324,7 +329,6 @@ export default function Users() {
       {
         field: 'firebaseId',
         headerName: 'Login ID',
-        minWidth: 150,
         valueGetter: (_, row: Identity) => row.user!.id,
         renderCell: params => {
           return params.value ?
@@ -350,8 +354,8 @@ export default function Users() {
       {
         field: 'role',
         headerName: 'Role',
-        minWidth: 150,
         type: 'singleSelect',
+        minWidth: 150,
         editable: true,
         valueGetter: (v_, row: Identity) => row.user!.role,
         valueSetter: (value: Role, row: Identity) => ({
@@ -362,12 +366,17 @@ export default function Users() {
         renderCell: params => {
           const user = (params.row as Identity).user;
           return user?.id ?
-              <Box color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
-                {roleLabels.find(r => r.value === params.value)?.label}
+              <Box height="45px" display="flex" alignItems="center">
+                <Button endIcon={<ArrowDropDownIcon />} sx={{ ml: -1, textTransform: 'none' }}>
+                  {roleLabels.find(r => r.value === params.value)?.label}
+                </Button>
               </Box>
             : null;
         },
       },
+      viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
+        setCodePopover({ element, content })
+      ),
     ];
   }, [loaderData.identities, submit]);
 
@@ -446,6 +455,12 @@ export default function Users() {
     >
       {errorAlert(actionData?.error)}
       {errorAlert(error)}
+      <CodePopover
+        popover={codePopover}
+        onClose={() => setCodePopover(null)}
+        customerId={loaderData.customerId}
+        options={{ linkifyIdentityId: true }}
+      />
       <Snackbar
         open={!!confirmation}
         autoHideDuration={3000}

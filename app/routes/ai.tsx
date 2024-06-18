@@ -28,7 +28,7 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { identifyAccounts, identifyActivities } from '../types/activityFeed';
+import { identifyAccounts, identifyActivities } from '../utils/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';

@@ -1,8 +1,8 @@
 import { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
+import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
-import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../utils/feedUtils';
 import { contentLength } from '../utils/httpUtils';
 import { View } from '../utils/rbac';
 

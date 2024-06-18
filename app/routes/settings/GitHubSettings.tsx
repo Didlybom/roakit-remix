@@ -20,8 +20,7 @@ import {
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Settings } from '../../types/types';
-import * as feedUtils from '../../utils/feedUtils';
+import { GITHUB_FEED_TYPE, type Settings } from '../../types/types';
 import { postJsonOptions } from '../../utils/httpUtils';
 import BannedItems from './BannedItems.';
 import githubImage from './images/github-webhook.png';
@@ -38,7 +37,7 @@ export default function GitHubSettings({
 }) {
   const navigation = useNavigation();
   const submit = useSubmit();
-  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.GITHUB_FEED_TYPE)[0];
+  const serverData = settingsData.feeds.filter(f => f.type === GITHUB_FEED_TYPE)[0];
   const url = `https://ingest-frzqvloirq-uw.a.run.app/github/${serverData.clientId}`;
   const [secret, setSecret] = useState(serverData.secret);
 
@@ -109,7 +108,7 @@ export default function GitHubSettings({
                       submit(
                         {
                           feedId: serverData.feedId,
-                          type: feedUtils.GITHUB_FEED_TYPE,
+                          type: GITHUB_FEED_TYPE,
                           secret: secret,
                         },
                         postJsonOptions

@@ -1,5 +1,6 @@
 import {
   GitHub as GitHubIcon,
+  AccountTree as GroupIcon,
   OpenInNew as OpenInNewIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -55,13 +56,9 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import {
-  artifactActions,
-  buildArtifactActionKey,
-  getSummary,
-  identifyAccounts,
-} from '../types/activityFeed';
 import type { Account, AccountToIdentityRecord, Activity, ActivityRecord } from '../types/types';
+import { getActivityDescription } from '../utils/activityDescription';
+import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, endOfDay, formatYYYYMMDD } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
@@ -378,10 +375,9 @@ export default function UserActivity() {
         setPopover({ element, content })
       ),
       priorityColDef({ field: 'priority' }),
-      viewJsonActionsColDef({}, (element: HTMLElement, data: unknown) => {
-        const { id, ...content } = data as Activity;
-        setCodePopover({ element, content: { ...content, activityId: id } });
-      }),
+      viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
+        setCodePopover({ element, content })
+      ),
     ],
     [groupBy, loaderData.userId, loaderData.actors, loaderData.launchItems, loaderData.initiatives]
   );
@@ -525,7 +521,7 @@ export default function UserActivity() {
               if (!activity.metadata) {
                 return false;
               }
-              const summary = getSummary(activity); // FIXME consider precalculating the summary
+              const summary = getActivityDescription(activity); // FIXME consider precalculating the summary
               return summary && summary.toLowerCase().indexOf(searchTerm) >= 0;
             })
           : rows;
@@ -547,67 +543,54 @@ export default function UserActivity() {
     if (groupBy !== GroupBy.Launch) {
       return null;
     }
-    return (
-      <Stack>
-        {loaderData.userId !== ALL && <Box mb={1}>{actorHeader(loaderData.userId!)}</Box>}
-        {[...activities].map(([launchId, rows], i) => {
-          let launchKey;
-          let launchLabel;
-          if (!launchId) {
-            launchKey = '';
-            launchLabel = 'No launch item';
-          } else {
-            launchKey = loaderData.launchItems[launchId]?.key ?? '';
-            launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
-          }
-          const filteredRows =
-            searchTerm ?
-              rows.filter(activity => {
-                if (!activity.metadata) {
-                  return false;
-                }
-                const summary = getSummary(activity); // FIXME consider precalculating the summary
-                return summary && summary.toLowerCase().indexOf(searchTerm) >= 0;
-              })
-            : rows;
-          return !filteredRows?.length || launchId == null ?
-              null
-            : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  divider={<Divider orientation="vertical" flexItem />}
-                  color={grey[launchId ? 600 : 400]}
-                  fontSize="1.1rem"
-                  mb={1}
-                  sx={{ textWrap: 'nowrap' }}
-                >
-                  {launchKey && (
-                    <Typography variant="h6" fontWeight={600}>
-                      {launchKey}
-                    </Typography>
-                  )}
-                  <Typography variant="h6">{launchLabel}</Typography>
-                </Stack>
-                <DataGrid
-                  columns={columns}
-                  rows={filteredRows}
-                  {...dataGridCommonProps}
-                  rowHeight={50}
-                />
-              </Stack>;
-        })}
-      </Stack>
-    );
-  }, [
-    activities,
-    actorHeader,
-    columns,
-    groupBy,
-    loaderData.launchItems,
-    loaderData.userId,
-    searchTerm,
-  ]);
+    return [...activities].map(([launchId, rows], i) => {
+      let launchKey;
+      let launchLabel;
+      if (!launchId) {
+        launchKey = '';
+        launchLabel = 'No launch item';
+      } else {
+        launchKey = loaderData.launchItems[launchId]?.key ?? '';
+        launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+      }
+      const filteredRows =
+        searchTerm ?
+          rows.filter(activity => {
+            if (!activity.metadata) {
+              return false;
+            }
+            const description = getActivityDescription(activity); // FIXME consider precalculating
+            return description && description.toLowerCase().indexOf(searchTerm) >= 0;
+          })
+        : rows;
+      return !filteredRows?.length || launchId == null ?
+          null
+        : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              divider={<Divider orientation="vertical" flexItem />}
+              color={grey[launchId ? 600 : 400]}
+              fontSize="1.1rem"
+              mb={1}
+              sx={{ textWrap: 'nowrap' }}
+            >
+              {launchKey && (
+                <Typography variant="h6" fontWeight={600}>
+                  {launchKey}
+                </Typography>
+              )}
+              <Typography variant="h6">{launchLabel}</Typography>
+            </Stack>
+            <DataGrid
+              columns={columns}
+              rows={filteredRows}
+              {...dataGridCommonProps}
+              rowHeight={50}
+            />
+          </Stack>;
+    });
+  }, [activities, columns, groupBy, loaderData.launchItems, searchTerm]);
 
   const gridsUngrouped = useMemo(() => {
     if (groupBy != null) {
@@ -620,8 +603,8 @@ export default function UserActivity() {
           if (!activity.metadata) {
             return false;
           }
-          const summary = getSummary(activity); // FIXME consider precalculating the summary
-          return summary && summary.toLowerCase().indexOf(searchTerm) >= 0;
+          const description = getActivityDescription(activity); // FIXME consider precalculating
+          return description && description.toLowerCase().indexOf(searchTerm) >= 0;
         })
       : rows;
     return !filteredRows?.length ?
@@ -650,7 +633,7 @@ export default function UserActivity() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={loaderData.customerId}
-        options={{ linkifyBuckets: true }}
+        options={{ linkifyActivityId: true }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>
@@ -726,6 +709,7 @@ export default function UserActivity() {
                   <Grid>
                     <FilterMenu
                       label="Group"
+                      icon={<GroupIcon fontSize="small" />}
                       selectedValue={groupBy ?? ''}
                       items={[
                         { value: '', label: 'None', color: grey[500] },
@@ -792,6 +776,7 @@ export default function UserActivity() {
                 </Typography>
               )}
             </Box>
+            {loaderData.userId !== ALL && actorHeader(loaderData.userId!)}
             {gridsByContributor}
             {gridsByLaunch}
             {gridsUngrouped}

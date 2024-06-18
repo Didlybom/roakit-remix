@@ -2,11 +2,12 @@ import { Close as CloseIcon, ContentCopy as CopyIcon } from '@mui/icons-material
 import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { Link as RemixLink } from '@remix-run/react';
-import { useState } from 'react';
 import { LinkIt } from 'react-linkify-it';
+import type { Activity, Identity } from '../types/types';
 import { formatJson, internalLinkSx } from '../utils/jsxUtils';
 
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
+const IDENTITYID_REGEXP = /(?<="identityId": ")(.*)(?=")/;
 const OBJECTID_REGEXP = /(?<="objectId": ")(.*)(?=")/;
 
 export interface CodePopoverContent {
@@ -23,35 +24,34 @@ export default function CodePopover({
   popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
-  options?: { linkifyBuckets?: boolean };
+  options?: { linkifyActivityId?: boolean; linkifyIdentityId?: boolean };
 }) {
-  const [contentOverride, setContentOverride] = useState<unknown>(null);
   if (!popover?.content) {
     return null;
   }
-
-  const formattedContent = formatJson(contentOverride ?? popover.content);
+  let formattedContent;
+  if (options?.linkifyActivityId) {
+    const { id, ...content } = popover.content as Activity;
+    formattedContent = formatJson({ ...content, activityId: id });
+  } else if (options?.linkifyIdentityId) {
+    const { id, ...content } = popover.content as Identity;
+    formattedContent = formatJson({ ...content, identityId: id });
+  } else {
+    formattedContent = formatJson(popover.content);
+  }
   return (
     <Popover
       id={popover.element ? 'popover' : undefined}
       open={!!popover?.element}
       anchorEl={popover?.element}
-      onClose={() => {
-        setContentOverride(null);
-        onClose();
-      }}
+      onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
     >
       <Stack direction="row" sx={{ m: 1, position: 'absolute', top: 2, right: 0 }}>
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
           <CopyIcon />
         </IconButton>
-        <IconButton
-          onClick={() => {
-            setContentOverride(null);
-            onClose();
-          }}
-        >
+        <IconButton onClick={onClose}>
           <CloseIcon />
         </IconButton>
       </Stack>
@@ -67,36 +67,38 @@ export default function CodePopover({
           minHeight: '70px',
         }}
       >
-        {options?.linkifyBuckets ?
+        {options?.linkifyActivityId || options?.linkifyIdentityId ?
           <LinkIt
-            component={(activityId: string, key: number) => (
+            component={(firebaseId: string, key: number) => (
               <Link
                 key={key}
                 sx={internalLinkSx}
-                href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/${activityId}`}
+                href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/${options.linkifyActivityId ? 'activities' : 'identities'}/${firebaseId}`}
                 target="_blank"
               >
-                {activityId}
+                {firebaseId}
               </Link>
             )}
-            regex={ACTIVITYID_REGEXP}
+            regex={options.linkifyActivityId ? ACTIVITYID_REGEXP : IDENTITYID_REGEXP}
           >
-            <LinkIt
-              component={(filePath: string, key: number) => (
-                <Link
-                  component={RemixLink}
-                  key={key}
-                  sx={internalLinkSx}
-                  to={'/event/view/' + filePath}
-                  target="_blank"
-                >
-                  {filePath}
-                </Link>
-              )}
-              regex={OBJECTID_REGEXP}
-            >
-              {formattedContent}
-            </LinkIt>
+            {options?.linkifyActivityId ?
+              <LinkIt
+                component={(filePath: string, key: number) => (
+                  <Link
+                    component={RemixLink}
+                    key={key}
+                    sx={internalLinkSx}
+                    to={'/event/view/' + filePath}
+                    target="_blank"
+                  >
+                    {filePath}
+                  </Link>
+                )}
+                regex={OBJECTID_REGEXP}
+              >
+                {formattedContent}
+              </LinkIt>
+            : formattedContent}
           </LinkIt>
         : formattedContent}
       </Typography>

@@ -4,6 +4,7 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -20,8 +21,7 @@ import {
 import { useFetcher, useNavigation } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Settings } from '../../types/types';
-import * as feedUtils from '../../utils/feedUtils';
+import { CONFLUENCE_FEED_TYPE, type Settings } from '../../types/types';
 import { postJsonOptions } from '../../utils/httpUtils';
 import BannedItems from './BannedItems.';
 import confluenceImage from './images/confluence-webhook.png';
@@ -39,7 +39,7 @@ export default function ConfluenceSettings({
   const navigation = useNavigation();
   const fetcher = useFetcher();
 
-  const serverData = settingsData.feeds.filter(f => f.type === feedUtils.CONFLUENCE_FEED_TYPE)[0];
+  const serverData = settingsData.feeds.filter(f => f.type === CONFLUENCE_FEED_TYPE)[0];
 
   const url = `https://ingest-frzqvloirq-uw.a.run.app/confluence/${serverData.clientId}`;
   const [secret, setSecret] = useState(serverData.secret);
@@ -113,7 +113,7 @@ export default function ConfluenceSettings({
                       fetcher.submit(
                         {
                           feedId: serverData.feedId,
-                          type: feedUtils.CONFLUENCE_FEED_TYPE,
+                          type: CONFLUENCE_FEED_TYPE,
                           secret: secret,
                         },
                         postJsonOptions
@@ -150,6 +150,11 @@ export default function ConfluenceSettings({
           </Grid>
         </Grid>
       </Stack>
+      <Alert severity="warning" sx={{ mt: 2 }}>
+        The instructions below are for <strong>Confluence Server</strong> (self-hosted).{' '}
+        <strong>Confluence Cloud</strong> only allow to set up webhook programmatically. Contact us
+        for help!
+      </Alert>
       <Box
         component="img"
         src={confluenceImage}
@@ -161,8 +166,8 @@ export default function ConfluenceSettings({
           })
         }
       />
-      <Typography component="div" sx={{ mt: 5 }}>
-        In your <strong>Confluence</strong> website, navigate to{' '}
+      <Typography component="div" sx={{ mt: 2 }}>
+        In your <strong>Confluence Server</strong> website, navigate to{' '}
         <strong>
           Administration {'>'} General Configuration {'>'} Webhooks
         </strong>{' '}

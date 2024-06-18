@@ -1,3 +1,4 @@
+import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -49,12 +50,13 @@ import {
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
-import { identifyAccounts, inferPriority } from '../types/activityFeed';
 import type { Account, Activity, ActivityCount, Artifact } from '../types/types';
+import { identifyAccounts, inferPriority } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import {
+  ellipsisSx,
   errorAlert,
   internalLinkSx,
   loaderErrorResponse,
@@ -322,19 +324,21 @@ export default function ActivityReview() {
           }),
         ],
         editable: true,
-        renderCell: params =>
-          params.value !== UNSET_INITIATIVE_ID ?
-            <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
-              {loaderData.initiatives[params.value as string]?.label ?? 'unknown'}
-            </Box>
-          : <Box fontSize="small" color={theme.palette.primary.main} sx={{ cursor: 'pointer' }}>
-              {'...'}
-            </Box>,
+        renderCell: params => (
+          <Button
+            endIcon={<ArrowDropDownIcon />}
+            sx={{ ml: -1, textTransform: 'none', ...ellipsisSx }}
+          >
+            {params.value === UNSET_INITIATIVE_ID ?
+              '...'
+            : loaderData.initiatives[params.value as string]?.key ?? 'unknown'}
+          </Button>
+        ),
       },
       {
         field: 'note',
         headerName: 'Note',
-        minWidth: 100,
+        width: 150,
         editable: true,
         sortable: false,
         renderCell: params => (
@@ -342,16 +346,15 @@ export default function ActivityReview() {
             fontSize="small"
             color={theme.palette.primary.main}
             title={params.value as string}
-            sx={{ cursor: 'pointer' }}
+            sx={{ ...ellipsisSx, cursor: 'pointer' }}
           >
             {params.value || '...'}
           </Box>
         ),
       },
-      viewJsonActionsColDef({}, (element: HTMLElement, data: unknown) => {
-        const { id, ...content } = data as Activity;
-        setCodePopover({ element, content: { ...content, activityId: id } });
-      }),
+      viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
+        setCodePopover({ element, content })
+      ),
     ],
     [loaderData.actors, loaderData.initiatives, loaderData.launchItems]
   );
@@ -445,7 +448,7 @@ export default function ActivityReview() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={loaderData.customerId}
-        options={{ linkifyBuckets: true }}
+        options={{ linkifyActivityId: true }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>

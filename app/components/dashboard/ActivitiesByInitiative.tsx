@@ -1,7 +1,7 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
-import type { GroupedActivities } from '../../types/activityFeed';
 import type { InitiativeRecord } from '../../types/types';
+import type { GroupedActivities } from '../../utils/activityFeed';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {

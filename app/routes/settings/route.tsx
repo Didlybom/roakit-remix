@@ -22,9 +22,9 @@ import TabPanel from '../../components/TabPanel';
 import { firestore } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
 import { bannedRecordSchema, feedSchema } from '../../types/schemas';
+import { FEED_TYPES } from '../../types/types';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
-import * as feedUtils from '../../utils/feedUtils';
 import { View } from '../../utils/rbac';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
@@ -60,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
     // create feeds not existing yet
     await Promise.all(
-      feedUtils.FEED_TYPES.map(async feedType => {
+      FEED_TYPES.map(async feedType => {
         if (!feeds.find(f => f && f.feedId === feedType.id && f.type === feedType.type)) {
           const feedValues = {
             type: feedType.type,

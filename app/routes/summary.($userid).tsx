@@ -54,7 +54,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { identifyAccounts } from '../types/activityFeed';
+import { identifyAccounts } from '../utils/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
