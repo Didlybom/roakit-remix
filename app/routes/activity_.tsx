@@ -20,6 +20,7 @@ import {
   GridRowSelectionModel,
   GridSortDirection,
   GridToolbarContainer,
+  type GridRenderCellParams,
 } from '@mui/x-data-grid';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
@@ -38,6 +39,7 @@ import {
   dateColDef,
   descriptionColDef,
   priorityColDef,
+  sortComparatorKeepingNullAtTheBottom,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
@@ -302,12 +304,12 @@ export default function ActivityReview() {
       {
         field: 'launchItemId',
         headerName: 'Launch',
-        renderCell: params => {
-          const launchItemId = params.value as string;
-          return launchItemId ?
-              <Box title={loaderData.launchItems[launchItemId]?.label}>
-                {loaderData.launchItems[launchItemId]?.key}
-              </Box>
+        valueGetter: (value: string) => loaderData.launchItems[value]?.key,
+        getSortComparator: sortComparatorKeepingNullAtTheBottom,
+        renderCell: (params: GridRenderCellParams) => {
+          const activity = params.row as Activity;
+          return activity.launchItemId ?
+              <Box title={loaderData.launchItems[activity.launchItemId]?.label}>{params.value}</Box>
             : null;
         },
       },
@@ -324,6 +326,7 @@ export default function ActivityReview() {
           }),
         ],
         editable: true,
+        sortable: false,
         renderCell: params => (
           <Button
             endIcon={<ArrowDropDownIcon />}

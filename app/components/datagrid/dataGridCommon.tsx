@@ -18,6 +18,8 @@ import {
   GridDensity,
   GridRenderCellParams,
   GridSortDirection,
+  gridStringOrNumberComparator,
+  type GridSortCellParams,
 } from '@mui/x-data-grid';
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
@@ -55,6 +57,24 @@ export const dataGridCommonProps = {
     pagination: { paginationModel: { pageSize: 25 } },
     sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' as GridSortDirection }] },
   },
+};
+
+export const sortComparatorKeepingNullAtTheBottom = (sortDirection: GridSortDirection) => {
+  const modifier = sortDirection === 'desc' ? -1 : 1;
+  return (
+    a: string | number,
+    b: string | number,
+    aCellParams: GridSortCellParams,
+    bCellParams: GridSortCellParams
+  ) => {
+    if (a == null) {
+      return 1;
+    }
+    if (b == null) {
+      return -1;
+    }
+    return modifier * gridStringOrNumberComparator(a, b, aCellParams, bCellParams);
+  };
 };
 
 export const dateColDef = (colDef?: GridColDef) =>
@@ -138,7 +158,15 @@ export const actionColDef = (colDef?: GridColDef) =>
 export const priorityColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Prio.',
-    sortComparator: (a: number, b: number) => (b ?? 999) - (a ?? 999),
+    getSortComparator: sortDirection => {
+      // keep not prioritized at the bottom
+      return (a: number, b: number) => {
+        if (sortDirection === 'asc') {
+          return (b ?? -1) - (a ?? -1);
+        }
+        return (a === -1 || a == null ? 9999 : a) - (b === -1 || b == null ? 9999 : b);
+      };
+    },
     renderCell: params => {
       const priority = params.value as number;
       return (

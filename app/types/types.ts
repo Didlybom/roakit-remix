@@ -99,7 +99,7 @@ export type ActivityMetadata = {
   sprint?: { name: string; state: string };
   worklog?: unknown;
   space?: { title: string; uri?: string };
-  page?: { id: string; title: string; version?: number; uri?: string };
+  page?: { id: string; title: string; version?: string; uri?: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   commits?: { message: string; url?: string }[];
@@ -128,6 +128,7 @@ export type Activity = {
   metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging
+  consolidatedIds?: string[];
 };
 
 export type ActivityRecord = Record<Activity['id'], Omit<Activity, 'id'>>;
