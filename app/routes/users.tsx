@@ -185,8 +185,8 @@ export const action = async ({
         displayName,
         email,
         accounts: [
-          { feedId: 2, type: 'jira', id: jiraId, name: displayName },
-          { feedId: 1, type: 'github', id: gitHubId, name: '' },
+          ...(jiraId ? [{ feedId: 2, type: 'jira', id: jiraId, name: displayName }] : []),
+          ...(gitHubId ? [{ feedId: 1, type: 'github', id: gitHubId, name: '' }] : []),
         ],
       });
     }
@@ -424,7 +424,7 @@ export default function Users() {
                   UNKNOWN_EMAIL_IMPORT +
                   ',' +
                   (account.name ?? '') +
-                  ',' +
+                  ',,' + // empty manager id
                   (account.type === JIRA_FEED_TYPE || account.type === CONFLUENCE_FEED_TYPE ?
                     account.id
                   : '') +
@@ -570,10 +570,8 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                     return oldRow;
                   }
                   setIdentities(
-                    identities.map(identity =>
-                      identity.id === updatedRow.id ?
-                        { ...identity, user: updatedRow.user }
-                      : identity
+                    identities.map(i =>
+                      i.id === updatedRow.id ? { ...i, user: updatedRow.user } : i
                     )
                   );
                   submit(
