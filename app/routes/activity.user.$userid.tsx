@@ -62,7 +62,13 @@ import type { Account, AccountToIdentityRecord, Activity, ActivityRecord } from 
 import { getActivityDescription } from '../utils/activityDescription';
 import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate, endOfDay, formatYYYYMMDD } from '../utils/dateUtils';
+import {
+  DateRange,
+  dateFilterToStartDate,
+  endOfDay,
+  formatYYYYMMDD,
+  type DateRangeEnding,
+} from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
   errorAlert,
@@ -244,6 +250,16 @@ export default function UserActivity() {
     }
   }, [groupBy, loaderData.actors, loaderData.launchItems, actionFilter, sortAlphabetically]);
 
+  const fetchActivities = useCallback((dateFilter: DateRangeEnding) => {
+    setIsRendering(true);
+    const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
+    const endDay = dayjs(dateFilter.endDay);
+    activitiesFetcher.load(
+      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endOfDay(endDay)}`
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (loaderData.initiatives) {
       compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
@@ -255,14 +271,8 @@ export default function UserActivity() {
 
   // load activities
   useEffect(() => {
-    setIsRendering(true);
-    const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
-    const endDay = dayjs(dateFilter.endDay);
-    activitiesFetcher.load(
-      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endOfDay(endDay)}`
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFilter]); // activitiesFetcher must be omitted
+    fetchActivities(dateFilter);
+  }, [dateFilter, fetchActivities]); // activitiesFetcher must be omitted
 
   useEffect(() => {
     if (fetchedActivity?.error?.status === 401) {
@@ -634,6 +644,7 @@ export default function UserActivity() {
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
+      onDateRangeRefresh={() => fetchActivities(dateFilter)}
       showProgress={isRendering || navigation.state !== 'idle'}
     >
       {errorAlert(fetchedActivity?.error?.message)}

@@ -2,6 +2,7 @@ import {
   Login as LoginIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
+  Refresh as RefreshIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import {
@@ -11,12 +12,13 @@ import {
   Button,
   IconButton,
   LinearProgress,
+  Stack,
   Toolbar,
   styled,
 } from '@mui/material';
 import dayjs from 'dayjs';
 import RoakitIcon from '../icons/Roakit';
-import { type DateRangeEnding } from '../utils/dateUtils';
+import { isToday, type DateRangeEnding } from '../utils/dateUtils';
 import { Role, View } from '../utils/rbac';
 import DateRangePicker from './DateRangePicker';
 
@@ -49,6 +51,7 @@ export default function Header({
   view,
   dateRange,
   onDateRangeSelect,
+  onDateRangeRefresh,
   showProgress,
   navbarWidth,
   navbarOpen: isNavBarOpen,
@@ -59,6 +62,7 @@ export default function Header({
   view: View;
   dateRange?: DateRangeEnding;
   onDateRangeSelect?: (dateRangeEnding: DateRangeEnding) => void;
+  onDateRangeRefresh?: () => void;
   showProgress?: boolean;
   navbarWidth: number;
   navbarOpen?: boolean;
@@ -87,7 +91,7 @@ export default function Header({
         </Box>
         {view !== View.Login && view !== View.Logout && (
           <>
-            <Box flex={1} mr={2}>
+            <Stack direction="row" flex={1} mr={2}>
               {dateRange && onDateRangeSelect && (
                 <DateRangePicker
                   dateRange={dateRange.dateRange}
@@ -95,7 +99,17 @@ export default function Header({
                   onSelect={onDateRangeSelect}
                 />
               )}
-            </Box>
+              {dateRange && isToday(dayjs(dateRange.endDay)) && onDateRangeRefresh && (
+                <IconButton
+                  color="inherit"
+                  onClick={onDateRangeRefresh}
+                  title="Fetch new activities"
+                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
             {isLoggedIn && role === Role.Admin && (
               <>
                 <IconButton

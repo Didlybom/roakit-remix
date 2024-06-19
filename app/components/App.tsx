@@ -35,6 +35,7 @@ export default function App({
   role = DEFAULT_ROLE,
   dateRange,
   onDateRangeSelect,
+  onDateRangeRefresh,
   showProgress,
   showPulse,
   isNavOpen,
@@ -45,6 +46,7 @@ export default function App({
   view: View;
   dateRange?: DateRangeEnding;
   onDateRangeSelect?: (dateRangeEnding: DateRangeEnding) => void;
+  onDateRangeRefresh?: () => void;
   showProgress?: boolean;
   showPulse?: boolean;
   isNavOpen?: boolean;
@@ -65,6 +67,7 @@ export default function App({
         view={view}
         dateRange={dateRange}
         onDateRangeSelect={onDateRangeSelect}
+        onDateRangeRefresh={onDateRangeRefresh}
         showProgress={showProgress}
         navbarWidth={navbarWidth}
         navbarOpen={isOpen}

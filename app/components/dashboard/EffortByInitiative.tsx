@@ -1,27 +1,33 @@
-import { Unstable_Grid2 as Grid, Paper, Typography } from '@mui/material';
+import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts';
 import type { InitiativeRecord } from '../../types/types';
 import type { GroupedActivities } from '../../utils/activityFeed';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
+  type: 'initiatives' | 'launchItems';
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
 };
 
-export default function InitiativeEffort({ groupedActivities, initiatives, isLoading }: Props) {
+export default function InitiativeEffort({
+  type,
+  groupedActivities,
+  initiatives,
+  isLoading,
+}: Props) {
   return (
     !!initiatives &&
     !!groupedActivities?.initiatives?.length && (
       <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle('Effort by Goal')}
+          {widgetTitle(type === 'initiatives' ? '# Activities by Goal' : '# Activities by Launch')}
           <PieChart
             series={[
               {
-                id: 'effort-by-initiative',
-                data: groupedActivities.initiatives.map(initiative => ({
+                id: `effort-by-${type}`,
+                data: groupedActivities[type]!.map(initiative => ({
                   id: initiatives[initiative.id].key,
                   value: initiative.effort,
                   label: initiatives[initiative.id].label,
@@ -32,15 +38,12 @@ export default function InitiativeEffort({ groupedActivities, initiatives, isLoa
               },
             ]}
             margin={{ left: 100 }}
-            sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white' } }}
+            sx={{ [`& .${pieArcLabelClasses.root}`]: { fill: 'white', fontSize: 'small' } }}
             {...widgetSize}
             slotProps={{ legend: { hidden: true } }}
             colors={pastelColors}
           />
         </Paper>
-        <Typography variant="caption" justifyContent="center" sx={{ mt: -3, display: 'flex' }}>
-          simulated data
-        </Typography>
       </Grid>
     )
   );

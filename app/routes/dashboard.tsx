@@ -90,8 +90,15 @@ export default function Dashboard() {
     <Stack spacing={3} m={3} onClick={e => e.stopPropagation()}>
       <Grid container spacing={5}>
         <EffortByInitiative
+          type="initiatives"
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
+          isLoading={groupedActivitiesFetcher.state === 'loading'}
+        />
+        <EffortByInitiative
+          type="launchItems"
+          groupedActivities={groupedActivitiesResponse}
+          initiatives={loaderData.launchItems}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
         <Priorities
@@ -115,10 +122,12 @@ export default function Dashboard() {
         <Accordion
           variant="outlined"
           disableGutters
-          defaultExpanded
+          defaultExpanded={false}
           sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
         >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Activities by Goal</AccordionSummary>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            Activity Categories by Goal
+          </AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Grid container spacing={5}>
               <ActivitiesByInitiative
@@ -136,10 +145,12 @@ export default function Dashboard() {
         <Accordion
           variant="outlined"
           disableGutters
-          defaultExpanded
+          defaultExpanded={false}
           sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
         >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>Launch Activities</AccordionSummary>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            Activity Categories by Launch
+          </AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Grid container spacing={5}>
               <ActivitiesByInitiative

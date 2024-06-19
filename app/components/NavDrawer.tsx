@@ -2,7 +2,7 @@ import {
   BusinessCenter as BusinessCenterIcon,
   Business as BusinessIcon,
   Dashboard as DashboardIcon,
-  History as HistoryIcon,
+  ManageHistory as HistoryIcon,
   RocketLaunch as LaunchIcon,
   Menu as MenuIcon,
   PeopleOutline as PeopleIcon,

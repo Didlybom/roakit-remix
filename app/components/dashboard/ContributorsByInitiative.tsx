@@ -42,7 +42,9 @@ export default function ContributorsByInitiative({
   return (
     <Grid>
       <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-        {widgetTitle(type === 'initiatives' ? 'Contributors by Goal' : 'Launch Contributors')}
+        {widgetTitle(
+          type === 'initiatives' ? '# Contributors by Goal' : '# Contributors by Launch'
+        )}
         <BarChart
           series={[
             {
