@@ -8,7 +8,6 @@ import {
   ListItemIcon,
   ListItemText,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
@@ -23,6 +22,7 @@ import {
 } from '@mui/x-data-grid';
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
+import { useEffect, useState } from 'react';
 import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
 import type { Account, Activity } from '../../types/types';
@@ -77,17 +77,24 @@ export const sortComparatorKeepingNullAtTheBottom = (sortDirection: GridSortDire
   };
 };
 
+function AutoRefreshingRelativeDate({ date }: { date: Date }) {
+  const [, setTime] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setTime(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
+  return formatRelative(date);
+}
+
 export const dateColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Date',
     type: 'dateTime',
     valueFormatter: (value: Date) => formatRelative(value),
     renderCell: (params: GridRenderCellParams) => (
-      <Tooltip title={formatMonthDayTime(params.value as Date)}>
-        <Box fontSize="small" sx={ellipsisSx}>
-          {formatRelative(params.value as Date)}
-        </Box>
-      </Tooltip>
+      <Box title={formatMonthDayTime(params.value as Date)} fontSize="small" sx={ellipsisSx}>
+        <AutoRefreshingRelativeDate date={params.value as Date} />
+      </Box>
     ),
     ...colDef,
   }) as GridColDef;
