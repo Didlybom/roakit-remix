@@ -74,3 +74,26 @@ test('evalActivity', () => {
     }).initiatives
   ).toEqual(['ini-1', 'ini-3', 'ini-5']);
 });
+
+test('evalActivityWithArrayField', () => {
+  const mappers = {
+    'ini-1': { key: 'k2', activityMapper: `metadata.commits_1st.message ~= "abc"` },
+    'ini-2': { key: 'k2', activityMapper: `metadata.commits.message ~= "abc"` },
+    'ini-3': { key: 'k2', activityMapper: `metadata.commits_1st.message ~= "eee"` },
+  };
+  clearActivityMapperCache();
+  compileActivityMappers(MapperType.Initiative, mappers);
+
+  const activity: Activity = {
+    initiativeId: '',
+    launchItemId: '',
+    id: 'id',
+    action: 'action',
+    timestamp: 0,
+    artifact: 'code',
+    event: 'abc',
+    metadata: { commits: [{ message: 'xxx abc yyy' }, { message: 'zzz' }] },
+  };
+
+  expect(mapActivity(activity).initiatives).toEqual(['ini-1']);
+});

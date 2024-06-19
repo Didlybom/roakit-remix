@@ -282,10 +282,10 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
   if (newActivity.metadata?.pullRequest?.uri) {
     const indexPRActivity = activities.findLastIndex(
       a =>
-        a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
         a.eventType === newActivity.eventType &&
+        a.action === newActivity.action &&
         a.event === newActivity.event &&
         a.metadata?.pullRequest?.uri &&
         a.metadata.pullRequest.uri === newActivity.metadata?.pullRequest?.uri &&
@@ -316,10 +316,10 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
       a =>
         a.event === 'push' &&
         a.event === newActivity.event &&
-        a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
         a.eventType === newActivity.eventType &&
+        a.action === newActivity.action &&
         a.event === newActivity.event &&
         a.metadata?.commits
     );
@@ -353,10 +353,10 @@ export const consolidateAndPushActivity = (newActivity: Activity, activities: Ac
   if (newActivity.metadata?.issue?.key && newActivity.metadata.changeLog) {
     const indexIssueActivity = activities.findLastIndex(
       a =>
-        a.action === newActivity.action &&
         a.actorId === newActivity.actorId &&
         a.artifact === newActivity.artifact &&
         a.eventType === newActivity.eventType &&
+        a.action === newActivity.action &&
         a.event === newActivity.event &&
         a.metadata?.issue?.key &&
         a.metadata.issue.key === newActivity.metadata?.issue?.key &&

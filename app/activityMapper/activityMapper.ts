@@ -32,14 +32,15 @@ export const clearActivityMapperCache = () => {
 // Adapted from https://github.com/m93a/filtrex/blob/main/src/filtrex.mjs#L208
 // The original code returns null when obj is null, but this breaks when evaluating a regexp with ~=,
 // so we return a "__NULL__" string instead.
-function useDotAccessOperatorAndOptionalChaining(
+const __NULL__ = '__NULL__';
+const useDotAccessOperatorWithArrayAndOptionalChaining = (
   name: string,
   get: (name: string) => unknown,
   obj: unknown,
   type: 'unescaped' | 'single-quoted'
-) {
-  if (obj === null || obj === undefined) {
-    return '__NULL__';
+) => {
+  if (obj == null) {
+    return __NULL__;
   }
 
   // ignore dots inside escaped symbol
@@ -50,16 +51,26 @@ function useDotAccessOperatorAndOptionalChaining(
   const parts = name.split('.');
 
   for (const propertyName of parts) {
-    if (obj === null || obj === undefined) {
-      return '__NULL__';
+    if (obj == null) {
+      return __NULL__;
+    }
+    if (propertyName.endsWith('_1st')) {
+      // evaluate the 1st element of the array, e.g. metadata.commits_1st.message => metadata.commits[0].message
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      const arr = (obj as any)[propertyName.slice(0, -4)];
+      if (Array.isArray(arr) && arr.length > 0) {
+        obj = arr[0];
+      } else {
+        return __NULL__;
+      }
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       obj = (obj as any)[propertyName];
     }
   }
 
-  return obj ?? '__NULL__';
-}
+  return obj ?? __NULL__;
+};
 
 export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) => {
   const hash = stringify(
@@ -76,7 +87,7 @@ export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) 
       compiledExpressions[type][initiativeId] = compileExpression(
         map[initiativeId].activityMapper!,
         {
-          customProp: useDotAccessOperatorAndOptionalChaining,
+          customProp: useDotAccessOperatorWithArrayAndOptionalChaining,
         }
       );
     }
