@@ -30,9 +30,6 @@ export const clearActivityMapperCache = () => {
 };
 
 // Adapted from https://github.com/m93a/filtrex/blob/main/src/filtrex.mjs#L208
-// The original code returns null when obj is null, but this breaks when evaluating a regexp with ~=,
-// so we return a "__NULL__" string instead.
-const __NULL__ = '__NULL__';
 const useDotAccessOperatorWithArrayAndOptionalChaining = (
   name: string,
   get: (name: string) => unknown,
@@ -40,7 +37,7 @@ const useDotAccessOperatorWithArrayAndOptionalChaining = (
   type: 'unescaped' | 'single-quoted'
 ) => {
   if (obj == null) {
-    return __NULL__;
+    return obj;
   }
 
   // ignore dots inside escaped symbol
@@ -52,7 +49,7 @@ const useDotAccessOperatorWithArrayAndOptionalChaining = (
 
   for (const propertyName of parts) {
     if (obj == null) {
-      return __NULL__;
+      return obj;
     }
     if (propertyName.endsWith('_1st')) {
       // evaluate the 1st element of the array, e.g. metadata.commits_1st.message => metadata.commits[0].message
@@ -61,7 +58,7 @@ const useDotAccessOperatorWithArrayAndOptionalChaining = (
       if (Array.isArray(arr) && arr.length > 0) {
         obj = arr[0];
       } else {
-        return __NULL__;
+        return obj;
       }
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
@@ -69,7 +66,14 @@ const useDotAccessOperatorWithArrayAndOptionalChaining = (
     }
   }
 
-  return obj ?? __NULL__;
+  return obj;
+};
+
+const options = {
+  customProp: useDotAccessOperatorWithArrayAndOptionalChaining,
+  operators: {
+    '~=': (a: string, b: string) => (b == null ? false : RegExp(b, 'i').test(a)),
+  },
 };
 
 export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) => {
@@ -86,9 +90,8 @@ export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) 
     if (map[initiativeId].activityMapper) {
       compiledExpressions[type][initiativeId] = compileExpression(
         map[initiativeId].activityMapper!,
-        {
-          customProp: useDotAccessOperatorWithArrayAndOptionalChaining,
-        }
+        // @ts-expect-error no need to overwrite all Operators
+        options
       );
     }
   });

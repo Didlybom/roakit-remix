@@ -22,7 +22,7 @@ test('evalActivity', () => {
       key: 'k5',
       activityMapper: ` (event == "abc" and metadata.issue.project.id == "proj-a")or artifact == "code"`,
     },
-    'ini-6': { key: 'k6', activityMapper: `xxx ~= "xxx" or metadata.label.name ~= "qwer"` },
+    'ini-6': { key: 'k6', activityMapper: `xxx ~= "xxx" or metadata.label.name ~= "QWer"` },
   };
   clearActivityMapperCache();
   compileActivityMappers(MapperType.Initiative, mappers);
