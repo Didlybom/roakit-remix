@@ -1,14 +1,19 @@
 import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
 import dayjs from 'dayjs';
 import pino from 'pino';
-import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
+import { groupActivities, type GroupedActivities } from '../activityProcessors/activityGrouper';
+import { identifyActivities } from '../activityProcessors/activityIdentifier';
+import {
+  MapperType,
+  compileActivityMappers,
+  mapActivity,
+} from '../activityProcessors/activityMapper';
 import {
   fetchActivities,
   fetchIdentities,
   fetchInitiativeMap,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
-import { groupActivities, identifyActivities, type GroupedActivities } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';

@@ -11,6 +11,7 @@ import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-ru
 import dayjs from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
+import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ActivitiesByInitiative from '../components/dashboard/ActivitiesByInitiative';
@@ -24,7 +25,6 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { updateInitiativeCounters } from '../firestore.server/updaters.server';
-import { identifyAccounts } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';

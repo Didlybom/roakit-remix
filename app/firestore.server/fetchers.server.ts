@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
+import { combineAndPushActivity } from '../activityProcessors/activityCombiner';
 import { firestore } from '../firebase.server';
 import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
@@ -22,7 +23,7 @@ import {
   type Summary,
   type TicketRecord,
 } from '../types/types';
-import { consolidateAndPushActivity, findTicket } from '../utils/activityFeed';
+import { findTicket } from '../utils/activityFeed';
 import { daysInMonth } from '../utils/dateUtils';
 import { DEFAULT_ROLE, Role } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
@@ -391,7 +392,7 @@ export const fetchActivities = async ({
   startDate: number;
   endDate?: number;
   userIds?: string[];
-  options?: { includeMetadata?: boolean; findPriority?: boolean; consolidate?: boolean };
+  options?: { includeMetadata?: boolean; findPriority?: boolean; combine?: boolean };
 }) => {
   const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
   if (!userIds) {
@@ -444,7 +445,7 @@ export const fetchActivities = async ({
         activityTickets.set(doc.id, ticket);
       }
     }
-    consolidateAndPushActivity(
+    combineAndPushActivity(
       {
         id: doc.id,
         action: data.action,

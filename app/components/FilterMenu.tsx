@@ -41,7 +41,7 @@ export default function FilterMenu({
           value={selectedValue}
           label={label ?? 'Filter'}
           size="small"
-          sx={{ minWidth: 120 }}
+          sx={{ minWidth: { xs: '100px', sm: '120px' } }}
           startAdornment={
             (isArrayValue && !selectedValue.length) || (!isArrayValue && !selectedValue) ?
               <InputAdornment position="start">

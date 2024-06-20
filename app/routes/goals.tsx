@@ -201,17 +201,15 @@ export default function Initiatives() {
     {
       field: 'key',
       headerName: 'Key',
-      minWidth: 120,
       editable: true,
       preProcessEditCellProps: params => {
         return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
-    { field: 'label', headerName: 'Label', minWidth: 300, editable: true },
+    { field: 'label', headerName: 'Label', editable: true },
     {
       field: 'tags',
       headerName: 'Tags',
-      minWidth: 300,
       editable: true,
       renderCell: params => {
         return params.value ?
@@ -222,7 +220,7 @@ export default function Initiatives() {
                   variant="outlined"
                   size="small"
                   label={tag}
-                  sx={{ fontSize: '10px', mr: '4px' }}
+                  sx={{ fontSize: '9px', mr: '4px' }}
                 />
               ))}
             </Box>
@@ -232,13 +230,11 @@ export default function Initiatives() {
     {
       field: 'reference',
       headerName: 'Reference',
-      minWidth: 120,
       editable: true,
     },
     {
       field: 'url',
       headerName: 'URL',
-      minWidth: 120,
       editable: true,
       renderCell: params => {
         return params.value ?
@@ -251,7 +247,6 @@ export default function Initiatives() {
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',
-      minWidth: 400,
       flex: 1,
       editable: true,
       renderCell: params => (

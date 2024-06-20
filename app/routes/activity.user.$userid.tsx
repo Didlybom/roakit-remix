@@ -35,7 +35,12 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
-import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
+import { identifyAccounts } from '../activityProcessors/activityIdentifier';
+import {
+  MapperType,
+  compileActivityMappers,
+  mapActivity,
+} from '../activityProcessors/activityMapper';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
@@ -60,7 +65,7 @@ import {
 import JiraIcon from '../icons/Jira';
 import type { Account, AccountToIdentityRecord, Activity, ActivityRecord } from '../types/types';
 import { getActivityDescription } from '../utils/activityDescription';
-import { artifactActions, buildArtifactActionKey, identifyAccounts } from '../utils/activityFeed';
+import { artifactActions, buildArtifactActionKey } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   DateRange,
@@ -401,7 +406,7 @@ export default function UserActivity() {
       const actor = loaderData.actors[actorId];
       return (
         <Typography
-          variant={loaderData.userId === ALL ? 'h6' : 'h2'}
+          variant={loaderData.userId === ALL ? 'h6' : 'h3'}
           display="flex"
           alignItems="center"
           color={grey[600]}
@@ -722,10 +727,13 @@ export default function UserActivity() {
                       placeholder="Search"
                       title="Search descriptions"
                       size="small"
-                      sx={{ width: '16ch', minWidth: '150px' }}
+                      sx={{ width: '12ch', minWidth: { xs: '110px', sm: '170px' } }}
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position="start">
+                          <InputAdornment
+                            position="start"
+                            sx={{ display: { xs: 'none', sm: 'flex' } }}
+                          >
                             <SearchIcon />
                           </InputAdornment>
                         ),

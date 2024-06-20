@@ -1,7 +1,7 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts';
+import type { GroupedActivities } from '../../activityProcessors/activityGrouper';
 import type { InitiativeRecord } from '../../types/types';
-import type { GroupedActivities } from '../../utils/activityFeed';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
@@ -19,7 +19,7 @@ export default function InitiativeEffort({
 }: Props) {
   return (
     !!initiatives &&
-    !!groupedActivities?.initiatives?.length && (
+    !!groupedActivities?.[type]?.length && (
       <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
           {widgetTitle(type === 'initiatives' ? '# Activities by Goal' : '# Activities by Launch')}

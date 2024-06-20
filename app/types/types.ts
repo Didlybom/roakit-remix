@@ -94,7 +94,7 @@ export type ActivityMetadata = {
   attachment?: { filename: string; mimeType?: string; uri?: string };
   attachments?: {
     files: { filename: string; uri?: string }[];
-    parent?: { type: string; title: string; uri?: string };
+    parent?: { id: string; type: string; title: string; uri?: string };
   };
   sprint?: { name: string; state: string };
   worklog?: unknown;
@@ -103,7 +103,12 @@ export type ActivityMetadata = {
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   commits?: { message: string; url?: string }[];
-  comment?: { body: string; uri?: string; parent?: { type: string; title: string; uri?: string } };
+  comment?: {
+    id: string;
+    body: string;
+    uri?: string;
+    parent?: { type: string; title: string; uri?: string };
+  };
   label?: {
     name: string;
     contentType: string;
@@ -128,7 +133,7 @@ export type Activity = {
   metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging
-  consolidatedIds?: string[];
+  combinedIds?: string[];
 };
 
 export type ActivityRecord = Record<Activity['id'], Omit<Activity, 'id'>>;

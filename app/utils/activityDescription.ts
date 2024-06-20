@@ -1,6 +1,8 @@
 import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '../types/types';
 import { mimeTypeToType } from './stringUtils';
 
+export const ACTIVITY_DESCRIPTION_LIST_SEPARATOR = ', ';
+
 export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
   const metadata = activity.metadata;
   if (metadata?.issue) {
@@ -32,8 +34,12 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
     return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
   }
   if (metadata?.attachments) {
-    const files = metadata.attachments.files.map(f => f.filename).join(', ');
-    return `Attached ${files} to ${metadata.attachments.parent?.type} ${metadata.attachments.parent?.title}`;
+    const files = metadata.attachments.files
+      .map(f => f.filename)
+      .join(ACTIVITY_DESCRIPTION_LIST_SEPARATOR);
+    return metadata.attachments.parent ?
+        `Attached ${files} to ${metadata.attachments.parent.type} ${metadata.attachments.parent.title}`
+      : `Attached ${files}`;
   }
 
   if (metadata?.pullRequest) {
@@ -192,7 +198,7 @@ export const getActivityActionDescription = (metadata: ActivityMetadata) => {
       return metadata.attachment.uri;
     }
     if (metadata?.attachments?.files?.length) {
-      return metadata.attachments.files[0].uri;
+      return metadata.attachments.files.map(f => f.uri).join(', ');
     }
     if (metadata?.page?.version) {
       return `Version ${metadata.page.version}`;

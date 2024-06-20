@@ -5,8 +5,8 @@ import {
   type ChartsAxisContentProps,
 } from '@mui/x-charts';
 import { useCallback } from 'react';
+import type { GroupedActivities } from '../../activityProcessors/activityGrouper';
 import type { InitiativeRecord } from '../../types/types';
-import type { GroupedActivities } from '../../utils/activityFeed';
 import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {

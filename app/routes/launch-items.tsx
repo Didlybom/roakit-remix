@@ -180,17 +180,15 @@ export default function LaunchItems() {
     {
       field: 'key',
       headerName: 'Key',
-      minWidth: 120,
       editable: true,
       preProcessEditCellProps: params => {
         return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
-    { field: 'label', headerName: 'Label', minWidth: 300, editable: true },
+    { field: 'label', headerName: 'Label', editable: true },
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',
-      minWidth: 600,
       flex: 1,
       editable: true,
       renderCell: params => (

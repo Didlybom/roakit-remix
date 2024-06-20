@@ -40,7 +40,12 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
-import { MapperType, compileActivityMappers, mapActivity } from '../activityMapper/activityMapper';
+import { identifyAccounts } from '../activityProcessors/activityIdentifier';
+import {
+  MapperType,
+  compileActivityMappers,
+  mapActivity,
+} from '../activityProcessors/activityMapper';
 import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
@@ -54,7 +59,6 @@ import {
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
-import { identifyAccounts } from '../utils/activityFeed';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';

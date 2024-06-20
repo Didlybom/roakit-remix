@@ -1,5 +1,8 @@
-import DataObjectIcon from '@mui/icons-material/DataObject';
-import GitHubIcon from '@mui/icons-material/GitHub';
+import {
+  Attachment as AttachmentIcon,
+  DataObject as DataObjectIcon,
+  GitHub as GitHubIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Link,
@@ -27,6 +30,7 @@ import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
 import type { Account, Activity } from '../../types/types';
 import {
+  ACTIVITY_DESCRIPTION_LIST_SEPARATOR,
   getActivityActionDescription,
   getActivityDescription,
   getActivityUrl,
@@ -250,17 +254,21 @@ export const descriptionColDef = (
               {actionDescription && (
                 <Typography
                   component="div"
-                  title={actionDescription}
+                  title={actionDescription.startsWith('http') ? undefined : actionDescription}
                   fontSize="smaller"
                   color={grey[500]}
                   sx={ellipsisSx}
                 >
                   {actionDescription.startsWith('http') ?
-                    <Box maxWidth={'300px'} sx={ellipsisSx}>
-                      <Link href={actionDescription} target="_blank">
-                        {actionDescription}
-                      </Link>
-                    </Box>
+                    <Stack direction="row" spacing={1} maxWidth={'300px'}>
+                      {actionDescription
+                        .split(ACTIVITY_DESCRIPTION_LIST_SEPARATOR)
+                        .map((url, i) => (
+                          <Link key={i} href={url} target="_blank">
+                            <AttachmentIcon sx={{ fontSize: '14px' }} />
+                          </Link>
+                        ))}
+                    </Stack>
                   : actionDescription}
                 </Typography>
               )}
