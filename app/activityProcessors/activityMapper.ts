@@ -89,7 +89,7 @@ export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) 
   Object.keys(map).forEach(initiativeId => {
     if (map[initiativeId].activityMapper) {
       compiledExpressions[type][initiativeId] = compileExpression(
-        map[initiativeId].activityMapper!,
+        map[initiativeId].activityMapper,
         // @ts-expect-error no need to overwrite all Operators
         options
       );

@@ -169,17 +169,14 @@ export default function Initiatives() {
     }
   };
 
-  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
+  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) =>
     setRowModesModel(newRowModesModel);
-  };
 
-  const handleEditClick = (id: GridRowId) => {
+  const handleEditClick = (id: GridRowId) =>
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-  };
 
-  const handleSaveClick = (id: GridRowId) => {
+  const handleSaveClick = (id: GridRowId) =>
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-  };
 
   const handleCancelClick = (id: GridRowId) => {
     setRowModesModel({
@@ -249,6 +246,7 @@ export default function Initiatives() {
       headerName: 'Activity Mapper',
       flex: 1,
       editable: true,
+      sortable: false,
       renderCell: params => (
         <Box
           title={params.value as string}
@@ -355,7 +353,7 @@ export default function Initiatives() {
             rowHeight={50}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
-              sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
+              sorting: { sortModel: [{ field: 'key', sort: 'asc' as GridSortDirection }] },
             }}
             editMode="row"
             rowModesModel={rowModesModel}

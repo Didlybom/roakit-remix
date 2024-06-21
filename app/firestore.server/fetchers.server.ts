@@ -172,6 +172,7 @@ export const fetchLaunchItemMap = async (customerId: number): Promise<Initiative
     launchItems[doc.id] = {
       key: data.key ?? doc.id,
       label: data.label,
+      color: data.color,
       activityMapper: data.activityMapper,
       counters:
         data.counters ?

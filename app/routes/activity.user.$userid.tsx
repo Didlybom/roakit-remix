@@ -370,6 +370,7 @@ export default function UserActivity() {
                     }}
                     title={loaderData.launchItems[activity.launchItemId]?.label}
                     sx={internalLinkSx}
+                    color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}
                   >
                     {params.value}
                   </Link>
@@ -597,7 +598,12 @@ export default function UserActivity() {
               sx={{ textWrap: 'nowrap' }}
             >
               {launchKey && (
-                <Typography variant="h6" fontSize="1.1rem" fontWeight={600}>
+                <Typography
+                  variant="h6"
+                  fontSize="1.1rem"
+                  fontWeight={600}
+                  color={loaderData.launchItems[launchId]?.color ?? undefined}
+                >
                   {launchKey}
                 </Typography>
               )}
@@ -659,7 +665,7 @@ export default function UserActivity() {
         customerId={loaderData.customerId}
         options={{ linkifyActivityId: true }}
       />
-      <BoxPopover popover={popover} onClose={() => setPopover(null)} />
+      <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Stack m={3}>
         <Stack direction="row">
           {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (

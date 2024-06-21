@@ -21,6 +21,7 @@ export type Initiative = {
   key: string;
   label?: string;
   tags?: string[] | null;
+  color?: string | null;
   reference?: string;
   url?: string;
   activityMapper?: string;

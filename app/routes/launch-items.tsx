@@ -5,7 +5,16 @@ import {
   Edit as EditIcon,
   SaveOutlined as SaveIcon,
 } from '@mui/icons-material';
-import { Box, Button, Snackbar, Stack, Typography, styled } from '@mui/material';
+import {
+  Box,
+  Button,
+  ClickAwayListener,
+  Popper,
+  Snackbar,
+  Stack,
+  Typography,
+  styled,
+} from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
@@ -15,7 +24,9 @@ import {
   GridRowModes,
   GridRowModesModel,
   GridSortDirection,
+  useGridApiContext,
   type GridEventListener,
+  type GridRenderEditCellParams,
   type GridSlots,
 } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
@@ -23,8 +34,11 @@ import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtim
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { SwatchesPicker, type ColorResult } from 'react-color';
 import App from '../components/App';
+import type { BoxPopoverContent } from '../components/BoxPopover';
+import BoxPopover from '../components/BoxPopover';
 import EditTextarea from '../components/datagrid/EditTextarea';
 import EditToolbar from '../components/datagrid/EditToolbar';
 import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
@@ -42,6 +56,7 @@ interface LaunchItemRow {
   id: string;
   key: string;
   label?: string;
+  color?: string | null;
   isNew?: boolean;
   activityMapper?: string;
 }
@@ -65,6 +80,7 @@ interface JsonRequest {
   launchItemId: string;
   key: string;
   label: string;
+  color: string | null;
   activityMapper: string;
 }
 
@@ -93,6 +109,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
         {
           key: jsonRequest.key,
           label: jsonRequest.label,
+          color: jsonRequest.color,
           activityMapper: jsonRequest.activityMapper,
         },
         { merge: true }
@@ -104,9 +121,57 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   }
 };
 
-const StyledBox = styled('div')(({ theme }) => ({
+const StyledMuiError = styled('div')(({ theme }) => ({
   '& .Mui-error': { backgroundColor: '#ffecf0', color: theme.palette.error.main },
 }));
+
+function ColorValue({ color }: { color?: string }) {
+  return (
+    <Box
+      width={40}
+      height={20}
+      border="solid 1px"
+      sx={{ backgroundColor: color, opacity: color ? 1 : 0.3 }}
+    />
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function EditColor(props: GridRenderEditCellParams<any, string>) {
+  const { id, field, value } = props;
+  const [valueState, setValueState] = useState(value);
+  const [showPicker, setShowPicker] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>();
+  const apiRef = useGridApiContext();
+
+  const handleRef = useCallback((el: HTMLElement | null) => setAnchorEl(el), []);
+
+  const handleChange = useCallback(
+    async (color: ColorResult, event: ChangeEvent<HTMLInputElement>) => {
+      setValueState(color.hex);
+      setShowPicker(false);
+      await apiRef.current.setEditCellValue({ id, field, value: color.hex }, event);
+    },
+    [apiRef, field, id]
+  );
+
+  return (
+    <Box display="flex" height="100%" alignItems="center" ml={1} ref={handleRef}>
+      {anchorEl && (
+        <Popper open={showPicker} anchorEl={anchorEl} placement="bottom-start">
+          <ClickAwayListener onClickAway={() => setShowPicker(false)}>
+            <Box my={1} mx={2}>
+              <SwatchesPicker height={320} onChange={handleChange} />
+            </Box>
+          </ClickAwayListener>
+        </Popper>
+      )}
+      <Box onClick={() => setShowPicker(true)}>
+        <ColorValue color={valueState} />
+      </Box>
+    </Box>
+  );
+}
 
 export default function LaunchItems() {
   const navigation = useNavigation();
@@ -116,13 +181,13 @@ export default function LaunchItems() {
   const confirm = useConfirm();
   const [rows, setRows] = useState<LaunchItemRow[]>(
     loaderData.launchItems.map(launchItem => ({
-      id: launchItem.id,
+      ...launchItem,
       key: launchItem.key ?? launchItem.id,
-      label: launchItem.label,
-      activityMapper: launchItem.activityMapper,
     }))
   );
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+  const [colorPickerPopover, setShowColorPickerPopover] = useState<BoxPopoverContent | null>(null);
+
   const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
 
@@ -148,17 +213,14 @@ export default function LaunchItems() {
     }
   };
 
-  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
+  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) =>
     setRowModesModel(newRowModesModel);
-  };
 
-  const handleEditClick = (id: GridRowId) => {
+  const handleEditClick = (id: GridRowId) =>
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-  };
 
-  const handleSaveClick = (id: GridRowId) => {
+  const handleSaveClick = (id: GridRowId) =>
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-  };
 
   const handleCancelClick = (id: GridRowId) => {
     setRowModesModel({
@@ -185,12 +247,26 @@ export default function LaunchItems() {
         return { ...params.props, error: !(params.props.value as string)?.trim() };
       },
     },
+    {
+      field: 'color',
+      headerName: 'Color',
+      editable: true,
+      sortable: false,
+      renderCell: params => (
+        <Box display="flex" height="100%" alignItems="center">
+          <ColorValue color={params.value as string} />
+        </Box>
+      ),
+      renderEditCell: params => <EditColor {...params} />,
+    },
+
     { field: 'label', headerName: 'Label', editable: true },
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',
       flex: 1,
       editable: true,
+      sortable: false,
       renderCell: params => (
         <Box
           title={params.value as string}
@@ -288,8 +364,9 @@ export default function LaunchItems() {
         }}
         message={confirmation}
       />
-      <Stack sx={{ m: 3 }}>
-        <StyledBox>
+      <BoxPopover popover={colorPickerPopover} onClose={() => setShowColorPickerPopover(null)} />
+      <Stack m={3}>
+        <StyledMuiError>
           <DataGrid
             columns={columns}
             rows={rows}
@@ -297,7 +374,7 @@ export default function LaunchItems() {
             rowHeight={50}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
-              sorting: { sortModel: [{ field: 'id', sort: 'asc' as GridSortDirection }] },
+              sorting: { sortModel: [{ field: 'key', sort: 'asc' as GridSortDirection }] },
             }}
             editMode="row"
             rowModesModel={rowModesModel}
@@ -321,6 +398,7 @@ export default function LaunchItems() {
                   launchItemId: updatedRow.id,
                   key: updatedRow.key,
                   label: updatedRow.label ?? '',
+                  color: updatedRow.color ?? null,
                   activityMapper: updatedRow.activityMapper ?? '',
                 },
                 postJsonOptions
@@ -329,7 +407,7 @@ export default function LaunchItems() {
             }}
             onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save launch item'))}
           />
-        </StyledBox>
+        </StyledMuiError>
         <Typography variant="caption" mt={3} align="right">
           <Button
             href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"

@@ -14,6 +14,7 @@ export const initiativeSchema = z.object({
   key: z.string().optional(),
   label: z.string().optional(),
   tags: z.string().array().nullable().optional(),
+  color: z.string().nullable().optional(),
   reference: z.string().optional(),
   url: z.string().optional(),
   activityMapper: z.string().optional(),

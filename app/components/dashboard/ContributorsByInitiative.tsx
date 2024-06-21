@@ -50,12 +50,18 @@ export default function ContributorsByInitiative({
             {
               id: `contributors-${type}`,
               valueFormatter: value => `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-              data: groupedActivities[type]!.map(i => i.actorCount),
+              data: groupedActivities[type].map(i => i.actorCount),
             },
           ]}
           yAxis={[
             {
-              data: groupedActivities[type]!.map(i => initiatives[i.id].key),
+              data: groupedActivities[type].map(i => initiatives[i.id].key),
+              colorMap: {
+                type: 'ordinal',
+                colors: groupedActivities[type].map(
+                  i => initiatives[i.id].color ?? pastelColors[0]
+                ),
+              },
               scaleType: 'band',
             },
           ]}

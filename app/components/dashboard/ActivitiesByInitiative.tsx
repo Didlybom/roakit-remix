@@ -25,7 +25,7 @@ export default function ActivitiesByInitiatives({
 
   const SHOW_TOTAL = false;
 
-  return groupedActivities[type]!.map(initiative => {
+  return groupedActivities[type].map(initiative => {
     const totalCounters = initiatives[initiative.id].counters!.activities;
     return (
       <Grid key={initiative.id}>
@@ -46,6 +46,7 @@ export default function ActivitiesByInitiatives({
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: dateRangeLabel,
                 stack: 'stack',
+                color: initiatives[initiative.id]?.color || undefined,
               },
               ...(SHOW_TOTAL ?
                 [

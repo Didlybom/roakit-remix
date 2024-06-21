@@ -27,10 +27,11 @@ export default function InitiativeEffort({
             series={[
               {
                 id: `effort-by-${type}`,
-                data: groupedActivities[type]!.map(initiative => ({
+                data: groupedActivities[type].map(initiative => ({
                   id: initiatives[initiative.id].key,
                   value: initiative.effort,
                   label: initiatives[initiative.id].label,
+                  color: initiatives[initiative.id].color || undefined,
                 })),
                 arcLabel: item => `${item.id}`,
                 outerRadius: 100,
