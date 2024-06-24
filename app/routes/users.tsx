@@ -317,10 +317,15 @@ export default function Users() {
         editable: true,
         renderCell: params => (
           <Box height="45px" display="flex" alignItems="center">
-            <Button endIcon={<ArrowDropDownIcon />} sx={{ ml: -1, textTransform: 'none' }}>
+            <Button
+              color="inherit"
+              size="small"
+              endIcon={<ArrowDropDownIcon />}
+              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+            >
               {params.value && params.value !== UNSET_MANAGER_ID ?
                 findManagerName(params.value as string)
-              : '...'}
+              : '⋯'}
             </Button>
           </Box>
         ),
@@ -367,7 +372,12 @@ export default function Users() {
           const user = (params.row as Identity).user;
           return user?.id ?
               <Box height="45px" display="flex" alignItems="center">
-                <Button endIcon={<ArrowDropDownIcon />} sx={{ ml: -1, textTransform: 'none' }}>
+                <Button
+                  color="inherit"
+                  size="small"
+                  endIcon={<ArrowDropDownIcon />}
+                  sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+                >
                   {roleLabels.find(r => r.value === params.value)?.label}
                 </Button>
               </Box>
@@ -464,12 +474,7 @@ export default function Users() {
       <Snackbar
         open={!!confirmation}
         autoHideDuration={3000}
-        onClose={(_, reason?: string) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setConfirmation('');
-        }}
+        onClose={(_, reason) => (reason === 'clickaway' ? null : setConfirmation(''))}
         message={confirmation}
       />
       <Stack>

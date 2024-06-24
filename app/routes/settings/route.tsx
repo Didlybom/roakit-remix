@@ -199,23 +199,13 @@ export default function Settings() {
           <Snackbar
             open={showCopyConfirmation !== null}
             autoHideDuration={3000}
-            onClose={(_, reason?: string) => {
-              if (reason === 'clickaway') {
-                return;
-              }
-              setShowCopyConfirmation(null);
-            }}
+            onClose={(_, reason) => (reason === 'clickaway' ? null : setShowCopyConfirmation(null))}
             message={'Copied ' + (showCopyConfirmation ?? '')}
           />
           <Snackbar
             open={showError !== null}
             autoHideDuration={3000}
-            onClose={(_, reason?: string) => {
-              if (reason === 'clickaway') {
-                return;
-              }
-              setShowError(null);
-            }}
+            onClose={(_, reason) => (reason === 'clickaway' ? null : setShowError(null))}
           >
             <Alert severity="error" variant="filled" sx={{ width: '100%' }}>
               {'Error: ' + (showError ?? '')}

@@ -1,33 +1,33 @@
 import {
-  Cancel as CancelIcon,
+  Add as AddIcon,
   DeleteOutlined as DeleteIcon,
   MenuBook as DocumentationIcon,
-  Edit as EditIcon,
-  SaveOutlined as SaveIcon,
 } from '@mui/icons-material';
 import {
   Box,
   Button,
   ClickAwayListener,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Popover,
   Popper,
   Snackbar,
   Stack,
+  TextField,
   Typography,
   styled,
 } from '@mui/material';
 import {
-  DataGrid,
   GridActionsCellItem,
   GridColDef,
   GridRowEditStopReasons,
   GridRowId,
-  GridRowModes,
-  GridRowModesModel,
   GridSortDirection,
   useGridApiContext,
   type GridEventListener,
   type GridRenderEditCellParams,
-  type GridSlots,
 } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
@@ -35,12 +35,12 @@ import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
-import { SwatchesPicker, type ColorResult } from 'react-color';
+import { GithubPicker as ColorPicker, type ColorResult } from 'react-color';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
+import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditTextarea from '../components/datagrid/EditTextarea';
-import EditToolbar from '../components/datagrid/EditToolbar';
 import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import { fetchLaunchItems } from '../firestore.server/fetchers.server';
@@ -60,6 +60,12 @@ interface LaunchItemRow {
   isNew?: boolean;
   activityMapper?: string;
 }
+
+const areRowsEqual = (a: LaunchItemRow, b: LaunchItemRow) =>
+  a.key === b.key &&
+  a.label === b.label &&
+  a.color === b.color &&
+  a.activityMapper === b.activityMapper;
 
 export const meta = () => [{ title: 'Launch Items Admin | ROAKIT' }];
 
@@ -105,15 +111,15 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
     }
   } else {
     try {
-      await firestore.doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`).set(
-        {
-          key: jsonRequest.key,
-          label: jsonRequest.label,
-          color: jsonRequest.color,
-          activityMapper: jsonRequest.activityMapper,
-        },
-        { merge: true }
-      );
+      if (launchItemId) {
+        await firestore
+          .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
+          .set(jsonRequest, { merge: true });
+      } else {
+        await firestore
+          .collection(`customers/${sessionData.customerId!}/launchItems`)
+          .add(jsonRequest);
+      }
       return { status: { code: 'saved', message: 'Launch item saved' } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save launch item') };
@@ -131,7 +137,7 @@ function ColorValue({ color }: { color?: string }) {
       width={40}
       height={20}
       border="solid 1px"
-      sx={{ backgroundColor: color, opacity: color ? 1 : 0.3 }}
+      sx={{ cursor: ' pointer', backgroundColor: color, opacity: color ? 1 : 0.3 }}
     />
   );
 }
@@ -160,9 +166,7 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
       {anchorEl && (
         <Popper open={showPicker} anchorEl={anchorEl} placement="bottom-start">
           <ClickAwayListener onClickAway={() => setShowPicker(false)}>
-            <Box my={1} mx={2}>
-              <SwatchesPicker height={320} onChange={handleChange} />
-            </Box>
+            <ColorPicker width="212" color={valueState} onChange={handleChange} />
           </ClickAwayListener>
         </Popper>
       )}
@@ -174,22 +178,33 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
 }
 
 export default function LaunchItems() {
+  const DEFAULT_COLOR = '#d4c4fb';
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const confirm = useConfirm();
-  const [rows, setRows] = useState<LaunchItemRow[]>(
-    loaderData.launchItems.map(launchItem => ({
-      ...launchItem,
-      key: launchItem.key ?? launchItem.id,
-    }))
-  );
-  const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+  const [rows, setRows] = useState<LaunchItemRow[]>([]);
   const [colorPickerPopover, setShowColorPickerPopover] = useState<BoxPopoverContent | null>(null);
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [newKey, setNewKey] = useState('');
+  const [newColor, setNewColor] = useState<string>(DEFAULT_COLOR);
+  const [colorPickerAnchor, setColorPickerAnchor] = useState<HTMLDivElement | null>(null);
+  const [newLabel, setNewLabel] = useState('');
+  const [newActivityMapper, setNewActivityMapper] = useState('');
+  const [newActivityMapperError, setNewActivityMapperError] = useState(false);
 
   const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setRows(
+      loaderData.launchItems.map(launchItem => ({
+        ...launchItem,
+        key: launchItem.key ?? launchItem.id,
+      }))
+    );
+  }, [loaderData.launchItems]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -213,26 +228,6 @@ export default function LaunchItems() {
     }
   };
 
-  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) =>
-    setRowModesModel(newRowModesModel);
-
-  const handleEditClick = (id: GridRowId) =>
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-
-  const handleSaveClick = (id: GridRowId) =>
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-
-  const handleCancelClick = (id: GridRowId) => {
-    setRowModesModel({
-      ...rowModesModel,
-      [id]: { mode: GridRowModes.View, ignoreModifications: true },
-    });
-    const editedRow = rows.find(row => row.id === id);
-    if (editedRow!.isNew) {
-      setRows(rows.filter(row => row.id !== id));
-    }
-  };
-
   const handleDeleteClick = (launchItemId: GridRowId) => {
     setRows(rows.filter(row => row.id !== launchItemId));
     submit({ launchItemId }, deleteJsonOptions);
@@ -244,7 +239,10 @@ export default function LaunchItems() {
       headerName: 'Key',
       editable: true,
       preProcessEditCellProps: params => {
-        return { ...params.props, error: !(params.props.value as string)?.trim() };
+        return {
+          ...params.props,
+          error: !(params.props.value as string)?.trim(),
+        };
       },
     },
     {
@@ -274,7 +272,7 @@ export default function LaunchItems() {
           fontSize="11px"
           sx={ellipsisSx}
         >
-          {(params.value as string) ?? '...'}
+          {(params.value as string) || '⋯'}
         </Box>
       ),
       renderEditCell: params => <EditTextarea {...params} />,
@@ -295,36 +293,9 @@ export default function LaunchItems() {
       cellClassName: 'actions',
       getActions: params => {
         const launchItem = params.row as LaunchItemRow;
-        if (rowModesModel[params.id]?.mode === GridRowModes.Edit) {
-          return [
-            <GridActionsCellItem
-              key={1}
-              icon={<SaveIcon />}
-              label="Save"
-              sx={{ color: 'primary.main' }}
-              onClick={() => handleSaveClick(params.id)}
-            />,
-            <GridActionsCellItem
-              key={2}
-              icon={<CancelIcon />}
-              label="Cancel"
-              className="textPrimary"
-              onClick={() => handleCancelClick(params.id)}
-              color="inherit"
-            />,
-          ];
-        }
         return [
           <GridActionsCellItem
             key={1}
-            icon={<EditIcon />}
-            label="Edit"
-            className="textPrimary"
-            onClick={() => handleEditClick(params.id)}
-            color="inherit"
-          />,
-          <GridActionsCellItem
-            key={2}
             icon={<DeleteIcon />}
             label="Delete"
             onClick={async () => {
@@ -343,6 +314,18 @@ export default function LaunchItems() {
     },
   ];
 
+  useEffect(() => {
+    try {
+      if (newActivityMapper) {
+        compileExpression(newActivityMapper);
+      }
+    } catch (e) {
+      setNewActivityMapperError(true);
+      return;
+    }
+    setNewActivityMapperError(false);
+  }, [newActivityMapper]);
+
   return (
     <App
       view={VIEW}
@@ -356,18 +339,118 @@ export default function LaunchItems() {
       <Snackbar
         open={!!confirmation}
         autoHideDuration={3000}
-        onClose={(_, reason?: string) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setConfirmation('');
-        }}
+        onClose={(_, reason) => (reason === 'clickaway' ? null : setConfirmation(''))}
         message={confirmation}
       />
       <BoxPopover popover={colorPickerPopover} onClose={() => setShowColorPickerPopover(null)} />
+      <Dialog
+        open={showNewDialog}
+        onClose={() => setShowNewDialog(false)}
+        fullWidth
+        disableRestoreFocus
+      >
+        <DialogTitle>New Launch Item</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} my={1}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <TextField
+                autoFocus
+                required
+                autoComplete="off"
+                label="Key"
+                size="small"
+                fullWidth
+                onChange={e => setNewKey(e.target.value)}
+              />
+              <Box title="Color Picker" onClick={e => setColorPickerAnchor(e.currentTarget)}>
+                <ColorValue color={newColor} />
+              </Box>
+              <Popover
+                open={!!colorPickerAnchor}
+                anchorEl={colorPickerAnchor}
+                onClose={() => setColorPickerAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              >
+                <ColorPicker
+                  color={newColor}
+                  triangle="hide"
+                  width="212"
+                  onChange={color => {
+                    setNewColor(color.hex);
+                    setColorPickerAnchor(null);
+                  }}
+                />
+              </Popover>
+            </Stack>
+            <TextField
+              required
+              autoComplete="off"
+              label="Label"
+              size="small"
+              fullWidth
+              onChange={e => setNewLabel(e.target.value)}
+            />
+            <TextField
+              autoComplete="off"
+              label="Activity Mapper"
+              size="small"
+              multiline
+              rows={2}
+              fullWidth
+              inputProps={{ style: { fontFamily: 'Roboto Mono, monospace', fontSize: '11px' } }}
+              onChange={e => setNewActivityMapper(e.target.value)}
+              error={newActivityMapperError}
+              helperText={
+                <Box display="flex" justifyContent="end">
+                  <Button
+                    href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"
+                    target="_blank"
+                    startIcon={<DocumentationIcon />}
+                    sx={{ fontSize: '11px', fontWeight: 400, textTransform: 'none' }}
+                  >
+                    Activity Mapper documentation
+                  </Button>
+                </Box>
+              }
+            />
+          </Stack>
+          <DialogActions>
+            <Button onClick={() => setShowNewDialog(false)}>Cancel</Button>
+            <Button
+              type="submit"
+              disabled={!newKey.trim() || !newLabel.trim() || newActivityMapperError}
+              onClick={() => {
+                setShowNewDialog(false);
+                submit(
+                  {
+                    key: newKey,
+                    label: newLabel,
+                    color: newColor ?? null,
+                    activityMapper: newActivityMapper,
+                  },
+                  postJsonOptions
+                );
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
       <Stack m={3}>
+        <Button
+          onClick={() => {
+            setNewColor(DEFAULT_COLOR);
+            setNewActivityMapperError(false);
+            setShowNewDialog(true);
+          }}
+          startIcon={<AddIcon />}
+          sx={{ width: 'fit-content' }}
+        >
+          New Launch Item
+        </Button>
         <StyledMuiError>
-          <DataGrid
+          <DataGridWithSingleClickEditing
             columns={columns}
             rows={rows}
             {...dataGridCommonProps}
@@ -376,15 +459,8 @@ export default function LaunchItems() {
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'key', sort: 'asc' as GridSortDirection }] },
             }}
-            editMode="row"
-            rowModesModel={rowModesModel}
-            onRowModesModelChange={handleRowModesModelChange}
             onRowEditStop={handleRowEditStop}
-            slots={{ toolbar: EditToolbar as GridSlots['toolbar'] }}
-            slotProps={{
-              toolbar: { labels: { add: 'New Launch Item' }, setRows, setRowModesModel },
-            }}
-            processRowUpdate={(newRow: LaunchItemRow) => {
+            processRowUpdate={(newRow: LaunchItemRow, oldRow: LaunchItemRow) => {
               if (!newRow.key) {
                 return newRow;
               }
@@ -392,7 +468,9 @@ export default function LaunchItems() {
                 return { ...newRow, key: '' };
               }
               const updatedRow = { ...newRow, isNew: false };
-              setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
+              if (areRowsEqual(newRow, oldRow)) {
+                return updatedRow;
+              }
               submit(
                 {
                   launchItemId: updatedRow.id,
@@ -412,8 +490,8 @@ export default function LaunchItems() {
           <Button
             href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"
             target="_blank"
-            startIcon={<DocumentationIcon fontSize="small" />}
-            sx={{ textTransform: 'none' }}
+            startIcon={<DocumentationIcon />}
+            sx={{ fontSize: '11px', fontWeight: 400, textTransform: 'none' }}
           >
             Activity Mapper documentation
           </Button>

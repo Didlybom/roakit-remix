@@ -322,12 +322,7 @@ export default function Summary() {
       <Snackbar
         open={showSavedConfirmation}
         autoHideDuration={3000}
-        onClose={(_, reason?: string) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setShowSavedConfirmation(false);
-        }}
+        onClose={(_, reason) => (reason === 'clickaway' ? null : setShowSavedConfirmation(false))}
         message={'Saved'}
       />
       <Grid container columns={2} sx={{ mx: 1, my: 3 }}>

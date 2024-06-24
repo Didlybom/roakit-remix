@@ -297,7 +297,7 @@ export const descriptionColDef = (
                       </List>
                     );
                   }}
-                  sx={{ lineHeight: 1.5, cursor: 'pointer' }}
+                  sx={{ lineHeight: 1.5, ...internalLinkSx }}
                 >
                   {`and ${commits.length - 1} more ${pluralizeMemo('commit', commits.length - 1)}`}
                 </Link>

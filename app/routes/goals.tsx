@@ -1,23 +1,31 @@
 import {
-  Cancel as CancelIcon,
+  Add as AddIcon,
   DeleteOutlined as DeleteIcon,
   MenuBook as DocumentationIcon,
-  Edit as EditIcon,
   OpenInNew as OpenInNewIcon,
-  SaveOutlined as SaveIcon,
 } from '@mui/icons-material';
-import { Box, Button, Chip, IconButton, Snackbar, Stack, Typography, styled } from '@mui/material';
 import {
-  DataGrid,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
+  styled,
+} from '@mui/material';
+import {
   GridActionsCellItem,
   GridColDef,
   GridRowEditStopReasons,
   GridRowId,
-  GridRowModes,
-  GridRowModesModel,
   GridSortDirection,
   type GridEventListener,
-  type GridSlots,
 } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
@@ -26,8 +34,8 @@ import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
+import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditTextarea from '../components/datagrid/EditTextarea';
-import EditToolbar from '../components/datagrid/EditToolbar';
 import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import { fetchInitiatives } from '../firestore.server/fetchers.server';
@@ -49,6 +57,14 @@ interface InitiativeRow {
   tags?: string;
   activityMapper?: string;
 }
+
+const areRowsEqual = (a: InitiativeRow, b: InitiativeRow) =>
+  a.key === b.key &&
+  a.label === b.label &&
+  a.reference === b.reference &&
+  a.url === b.url &&
+  a.tags === b.tags &&
+  a.activityMapper === b.activityMapper;
 
 export const meta = () => [{ title: 'Goals Admin | ROAKIT' }];
 
@@ -104,17 +120,15 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
     }
   } else {
     try {
-      await firestore.doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`).set(
-        {
-          key: jsonRequest.key,
-          label: jsonRequest.label,
-          tags: jsonRequest.tags,
-          reference: jsonRequest.reference,
-          url: jsonRequest.url,
-          activityMapper: jsonRequest.activityMapper,
-        },
-        { merge: true }
-      );
+      if (initiativeId) {
+        await firestore
+          .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
+          .set(jsonRequest, { merge: true });
+      } else {
+        await firestore
+          .collection(`customers/${sessionData.customerId!}/initiatives`)
+          .add(jsonRequest);
+      }
       return { status: { code: 'saved', message: 'Goal saved' } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save goal') };
@@ -132,20 +146,29 @@ export default function Initiatives() {
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const confirm = useConfirm();
-  const [rows, setRows] = useState<InitiativeRow[]>(
-    loaderData.initiatives.map(initiative => ({
-      id: initiative.id,
-      key: initiative.key ?? initiative.id,
-      label: initiative.label,
-      tags: initiative.tags ? initiative.tags.sort().join(', ') : '',
-      reference: initiative.reference,
-      url: initiative.url,
-      activityMapper: initiative.activityMapper,
-    }))
-  );
-  const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+  const [rows, setRows] = useState<InitiativeRow[]>([]);
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [newKey, setNewKey] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [newTags, setNewTags] = useState('');
+  const [newReference, setNewReference] = useState('');
+  const [newURL, setNewURL] = useState('');
+
+  const [newActivityMapper, setNewActivityMapper] = useState('');
+  const [newActivityMapperError, setNewActivityMapperError] = useState(false);
+
   const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setRows(
+      loaderData.initiatives.map(initiative => ({
+        ...initiative,
+        key: initiative.key ?? initiative.id,
+        tags: initiative.tags ? initiative.tags.sort().join(', ') : '',
+      }))
+    );
+  }, [loaderData.initiatives]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -166,26 +189,6 @@ export default function Initiatives() {
     const keyEvent = event as KeyboardEvent;
     if (keyEvent.key && !keyEvent.ctrlKey && !keyEvent.metaKey) {
       event.defaultMuiPrevented = true;
-    }
-  };
-
-  const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) =>
-    setRowModesModel(newRowModesModel);
-
-  const handleEditClick = (id: GridRowId) =>
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-
-  const handleSaveClick = (id: GridRowId) =>
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-
-  const handleCancelClick = (id: GridRowId) => {
-    setRowModesModel({
-      ...rowModesModel,
-      [id]: { mode: GridRowModes.View, ignoreModifications: true },
-    });
-    const editedRow = rows.find(row => row.id === id);
-    if (editedRow!.isNew) {
-      setRows(rows.filter(row => row.id !== id));
     }
   };
 
@@ -254,7 +257,7 @@ export default function Initiatives() {
           fontSize="11px"
           sx={ellipsisSx}
         >
-          {(params.value as string) ?? '...'}
+          {(params.value as string) || '⋯'}
         </Box>
       ),
       renderEditCell: params => <EditTextarea {...params} />,
@@ -275,36 +278,9 @@ export default function Initiatives() {
       cellClassName: 'actions',
       getActions: params => {
         const initiative = params.row as InitiativeRow;
-        if (rowModesModel[params.id]?.mode === GridRowModes.Edit) {
-          return [
-            <GridActionsCellItem
-              key={1}
-              icon={<SaveIcon />}
-              label="Save"
-              sx={{ color: 'primary.main' }}
-              onClick={() => handleSaveClick(params.id)}
-            />,
-            <GridActionsCellItem
-              key={2}
-              icon={<CancelIcon />}
-              label="Cancel"
-              className="textPrimary"
-              onClick={() => handleCancelClick(params.id)}
-              color="inherit"
-            />,
-          ];
-        }
         return [
           <GridActionsCellItem
             key={1}
-            icon={<EditIcon />}
-            label="Edit"
-            className="textPrimary"
-            onClick={() => handleEditClick(params.id)}
-            color="inherit"
-          />,
-          <GridActionsCellItem
-            key={2}
             icon={<DeleteIcon />}
             label="Delete"
             onClick={async () => {
@@ -323,6 +299,18 @@ export default function Initiatives() {
     },
   ];
 
+  useEffect(() => {
+    try {
+      if (newActivityMapper) {
+        compileExpression(newActivityMapper);
+      }
+    } catch (e) {
+      setNewActivityMapperError(true);
+      return;
+    }
+    setNewActivityMapperError(false);
+  }, [newActivityMapper]);
+
   return (
     <App
       view={VIEW}
@@ -336,17 +324,122 @@ export default function Initiatives() {
       <Snackbar
         open={!!confirmation}
         autoHideDuration={3000}
-        onClose={(_, reason?: string) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setConfirmation('');
-        }}
+        onClose={(_, reason?: string) => (reason === 'clickaway' ? null : setConfirmation(''))}
         message={confirmation}
       />
-      <Stack sx={{ m: 3 }}>
+      <Dialog
+        open={showNewDialog}
+        fullWidth
+        onClose={() => setShowNewDialog(false)}
+        disableRestoreFocus
+      >
+        <DialogTitle>New Launch Item</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} my={1}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <TextField
+                autoFocus
+                required
+                autoComplete="off"
+                label="Key"
+                size="small"
+                fullWidth
+                onChange={e => setNewKey(e.target.value)}
+              />
+            </Stack>
+            <TextField
+              required
+              autoComplete="off"
+              label="Label"
+              size="small"
+              fullWidth
+              onChange={e => setNewLabel(e.target.value)}
+            />
+            <TextField
+              autoComplete="off"
+              label="Tags"
+              size="small"
+              fullWidth
+              onChange={e => setNewTags(e.target.value)}
+              helperText="tag1, tag2, tag3"
+            />
+            <TextField
+              autoComplete="off"
+              label="Reference"
+              size="small"
+              fullWidth
+              onChange={e => setNewReference(e.target.value)}
+            />
+            <TextField
+              autoComplete="off"
+              label="URL"
+              size="small"
+              fullWidth
+              onChange={e => setNewURL(e.target.value)}
+            />
+            <TextField
+              autoComplete="off"
+              label="Activity Mapper"
+              size="small"
+              multiline
+              rows={2}
+              fullWidth
+              inputProps={{ style: { fontFamily: 'Roboto Mono, monospace', fontSize: '11px' } }}
+              onChange={e => setNewActivityMapper(e.target.value)}
+              error={newActivityMapperError}
+              helperText={
+                <Box display="flex" justifyContent="end">
+                  <Button
+                    href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"
+                    target="_blank"
+                    startIcon={<DocumentationIcon />}
+                    sx={{ fontSize: '11px', fontWeight: 400, textTransform: 'none' }}
+                  >
+                    Activity Mapper documentation
+                  </Button>
+                </Box>
+              }
+            />
+          </Stack>
+          <DialogActions>
+            <Button onClick={() => setShowNewDialog(false)}>Cancel</Button>
+            <Button
+              type="submit"
+              disabled={!newKey.trim() || !newLabel.trim() || newActivityMapperError}
+              onClick={() => {
+                setShowNewDialog(false);
+                const tags = newTags ? [...new Set(splitTags(newTags))] : null;
+                submit(
+                  {
+                    key: newKey,
+                    label: newLabel,
+                    tags,
+                    reference: newReference,
+                    url: newURL,
+                    activityMapper: newActivityMapper,
+                  },
+                  postJsonOptions
+                );
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
+      <Stack m={3}>
+        <Button
+          onClick={() => {
+            setNewActivityMapperError(false);
+            setShowNewDialog(true);
+          }}
+          startIcon={<AddIcon />}
+          sx={{ width: 'fit-content' }}
+        >
+          New Goal
+        </Button>
         <StyledBox>
-          <DataGrid
+          <DataGridWithSingleClickEditing
             columns={columns}
             rows={rows}
             {...dataGridCommonProps}
@@ -355,13 +448,8 @@ export default function Initiatives() {
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'key', sort: 'asc' as GridSortDirection }] },
             }}
-            editMode="row"
-            rowModesModel={rowModesModel}
-            onRowModesModelChange={handleRowModesModelChange}
             onRowEditStop={handleRowEditStop}
-            slots={{ toolbar: EditToolbar as GridSlots['toolbar'] }}
-            slotProps={{ toolbar: { labels: { add: 'New Goal' }, setRows, setRowModesModel } }}
-            processRowUpdate={(newRow: InitiativeRow) => {
+            processRowUpdate={(newRow: InitiativeRow, oldRow: InitiativeRow) => {
               if (!newRow.key) {
                 return newRow;
               }
@@ -370,7 +458,9 @@ export default function Initiatives() {
               }
               const tags = newRow.tags ? [...new Set(splitTags(newRow.tags))] : null;
               const updatedRow = { ...newRow, tags: tags?.join(', ') ?? '', isNew: false };
-              setRows(rows.map(row => (row.id === updatedRow.id ? updatedRow : row)));
+              if (areRowsEqual(newRow, oldRow)) {
+                return updatedRow;
+              }
               submit(
                 {
                   initiativeId: updatedRow.id,
@@ -392,8 +482,8 @@ export default function Initiatives() {
           <Button
             href="https://github.com/joewalnes/filtrex/blob/master/README.md#expressions"
             target="_blank"
-            startIcon={<DocumentationIcon fontSize="small" />}
-            sx={{ textTransform: 'none' }}
+            startIcon={<DocumentationIcon />}
+            sx={{ fontSize: '11px', fontWeight: 400, textTransform: 'none' }}
           >
             Activity Mapper documentation
           </Button>

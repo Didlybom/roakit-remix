@@ -15,6 +15,7 @@ import {
   IconButton,
   InputAdornment,
   Link,
+  Pagination,
   Stack,
   Switch,
   TextField,
@@ -215,6 +216,7 @@ export default function UserActivity() {
   const snapshot = useRef<{ key: string | null; values: Activity[] }[]>();
   const [activities, setActivities] = useState<Map<string | null, Activity[]>>(new Map());
   const [totalActivityCount, setTotalActivityCount] = useState<number | null>(null);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
 
   const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
 
@@ -515,7 +517,12 @@ export default function UserActivity() {
           color={launchId ? undefined : grey[500]}
         >
           <Link
-            sx={internalLinkSx}
+            sx={{
+              ...internalLinkSx,
+              '&:hover': {
+                color: launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
+              },
+            }}
             color={launchId ? undefined : grey[500]}
             onClick={() => setScrollToGroup(launchId)}
           >
@@ -528,7 +535,7 @@ export default function UserActivity() {
     return [launchList, activityCount];
   }, [activities, groupBy, loaderData.launchItems]);
 
-  const activityCount = actorActivityCount ?? launchActivityCount;
+  let activityCount = actorActivityCount ?? launchActivityCount;
 
   const gridsByContributor = useMemo(() => {
     if (groupBy !== GroupBy.Contributor) {
@@ -602,7 +609,7 @@ export default function UserActivity() {
                   variant="h6"
                   fontSize="1.1rem"
                   fontWeight={600}
-                  color={loaderData.launchItems[launchId]?.color ?? undefined}
+                  color={loaderData.launchItems[launchId]?.color || undefined}
                 >
                   {launchKey}
                 </Typography>
@@ -621,9 +628,9 @@ export default function UserActivity() {
     });
   }, [activities, columns, groupBy, loaderData.launchItems, searchTerm]);
 
-  const gridsUngrouped = useMemo(() => {
+  const [gridsUngrouped, ungroupedActivityCount] = useMemo(() => {
     if (groupBy != null) {
-      return null;
+      return [null, null];
     }
     const rows = activities.get(null)!;
     const filteredRows =
@@ -636,16 +643,37 @@ export default function UserActivity() {
           return description && description.toLowerCase().indexOf(searchTerm) >= 0;
         })
       : rows;
-    return !filteredRows?.length ?
+    return [
+      !filteredRows?.length ?
         null
-      : <DataGrid
-          columns={columns}
-          rows={filteredRows}
-          {...dataGridCommonProps}
-          rowHeight={50}
-          sx={{ mt: 1 }}
-        />;
-  }, [activities, columns, groupBy, searchTerm]);
+      : <>
+          <Pagination
+            siblingCount={0}
+            count={Math.round(filteredRows.length / paginationModel.pageSize)}
+            page={paginationModel.page + 1}
+            showFirstButton
+            showLastButton
+            onChange={(_, page) => setPaginationModel({ ...paginationModel, page: page - 1 })}
+            size="small"
+            sx={{ mb: 1 }}
+          />
+          <DataGrid
+            columns={columns}
+            rows={filteredRows}
+            {...dataGridCommonProps}
+            rowHeight={50}
+            sx={{ mt: 1 }}
+            paginationModel={paginationModel}
+            onPaginationModelChange={newPaginationModel => setPaginationModel(newPaginationModel)}
+          />
+        </>,
+      filteredRows?.length,
+    ];
+  }, [activities, columns, groupBy, paginationModel, searchTerm]);
+
+  if (groupBy == null) {
+    activityCount = ungroupedActivityCount;
+  }
 
   return (
     <App
@@ -654,8 +682,14 @@ export default function UserActivity() {
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
-      onDateRangeSelect={dateRange => setDateFilter(dateRange)}
-      onDateRangeRefresh={() => fetchActivities(dateFilter)}
+      onDateRangeSelect={dateRange => {
+        setPaginationModel({ ...paginationModel, page: 0 });
+        setDateFilter(dateRange);
+      }}
+      onDateRangeRefresh={() => {
+        setPaginationModel({ ...paginationModel, page: 0 });
+        fetchActivities(dateFilter);
+      }}
       showProgress={isRendering || navigation.state !== 'idle'}
     >
       {errorAlert(fetchedActivity?.error?.message)}
@@ -704,7 +738,6 @@ export default function UserActivity() {
               columns={loaderData.userId !== ALL ? 4 : 3}
               spacing={2}
               alignItems="center"
-              mb={1}
             >
               {loaderData.userId !== ALL && <Grid>{actorHeader(loaderData.userId!)}</Grid>}
               <Grid flex={1} />
@@ -763,6 +796,7 @@ export default function UserActivity() {
                         setActivities(new Map());
                         setTotalActivityCount(null);
                         setIsRendering(true);
+                        setPaginationModel({ ...paginationModel, page: 0 });
                         setGroupBy((value as GroupBy) || null); // will trigger effect to re-set activities
                         setSearchParams(prev => {
                           if (value === '') {
@@ -802,7 +836,7 @@ export default function UserActivity() {
                 </Grid>
               </Grid>
             </Grid>
-            <Box display="flex" justifyContent="right">
+            <Box display="flex" justifyContent="right" mt={1}>
               {activityCount != null &&
                 totalActivityCount != null &&
                 activityCount !== totalActivityCount && (

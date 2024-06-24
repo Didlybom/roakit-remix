@@ -334,11 +334,13 @@ export default function ActivityReview() {
         sortable: false,
         renderCell: params => (
           <Button
+            color="inherit"
+            size="small"
             endIcon={<ArrowDropDownIcon />}
-            sx={{ ml: -1, textTransform: 'none', ...ellipsisSx }}
+            sx={{ ml: -1, fontWeight: '400', textTransform: 'none', ...ellipsisSx }}
           >
             {params.value === UNSET_INITIATIVE_ID ?
-              '...'
+              '⋯'
             : loaderData.initiatives[params.value as string]?.key ?? 'unknown'}
           </Button>
         ),
@@ -356,7 +358,7 @@ export default function ActivityReview() {
             title={params.value as string}
             sx={{ ...ellipsisSx, cursor: 'pointer' }}
           >
-            {params.value || '...'}
+            {params.value || '⋯'}
           </Box>
         ),
       },
@@ -460,7 +462,7 @@ export default function ActivityReview() {
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>
-        <Grid container columns={2} spacing={2} alignItems="center" mb={2}>
+        <Grid container columns={2} spacing={2} alignItems="center" mb={1}>
           <Grid>
             {!!rowTotal && (
               <Typography variant="subtitle2">
