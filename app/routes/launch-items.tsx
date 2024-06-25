@@ -146,7 +146,7 @@ function ColorValue({ color }: { color?: string }) {
 function EditColor(props: GridRenderEditCellParams<any, string>) {
   const { id, field, value } = props;
   const [valueState, setValueState] = useState(value);
-  const [showPicker, setShowPicker] = useState(false);
+  const [showPicker, setShowPicker] = useState(true);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>();
   const apiRef = useGridApiContext();
 
@@ -157,6 +157,7 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
       setValueState(color.hex);
       setShowPicker(false);
       await apiRef.current.setEditCellValue({ id, field, value: color.hex }, event);
+      apiRef.current.stopCellEditMode({ id, field });
     },
     [apiRef, field, id]
   );
