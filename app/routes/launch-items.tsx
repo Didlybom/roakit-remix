@@ -17,7 +17,6 @@ import {
   Stack,
   TextField,
   Typography,
-  styled,
 } from '@mui/material';
 import {
   GridActionsCellItem,
@@ -41,7 +40,7 @@ import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditTextarea from '../components/datagrid/EditTextarea';
-import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
+import { dataGridCommonProps, StyledMuiError } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import { fetchLaunchItems } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
@@ -82,7 +81,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest {
+interface ActionRequest {
   launchItemId: string;
   key: string;
   label: string;
@@ -97,8 +96,8 @@ interface ActionResponse {
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
-  const jsonRequest = (await request.json()) as JsonRequest;
-  const launchItemId = jsonRequest.launchItemId;
+  const actionRequest = (await request.json()) as ActionRequest;
+  const launchItemId = actionRequest.launchItemId;
 
   if (request.method === 'DELETE') {
     try {
@@ -114,11 +113,11 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
       if (launchItemId) {
         await firestore
           .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
-          .set(jsonRequest, { merge: true });
+          .set(actionRequest, { merge: true });
       } else {
         await firestore
           .collection(`customers/${sessionData.customerId!}/launchItems`)
-          .add(jsonRequest);
+          .add(actionRequest);
       }
       return { status: { code: 'saved', message: 'Launch item saved' } };
     } catch (e) {
@@ -126,10 +125,6 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
     }
   }
 };
-
-const StyledMuiError = styled('div')(({ theme }) => ({
-  '& .Mui-error': { backgroundColor: '#ffecf0', color: theme.palette.error.main },
-}));
 
 function ColorValue({ color }: { color?: string }) {
   return (

@@ -197,12 +197,7 @@ export default function Dashboard() {
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               disableFuture={true}
-              slots={{ toolbar: undefined }}
-              slotProps={{
-                actionBar: { actions: [] },
-                toolbar: undefined,
-                textField: { size: 'small' },
-              }}
+              slotProps={{ textField: { size: 'small' } }}
               value={selectedDay}
               onChange={day => {
                 if (day) {

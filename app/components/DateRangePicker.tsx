@@ -107,10 +107,7 @@ export default function DateRangePicker({
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
             disableFuture={true}
-            slots={{ toolbar: undefined }}
             slotProps={{
-              actionBar: { actions: [] },
-              toolbar: undefined,
               textField: {
                 size: 'small',
                 sx: {

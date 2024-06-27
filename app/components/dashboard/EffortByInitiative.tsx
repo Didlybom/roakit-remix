@@ -22,17 +22,19 @@ export default function InitiativeEffort({
     !!groupedActivities?.[type]?.length && (
       <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle(type === 'initiatives' ? '# Activities by Goal' : '# Activities by Launch')}
+          {widgetTitle(type === 'initiatives' ? 'Effort by Goal' : 'Effort by Launch')}
           <PieChart
             series={[
               {
                 id: `effort-by-${type}`,
-                data: groupedActivities[type].map(initiative => ({
-                  id: initiatives[initiative.id].key,
-                  value: initiative.effort,
-                  label: initiatives[initiative.id].label,
-                  color: initiatives[initiative.id].color || undefined,
-                })),
+                data: groupedActivities[type]
+                  .filter(initiative => initiative.effort)
+                  .map(initiative => ({
+                    id: initiatives[initiative.id].key,
+                    value: initiative.effort,
+                    label: initiatives[initiative.id].label,
+                    color: initiatives[initiative.id].color || undefined,
+                  })),
                 arcLabel: item => `${item.id}`,
                 outerRadius: 100,
                 innerRadius: 30,

@@ -60,11 +60,14 @@ export const loader = async ({
         email: sessionData.email,
       });
       userIdSet.add(identity.id);
-      identity.accounts.forEach(a => userIdSet.add(a.id));
+      identity.accounts.filter(a => a.id).forEach(a => userIdSet.add(a.id));
 
       if (includeTeam) {
         const teamIdentities = await queryTeamIdentities(sessionData.customerId!, identity.id);
-        teamIdentities.flatMap(i => i.accounts).forEach(a => userIdSet.add(a.id));
+        teamIdentities
+          .flatMap(i => i.accounts)
+          .filter(a => a.id)
+          .forEach(a => userIdSet.add(a.id));
       }
       userIds = [...userIdSet];
     }

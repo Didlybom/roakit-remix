@@ -90,6 +90,8 @@ export const activitySchema = z.object({
   eventTimestamp: z.number().optional(),
   artifact: z.string(), //z.enum(ARTIFACTS), // don't use an enum so ingestion backend can be deployed with new artifacts before updating frontend
   initiative: z.string(),
+  launchItemId: z.string().optional(),
+  effort: z.number().nullable().optional(),
   priority: z.number().optional(),
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata
   note: z.string().optional(),
@@ -103,6 +105,7 @@ export const summarySchema = z.object({
   userSummary: z.string().optional(),
   aiTeamSummary: z.string().optional(),
   userTeamSummary: z.string().optional(),
+  hoursSpent: z.number().optional(),
   createdTimestamp: z.number().optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });

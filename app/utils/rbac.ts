@@ -6,9 +6,10 @@ export enum View {
 
   Dashboard,
   ActivitySummary,
-  Activity,
+  AllActivity,
   ActivityUser,
 
+  Status,
   Summary,
 
   Initiatives,
@@ -25,9 +26,10 @@ export enum View {
   FetcherActivities,
   FetcherActivitiesPage,
   FetcherGroupedActivities,
+  FetcherStatuses,
   FetcherSummaries,
 
-  SummaryMulti,
+  Impersonation,
   AI,
   Developer,
 }
@@ -57,17 +59,19 @@ export const checkAccess = (
   switch (view) {
     case View.Dashboard:
     case View.ActivitySummary:
-    case View.Activity:
+    case View.AllActivity:
     case View.ActivityUser:
     case View.FetcherActivitiesPage:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
-    case View.SummaryMulti:
+    case View.Impersonation:
     case View.AI:
       throwIf(sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor);
       break;
 
+    case View.Status:
     case View.Summary:
+    case View.FetcherStatuses:
     case View.FetcherSummaries:
     case View.FetcherActivities:
       throwIf(!params);

@@ -3,15 +3,15 @@ import dayjs from 'dayjs';
 import { DateRangeValue, isToday } from '../utils/dateUtils';
 import { parseCookie, sessionCookie } from '../utils/sessionCookie.server';
 
-interface JsonRequest {
+interface ActionRequest {
   isNavOpen?: boolean;
   dateRange?: DateRangeValue;
   endDay?: string;
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const jsonRequest = (await request.json()) as JsonRequest;
-  const jsonReq = jsonRequest ?? ((await request.json()) as JsonRequest);
+  const actionRequest = (await request.json()) as ActionRequest;
+  const jsonReq = actionRequest ?? ((await request.json()) as ActionRequest);
   const cookie = await parseCookie(request);
   if (jsonReq.isNavOpen != null) {
     cookie.isNavOpen = jsonReq.isNavOpen;

@@ -9,7 +9,6 @@ import {
   AppBar,
   AppBarProps,
   Box,
-  Button,
   IconButton,
   LinearProgress,
   Stack,
@@ -17,10 +16,10 @@ import {
   styled,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import RoakitIcon from '../icons/Roakit';
-import { isToday, type DateRangeEnding } from '../utils/dateUtils';
-import { Role, View } from '../utils/rbac';
-import DateRangePicker from './DateRangePicker';
+import RoakitIcon from '../../icons/Roakit';
+import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
+import { Role, View } from '../../utils/rbac';
+import DateRangePicker from '../DateRangePicker';
 
 interface NavBarProps extends AppBarProps {
   navbarWidth: number;
@@ -111,72 +110,28 @@ export default function Header({
               )}
             </Stack>
             {isLoggedIn && role === Role.Admin && (
-              <>
-                <IconButton
-                  href="/settings"
-                  title="Settings"
-                  color="inherit"
-                  sx={{ display: { xs: 'flex', sm: 'none' } }}
-                >
-                  <SettingsIcon />
-                </IconButton>
-                <Button
-                  href="/settings"
-                  onClick={e => {
-                    if (view === View.Settings) {
-                      e.preventDefault();
-                    }
-                  }}
-                  title="Settings"
-                  color="inherit"
-                  startIcon={<SettingsIcon />}
-                  sx={{ mx: 2, display: { xs: 'none', sm: 'flex' } }}
-                >
-                  Settings
-                </Button>
-              </>
+              <IconButton
+                href="/settings"
+                onClick={e => {
+                  if (view === View.Settings) {
+                    e.preventDefault();
+                  }
+                }}
+                title="Settings"
+                color="inherit"
+              >
+                <SettingsIcon />
+              </IconButton>
             )}
             {!isLoggedIn && (
-              <>
-                <IconButton
-                  href="/login"
-                  title="Login"
-                  color="inherit"
-                  sx={{ display: { xs: 'flex', sm: 'none' } }}
-                >
-                  <LoginIcon />
-                </IconButton>
-                <Button
-                  href="/login"
-                  title="Login"
-                  color="inherit"
-                  startIcon={<LoginIcon />}
-                  sx={{ display: { xs: 'none', sm: 'flex' } }}
-                >
-                  Login
-                </Button>
-              </>
+              <IconButton href="/login" title="Login" color="inherit">
+                <LoginIcon />
+              </IconButton>
             )}
             {isLoggedIn && (
-              <>
-                <IconButton
-                  href="/logout"
-                  title="Logout"
-                  color="inherit"
-                  sx={{ display: { xs: 'flex', sm: 'none' } }}
-                >
-                  <LogoutIcon />
-                </IconButton>
-                <Button
-                  href="/logout"
-                  title="Logout"
-                  color="inherit"
-                  startIcon={<LogoutIcon />}
-                  sx={{ display: { xs: 'none', sm: 'flex' } }}
-                >
-                  Logout
-                </Button>
-              </>
+              <IconButton href="/logout" title="Logout" color="inherit">
+                <LogoutIcon />
+              </IconButton>
             )}
           </>
         )}

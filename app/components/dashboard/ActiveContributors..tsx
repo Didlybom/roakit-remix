@@ -7,7 +7,7 @@ import {
 import type { ActorRecord } from '../../types/types';
 import { artifactActions } from '../../utils/activityFeed';
 import { windowOpen } from '../../utils/jsxUtils';
-import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, pluralizeMemo, widgetSize, widgetTitle } from './common';
 
 type Props = {
   groupedActivities: GroupedActivities;
@@ -48,7 +48,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                 if (data) {
                   windowOpen(
                     event.nativeEvent,
-                    `/activity/user/${
+                    `/activity/${
                       data.dataIndex === 10 ?
                         '*'
                       : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
@@ -60,7 +60,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                 if (data) {
                   windowOpen(
                     event,
-                    `/activity/user/${
+                    `/activity/${
                       data.dataIndex === 10 ?
                         '*'
                       : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
@@ -73,7 +73,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
               {...widgetSize}
               margin={{ top: 15, right: 20, bottom: 30, left: 170 }}
               slotProps={{ legend: { hidden: true } }}
-              colors={pastelColors}
+              colors={['#cccccc']}
             />
           </Paper>
         </Grid>

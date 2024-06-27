@@ -454,7 +454,8 @@ export const fetchActivities = async ({
         artifact: data.artifact as Artifact,
         timestamp: data.eventTimestamp ?? data.createdTimestamp,
         initiativeId: data.initiative,
-        launchItemId: '', // FIXME launch item
+        launchItemId: data.launchItemId ?? '',
+        effort: data.effort,
         priority, // see overwrite below
         eventType: data.eventType,
         event: data.event,

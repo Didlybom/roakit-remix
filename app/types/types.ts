@@ -130,6 +130,7 @@ export type Activity = {
   timestamp: number;
   initiativeId: string;
   launchItemId: string;
+  effort?: number | null;
   priority?: number;
   metadata?: ActivityMetadata;
   note?: string;
@@ -137,7 +138,7 @@ export type Activity = {
   combinedIds?: string[];
 };
 
-export type ActivityRecord = Record<Activity['id'], Omit<Activity, 'id'>>;
+export type ActivityRecord = Record<Activity['id'], Activity>;
 
 export type ActivityCount = {
   code: number;

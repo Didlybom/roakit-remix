@@ -7,6 +7,7 @@ import {
   Menu as MenuIcon,
   PeopleOutline as PeopleIcon,
   Science as ScienceIcon,
+  PlaylistAddCheck as StatusIcon,
   Subject as SubjectIcon,
   ShortText as SummariesIcon,
   EditNote as SummaryIcon,
@@ -28,7 +29,7 @@ import {
 import { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
 import { useCallback } from 'react';
-import { Role, View } from '../utils/rbac';
+import { Role, View } from '../../utils/rbac';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
 
@@ -97,7 +98,7 @@ export default function NavDrawer({
         <>
           <List>
             {item(View.Dashboard, '/dashboard', DashboardIcon, 'Dashboard', view)}
-            {item(View.ActivityUser, '/activity/user/*', SubjectIcon, 'Contributor Activity', view)}
+            {item(View.ActivityUser, '/activity/*', SubjectIcon, 'Contributor Activity', view)}
           </List>
           <Divider />
         </>
@@ -105,6 +106,7 @@ export default function NavDrawer({
       <List>
         {(role === Role.Admin || role === Role.Monitor) &&
           item(View.ActivitySummary, '/activity/summary', SummariesIcon, 'Activity Summary', view)}
+        {item(View.Status, '/status', StatusIcon, 'Status Form', view)}
         {item(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}
       </List>
       {(role === Role.Admin || role === Role.Monitor) && (
@@ -114,7 +116,7 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Administration
             </ListSubheader>
-            {item(View.Activity, '/activity', HistoryIcon, 'All Activity', view)}
+            {item(View.AllActivity, '/activities', HistoryIcon, 'All Activity', view)}
             {role === Role.Admin && (
               <>
                 {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
@@ -132,7 +134,7 @@ export default function NavDrawer({
             <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
               Lab
             </ListSubheader>
-            {item(View.SummaryMulti, '/summary/multi', PeopleIcon, 'Summary Forms', view)}
+            {item(View.Impersonation, '/impersonation', PeopleIcon, 'User Impersonation', view)}
             {item(null, '/ai', ScienceIcon, 'AI Playground', view)}
           </List>
         </>

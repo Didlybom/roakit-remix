@@ -12,6 +12,7 @@ import {
   ListItemText,
   Stack,
   Typography,
+  styled,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import {
@@ -103,22 +104,25 @@ export const dateColDef = (colDef?: GridColDef) =>
     ...colDef,
   }) as GridColDef;
 
-export const actorColDef = (colDef?: GridColDef) =>
+export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
   ({
     headerName: 'Contributor',
     sortComparator: (a: Account, b: Account) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
     renderCell: (params: GridRenderCellParams) => {
       const account = params.value as Account;
-      return !account ? '' : (
-          <Link
-            href={'/activity/user/' + encodeURI(account.id)}
-            title={account.name}
-            sx={internalLinkSx}
-          >
-            {account.name}
-          </Link>
-        );
+      if (showActivityLink) {
+        return !account ? '' : (
+            <Link
+              href={'/activity/' + encodeURI(account.id)}
+              title={account.name}
+              sx={internalLinkSx}
+            >
+              {account.name}
+            </Link>
+          );
+      }
+      return <Box title={account.name}>{account.name}</Box>;
     },
     ...colDef,
   }) as GridColDef;
@@ -346,3 +350,7 @@ export const viewJsonActionsColDef = (
     ],
     ...colDef,
   }) as GridColDef;
+
+export const StyledMuiError = styled('div')(({ theme }) => ({
+  '& .Mui-error': { backgroundColor: '#ffecf0', color: theme.palette.error.main },
+}));

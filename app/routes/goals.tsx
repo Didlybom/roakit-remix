@@ -81,7 +81,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest {
+interface ActionRequest {
   initiativeId: string;
   key: string;
   label: string;
@@ -106,8 +106,8 @@ const splitTags = (value: string) =>
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
-  const jsonRequest = (await request.json()) as JsonRequest;
-  const initiativeId = jsonRequest.initiativeId;
+  const actionRequest = (await request.json()) as ActionRequest;
+  const initiativeId = actionRequest.initiativeId;
 
   if (request.method === 'DELETE') {
     try {
@@ -123,11 +123,11 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
       if (initiativeId) {
         await firestore
           .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
-          .set(jsonRequest, { merge: true });
+          .set(actionRequest, { merge: true });
       } else {
         await firestore
           .collection(`customers/${sessionData.customerId!}/initiatives`)
-          .add(jsonRequest);
+          .add(actionRequest);
       }
       return { status: { code: 'saved', message: 'Goal saved' } };
     } catch (e) {

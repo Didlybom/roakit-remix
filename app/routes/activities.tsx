@@ -73,15 +73,14 @@ import { View } from '../utils/rbac';
 import theme from '../utils/theme';
 import type { ActivityPageResponse } from './fetcher.activities.page';
 
-const logger = pino({ name: 'route:activity' });
+const logger = pino({ name: 'route:activities' });
 
 const MAX_BATCH = 500;
-const UNSET_INITIATIVE_ID = '_UNSET_INITIATIVE_';
 const DELETE = '_DELETE_';
 
-export const meta = () => [{ title: 'Activity | ROAKIT' }];
+export const meta = () => [{ title: 'All Activity | ROAKIT' }];
 
-const VIEW = View.Activity;
+const VIEW = View.AllActivity;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
@@ -111,7 +110,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 type ActivityRow = Activity & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
-interface JsonRequest {
+interface ActionRequest {
   activityId?: string;
   activities?: ActivityPayload;
   initiativeId?: string;
@@ -125,18 +124,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const customerId = sessionData.customerId;
 
-    const jsonRequest = (await request.json()) as JsonRequest;
+    const actionRequest = (await request.json()) as ActionRequest;
 
-    const note = jsonRequest.note;
+    const note = actionRequest.note;
     if (note) {
-      const activityId = jsonRequest.activityId;
+      const activityId = actionRequest.activityId;
       await firestore
         .doc(`customers/${customerId!}/activities/${activityId}`)
         .update({ note: note === DELETE ? '' : note });
       return null;
     }
 
-    const { activities, initiativeId, initiativeCountersLastUpdated } = jsonRequest;
+    const { activities, initiativeId, initiativeCountersLastUpdated } = actionRequest;
     if (!activities || !initiativeId) {
       return null;
     }
@@ -144,21 +143,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (
-        initiativeId !== UNSET_INITIATIVE_ID &&
+        initiativeId &&
         initiativeCountersLastUpdated &&
         activity.createdTimestamp < initiativeCountersLastUpdated
       ) {
         counters[activity.artifact]++;
       }
       const activityDoc = firestore.doc('customers/' + customerId + '/activities/' + activity.id);
-      batch.update(activityDoc, {
-        initiative: initiativeId === UNSET_INITIATIVE_ID ? '' : initiativeId,
-      });
+      batch.update(activityDoc, { initiative: initiativeId ?? '' });
     });
     await batch.commit(); // up to 500 operations
 
     //  update the initiative counters
-    if (initiativeId !== UNSET_INITIATIVE_ID) {
+    if (initiativeId) {
       await incrementInitiativeCounters(customerId!, initiativeId, counters);
     }
     // FIXME decrement the activities that had an initiative and were changed
@@ -250,7 +247,7 @@ export default function ActivityReview() {
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
           : undefined,
         priority,
-        initiativeId: activity.initiativeId || mapping?.initiatives[0] || UNSET_INITIATIVE_ID,
+        initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
         launchItemId: activity.launchItemId || mapping?.launchItems[0] || '',
       });
     });
@@ -276,31 +273,34 @@ export default function ActivityReview() {
   const columns = useMemo<GridColDef[]>(
     () => [
       dateColDef({ field: 'timestamp', valueGetter: value => new Date(value) }),
-      actorColDef({
-        field: 'actor',
-        valueGetter: (_, row) => {
-          const fields = row as Activity;
-          return fields.actorId ?
-              ({
-                id: fields.actorId,
-                name: loaderData.actors[fields.actorId]?.name ?? 'unknown',
-              } as Account)
-            : '';
+      actorColDef(
+        {
+          field: 'actor',
+          valueGetter: (_, row) => {
+            const fields = row as Activity;
+            return fields.actorId ?
+                ({
+                  id: fields.actorId,
+                  name: loaderData.actors[fields.actorId]?.name ?? 'unknown',
+                } as Account)
+              : null;
+          },
+          renderCell: params => {
+            const fields = params.value as Account;
+            return (
+              <Link
+                fontSize="small"
+                href={`/activity/${encodeURI(fields.id)}`}
+                title="View activity"
+                sx={internalLinkSx}
+              >
+                {fields.name}
+              </Link>
+            );
+          },
         },
-        renderCell: params => {
-          const fields = params.value as Account;
-          return (
-            <Link
-              fontSize="small"
-              href={`/activity/user/${encodeURI(fields.id)}`}
-              title="View activity"
-              sx={internalLinkSx}
-            >
-              {fields.name}
-            </Link>
-          );
-        },
-      }),
+        true /* show link */
+      ),
       actionColDef({ field: 'action' }),
       descriptionColDef({ field: 'metadata' }, (element, content) =>
         setPopover({ element, content })
@@ -324,7 +324,7 @@ export default function ActivityReview() {
         minWidth: 100,
         type: 'singleSelect',
         valueOptions: [
-          { value: UNSET_INITIATIVE_ID, label: '[unset]' },
+          { value: '', label: '[unset]' },
           ...Object.keys(loaderData.initiatives).map(initiativeId => {
             const initiative = loaderData.initiatives[initiativeId];
             return { value: initiativeId, label: `[${initiative.key}] ${initiative.label}` };
@@ -333,16 +333,18 @@ export default function ActivityReview() {
         editable: true,
         sortable: false,
         renderCell: params => (
-          <Button
-            color="inherit"
-            size="small"
-            endIcon={<ArrowDropDownIcon />}
-            sx={{ ml: -1, fontWeight: '400', textTransform: 'none', ...ellipsisSx }}
-          >
-            {params.value === UNSET_INITIATIVE_ID ?
-              '⋯'
-            : loaderData.initiatives[params.value as string]?.key ?? 'unknown'}
-          </Button>
+          <Box>
+            <Button
+              color="inherit"
+              size="small"
+              endIcon={<ArrowDropDownIcon />}
+              sx={{ fontWeight: '400', textTransform: 'none' }}
+            >
+              {params.value ?
+                loaderData.initiatives[params.value as string]?.key ?? 'unknown'
+              : '⋯'}
+            </Button>
+          </Box>
         ),
       },
       {

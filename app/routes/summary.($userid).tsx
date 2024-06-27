@@ -116,7 +116,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest {
+interface ActionRequest {
   activitiesText?: string;
   day?: string;
   isTeam: boolean;
@@ -136,20 +136,20 @@ export const action = async ({
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request, VIEW, params);
 
-  const jsonRequest = (await request.json()) as JsonRequest;
+  const actionRequest = (await request.json()) as ActionRequest;
 
   // invoke AI
-  if (jsonRequest.activitiesText) {
+  if (actionRequest.activitiesText) {
     return {
       aiSummary: await generateContent({
-        prompt: `${DEFAULT_PROMPT}\n\n${jsonRequest.activitiesText}`,
+        prompt: `${DEFAULT_PROMPT}\n\n${actionRequest.activitiesText}`,
       }),
       status: 'generated',
     };
   }
 
   // save summaries
-  if (jsonRequest.day) {
+  if (actionRequest.day) {
     let identityId = params.userid; // impersonification
     if (!identityId) {
       const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
@@ -159,11 +159,11 @@ export const action = async ({
     if (!identityId) {
       throw 'Identity required';
     }
-    await upsertSummary(sessionData.customerId!, jsonRequest.day, {
+    await upsertSummary(sessionData.customerId!, actionRequest.day, {
       identityId,
-      isTeam: jsonRequest.isTeam,
-      aiSummary: jsonRequest.aiSummary ?? '',
-      userSummary: jsonRequest.userSummary ?? '',
+      isTeam: actionRequest.isTeam,
+      aiSummary: actionRequest.aiSummary ?? '',
+      userSummary: actionRequest.userSummary ?? '',
     });
     return { aiSummary: null, status: 'saved' };
   }
@@ -351,7 +351,9 @@ export default function Summary() {
               />
             </LocalizationProvider>
             <Stack spacing={1} sx={{ ml: 3 }}>
-              <Typography fontWeight={500}>Activities for…</Typography>
+              <Typography fontSize="small" fontWeight={500}>
+                Activities for…
+              </Typography>
               <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
                 <Chip size="small" label={loaderData.userDisplayName} />
               </Box>
@@ -375,14 +377,9 @@ export default function Summary() {
                 />
               )}
               {loaderData.reportIds?.map(reportId => (
-                <Link
-                  href={`/summary/${encodeURI(reportId)}`}
-                  target="_blank"
-                  key={reportId}
-                  sx={{ opacity: showTeam ? undefined : 0.3 }}
-                >
+                <Box key={reportId} sx={{ opacity: showTeam ? 0.3 : undefined }}>
                   <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
-                </Link>
+                </Box>
               ))}
             </Stack>
           </Stack>

@@ -85,7 +85,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest {
+interface ActionRequest {
   feedId?: number;
   secret?: string;
   bannedEvents?: string;
@@ -98,23 +98,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const customerId = sessionData.customerId;
 
-    const jsonRequest = (await request.json()) as JsonRequest;
+    const actionRequest = (await request.json()) as ActionRequest;
 
-    const feedId = jsonRequest.feedId;
+    const feedId = actionRequest.feedId;
     if (feedId) {
-      const secret = jsonRequest.secret;
+      const secret = actionRequest.secret;
       if (secret) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({ secret });
       }
-      const bannedEvents = jsonRequest.bannedEvents;
+      const bannedEvents = actionRequest.bannedEvents;
       if (bannedEvents) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({
           bannedEvents: bannedRecordSchema.parse(JSON.parse(bannedEvents)),
         });
       }
-      const bannedAccounts = jsonRequest.bannedAccounts;
+      const bannedAccounts = actionRequest.bannedAccounts;
       if (bannedAccounts) {
         const doc = firestore.doc(`customers/${customerId!}/feeds/${feedId}`);
         await doc.update({

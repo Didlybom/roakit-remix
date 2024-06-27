@@ -111,7 +111,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-interface JsonRequest {
+interface ActionRequest {
   identityId?: string;
   managerId?: string;
   userId?: string;
@@ -129,15 +129,15 @@ export const action = async ({
   request,
 }: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
-  const jsonRequest = (await request.json()) as JsonRequest;
+  const actionRequest = (await request.json()) as ActionRequest;
 
   // update manager
-  if (jsonRequest.identityId) {
+  if (actionRequest.identityId) {
     try {
       await firestore
-        .doc(`customers/${sessionData.customerId!}/identities/${jsonRequest.identityId}`)
+        .doc(`customers/${sessionData.customerId!}/identities/${actionRequest.identityId}`)
         .update({
-          managerId: jsonRequest.managerId === UNSET_MANAGER_ID ? '' : jsonRequest.managerId,
+          managerId: actionRequest.managerId === UNSET_MANAGER_ID ? '' : actionRequest.managerId,
         });
       return { status: { code: 'userUpdated', message: "User's team updated" } };
     } catch (e) {
@@ -146,9 +146,9 @@ export const action = async ({
   }
 
   // update role
-  if (jsonRequest.userId && jsonRequest.role) {
+  if (actionRequest.userId && actionRequest.role) {
     try {
-      await firestore.doc(`users/${jsonRequest.userId}`).update({ role: jsonRequest.role });
+      await firestore.doc(`users/${actionRequest.userId}`).update({ role: actionRequest.role });
       return { status: { code: 'userUpdated', message: "User's role updated" } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save user') };
@@ -156,11 +156,11 @@ export const action = async ({
   }
 
   // import
-  if (jsonRequest.imports) {
+  if (actionRequest.imports) {
     const identitiesColl = firestore.collection(`customers/${sessionData.customerId}/identities`);
     const batch = firestore.batch();
 
-    const accounts = jsonRequest.imports.split(/\r|\n/);
+    const accounts = actionRequest.imports.split(/\r|\n/);
 
     if (accounts.length > MAX_IMPORT) {
       const message = `You cannot import more than ${MAX_IMPORT} accounts at a time`;
@@ -200,15 +200,15 @@ export const action = async ({
   }
 
   // create Firebase user
-  if (jsonRequest.createFirebaseUserForEmail) {
+  if (actionRequest.createFirebaseUserForEmail) {
     const user = await auth.createUser({
-      email: jsonRequest.createFirebaseUserForEmail,
+      email: actionRequest.createFirebaseUserForEmail,
       emailVerified: true,
     });
     await auth.setCustomUserClaims(user.uid, { customerId: sessionData.customerId });
     await firestore.collection('users').add({
       customerId: sessionData.customerId,
-      email: jsonRequest.createFirebaseUserForEmail,
+      email: actionRequest.createFirebaseUserForEmail,
     });
     return { status: { code: 'firebaseUserCreated', message: 'Firebase user created' } };
   }
@@ -251,11 +251,7 @@ export default function Users() {
         renderCell: params => {
           const id = (params.row as Identity).id;
           return (
-            <Link
-              href={`/activity/user/${encodeURI(id)}`}
-              title="View activity"
-              sx={internalLinkSx}
-            >
+            <Link href={`/activity/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
               {params.value}
             </Link>
           );
@@ -399,11 +395,7 @@ export default function Users() {
         renderCell: params => {
           const id = (params.row as Identity).id;
           return (
-            <Link
-              href={`/activity/user/${encodeURI(id)}`}
-              title="View activity"
-              sx={internalLinkSx}
-            >
+            <Link href={`/activity/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
               {params.value}
             </Link>
           );

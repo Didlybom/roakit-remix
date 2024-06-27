@@ -89,12 +89,12 @@ export default function Dashboard() {
   const charts = (
     <Stack spacing={3} m={3} onClick={e => e.stopPropagation()}>
       <Grid container spacing={5}>
-        <EffortByInitiative
+        {/* <EffortByInitiative
           type="initiatives"
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
-        />
+        /> */}
         <EffortByInitiative
           type="launchItems"
           groupedActivities={groupedActivitiesResponse}

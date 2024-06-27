@@ -3,9 +3,9 @@ import { ReactNode, useState } from 'react';
 import { type DateRangeEnding } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
 import { DEFAULT_ROLE, type Role, type View } from '../utils/rbac';
-import Header from './Header';
-import NavDrawer from './NavDrawer';
-import DrawerHeader from './NavDrawerHeader';
+import Header from './navigation/Header';
+import NavDrawer from './navigation/NavDrawer';
+import DrawerHeader from './navigation/NavDrawerHeader';
 
 export const navbarWidth = 200;
 

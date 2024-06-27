@@ -114,7 +114,6 @@ const userActivityRows = (
   Object.keys(snapshot).forEach(activityId => {
     const activity = snapshot[activityId];
     const row: Activity = {
-      id: activityId,
       ...activity,
       actorId:
         activity.actorId ?
@@ -342,16 +341,16 @@ export default function UserActivity() {
       }),
       ...(groupBy !== GroupBy.Contributor && loaderData.userId === ALL ?
         [
-          actorColDef({
-            field: 'actorId',
-            valueGetter: (value: string) =>
-              value ?
-                ({
-                  id: value,
-                  name: loaderData.actors[value]?.name ?? 'unknown',
-                } as Account)
-              : '',
-          }),
+          actorColDef(
+            {
+              field: 'actorId',
+              valueGetter: (value: string) =>
+                value ?
+                  ({ id: value, name: loaderData.actors[value]?.name ?? 'unknown' } as Account)
+                : null,
+            },
+            true /* show link */
+          ),
         ]
       : []),
       actionColDef({ field: 'action' }),
@@ -439,7 +438,7 @@ export default function UserActivity() {
             <IconButton
               component="a"
               href={
-                `/activity/user/${encodeURI(actorId)}` +
+                `/activity/${encodeURI(actorId)}` +
                 (actionFilter.length ? `?action=${actionFilter.join(',')}` : '')
               }
               size="small"
@@ -562,12 +561,13 @@ export default function UserActivity() {
               <DataGrid
                 columns={columns}
                 rows={filteredRows}
+                loading={isRendering}
                 {...dataGridCommonProps}
                 rowHeight={50}
               />
             </Stack>;
       });
-  }, [activities, actorHeader, columns, groupBy, searchTerm, showOnlyActor]);
+  }, [activities, actorHeader, columns, groupBy, isRendering, searchTerm, showOnlyActor]);
 
   const gridsByLaunch = useMemo(() => {
     if (groupBy !== GroupBy.Launch) {
@@ -621,12 +621,13 @@ export default function UserActivity() {
             <DataGrid
               columns={columns}
               rows={filteredRows}
+              loading={isRendering}
               {...dataGridCommonProps}
               rowHeight={50}
             />
           </Stack>;
     });
-  }, [activities, columns, groupBy, loaderData.launchItems, searchTerm]);
+  }, [activities, columns, groupBy, isRendering, loaderData.launchItems, searchTerm]);
 
   const [gridsUngrouped, ungroupedActivityCount] = useMemo(() => {
     if (groupBy != null) {
@@ -660,6 +661,7 @@ export default function UserActivity() {
           <DataGrid
             columns={columns}
             rows={filteredRows}
+            loading={isRendering}
             {...dataGridCommonProps}
             rowHeight={50}
             sx={{ mt: 1 }}
@@ -669,7 +671,7 @@ export default function UserActivity() {
         </>,
       filteredRows?.length,
     ];
-  }, [activities, columns, groupBy, paginationModel, searchTerm]);
+  }, [activities, columns, groupBy, isRendering, paginationModel, searchTerm]);
 
   if (groupBy == null) {
     activityCount = ungroupedActivityCount;
@@ -746,7 +748,7 @@ export default function UserActivity() {
                   <Button
                     variant="outlined"
                     href={
-                      '/activity/user/*?groupby=' +
+                      '/activity/*?groupby=' +
                       (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
                       (actionFilter.length ? `&action=${actionFilter.join(',')}` : '')
                     }

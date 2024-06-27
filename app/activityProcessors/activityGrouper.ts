@@ -90,7 +90,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       if (actorId !== undefined) {
         initiative.actorIds!.add(actorId); // the set dedupes
       }
-      initiative.effort++; // for now, the number of activities
+      initiative.effort += activity.effort ?? 0;
     }
 
     // launch items
@@ -112,7 +112,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       if (actorId !== undefined) {
         launchItem.actorIds!.add(actorId); // the set dedupes
       }
-      launchItem.effort++; // for now, the number of activities
+      launchItem.effort = activity.effort ?? 0;
     }
   });
 
