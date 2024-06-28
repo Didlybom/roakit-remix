@@ -52,14 +52,14 @@ export default function Impersonation() {
       <Alert severity="info" icon={<ScienceIcon />}>
         This page is for experimenting by letting admins impersonate contributors. Logged-in
         contributors will land directly on their{' '}
+        <SmallButton href="/status/" label="Status Form" icon={<StatusIcon fontSize="small" />} />{' '}
+        or{' '}
         <SmallButton
           href="/summary/"
           label="Summary Form"
           icon={<SummaryIcon fontSize="small" />}
-        />{' '}
-        or{' '}
-        <SmallButton href="/status/" label="Status Form" icon={<StatusIcon fontSize="small" />} />,
-        as when you click on a name here.
+        />
+        , as when you click on a name here.
       </Alert>
       <FormControl sx={{ mx: 3, mt: 2, mb: 1 }}>
         <FormLabel sx={{ fontSize: 'small' }}>Links go to...</FormLabel>
@@ -67,10 +67,7 @@ export default function Impersonation() {
           row
           value={route}
           onChange={e => setRoute(e.target.value)}
-          sx={{
-            '& .MuiSvgIcon-root': { fontSize: '16px' },
-            '& .MuiFormControlLabel-label': { fontSize: 'small' },
-          }}
+          sx={{ '& .MuiFormControlLabel-label': { fontSize: 'small' } }}
         >
           <FormControlLabel value="status" control={<Radio />} label="Status Form" />
           <FormControlLabel value="summary" control={<Radio />} label="Summary Form" />
