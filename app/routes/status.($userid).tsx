@@ -205,31 +205,28 @@ export default function Status() {
     const activityRows: ActivityRow[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
-      if (!activity.initiativeId || !activity.launchItemId) {
-        const mapping = mapActivity(activity);
-        if (!activity.initiativeId) {
-          activity.initiativeId = mapping.initiatives[0] ?? '';
-        }
-        if (!activity.launchItemId) {
-          activity.launchItemId = mapping.launchItems[0] ?? '';
-        }
-        const { launchItemId, ...activityFields } = activity;
-        activityRows.push({
-          ...activityFields,
-          initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
-          launchItem: { value: launchItemId || mapping?.launchItems[0] || '' },
-          actorId:
-            activity.actorId ?
-              loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
-            : undefined,
-        });
+      let mapping;
+      if (!activity.initiativeId || activity.launchItemId == null) {
+        mapping = mapActivity(activity);
       }
+      const { launchItemId, ...activityFields } = activity;
+      activityRows.push({
+        ...activityFields,
+        initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
+        launchItem: {
+          value: launchItemId != null ? launchItemId : mapping?.launchItems[0] ?? '',
+        },
+        actorId:
+          activity.actorId ?
+            loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
+          : undefined,
+      });
     });
     setActivities(activityRows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedActivities?.activities]); // loaderData and activities must be omitted
+  }, [fetchedActivities?.activities]); // loaderData must be omitted
 
-  // handle save results and AI results
+  // handle save results
   useEffect(() => {
     if (!actionData) {
       return;

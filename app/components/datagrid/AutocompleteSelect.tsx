@@ -27,7 +27,7 @@ export default function AutocompleteSelect(
   return (
     <Autocomplete<SelectOption, false, true /* disableClearable */, false>
       componentsProps={{ popper: { style: { width: 'fit-content' } } }}
-      noOptionsText={'no match'}
+      noOptionsText={<Box fontSize="small">no match</Box>}
       size="small"
       value={value}
       open={isOpen}
@@ -53,6 +53,7 @@ export default function AutocompleteSelect(
       renderInput={params => (
         <InputBase
           autoFocus
+          onFocus={e => e.target.select()}
           fullWidth
           size="small"
           id={params.id}
@@ -61,6 +62,7 @@ export default function AutocompleteSelect(
             autoComplete: 'new-password', // disable autocomplete and autofill
           }}
           {...params.InputProps}
+          sx={{ pl: '4px', fontSize: 'small' }}
         />
       )}
     />

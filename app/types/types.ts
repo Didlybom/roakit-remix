@@ -129,7 +129,7 @@ export type Activity = {
   artifact: Artifact;
   timestamp: number;
   initiativeId: string;
-  launchItemId: string;
+  launchItemId?: string;
   effort?: number | null;
   priority?: number;
   metadata?: ActivityMetadata;

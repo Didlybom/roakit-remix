@@ -207,7 +207,7 @@ export default function UserActivity() {
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
-  const [scrollToGroup, setScrollToGroup] = useState<string | null>(null);
+  const [scrollToGroup, setScrollToGroup] = useState<string | null | undefined>(null);
   const [showOnlyActor, setShowOnlyActor] = useState<string | null>(null);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);

@@ -239,7 +239,7 @@ export default function ActivityReview() {
         priority = inferPriority(loaderData.tickets, activity.metadata);
       }
       let mapping;
-      if (!activity.initiativeId || !activity.launchItemId) {
+      if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
       }
       const { initiativeId, ...activityFields } = activity;
@@ -251,7 +251,9 @@ export default function ActivityReview() {
           : undefined,
         priority,
         initiative: { value: initiativeId || mapping?.initiatives[0] || '' },
-        launchItemId: activity.launchItemId || mapping?.launchItems[0] || '',
+        // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
+        launchItemId:
+          activity.launchItemId != null ? activity.launchItemId : mapping?.launchItems[0] ?? '',
       });
     });
     setActivities(activityRows);
