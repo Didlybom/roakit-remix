@@ -37,6 +37,8 @@ import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
+import type { SelectOption } from '../components/datagrid/AutocompleteSelect';
+import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
   actionColDef,
@@ -107,7 +109,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-type ActivityRow = Activity & { note?: string };
+type ActivityRow = Omit<Activity, 'initiativeId'> & { initiative: SelectOption; note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 interface ActionRequest {
@@ -136,7 +138,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     const { activities, initiativeId, initiativeCountersLastUpdated } = actionRequest;
-    if (!activities || !initiativeId) {
+    if (!activities) {
       return null;
     }
     const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 };
@@ -230,7 +232,7 @@ export default function ActivityReview() {
     if (!fetchedActivities?.activities || fetchedActivities?.activityTotal == null) {
       return;
     }
-    const activityData: Activity[] = [];
+    const activityRows: ActivityRow[] = [];
     fetchedActivities.activities.forEach((activity: Activity) => {
       let priority = activity.priority;
       if ((priority == null || priority === -1) && activity.metadata) {
@@ -240,18 +242,19 @@ export default function ActivityReview() {
       if (!activity.initiativeId || !activity.launchItemId) {
         mapping = mapActivity(activity);
       }
-      activityData.push({
-        ...activity,
+      const { initiativeId, ...activityFields } = activity;
+      activityRows.push({
+        ...activityFields,
         actorId:
           activity.actorId ?
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
           : undefined,
         priority,
-        initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
+        initiative: { value: initiativeId || mapping?.initiatives[0] || '' },
         launchItemId: activity.launchItemId || mapping?.launchItems[0] || '',
       });
     });
-    setActivities(activityData);
+    setActivities(activityRows);
     setRowTotal(fetchedActivities.activityTotal);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,6 +273,20 @@ export default function ActivityReview() {
     sortingOrder: ['asc', 'desc'] as GridSortDirection[],
   };
 
+  const initiativeOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: '[unset]' },
+      ...Object.keys(loaderData.initiatives).map(initiativeId => {
+        const initiative = loaderData.initiatives[initiativeId];
+        return {
+          value: initiativeId,
+          label: `[${initiative.key}] ${initiative.label}`,
+        };
+      }),
+    ],
+    [loaderData.initiatives]
+  );
+
   const columns = useMemo<GridColDef[]>(
     () => [
       dateColDef({ field: 'timestamp', valueGetter: value => new Date(value) }),
@@ -286,17 +303,17 @@ export default function ActivityReview() {
               : null;
           },
           renderCell: params => {
-            const fields = params.value as Account;
-            return (
-              <Link
-                fontSize="small"
-                href={`/activity/${encodeURI(fields.id)}`}
-                title="View activity"
-                sx={internalLinkSx}
-              >
-                {fields.name}
-              </Link>
-            );
+            const account = params.value as Account;
+            return account ?
+                <Link
+                  fontSize="small"
+                  href={`/activity/${encodeURI(account.id)}`}
+                  title="View activity"
+                  sx={internalLinkSx}
+                >
+                  {account.name}
+                </Link>
+              : null;
           },
         },
         true /* show link */
@@ -314,38 +331,38 @@ export default function ActivityReview() {
         renderCell: (params: GridRenderCellParams) => {
           const activity = params.row as Activity;
           return activity.launchItemId ?
-              <Box title={loaderData.launchItems[activity.launchItemId]?.label}>{params.value}</Box>
+              <Box
+                title={loaderData.launchItems[activity.launchItemId]?.label}
+                color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}
+              >
+                {params.value}
+              </Box>
             : null;
         },
       },
       {
-        field: 'initiativeId',
+        field: 'initiative',
         headerName: 'Goal',
         minWidth: 100,
         type: 'singleSelect',
-        valueOptions: [
-          { value: '', label: '[unset]' },
-          ...Object.keys(loaderData.initiatives).map(initiativeId => {
-            const initiative = loaderData.initiatives[initiativeId];
-            return { value: initiativeId, label: `[${initiative.key}] ${initiative.label}` };
-          }),
-        ],
+        valueOptions: initiativeOptions,
         editable: true,
         sortable: false,
-        renderCell: params => (
-          <Box>
-            <Button
-              color="inherit"
-              size="small"
-              endIcon={<ArrowDropDownIcon />}
-              sx={{ fontWeight: '400', textTransform: 'none' }}
-            >
-              {params.value ?
-                loaderData.initiatives[params.value as string]?.key ?? 'unknown'
-              : '⋯'}
-            </Button>
-          </Box>
-        ),
+        renderCell: params => {
+          const option = params.value as SelectOption;
+          return (
+            <Box>
+              <Button
+                color="inherit"
+                endIcon={<ArrowDropDownIcon />}
+                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+              >
+                {option.value ? loaderData.initiatives[option.value]?.key ?? 'unknown' : '⋯'}
+              </Button>
+            </Box>
+          );
+        },
+        renderEditCell: params => <AutocompleteSelect {...params} options={initiativeOptions} />,
       },
       {
         field: 'note',
@@ -368,7 +385,7 @@ export default function ActivityReview() {
         setCodePopover({ element, content })
       ),
     ],
-    [loaderData.actors, loaderData.initiatives, loaderData.launchItems]
+    [initiativeOptions, loaderData.actors, loaderData.initiatives, loaderData.launchItems]
   );
 
   function BulkToolbar() {
@@ -390,13 +407,13 @@ export default function ActivityReview() {
               >
                 {Object.keys(loaderData.initiatives).map(initiativeId => (
                   <MenuItem key={initiativeId} value={initiativeId}>
-                    {`[${initiativeId}] ${loaderData.initiatives[initiativeId].label}`}
+                    {`[${loaderData.initiatives[initiativeId].key}] ${loaderData.initiatives[initiativeId].label}`}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Grid>
-          <Grid sx={{ display: 'flex' }}>
+          <Grid display="flex">
             <Button
               disabled={!bulkInitiative || rowSelectionModel.length > MAX_BATCH}
               onClick={() => {
@@ -406,7 +423,7 @@ export default function ActivityReview() {
                 }
                 activities
                   .filter(a => rowSelectionModel.includes(a.id))
-                  .forEach(activity => (activity.initiativeId = bulkInitiative));
+                  .forEach(activity => (activity.initiative.value = bulkInitiative));
                 setActivities(activities);
                 assignInitiativeFetcher.submit(
                   {
@@ -504,12 +521,13 @@ export default function ActivityReview() {
           }}
           slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
           processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
-            if (updatedRow.initiativeId !== oldRow.initiativeId) {
+            if (updatedRow.initiative.value !== oldRow.initiative.value) {
               assignInitiativeFetcher.submit(
                 {
-                  initiativeId: updatedRow.initiativeId,
+                  initiativeId: updatedRow.initiative.value,
                   initiativeCountersLastUpdated:
-                    loaderData.initiatives[updatedRow.initiativeId]?.countersLastUpdated ?? null,
+                    loaderData.initiatives[updatedRow.initiative.value]?.countersLastUpdated ??
+                    null,
                   activities: [
                     {
                       id: updatedRow.id,

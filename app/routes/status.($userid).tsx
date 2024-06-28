@@ -10,7 +10,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import { type GridColDef } from '@mui/x-data-grid';
+import { gridStringOrNumberComparator, type GridColDef } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -36,6 +36,7 @@ import {
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
+import AutocompleteSelect, { type SelectOption } from '../components/datagrid/AutocompleteSelect';
 import {
   actorColDef,
   dataGridCommonProps,
@@ -156,6 +157,8 @@ export const action = async ({
   return { status: undefined };
 };
 
+type ActivityRow = Omit<Activity, 'launchItemId'> & { launchItem: SelectOption };
+
 export default function Status() {
   const navigation = useNavigation();
   const navigate = useNavigate();
@@ -163,7 +166,7 @@ export default function Status() {
   const submit = useSubmit();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<ActivityRow[]>([]);
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
@@ -199,7 +202,7 @@ export default function Status() {
     if (!fetchedActivities?.activities) {
       return;
     }
-    const activityData: Activity[] = [];
+    const activityRows: ActivityRow[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
       if (!activity.initiativeId || !activity.launchItemId) {
@@ -210,10 +213,11 @@ export default function Status() {
         if (!activity.launchItemId) {
           activity.launchItemId = mapping.launchItems[0] ?? '';
         }
-        activityData.push({
-          ...activity,
+        const { launchItemId, ...activityFields } = activity;
+        activityRows.push({
+          ...activityFields,
           initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
-          launchItemId: activity.launchItemId || mapping?.launchItems[0] || '',
+          launchItem: { value: launchItemId || mapping?.launchItems[0] || '' },
           actorId:
             activity.actorId ?
               loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
@@ -221,7 +225,7 @@ export default function Status() {
         });
       }
     });
-    setActivities(activityData);
+    setActivities(activityRows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedActivities?.activities]); // loaderData and activities must be omitted
 
@@ -240,6 +244,21 @@ export default function Status() {
       navigate(loginWithRedirectUrl());
     }
   }, [fetchedActivities?.error, navigate]);
+
+  const launchItemOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: '[unset]' },
+      ...Object.keys(loaderData.launchItems).map(launchId => {
+        const launchItem = loaderData.launchItems[launchId];
+        return {
+          value: launchId,
+          label: `[${launchItem.key}] ${launchItem.label}`,
+          color: launchItem.color,
+        };
+      }),
+    ],
+    [loaderData.launchItems]
+  );
 
   const columns = useMemo<GridColDef[]>(
     () => [
@@ -265,37 +284,36 @@ export default function Status() {
       ),
       priorityColDef({ field: 'priority' }),
       {
-        field: 'launchItemId',
+        field: 'launchItem',
         headerName: 'Launch',
         minWidth: 100,
         type: 'singleSelect',
-        valueOptions: [
-          { value: '', label: '[unset]' },
-          ...Object.keys(loaderData.launchItems).map(launchId => {
-            const launchItem = loaderData.launchItems[launchId];
-            return { value: launchId, label: `[${launchItem.key}] ${launchItem.label}` };
-          }),
-        ],
+        valueOptions: launchItemOptions,
+        sortComparator: (a: SelectOption, b: SelectOption, paramA, paramB) =>
+          gridStringOrNumberComparator(
+            a.value ? loaderData.launchItems[a.value].key : '',
+            b.value ? loaderData.launchItems[b.value].key : '',
+            paramA,
+            paramB
+          ),
         editable: true,
         renderCell: params => {
-          const activity = params.row as Activity;
+          const option = params.value as SelectOption;
           return (
             <Box>
               <Button
                 color="inherit"
-                size="small"
                 endIcon={<ArrowDropDownIcon />}
-                sx={{ fontWeight: '400', textTransform: 'none' }}
+                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
               >
-                <Box color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}>
-                  {params.value ?
-                    loaderData.launchItems[params.value as string]?.key ?? 'unknown'
-                  : '⋯'}
+                <Box color={loaderData.launchItems[option.value]?.color ?? undefined}>
+                  {option.value ? loaderData.launchItems[option.value]?.key ?? 'unknown' : '⋯'}
                 </Box>
               </Button>
             </Box>
           );
         },
+        renderEditCell: params => <AutocompleteSelect {...params} options={launchItemOptions} />,
       },
       {
         field: 'effort',
@@ -305,10 +323,7 @@ export default function Status() {
         editable: true,
         preProcessEditCellProps: params => {
           const value = params.props.value as number;
-          return {
-            ...params.props,
-            error: value < 0 || value > 24,
-          };
+          return { ...params.props, error: value < 0 || value > 24 };
         },
         renderCell: params => (
           <Box sx={{ cursor: ' pointer' }}>{(params.value as number) ?? '⋯'}</Box>
@@ -318,7 +333,7 @@ export default function Status() {
         setCodePopover({ element, content })
       ),
     ],
-    [showTeam, loaderData.actors, loaderData.launchItems]
+    [showTeam, launchItemOptions, loaderData.actors, loaderData.launchItems]
   );
 
   let datePickerFormat = 'MMM Do';
@@ -414,16 +429,16 @@ export default function Status() {
                 loading={activitiesFetcher.state !== 'idle'}
                 {...dataGridCommonProps}
                 rowHeight={50}
-                processRowUpdate={(updatedRow: Activity, oldRow: Activity) => {
+                processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
                   if (
-                    updatedRow.launchItemId !== oldRow.launchItemId ||
+                    updatedRow.launchItem.value !== oldRow.launchItem.value ||
                     updatedRow.effort !== oldRow.effort
                   ) {
                     submit(
                       {
                         day: formatYYYYMMDD(selectedDay),
                         activityId: updatedRow.id,
-                        launchItemId: updatedRow.launchItemId,
+                        launchItemId: updatedRow.launchItem.value,
                         effort: updatedRow.effort ?? null,
                       },
                       postJsonOptions
