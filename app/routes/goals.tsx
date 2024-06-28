@@ -213,7 +213,7 @@ export default function Initiatives() {
       editable: true,
       renderCell: params => {
         return params.value ?
-            <Box display="flex" height="100%" alignItems="center">
+            <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
               {splitTags(params.value as string).map((tag, i) => (
                 <Chip
                   key={i}
@@ -238,7 +238,12 @@ export default function Initiatives() {
       editable: true,
       renderCell: params => {
         return params.value ?
-            <IconButton href={params.value as string} target="_blank" sx={{ ml: -1 }}>
+            <IconButton
+              tabIndex={params.tabIndex}
+              href={params.value as string}
+              target="_blank"
+              sx={{ ml: -1 }}
+            >
               <OpenInNewIcon fontSize="small" />
             </IconButton>
           : null;
@@ -252,6 +257,7 @@ export default function Initiatives() {
       sortable: false,
       renderCell: params => (
         <Box
+          tabIndex={params.tabIndex}
           title={params.value as string}
           fontFamily="Roboto Mono, monospace"
           fontSize="11px"

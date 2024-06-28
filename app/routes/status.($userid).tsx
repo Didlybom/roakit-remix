@@ -299,6 +299,7 @@ export default function Status() {
           return (
             <Box>
               <Button
+                tabIndex={params.tabIndex}
                 color="inherit"
                 endIcon={<ArrowDropDownIcon />}
                 sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
@@ -323,7 +324,9 @@ export default function Status() {
           return { ...params.props, error: value < 0 || value > 24 };
         },
         renderCell: params => (
-          <Box sx={{ cursor: ' pointer' }}>{(params.value as number) ?? '⋯'}</Box>
+          <Box tabIndex={params.tabIndex} sx={{ cursor: ' pointer' }}>
+            {(params.value as number) ?? '⋯'}
+          </Box>
         ),
       },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>

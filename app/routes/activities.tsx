@@ -308,6 +308,7 @@ export default function ActivityReview() {
             const account = params.value as Account;
             return account ?
                 <Link
+                  tabIndex={params.tabIndex}
                   fontSize="small"
                   href={`/activity/${encodeURI(account.id)}`}
                   title="View activity"
@@ -355,6 +356,7 @@ export default function ActivityReview() {
           return (
             <Box>
               <Button
+                tabIndex={params.tabIndex}
                 color="inherit"
                 endIcon={<ArrowDropDownIcon />}
                 sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
@@ -374,6 +376,7 @@ export default function ActivityReview() {
         sortable: false,
         renderCell: params => (
           <Box
+            tabIndex={params.tabIndex}
             fontSize="small"
             color={theme.palette.primary.main}
             title={params.value as string}

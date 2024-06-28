@@ -247,7 +247,7 @@ export default function LaunchItems() {
       editable: true,
       sortable: false,
       renderCell: params => (
-        <Box display="flex" height="100%" alignItems="center">
+        <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
           <ColorValue color={params.value as string} />
         </Box>
       ),
@@ -263,6 +263,7 @@ export default function LaunchItems() {
       sortable: false,
       renderCell: params => (
         <Box
+          tabIndex={params.tabIndex}
           title={params.value as string}
           fontFamily="Roboto Mono, monospace"
           fontSize="11px"

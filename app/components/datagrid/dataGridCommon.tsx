@@ -114,6 +114,7 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
       if (showActivityLink) {
         return !account ? '' : (
             <Link
+              tabIndex={params.tabIndex}
               href={'/activity/' + encodeURI(account.id)}
               title={account.name}
               sx={internalLinkSx}
@@ -233,6 +234,7 @@ export const descriptionColDef = (
         url && icon ?
           <Box mr="4px" mt="2px">
             <GridActionsCellItem
+              tabIndex={params.tabIndex}
               icon={icon}
               label={urlTitle}
               // @ts-expect-error weird compile error with href

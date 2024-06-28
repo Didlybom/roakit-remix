@@ -251,7 +251,12 @@ export default function Users() {
         renderCell: params => {
           const id = (params.row as Identity).id;
           return (
-            <Link href={`/activity/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
+            <Link
+              tabIndex={params.tabIndex}
+              href={`/activity/${encodeURI(id)}`}
+              title="View activity"
+              sx={internalLinkSx}
+            >
               {params.value}
             </Link>
           );
@@ -264,35 +269,33 @@ export default function Users() {
         flex: 1,
         sortable: false,
         renderCell: params => {
-          return (params.value as Identity['accounts']).map((account, i) => {
-            return (
-              <Stack key={i} direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
-                <Typography
-                  component="div"
-                  fontSize="small"
-                  color={!account.id ? 'error' : 'inherited'}
-                >
-                  <Stack direction="row" spacing={1} alignItems={'center'}>
-                    {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
-                    {account.type === 'jira' && (
-                      <Box component="span" sx={{ fontSize: '10px' }}>
-                        <JiraIcon />
-                      </Box>
-                    )}
-                    <Box>{account.id || 'n/a'}</Box>
-                    {account.name && <Box sx={ellipsisSx}>{account.name}</Box>}
-                    <Link
-                      href={account.url}
-                      target="_blank"
-                      sx={{ cursor: 'pointer', ...ellipsisSx }}
-                    >
-                      {account.url}
-                    </Link>
-                  </Stack>
-                </Typography>
-              </Stack>
-            );
-          });
+          return (params.value as Identity['accounts']).map((account, i) => (
+            <Stack key={i} direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
+              <Typography
+                component="div"
+                fontSize="small"
+                color={!account.id ? 'error' : 'inherited'}
+              >
+                <Stack direction="row" spacing={1} alignItems={'center'}>
+                  {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
+                  {account.type === 'jira' && (
+                    <Box component="span" sx={{ fontSize: '10px' }}>
+                      <JiraIcon />
+                    </Box>
+                  )}
+                  <Box>{account.id || 'n/a'}</Box>
+                  {account.name && <Box sx={ellipsisSx}>{account.name}</Box>}
+                  <Link
+                    href={account.url}
+                    target="_blank"
+                    sx={{ cursor: 'pointer', ...ellipsisSx }}
+                  >
+                    {account.url}
+                  </Link>
+                </Stack>
+              </Typography>
+            </Stack>
+          ));
         },
       },
       {
@@ -314,6 +317,7 @@ export default function Users() {
         renderCell: params => (
           <Box height="45px" display="flex" alignItems="center">
             <Button
+              tabIndex={params.tabIndex}
               color="inherit"
               size="small"
               endIcon={<ArrowDropDownIcon />}
@@ -338,6 +342,7 @@ export default function Users() {
               </Box>
             : <Box display="flex" height="100%" alignItems="center">
                 <IconButton
+                  tabIndex={params.tabIndex}
                   title="Allow the user to login to ROAKIT"
                   onClick={() =>
                     submit(
@@ -369,6 +374,7 @@ export default function Users() {
           return user?.id ?
               <Box height="45px" display="flex" alignItems="center">
                 <Button
+                  tabIndex={params.tabIndex}
                   color="inherit"
                   size="small"
                   endIcon={<ArrowDropDownIcon />}
@@ -395,7 +401,12 @@ export default function Users() {
         renderCell: params => {
           const id = (params.row as Identity).id;
           return (
-            <Link href={`/activity/${encodeURI(id)}`} title="View activity" sx={internalLinkSx}>
+            <Link
+              tabIndex={params.tabIndex}
+              href={`/activity/${encodeURI(id)}`}
+              title="View activity"
+              sx={internalLinkSx}
+            >
               {params.value}
             </Link>
           );
