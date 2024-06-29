@@ -91,6 +91,7 @@ export const activitySchema = z.object({
   artifact: z.string(), //z.enum(ARTIFACTS), // don't use an enum so ingestion backend can be deployed with new artifacts before updating frontend
   initiative: z.string(),
   launchItemId: z.string().optional(),
+  phase: z.string().nullable().optional(),
   effort: z.number().nullable().optional(),
   priority: z.number().optional(),
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata

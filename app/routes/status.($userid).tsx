@@ -55,7 +55,7 @@ import {
   fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
-import type { Account, Activity } from '../types/types';
+import { PHASES, type Account, type Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isToday, isValidDate, isYesterday } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -116,6 +116,7 @@ interface ActionRequest {
   day?: string;
   activityId: string;
   launchItemId: string;
+  phase: string;
   effort: number;
 }
 
@@ -147,7 +148,8 @@ export const action = async ({
     await firestore
       .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
       .update({
-        launchItemId: actionRequest.launchItemId ?? '',
+        launchItemId: actionRequest.launchItemId,
+        phase: actionRequest.phase,
         effort: actionRequest.effort,
       });
 
@@ -157,7 +159,10 @@ export const action = async ({
   return { status: undefined };
 };
 
-type ActivityRow = Omit<Activity, 'launchItemId'> & { launchItem: SelectOption };
+type ActivityRow = Omit<Activity, 'launchItemId' | 'phase'> & {
+  launchItem: SelectOption;
+  phase: SelectOption;
+};
 
 export default function Status() {
   const navigation = useNavigation();
@@ -209,13 +214,14 @@ export default function Status() {
       if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
       }
-      const { launchItemId, ...activityFields } = activity;
+      const { launchItemId, phase, ...activityFields } = activity;
       activityRows.push({
         ...activityFields,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
         launchItem: {
           value: launchItemId != null ? launchItemId : mapping?.launchItems[0] ?? '',
         },
+        phase: { value: phase ?? '' },
         actorId:
           activity.actorId ?
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
@@ -255,6 +261,17 @@ export default function Status() {
       }),
     ],
     [loaderData.launchItems]
+  );
+
+  const phaseOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: '[unset]' },
+      ...[...PHASES.entries()].map(([phaseId, phase]) => ({
+        value: phaseId,
+        label: phase.label,
+      })),
+    ],
+    []
   );
 
   const columns = useMemo<GridColDef[]>(
@@ -314,6 +331,32 @@ export default function Status() {
         renderEditCell: params => <AutocompleteSelect {...params} options={launchItemOptions} />,
       },
       {
+        field: 'phase',
+        headerName: 'Phase',
+        minWidth: 100,
+        type: 'singleSelect',
+        valueOptions: phaseOptions,
+        sortComparator: (a: SelectOption, b: SelectOption) =>
+          (PHASES.get(a.value)?.sortOrder ?? 999) - (PHASES.get(b.value)?.sortOrder ?? 999),
+        editable: true,
+        renderCell: params => {
+          const option = params.value as SelectOption;
+          return (
+            <Box>
+              <Button
+                tabIndex={params.tabIndex}
+                color="inherit"
+                endIcon={<ArrowDropDownIcon />}
+                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+              >
+                <Box>{option.value ? PHASES.get(option.value)?.label ?? 'unknown' : '⋯'}</Box>
+              </Button>
+            </Box>
+          );
+        },
+        renderEditCell: params => <AutocompleteSelect {...params} options={phaseOptions} />,
+      },
+      {
         field: 'effort',
         headerName: 'Effort',
         type: 'number',
@@ -333,7 +376,7 @@ export default function Status() {
         setCodePopover({ element, content })
       ),
     ],
-    [showTeam, launchItemOptions, loaderData.actors, loaderData.launchItems]
+    [showTeam, launchItemOptions, phaseOptions, loaderData.actors, loaderData.launchItems]
   );
 
   let datePickerFormat = 'MMM Do';
@@ -432,6 +475,7 @@ export default function Status() {
                 processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
                   if (
                     updatedRow.launchItem.value !== oldRow.launchItem.value ||
+                    updatedRow.phase.value !== oldRow.phase.value ||
                     updatedRow.effort !== oldRow.effort
                   ) {
                     submit(
@@ -439,6 +483,7 @@ export default function Status() {
                         day: formatYYYYMMDD(selectedDay),
                         activityId: updatedRow.id,
                         launchItemId: updatedRow.launchItem.value,
+                        phase: updatedRow.phase.value,
                         effort: updatedRow.effort ?? null,
                       },
                       postJsonOptions

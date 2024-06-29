@@ -16,6 +16,17 @@ export const FEED_TYPES = [
   { type: CONFLUENCE_FEED_TYPE, id: CONFLUENCE_FEED_ID, label: 'Confluence' },
 ];
 
+export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
+
+export const PHASES = new Map<string, { sortOrder: number; label: string }>([
+  ['design', { sortOrder: 1, label: 'Design' }],
+  ['dev', { sortOrder: 2, label: 'Develop' }],
+  ['test', { sortOrder: 3, label: 'Test' }],
+  ['deploy', { sortOrder: 4, label: 'Deploy' }],
+  ['stabilize', { sortOrder: 5, label: 'Stabilize' }],
+  ['ops', { sortOrder: 6, label: 'Operate' }],
+]);
+
 export type Initiative = {
   id: string;
   key: string;
@@ -81,8 +92,6 @@ export type Ticket = {
 
 export type TicketRecord = Record<Ticket['key'], Ticket['priority']>;
 
-export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
-
 export type ActivityChangeLog = {
   field: string;
   oldValue?: string;
@@ -131,6 +140,7 @@ export type Activity = {
   initiativeId: string;
   launchItemId?: string;
   effort?: number | null;
+  phase?: string | null;
   priority?: number;
   metadata?: ActivityMetadata;
   note?: string;

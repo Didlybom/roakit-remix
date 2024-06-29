@@ -456,6 +456,7 @@ export const fetchActivities = async ({
         initiativeId: data.initiative,
         launchItemId: data.launchItemId,
         effort: data.effort,
+        phase: data.phase,
         priority, // see overwrite below
         eventType: data.eventType,
         event: data.event,
