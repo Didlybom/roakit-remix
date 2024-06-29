@@ -10,6 +10,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return redirect('/activity/*');
     case Role.Contributor:
     default:
-      return redirect('/summary');
+      return redirect('/status');
   }
 };

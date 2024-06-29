@@ -13,7 +13,7 @@ import pino from 'pino';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import App from '../components/App';
 import Copyright from '../components/Copyright';
-import { auth as clientAuth } from '../firebase.client';
+import { clientAuth } from '../firebase.client';
 import { auth as serverAuth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
 import { ONE_DAY } from '../utils/dateUtils';
