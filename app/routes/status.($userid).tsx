@@ -1,20 +1,34 @@
-import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  ArrowDropDown as ArrowDropDownIcon,
+  DeleteOutlined as DeleteIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   Unstable_Grid2 as Grid,
   Snackbar,
   Stack,
   Switch,
+  TextField,
   Typography,
 } from '@mui/material';
-import { gridStringOrNumberComparator, type GridColDef } from '@mui/x-data-grid';
+import {
+  GridActionsCellItem,
+  gridStringOrNumberComparator,
+  type GridColDef,
+  type GridRowId,
+} from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ActionFunctionArgs, LoaderFunctionArgs, type TypedResponse } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -25,8 +39,9 @@ import {
   useSubmit,
 } from '@remix-run/react';
 import dayjs, { Dayjs } from 'dayjs';
+import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   compileActivityMappers,
@@ -36,7 +51,7 @@ import {
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
-import AutocompleteSelect, { type SelectOption } from '../components/datagrid/AutocompleteSelect';
+import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import {
   actorColDef,
   dataGridCommonProps,
@@ -47,6 +62,7 @@ import {
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import SelectField from '../components/SelectField';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
@@ -58,9 +74,16 @@ import {
 import { PHASES, type Account, type Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isToday, isValidDate, isYesterday } from '../utils/dateUtils';
-import { postJsonOptions } from '../utils/httpUtils';
-import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import { errMsg } from '../utils/errorUtils';
+import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
+import {
+  errorAlert,
+  loaderErrorResponse,
+  loginWithRedirectUrl,
+  type SelectOption,
+} from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
+import { priorityColors, priorityLabels } from '../utils/theme';
 import { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:status.user' });
@@ -112,39 +135,69 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
+type NewActivity = {
+  action: string;
+  artifact: string;
+  launchItemId: string;
+  phase: string;
+  description: string;
+  priority: number | null;
+  effort: number | null;
+  eventTimestamp: number;
+};
+
+const emptyActivity: NewActivity = {
+  action: '',
+  artifact: '',
+  launchItemId: '',
+  phase: '',
+  description: '',
+  priority: null,
+  effort: null,
+  eventTimestamp: 0,
+};
+
 interface ActionRequest {
   day?: string;
   activityId: string;
   launchItemId: string;
   phase: string;
   effort: number;
+  newActivity?: NewActivity;
 }
 
 interface ActionResponse {
-  status?: 'saved';
+  status?: { code: 'created' | 'updated' | 'deleted'; message?: string };
   error?: string;
 }
 
-export const action = async ({
-  params,
-  request,
-}: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW, params);
 
   const actionRequest = (await request.json()) as ActionRequest;
 
-  // save activity
-  if (actionRequest.day) {
-    let identityId = params.userid; // impersonification
-    if (!identityId) {
-      const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
-      identityId = identity.id;
-    }
+  let identityId = params.userid; // impersonification
+  if (!identityId) {
+    const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
+    identityId = identity.id;
+  }
+  if (!identityId) {
+    throw 'Identity required';
+  }
 
-    if (!identityId) {
-      throw 'Identity required';
+  // delete custom activity
+  if (request.method === 'DELETE') {
+    try {
+      await firestore
+        .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
+        .delete();
+      return { status: { code: 'deleted', message: 'Activity deleted' } };
+    } catch (e) {
+      return { error: errMsg(e, 'Failed to delete activity') };
     }
-
+  }
+  // update activity
+  if (actionRequest.activityId) {
     await firestore
       .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
       .update({
@@ -152,8 +205,22 @@ export const action = async ({
         phase: actionRequest.phase,
         effort: actionRequest.effort,
       });
+    return { status: { code: 'updated', message: 'Activity updated' } };
+  }
 
-    return { status: 'saved' };
+  // save new activity
+  if (actionRequest.newActivity) {
+    const ref = await firestore.collection(`customers/${sessionData.customerId!}/activities`).add({
+      ...actionRequest.newActivity,
+      priority: actionRequest.newActivity.priority ?? -1,
+      eventType: 'custom',
+      event: 'custom',
+      actorAccountId: identityId,
+      createdTimestamp: actionRequest.newActivity.eventTimestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
+      initiative: '',
+    });
+    logger.info('Saved custom activity ' + ref.id);
+    return { status: { code: 'created', message: 'Activity created' } };
   }
 
   return { status: undefined };
@@ -169,6 +236,7 @@ export default function Status() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
+  const confirm = useConfirm();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
@@ -182,7 +250,11 @@ export default function Status() {
   const [showTeam, setShowTeam] = useState(false);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
-  const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [newActivity, setNewActivity] = useState(emptyActivity);
+
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -192,6 +264,9 @@ export default function Status() {
 
   // load activities for the selected day
   useEffect(() => {
+    if (actionData?.status?.code === 'updated' || actionData?.status?.code === 'deleted') {
+      return;
+    }
     if (!isValidDate(selectedDay)) {
       setError('Invalid date');
       return;
@@ -200,7 +275,7 @@ export default function Status() {
       `/fetcher/activities/${loaderData.userId ?? ''}?${showTeam ? 'includeTeam=true&' : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDay, showTeam]); // activitiesFetcher and loaderData must be omitted
+  }, [selectedDay, showTeam, actionData?.status]); // activitiesFetcher and loaderData must be omitted
 
   // handle fetched activities
   useEffect(() => {
@@ -232,15 +307,13 @@ export default function Status() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedActivities?.activities]); // loaderData must be omitted
 
-  // handle save results
   useEffect(() => {
-    if (!actionData) {
-      return;
+    if (!actionData?.status) {
+      setConfirmation('');
+    } else if (actionData?.status?.message) {
+      setConfirmation(actionData?.status?.message);
     }
-    if (actionData.status === 'saved') {
-      setShowSavedConfirmation(true);
-    }
-  }, [actionData]);
+  }, [actionData?.status]);
 
   useEffect(() => {
     if (fetchedActivities?.error?.status === 401) {
@@ -266,12 +339,17 @@ export default function Status() {
   const phaseOptions = useMemo<SelectOption[]>(
     () => [
       { value: '', label: '[unset]' },
-      ...[...PHASES.entries()].map(([phaseId, phase]) => ({
-        value: phaseId,
-        label: phase.label,
-      })),
+      ...[...PHASES.entries()].map(([phaseId, phase]) => ({ value: phaseId, label: phase.label })),
     ],
     []
+  );
+
+  const handleDeleteClick = useCallback(
+    (activityId: GridRowId) => {
+      setActivities(activities.filter(row => row.id !== activityId));
+      submit({ activityId }, deleteJsonOptions);
+    },
+    [activities, submit]
   );
 
   const columns = useMemo<GridColDef[]>(
@@ -372,11 +450,46 @@ export default function Status() {
           </Box>
         ),
       },
+      {
+        field: 'actionDelete',
+        type: 'actions',
+        cellClassName: 'actions',
+        getActions: params => {
+          const activity = params.row as ActivityRow;
+          return activity.event === 'custom' ?
+              [
+                <GridActionsCellItem
+                  key={1}
+                  icon={<DeleteIcon />}
+                  label="Delete"
+                  onClick={async () => {
+                    try {
+                      await confirm({
+                        description: `Please confirm the deletion of activity "${activity.description}".`,
+                      });
+                      handleDeleteClick(params.id);
+                    } catch {
+                      /* user cancelled */
+                    }
+                  }}
+                />,
+              ]
+            : [];
+        },
+      },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
       ),
     ],
-    [showTeam, launchItemOptions, phaseOptions, loaderData.actors, loaderData.launchItems]
+    [
+      showTeam,
+      launchItemOptions,
+      phaseOptions,
+      loaderData.actors,
+      loaderData.launchItems,
+      confirm,
+      handleDeleteClick,
+    ]
   );
 
   let datePickerFormat = 'MMM Do';
@@ -397,10 +510,10 @@ export default function Status() {
       {errorAlert(fetchedActivities?.error?.message)}
       {errorAlert(error)}
       <Snackbar
-        open={showSavedConfirmation}
+        open={!!confirmation}
         autoHideDuration={2000}
-        onClose={(_, reason) => (reason === 'clickaway' ? null : setShowSavedConfirmation(false))}
-        message={'Saved'}
+        onClose={(_, reason) => (reason === 'clickaway' ? null : setConfirmation(''))}
+        message={confirmation}
       />
       <CodePopover
         popover={codePopover}
@@ -408,6 +521,112 @@ export default function Status() {
         customerId={loaderData.customerId}
         options={{ linkifyActivityId: true }}
       />
+      <Dialog
+        open={showNewDialog}
+        onClose={() => setShowNewDialog(false)}
+        fullWidth
+        disableRestoreFocus
+      >
+        <DialogTitle>New Activity</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} my={1}>
+            <Stack direction="row" spacing={3}>
+              <SelectField
+                required
+                value={newActivity.action}
+                onChange={newValue => setNewActivity({ ...newActivity, action: newValue })}
+                label="Action"
+                items={[
+                  { value: 'created', label: 'Created' },
+                  { value: 'updated', label: 'Updated' },
+                  { value: 'deleted', label: 'Deleted' },
+                ]}
+              />
+              <SelectField
+                required
+                value={newActivity.artifact}
+                onChange={artifact => setNewActivity({ ...newActivity, artifact })}
+                label="Artifact"
+                items={[
+                  { value: 'task', label: 'Task' },
+                  { value: 'code', label: 'Code' },
+                  { value: 'doc', label: 'Documentation' },
+                ]}
+              />
+            </Stack>
+            <Stack direction="row" spacing={3}>
+              <SelectField
+                value={newActivity.launchItemId}
+                onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
+                label="Launch"
+                items={launchItemOptions}
+              />
+              <SelectField
+                value={newActivity.phase}
+                onChange={phase => setNewActivity({ ...newActivity, phase })}
+                label="Phase"
+                items={phaseOptions}
+              />
+              <SelectField
+                value={newActivity.priority ? `${newActivity.priority}` : ''}
+                onChange={priority =>
+                  setNewActivity({ ...newActivity, priority: +priority ?? null })
+                }
+                label="Priority"
+                items={[1, 2, 3, 4, 5].map(i => ({
+                  value: `${i}`,
+                  label: priorityLabels[i],
+                  color: priorityColors[i],
+                }))}
+              />
+              <TextField
+                autoComplete="off"
+                label="Effort"
+                type="number"
+                helperText="0 - 24"
+                size="small"
+                sx={{ maxWidth: 90 }}
+                onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
+              />
+            </Stack>
+            <TextField
+              required
+              autoComplete="off"
+              label="Description"
+              size="small"
+              fullWidth
+              onChange={e => setNewActivity({ ...newActivity, description: e.target.value })}
+            />
+          </Stack>
+          <DialogActions>
+            <Button onClick={() => setShowNewDialog(false)}>Cancel</Button>
+            <Button
+              type="submit"
+              disabled={
+                !newActivity.action ||
+                !newActivity.artifact ||
+                !newActivity.description.trim() ||
+                (newActivity.effort ?? 0) > 24 ||
+                (newActivity.effort ?? 0) < 0
+              }
+              onClick={() => {
+                setShowNewDialog(false);
+                submit(
+                  {
+                    newActivity: {
+                      ...newActivity,
+                      eventTimestamp: selectedDay.endOf('day').valueOf(),
+                    },
+                  },
+                  postJsonOptions
+                );
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Grid container columns={2} sx={{ m: 3, ml: 0 }}>
         <Grid>
@@ -465,6 +684,16 @@ export default function Status() {
         </Grid>
         <Grid flex={1} minWidth={300}>
           <Stack spacing={2} sx={{ ml: 2 }}>
+            <Button
+              onClick={() => {
+                setNewActivity(emptyActivity);
+                setShowNewDialog(true);
+              }}
+              startIcon={<AddIcon />}
+              sx={{ width: 'fit-content' }}
+            >
+              New Activity
+            </Button>
             <StyledMuiError>
               <DataGridWithSingleClickEditing
                 columns={columns}

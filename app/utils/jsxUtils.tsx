@@ -1,6 +1,8 @@
 import { Alert, SxProps } from '@mui/material';
 import { errMsg } from './errorUtils';
 
+export type SelectOption = { value: string; label?: string; color?: string | null };
+
 export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
 
 export const verticalStickyBarSx: SxProps = {

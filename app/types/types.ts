@@ -142,6 +142,7 @@ export type Activity = {
   effort?: number | null;
   phase?: string | null;
   priority?: number;
+  description?: string;
   metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging

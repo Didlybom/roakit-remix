@@ -4,6 +4,10 @@ import { mimeTypeToType } from './stringUtils';
 export const ACTIVITY_DESCRIPTION_LIST_SEPARATOR = ', ';
 
 export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
+  if (activity.description) {
+    return activity.description;
+  }
+
   const metadata = activity.metadata;
   if (metadata?.issue) {
     return metadata.issue.key + ' ' + metadata.issue.summary;

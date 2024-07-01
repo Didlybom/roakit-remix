@@ -5,8 +5,7 @@ import {
   type MuiBaseEvent,
 } from '@mui/x-data-grid';
 import { useCallback, useState } from 'react';
-
-export type SelectOption = { value: string; label?: string; color?: string | null };
+import type { SelectOption } from '../../utils/jsxUtils';
 
 export default function AutocompleteSelect(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -460,6 +460,7 @@ export const fetchActivities = async ({
         priority, // see overwrite below
         eventType: data.eventType,
         event: data.event,
+        description: data.description,
         ...(options?.includeMetadata && { metadata: data.metadata as ActivityMetadata }),
         objectId: data.objectId, // for debugging
       },
@@ -564,7 +565,8 @@ export const fetchActivitiesPage = async ({
       timestamp: data.eventTimestamp ?? data.createdTimestamp,
       priority: data.priority,
       initiativeId: data.initiative,
-      launchItemId: '', // FIXME launch item
+      launchItemId: data.launchItemId,
+      description: data.description,
       metadata: data.metadata as ActivityMetadata,
       note: data.note,
       objectId: data.objectId, // for debugging

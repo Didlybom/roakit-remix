@@ -37,7 +37,6 @@ import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { CodePopoverContent } from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
-import type { SelectOption } from '../components/datagrid/AutocompleteSelect';
 import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
@@ -70,6 +69,7 @@ import {
   internalLinkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
+  type SelectOption,
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
