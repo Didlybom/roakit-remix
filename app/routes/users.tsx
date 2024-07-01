@@ -29,7 +29,7 @@ import {
   useNavigation,
   useSubmit,
 } from '@remix-run/react';
-import { ActionFunctionArgs, LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
@@ -125,9 +125,7 @@ interface ActionResponse {
   error?: string;
 }
 
-export const action = async ({
-  request,
-}: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
+export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
   const actionRequest = (await request.json()) as ActionRequest;
 

@@ -157,7 +157,7 @@ export default function Initiatives() {
   const [newActivityMapper, setNewActivityMapper] = useState('');
   const [newActivityMapperError, setNewActivityMapperError] = useState(false);
 
-  const [confirmation, setConfirmation] = useState('false');
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {

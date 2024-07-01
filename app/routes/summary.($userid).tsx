@@ -27,7 +27,7 @@ import { grey } from '@mui/material/colors';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ActionFunctionArgs, LoaderFunctionArgs, type TypedResponse } from '@remix-run/node';
+import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -130,10 +130,7 @@ interface ActionResponse {
   aiSummary: GenerateContentResult | null;
 }
 
-export const action = async ({
-  params,
-  request,
-}: ActionFunctionArgs): Promise<TypedResponse<never> | ActionResponse> => {
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW, params);
 
   const actionRequest = (await request.json()) as ActionRequest;
@@ -230,17 +227,14 @@ export default function Summary() {
 
   // handle save results and AI results
   useEffect(() => {
-    if (!actionData) {
-      return;
-    }
-    if (actionData.status === 'saved') {
+    if (actionData?.status === 'saved') {
       // refresh summary from server (could be optimized by putting the fetcher response in a state, updated on click on Save)
       summaryFetcher.load(
         `/fetcher/summaries/${loaderData.userId ?? ''}?month=${formatYYYYMM(selectedDay)}`
       );
       setShowSavedConfirmation(true);
     }
-    if (actionData.status === 'generated') {
+    if (actionData?.status === 'generated') {
       if (!aiSummaryTexts[aiSummaryTexts.length - 1]) {
         setAiSummaryTexts([actionData.aiSummary ? getSummaryResult(actionData.aiSummary) : '']);
       } else {

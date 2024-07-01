@@ -108,21 +108,21 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
     } catch (e) {
       return { error: errMsg(e, 'Failed to delete launch item') };
     }
-  } else {
-    try {
-      if (launchItemId) {
-        await firestore
-          .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
-          .set(actionRequest, { merge: true });
-      } else {
-        await firestore
-          .collection(`customers/${sessionData.customerId!}/launchItems`)
-          .add(actionRequest);
-      }
-      return { status: { code: 'saved', message: 'Launch item saved' } };
-    } catch (e) {
-      return { error: errMsg(e, 'Failed to save launch item') };
+  }
+
+  try {
+    if (launchItemId) {
+      await firestore
+        .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
+        .set(actionRequest, { merge: true });
+    } else {
+      await firestore
+        .collection(`customers/${sessionData.customerId!}/launchItems`)
+        .add(actionRequest);
     }
+    return { status: { code: 'saved', message: 'Launch item saved' } };
+  } catch (e) {
+    return { error: errMsg(e, 'Failed to save launch item') };
   }
 };
 
@@ -190,7 +190,7 @@ export default function LaunchItems() {
   const [newActivityMapper, setNewActivityMapper] = useState('');
   const [newActivityMapperError, setNewActivityMapperError] = useState(false);
 
-  const [confirmation, setConfirmation] = useState('false');
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
