@@ -319,7 +319,7 @@ export default function Summary() {
         onClose={(_, reason) => (reason === 'clickaway' ? null : setShowSavedConfirmation(false))}
         message={'Saved'}
       />
-      <Grid container columns={2} sx={{ mx: 1, my: 3 }}>
+      <Grid container sx={{ mx: 1, my: 3 }}>
         <Grid>
           <Stack sx={{ mb: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -379,7 +379,7 @@ export default function Summary() {
           </Stack>
         </Grid>
         <Grid flex={1} minWidth={300}>
-          <Stack spacing={2} sx={{ ml: 2 }}>
+          <Stack spacing={2} sx={{ ml: 2, mr: 1 }}>
             <Stepper orientation="vertical">
               <Step active>
                 <StepLabel>

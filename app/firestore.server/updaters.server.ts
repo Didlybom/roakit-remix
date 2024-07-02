@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
 import { ARTIFACTS } from '../types/schemas';
-import type { ActivityCount, Artifact, InitiativeRecord } from '../types/types';
+import type { Artifact, ArtifactCount, InitiativeRecord } from '../types/types';
 import { ONE_HOUR } from '../utils/dateUtils';
 
 export const updateInitiativeCounters = async (
@@ -64,7 +64,7 @@ export const updateInitiativeCounters = async (
 export const incrementInitiativeCounters = async (
   customerId: number,
   initiativeId: string,
-  counters: ActivityCount
+  counters: ArtifactCount
 ) => {
   const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
   await initiativeDoc.set(

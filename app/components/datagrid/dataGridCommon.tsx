@@ -1,5 +1,6 @@
 import {
   Attachment as AttachmentIcon,
+  PlaylistAddCheckCircle as CustomEventIcon,
   DataObject as DataObjectIcon,
   GitHub as GitHubIcon,
 } from '@mui/icons-material';
@@ -29,7 +30,7 @@ import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
 import ConfluenceIcon from '../../icons/Confluence';
 import JiraIcon from '../../icons/Jira';
-import type { Account, Activity } from '../../types/types';
+import { CUSTOM_EVENT, type Account, type Activity } from '../../types/types';
 import {
   ACTIVITY_DESCRIPTION_LIST_SEPARATOR,
   getActivityActionDescription,
@@ -229,10 +230,12 @@ export const descriptionColDef = (
           icon = <GitHubIcon color="primary" />;
           urlTitle = 'Go to Github page';
         }
+      } else if (activity.event === CUSTOM_EVENT) {
+        icon = <CustomEventIcon fontSize="small" sx={{ color: grey[400] }} />;
       }
       const link =
         url && icon ?
-          <Box mr="4px" mt="2px">
+          <Box display="flex" alignItems="center" mr="4px">
             <GridActionsCellItem
               tabIndex={params.tabIndex}
               icon={icon}
@@ -252,6 +255,11 @@ export const descriptionColDef = (
       return (
         <Stack direction="row" useFlexGap>
           {link}
+          {!link && (
+            <Box display="flex" alignItems="center" ml="4px" mr="7px">
+              {icon}
+            </Box>
+          )}
           {actionDescription || comment || commits ?
             <Stack mt={'3px'} pl={url && icon ? undefined : '32px'} minWidth={0}>
               <Box title={description} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
@@ -322,7 +330,7 @@ export const descriptionColDef = (
           : <Box
               fontSize="small"
               title={description}
-              pl={url && icon ? undefined : '35px'}
+              pl={icon ? undefined : '35px'}
               sx={ellipsisSx}
             >
               {description}

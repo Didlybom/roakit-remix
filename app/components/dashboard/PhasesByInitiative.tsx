@@ -12,7 +12,7 @@ type Props = {
   isLoading?: boolean;
 };
 
-export default function ActivitiesByInitiatives({
+export default function PhasesByInitiatives({
   type,
   groupedActivities,
   initiatives,
@@ -23,10 +23,7 @@ export default function ActivitiesByInitiatives({
     return null;
   }
 
-  const SHOW_TOTAL = false;
-
   return groupedActivities[type].map(initiative => {
-    const totalCounters = initiatives[initiative.id].counters!.activities;
     return (
       <Grid key={initiative.id}>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
@@ -34,44 +31,23 @@ export default function ActivitiesByInitiatives({
           <BarChart
             series={[
               {
-                id: `${initiative.id} new`,
+                id: `${initiative.id} phases`,
                 data: [
-                  initiative.count.code,
-                  initiative.count.task,
-                  initiative.count.codeOrg,
-                  initiative.count.taskOrg,
-                  initiative.count.doc,
-                  initiative.count.docOrg,
+                  initiative.phaseCount.design,
+                  initiative.phaseCount.dev,
+                  initiative.phaseCount.test,
+                  initiative.phaseCount.deploy,
+                  initiative.phaseCount.stabilize,
+                  initiative.phaseCount.ops,
                 ],
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: dateRangeLabel,
-                stack: 'stack',
                 color: initiatives[initiative.id]?.color || undefined,
               },
-              ...(SHOW_TOTAL ?
-                [
-                  {
-                    id: `${initiative.id} total`,
-                    data: [
-                      // max() is useful is totalCounters are behind (updated every hour only)
-                      Math.max(totalCounters.code, initiative.count.code),
-                      Math.max(totalCounters.task, initiative.count.task),
-                      Math.max(totalCounters.codeOrg, initiative.count.codeOrg),
-                      Math.max(totalCounters.taskOrg, initiative.count.taskOrg),
-                      Math.max(totalCounters.codeOrg, initiative.count.doc),
-                      Math.max(totalCounters.taskOrg, initiative.count.docOrg),
-                    ],
-                    valueFormatter: (value: number | null) =>
-                      `${value} ${pluralizeMemo('activity', value ?? 0)}`,
-                    label: 'Total',
-                    stack: 'stack',
-                  },
-                ]
-              : []),
             ]}
             xAxis={[
               {
-                data: ['Dev', 'Task', 'Dev Org', 'Task Org', 'Doc', 'Doc Org'],
+                data: ['Design', 'Code', 'Test', 'Deploy', 'Stabilize', 'Operate'],
                 scaleType: 'band',
                 tickLabelStyle: { angle: -45, textAnchor: 'end' },
                 tickMinStep: 1,
@@ -83,7 +59,6 @@ export default function ActivitiesByInitiatives({
             margin={{ bottom: 60 }}
             slotProps={{
               legend: {
-                hidden: !SHOW_TOTAL,
                 direction: 'row',
                 position: { vertical: 'top', horizontal: 'middle' },
                 itemMarkHeight: 10,

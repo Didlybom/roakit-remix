@@ -18,6 +18,8 @@ export const FEED_TYPES = [
 
 export type Artifact = 'code' | 'codeOrg' | 'task' | 'taskOrg' | 'doc' | 'docOrg';
 
+export type Phase = 'design' | 'dev' | 'test' | 'deploy' | 'stabilize' | 'ops';
+
 export const PHASES = new Map<string, { sortOrder: number; label: string }>([
   ['design', { sortOrder: 1, label: 'Design' }],
   ['dev', { sortOrder: 2, label: 'Develop' }],
@@ -26,6 +28,8 @@ export const PHASES = new Map<string, { sortOrder: number; label: string }>([
   ['stabilize', { sortOrder: 5, label: 'Stabilize' }],
   ['ops', { sortOrder: 6, label: 'Operate' }],
 ]);
+
+export const CUSTOM_EVENT = 'custom';
 
 export type Initiative = {
   id: string;
@@ -37,7 +41,7 @@ export type Initiative = {
   url?: string;
   activityMapper?: string;
   counters?: {
-    activities: ActivityCount;
+    activities: ArtifactCount;
   };
   countersLastUpdated?: number;
 };
@@ -140,9 +144,9 @@ export type Activity = {
   initiativeId: string;
   launchItemId?: string;
   effort?: number | null;
-  phase?: string | null;
+  phase?: Phase | null;
   priority?: number;
-  description?: string;
+  description?: string | null;
   metadata?: ActivityMetadata;
   note?: string;
   objectId?: string; // for debugging
@@ -151,13 +155,22 @@ export type Activity = {
 
 export type ActivityRecord = Record<Activity['id'], Activity>;
 
-export type ActivityCount = {
+export type ArtifactCount = {
   code: number;
   codeOrg: number;
   task: number;
   taskOrg: number;
   doc: number;
   docOrg: number;
+};
+
+export type PhaseCount = {
+  design: number;
+  dev: number;
+  test: number;
+  deploy: number;
+  stabilize: number;
+  ops: number;
 };
 
 export type Settings = {

@@ -53,11 +53,11 @@ import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import {
+  actionColDef,
   actorColDef,
   dataGridCommonProps,
   dateColDef,
   descriptionColDef,
-  priorityColDef,
   StyledMuiError,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
@@ -71,7 +71,7 @@ import {
   fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
-import { PHASES, type Account, type Activity } from '../types/types';
+import { CUSTOM_EVENT, PHASES, type Account, type Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isToday, isValidDate, isYesterday } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
@@ -83,7 +83,7 @@ import {
   type SelectOption,
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { priorityColors, priorityLabels } from '../utils/theme';
+import { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:status.user' });
@@ -162,6 +162,8 @@ interface ActionRequest {
   activityId: string;
   launchItemId: string;
   phase: string;
+  description: string;
+  priority: number;
   effort: number;
   newActivity?: NewActivity;
 }
@@ -203,6 +205,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       .update({
         launchItemId: actionRequest.launchItemId,
         phase: actionRequest.phase,
+        description: actionRequest.description,
+        priority: actionRequest.priority,
         effort: actionRequest.effort,
       });
     return { status: { code: 'updated', message: 'Activity updated' } };
@@ -213,8 +217,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     const ref = await firestore.collection(`customers/${sessionData.customerId!}/activities`).add({
       ...actionRequest.newActivity,
       priority: actionRequest.newActivity.priority ?? -1,
-      eventType: 'custom',
-      event: 'custom',
+      eventType: CUSTOM_EVENT,
+      event: CUSTOM_EVENT,
       actorAccountId: identityId,
       createdTimestamp: actionRequest.newActivity.eventTimestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
       initiative: '',
@@ -226,10 +230,31 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   return { status: undefined };
 };
 
-type ActivityRow = Omit<Activity, 'launchItemId' | 'phase'> & {
+type ActivityRow = Omit<Activity, 'priority' | 'launchItemId' | 'phase'> & {
+  priority: SelectOption;
   launchItem: SelectOption;
   phase: SelectOption;
 };
+
+const artifactOptions: SelectOption[] = [
+  { value: 'task', label: 'Task' },
+  { value: 'taskOrg', label: 'Task Organization' },
+  { value: 'code', label: 'Code' },
+  { value: 'codeOrg', label: 'Code Organization' },
+  { value: 'doc', label: 'Documentation' },
+  { value: 'docOrg', label: 'Documentation Organization' },
+];
+
+const phaseOptions: SelectOption[] = [
+  { value: '', label: '[unset]' },
+  ...[...PHASES.entries()].map(([phaseId, phase]) => ({ value: phaseId, label: phase.label })),
+];
+
+const priorityOptions: SelectOption[] = [1, 2, 3, 4, 5].map(i => ({
+  value: `${i}`,
+  label: priorityLabels[i],
+  color: priorityColors[i],
+}));
 
 export default function Status() {
   const navigation = useNavigation();
@@ -289,10 +314,13 @@ export default function Status() {
       if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
       }
-      const { launchItemId, phase, ...activityFields } = activity;
+      const { priority, launchItemId, phase, ...activityFields } = activity;
       activityRows.push({
         ...activityFields,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
+        priority: {
+          value: priority === -1 || priority == null ? '' : `${priority}`,
+        },
         launchItem: {
           value: launchItemId != null ? launchItemId : mapping?.launchItems[0] ?? '',
         },
@@ -336,14 +364,6 @@ export default function Status() {
     [loaderData.launchItems]
   );
 
-  const phaseOptions = useMemo<SelectOption[]>(
-    () => [
-      { value: '', label: '[unset]' },
-      ...[...PHASES.entries()].map(([phaseId, phase]) => ({ value: phaseId, label: phase.label })),
-    ],
-    []
-  );
-
   const handleDeleteClick = useCallback(
     (activityId: GridRowId) => {
       setActivities(activities.filter(row => row.id !== activityId));
@@ -359,6 +379,7 @@ export default function Status() {
         minWidth: 100,
         valueGetter: value => (value ? new Date(value) : value),
       }),
+      actionColDef({ field: 'action' }),
       ...(showTeam ?
         [
           actorColDef({
@@ -370,11 +391,43 @@ export default function Status() {
           }),
         ]
       : []),
-
-      descriptionColDef({ field: 'metadata' }, (element, content) =>
-        setPopover({ element, content })
+      descriptionColDef(
+        { field: 'description', editable: true /* see isCellEditable below for granularity */ },
+        (element, content) => setPopover({ element, content })
       ),
-      priorityColDef({ field: 'priority' }),
+      {
+        field: 'priority',
+        headerName: 'Prio.',
+        type: 'singleSelect',
+        valueOptions: priorityOptions,
+        getSortComparator: sortDirection => {
+          // keep not prioritized at the bottom
+          return (aOption: SelectOption, bOption: SelectOption) => {
+            const a = aOption.value ? +aOption.value : -1;
+            const b = bOption.value ? +bOption.value : -1;
+            if (sortDirection === 'asc') {
+              return (b ?? -1) - (a ?? -1);
+            }
+            return (a === -1 || a == null ? 9999 : a) - (b === -1 || b == null ? 9999 : b);
+          };
+        },
+        editable: true,
+        renderCell: params => {
+          const priority = +(params.value as SelectOption).value;
+          return (
+            <Box
+              fontSize="large"
+              fontWeight="600"
+              color={priorityColors[priority] ?? undefined}
+              display="flex"
+              justifyContent="center"
+            >
+              {prioritySymbols[priority] ?? ''}
+            </Box>
+          );
+        },
+        renderEditCell: params => <AutocompleteSelect {...params} options={priorityOptions} />,
+      },
       {
         field: 'launchItem',
         headerName: 'Launch',
@@ -456,7 +509,7 @@ export default function Status() {
         cellClassName: 'actions',
         getActions: params => {
           const activity = params.row as ActivityRow;
-          return activity.event === 'custom' ?
+          return activity.event === CUSTOM_EVENT ?
               [
                 <GridActionsCellItem
                   key={1}
@@ -484,7 +537,6 @@ export default function Status() {
     [
       showTeam,
       launchItemOptions,
-      phaseOptions,
       loaderData.actors,
       loaderData.launchItems,
       confirm,
@@ -547,48 +599,50 @@ export default function Status() {
                 value={newActivity.artifact}
                 onChange={artifact => setNewActivity({ ...newActivity, artifact })}
                 label="Artifact"
-                items={[
-                  { value: 'task', label: 'Task' },
-                  { value: 'code', label: 'Code' },
-                  { value: 'doc', label: 'Documentation' },
-                ]}
+                items={artifactOptions}
               />
             </Stack>
-            <Stack direction="row" spacing={3}>
-              <SelectField
-                value={newActivity.launchItemId}
-                onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
-                label="Launch"
-                items={launchItemOptions}
-              />
-              <SelectField
-                value={newActivity.phase}
-                onChange={phase => setNewActivity({ ...newActivity, phase })}
-                label="Phase"
-                items={phaseOptions}
-              />
-              <SelectField
-                value={newActivity.priority ? `${newActivity.priority}` : ''}
-                onChange={priority =>
-                  setNewActivity({ ...newActivity, priority: +priority ?? null })
-                }
-                label="Priority"
-                items={[1, 2, 3, 4, 5].map(i => ({
-                  value: `${i}`,
-                  label: priorityLabels[i],
-                  color: priorityColors[i],
-                }))}
-              />
-              <TextField
-                autoComplete="off"
-                label="Effort"
-                type="number"
-                helperText="0 - 24"
-                size="small"
-                sx={{ maxWidth: 90 }}
-                onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
-              />
-            </Stack>
+            <Box sx={{ ml: '-30px' }}>
+              <Grid container spacing={3}>
+                <Grid>
+                  <SelectField
+                    value={newActivity.launchItemId}
+                    onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
+                    label="Launch"
+                    items={launchItemOptions}
+                  />
+                </Grid>
+                <Grid>
+                  <SelectField
+                    value={newActivity.phase}
+                    onChange={phase => setNewActivity({ ...newActivity, phase })}
+                    label="Phase"
+                    items={phaseOptions}
+                  />
+                </Grid>
+                <Grid>
+                  <SelectField
+                    value={newActivity.priority ? `${newActivity.priority}` : ''}
+                    onChange={priority =>
+                      setNewActivity({ ...newActivity, priority: +priority ?? null })
+                    }
+                    label="Priority"
+                    items={priorityOptions}
+                  />
+                </Grid>
+                <Grid>
+                  <TextField
+                    autoComplete="off"
+                    label="Effort"
+                    type="number"
+                    helperText="0 - 24"
+                    size="small"
+                    sx={{ maxWidth: 90 }}
+                    onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
             <TextField
               required
               autoComplete="off"
@@ -628,7 +682,7 @@ export default function Status() {
         </DialogContent>
       </Dialog>
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
-      <Grid container columns={2} sx={{ m: 3, ml: 0 }}>
+      <Grid container sx={{ m: 3, ml: 0 }}>
         <Grid>
           <Stack sx={{ mb: 4 }}>
             <Box sx={{ ml: 3, mr: 1, mb: 3 }}>
@@ -701,8 +755,17 @@ export default function Status() {
                 loading={activitiesFetcher.state !== 'idle'}
                 {...dataGridCommonProps}
                 rowHeight={50}
+                isCellEditable={params => {
+                  const eventType = (params.row as ActivityRow).eventType;
+                  return (
+                    (params.field === 'description' || params.field === 'priority') &&
+                    eventType === CUSTOM_EVENT
+                  );
+                }}
                 processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
                   if (
+                    updatedRow.description !== oldRow.description ||
+                    updatedRow.priority !== oldRow.priority ||
                     updatedRow.launchItem.value !== oldRow.launchItem.value ||
                     updatedRow.phase.value !== oldRow.phase.value ||
                     updatedRow.effort !== oldRow.effort
@@ -711,6 +774,8 @@ export default function Status() {
                       {
                         day: formatYYYYMMDD(selectedDay),
                         activityId: updatedRow.id,
+                        description: updatedRow.description ?? null,
+                        priority: updatedRow.priority.value ? +updatedRow.priority.value : -1,
                         launchItemId: updatedRow.launchItem.value,
                         phase: updatedRow.phase.value,
                         effort: updatedRow.effort ?? null,

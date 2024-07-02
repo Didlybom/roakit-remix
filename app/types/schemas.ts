@@ -94,7 +94,7 @@ export const activitySchema = z.object({
   phase: z.string().nullable().optional(),
   effort: z.number().nullable().optional(),
   priority: z.number().optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata
   note: z.string().optional(),
   objectId: z.string().optional(), // for debugging

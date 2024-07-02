@@ -16,7 +16,7 @@ export default function SelectField({
   onChange: (value: string) => void;
 }) {
   return (
-    <FormControl required={required} size="small" sx={{ minWidth: 130 }}>
+    <FormControl required={required} size="small" sx={{ width: 130 }}>
       <InputLabel>{label}</InputLabel>
       <Select value={value} label={label} onChange={e => onChange(e.target.value)} autoWidth>
         {items.map((item, i) => (

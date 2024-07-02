@@ -14,9 +14,10 @@ import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import ActiveContributors from '../components/dashboard/ActiveContributors.';
-import ActivitiesByInitiative from '../components/dashboard/ActivitiesByInitiative';
+import ArtifactsByInitiative from '../components/dashboard/ArtifactsByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
 import EffortByInitiative from '../components/dashboard/EffortByInitiative';
+import PhasesByInitiative from '../components/dashboard/PhasesByInitiative';
 import Priorities from '../components/dashboard/Priorities';
 import {
   fetchAccountMap,
@@ -130,10 +131,34 @@ export default function Dashboard() {
           </AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Grid container spacing={5}>
-              <ActivitiesByInitiative
+              <ArtifactsByInitiative
                 type="initiatives"
                 groupedActivities={groupedActivitiesResponse}
                 initiatives={loaderData.initiatives}
+                dateRangeLabel={dateRangeLabel}
+                isLoading={groupedActivitiesFetcher.state === 'loading'}
+              />
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      {!!groupedActivitiesResponse?.launchItems?.length && (
+        <Accordion
+          variant="outlined"
+          disableGutters
+          defaultExpanded={false}
+          sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            Activity Categories by Launch
+          </AccordionSummary>
+          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+            <Grid container spacing={5}>
+              <ArtifactsByInitiative
+                type="launchItems"
+                groupedActivities={groupedActivitiesResponse}
+                initiatives={loaderData.launchItems}
                 dateRangeLabel={dateRangeLabel}
                 isLoading={groupedActivitiesFetcher.state === 'loading'}
               />
@@ -149,11 +174,11 @@ export default function Dashboard() {
           sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activity Categories by Launch
+            Activity Phases by Launch
           </AccordionSummary>
           <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
             <Grid container spacing={5}>
-              <ActivitiesByInitiative
+              <PhasesByInitiative
                 type="launchItems"
                 groupedActivities={groupedActivitiesResponse}
                 initiatives={loaderData.launchItems}

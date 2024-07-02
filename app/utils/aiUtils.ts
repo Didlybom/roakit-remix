@@ -1,5 +1,10 @@
 import { GenerateContentResult } from '@google-cloud/vertexai';
-import type { Activity, ActorRecord, InitiativeRecord } from '../types/types';
+import {
+  CUSTOM_EVENT,
+  type Activity,
+  type ActorRecord,
+  type InitiativeRecord,
+} from '../types/types';
 import { getActivityActionDescription, getActivityDescription } from './activityDescription';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
@@ -29,7 +34,7 @@ export const buildActivitySummaryPrompt = (
   activityList
     .sort((a, b) => a.timestamp - b.timestamp)
     .forEach(activity => {
-      if (!activity.metadata) {
+      if (!activity.metadata && activity.event !== CUSTOM_EVENT) {
         return;
       }
       const description = getActivityDescription(activity);
@@ -38,7 +43,9 @@ export const buildActivitySummaryPrompt = (
         return;
       }
       const actionDescription =
-        options.inclActions ? getActivityActionDescription(activity.metadata) : undefined;
+        options.inclActions && activity.metadata ?
+          getActivityActionDescription(activity.metadata)
+        : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?
           (

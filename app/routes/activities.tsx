@@ -58,7 +58,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
-import type { Account, Activity, ActivityCount, Artifact } from '../types/types';
+import type { Account, Activity, Artifact, ArtifactCount } from '../types/types';
 import { inferPriority } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
@@ -141,7 +141,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!activities) {
       return null;
     }
-    const counters: ActivityCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 };
+    const counters: ArtifactCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 };
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (
@@ -486,7 +486,7 @@ export default function ActivityReview() {
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>
-        <Grid container columns={2} spacing={2} alignItems="center" mb={1}>
+        <Grid container spacing={2} alignItems="center" mb={1}>
           <Grid>
             {!!rowTotal && (
               <Typography variant="subtitle2">

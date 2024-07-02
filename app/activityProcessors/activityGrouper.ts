@@ -1,4 +1,4 @@
-import type { Activity, ActivityCount } from '../types/types';
+import type { Activity, ArtifactCount, PhaseCount } from '../types/types';
 import { buildArtifactActionKey } from '../utils/activityFeed';
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
@@ -17,7 +17,8 @@ type Priority = {
 type Initiative = {
   id: string;
   key: string;
-  count: ActivityCount;
+  artifactCount: ArtifactCount;
+  phaseCount: PhaseCount;
   actorIds?: Set<string>; // will be removed before returning for serialization
   actorCount: number;
   effort: number;
@@ -43,6 +44,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       launchItemId,
       priority: priorityId,
       artifact,
+      phase,
       action,
     } = activity;
 
@@ -79,14 +81,15 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
         initiative = {
           id: initiativeId,
           key: '',
-          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
+          artifactCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
+          phaseCount: { design: 0, dev: 0, test: 0, deploy: 0, stabilize: 0, ops: 0 },
           actorIds: new Set<string>(),
           actorCount: 0,
           effort: 0,
         };
         initiatives.push(initiative);
       }
-      initiative.count[artifact]++;
+      initiative.artifactCount[artifact]++;
       if (actorId !== undefined) {
         initiative.actorIds!.add(actorId); // the set dedupes
       }
@@ -101,14 +104,18 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
         launchItem = {
           id: launchItemId,
           key: '',
-          count: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
+          artifactCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
+          phaseCount: { design: 0, dev: 0, test: 0, deploy: 0, stabilize: 0, ops: 0 },
           actorIds: new Set<string>(),
           actorCount: 0,
           effort: 0,
         };
         launchItems.push(launchItem);
       }
-      launchItem.count[artifact]++;
+      launchItem.artifactCount[artifact]++;
+      if (phase) {
+        launchItem.phaseCount[phase]++;
+      }
       if (actorId !== undefined) {
         launchItem.actorIds!.add(actorId); // the set dedupes
       }
@@ -119,7 +126,8 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   initiatives = initiatives.map(i => ({
     id: i.id,
     key: i.key,
-    count: i.count,
+    artifactCount: i.artifactCount,
+    phaseCount: i.phaseCount,
     actorCount: i.actorIds!.size,
     effort: i.effort,
   }));
@@ -127,7 +135,8 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   launchItems = launchItems.map(i => ({
     id: i.id,
     key: i.key,
-    count: i.count,
+    artifactCount: i.artifactCount,
+    phaseCount: i.phaseCount,
     actorCount: i.actorIds!.size,
     effort: i.effort,
   }));

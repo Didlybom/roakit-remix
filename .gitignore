@@ -8,6 +8,7 @@ node_modules
 .env.dev
 .env.prod
 .firebase
+.vscode
 .DS_Store
 firebase-debug.log
 firestore-debug.log
