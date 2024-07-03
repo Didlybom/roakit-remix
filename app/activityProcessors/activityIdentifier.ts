@@ -41,6 +41,16 @@ export const identifyAccounts = (
     }
   });
 
+  // add the identities without accounts
+  identities
+    .filter(identity => !actors[identity.id])
+    .forEach(identity => {
+      actors[identity.id] = {
+        name: identity.displayName ?? identity.id,
+        email: identity.email,
+      };
+    });
+
   return actors;
 };
 
