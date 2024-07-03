@@ -45,10 +45,7 @@ export const identifyAccounts = (
   identities
     .filter(identity => !actors[identity.id])
     .forEach(identity => {
-      actors[identity.id] = {
-        name: identity.displayName ?? identity.id,
-        email: identity.email,
-      };
+      actors[identity.id] = { name: identity.displayName ?? identity.id, email: identity.email };
     });
 
   return actors;
