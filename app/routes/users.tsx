@@ -3,6 +3,7 @@ import {
   ArrowDropDown as ArrowDropDownIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
+  Search as SearchIcon,
   Upload as UploadIcon,
 } from '@mui/icons-material';
 import {
@@ -10,8 +11,11 @@ import {
   Box,
   Button,
   Divider,
+  Unstable_Grid2 as Grid,
   IconButton,
+  InputAdornment,
   Link,
+  Pagination,
   Snackbar,
   Stack,
   Tab,
@@ -32,7 +36,8 @@ import {
 import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import pluralize from 'pluralize';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 import App from '../components/App';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
@@ -223,6 +228,9 @@ export default function Users() {
   const [identities, setIdentities] = useState(loaderData.identities.list);
   const [imports, setImports] = useState('');
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
+  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [searchTerm] = useDebounce(searchFilter.trim().toLowerCase(), 50);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const [confirmation, setConfirmation] = useState('false');
   const [error, setError] = useState('');
 
@@ -456,6 +464,66 @@ export default function Users() {
     NeedsReview,
   }
 
+  const searchBar = useCallback(
+    (rowCount: number) => (
+      <Grid container alignItems="center" rowSpacing={2} mb={1}>
+        <Grid>
+          <TextField
+            autoComplete="off"
+            value={searchFilter}
+            placeholder="Search"
+            title="Search names"
+            size="small"
+            sx={{ width: '12ch', minWidth: { xs: '110px', sm: '170px' } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            onChange={e => setSearchFilter(e.target.value)}
+          />
+        </Grid>
+        <Grid flex={1} />
+        <Grid>
+          <Pagination
+            siblingCount={0}
+            count={Math.round(rowCount / paginationModel.pageSize)}
+            page={paginationModel.page + 1}
+            showFirstButton
+            showLastButton
+            onChange={(_, page) => setPaginationModel({ ...paginationModel, page: page - 1 })}
+            size="small"
+          />
+        </Grid>
+      </Grid>
+    ),
+    [paginationModel, searchFilter]
+  );
+
+  const filteredIdentities =
+    (tabValue as UsersTab) === UsersTab.Directory ?
+      identities
+        .filter(
+          identity =>
+            !searchTerm ||
+            (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0)
+        )
+        .map(identity => ({
+          ...identity,
+          managerId: identity.managerId ?? UNSET_MANAGER_ID,
+        }))
+    : [];
+
+  const filteredAccounts =
+    (tabValue as UsersTab) === UsersTab.NeedsReview ?
+      loaderData.accountsToReview.filter(
+        account =>
+          !searchTerm || (account.name && account.name.toLowerCase().indexOf(searchTerm) >= 0)
+      )
+    : [];
+
   return (
     <App
       view={VIEW}
@@ -546,14 +614,14 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
         </Box>
         <TabPanel value={tabValue} index={UsersTab.Directory}>
           <Stack>
+            {searchBar(filteredIdentities.length)}
             <DataGridWithSingleClickEditing
               columns={identityCols}
-              rows={identities.map(identity => ({
-                ...identity,
-                managerId: identity.managerId ?? UNSET_MANAGER_ID,
-              }))}
+              rows={filteredIdentities}
               {...dataGridCommonProps}
               rowHeight={65}
+              paginationModel={paginationModel}
+              onPaginationModelChange={newPaginationModel => setPaginationModel(newPaginationModel)}
               initialState={{
                 pagination: { paginationModel: { pageSize: 25 } },
                 sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
@@ -606,11 +674,14 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
           <Alert severity="warning" sx={{ mb: 2 }}>
             We found activity for these accounts although they are not listed in the directory.
           </Alert>
+          {searchBar(filteredAccounts.length)}
           <DataGrid
             columns={accountReviewCols}
-            rows={loaderData.accountsToReview}
+            rows={filteredAccounts}
             {...dataGridCommonProps}
             rowHeight={50}
+            paginationModel={paginationModel}
+            onPaginationModelChange={newPaginationModel => setPaginationModel(newPaginationModel)}
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: {
