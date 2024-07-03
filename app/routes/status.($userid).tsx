@@ -58,6 +58,7 @@ import {
   dataGridCommonProps,
   dateColDef,
   descriptionColDef,
+  priorityColDef,
   StyledMuiError,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
@@ -83,7 +84,7 @@ import {
   type SelectOption,
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
+import { priorityColors, priorityLabels } from '../utils/theme';
 import { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:status.user' });
@@ -102,7 +103,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const [initiatives, launchItems, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
-      fetchAccountMap(sessionData.customerId!),
+      fetchAccountMap(sessionData.customerId!), // could be optimized if we fetch identity first, we don't need it for individual contributors
       fetchIdentities(sessionData.customerId!),
     ]);
 
@@ -229,13 +230,6 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   return { status: undefined };
 };
-
-type ActivityRow = Omit<Activity, 'priority' | 'launchItemId' | 'phase'> & {
-  priority: SelectOption;
-  launchItem: SelectOption;
-  phase: SelectOption;
-};
-
 const artifactOptions: SelectOption[] = [
   { value: 'task', label: 'Task' },
   { value: 'taskOrg', label: 'Task Organization' },
@@ -264,7 +258,7 @@ export default function Status() {
   const confirm = useConfirm();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
-  const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
@@ -307,24 +301,16 @@ export default function Status() {
     if (!fetchedActivities?.activities) {
       return;
     }
-    const activityRows: ActivityRow[] = [];
+    const activityRows: Activity[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
       let mapping;
       if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
       }
-      const { priority, launchItemId, phase, ...activityFields } = activity;
       activityRows.push({
-        ...activityFields,
+        ...activity,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
-        priority: {
-          value: priority === -1 || priority == null ? '' : `${priority}`,
-        },
-        launchItem: {
-          value: launchItemId != null ? launchItemId : mapping?.launchItems[0] ?? '',
-        },
-        phase: { value: phase ?? '' },
         actorId:
           activity.actorId ?
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
@@ -395,70 +381,40 @@ export default function Status() {
         { field: 'description', editable: true /* see isCellEditable below for granularity */ },
         (element, content) => setPopover({ element, content })
       ),
-      {
+      priorityColDef({
         field: 'priority',
-        headerName: 'Prio.',
-        type: 'singleSelect',
-        valueOptions: priorityOptions,
-        getSortComparator: sortDirection => {
-          // keep not prioritized at the bottom
-          return (aOption: SelectOption, bOption: SelectOption) => {
-            const a = aOption.value ? +aOption.value : -1;
-            const b = bOption.value ? +bOption.value : -1;
-            if (sortDirection === 'asc') {
-              return (b ?? -1) - (a ?? -1);
-            }
-            return (a === -1 || a == null ? 9999 : a) - (b === -1 || b == null ? 9999 : b);
-          };
-        },
         editable: true,
-        renderCell: params => {
-          const priority = +(params.value as SelectOption).value;
-          return (
-            <Box
-              fontSize="large"
-              fontWeight="600"
-              color={priorityColors[priority] ?? undefined}
-              display="flex"
-              justifyContent="center"
-            >
-              {prioritySymbols[priority] ?? ''}
-            </Box>
-          );
-        },
         renderEditCell: params => <AutocompleteSelect {...params} options={priorityOptions} />,
-      },
+      }),
+
       {
-        field: 'launchItem',
+        field: 'launchItemId',
         headerName: 'Launch',
         minWidth: 100,
         type: 'singleSelect',
         valueOptions: launchItemOptions,
-        sortComparator: (a: SelectOption, b: SelectOption, paramA, paramB) =>
+        sortComparator: (a: string, b: string, paramA, paramB) =>
           gridStringOrNumberComparator(
-            a.value ? loaderData.launchItems[a.value].key : '',
-            b.value ? loaderData.launchItems[b.value].key : '',
+            a ? loaderData.launchItems[a].key : '',
+            b ? loaderData.launchItems[b].key : '',
             paramA,
             paramB
           ),
         editable: true,
-        renderCell: params => {
-          const option = params.value as SelectOption;
-          return (
-            <Box>
-              <Button
-                tabIndex={params.tabIndex}
-                color="inherit"
-                endIcon={<ArrowDropDownIcon />}
-                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-              >
-                <Box color={loaderData.launchItems[option.value]?.color ?? undefined}>
-                  {option.value ? loaderData.launchItems[option.value]?.key ?? 'unknown' : '⋯'}
-                </Box>
-              </Button>
-            </Box>
-          );
-        },
+        renderCell: params => (
+          <Box>
+            <Button
+              tabIndex={params.tabIndex}
+              color="inherit"
+              endIcon={<ArrowDropDownIcon />}
+              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+            >
+              <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
+                {params.value ? loaderData.launchItems[`${params.value}`]?.key ?? 'unknown' : '⋯'}
+              </Box>
+            </Button>
+          </Box>
+        ),
         renderEditCell: params => <AutocompleteSelect {...params} options={launchItemOptions} />,
       },
       {
@@ -467,24 +423,21 @@ export default function Status() {
         minWidth: 100,
         type: 'singleSelect',
         valueOptions: phaseOptions,
-        sortComparator: (a: SelectOption, b: SelectOption) =>
-          (PHASES.get(a.value)?.sortOrder ?? 999) - (PHASES.get(b.value)?.sortOrder ?? 999),
+        sortComparator: (a: string, b: string) =>
+          (PHASES.get(a)?.sortOrder ?? 999) - (PHASES.get(b)?.sortOrder ?? 999),
         editable: true,
-        renderCell: params => {
-          const option = params.value as SelectOption;
-          return (
-            <Box>
-              <Button
-                tabIndex={params.tabIndex}
-                color="inherit"
-                endIcon={<ArrowDropDownIcon />}
-                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-              >
-                <Box>{option.value ? PHASES.get(option.value)?.label ?? 'unknown' : '⋯'}</Box>
-              </Button>
-            </Box>
-          );
-        },
+        renderCell: params => (
+          <Box>
+            <Button
+              tabIndex={params.tabIndex}
+              color="inherit"
+              endIcon={<ArrowDropDownIcon />}
+              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+            >
+              <Box>{params.value ? PHASES.get(`${params.value}`)?.label ?? 'unknown' : '⋯'}</Box>
+            </Button>
+          </Box>
+        ),
         renderEditCell: params => <AutocompleteSelect {...params} options={phaseOptions} />,
       },
       {
@@ -508,7 +461,7 @@ export default function Status() {
         type: 'actions',
         cellClassName: 'actions',
         getActions: params => {
-          const activity = params.row as ActivityRow;
+          const activity = params.row as Activity;
           return activity.event === CUSTOM_EVENT ?
               [
                 <GridActionsCellItem
@@ -689,12 +642,7 @@ export default function Status() {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   disableFuture={true}
-                  slotProps={{
-                    textField: {
-                      size: 'small',
-                      sx: { width: '160px' },
-                    },
-                  }}
+                  slotProps={{ textField: { size: 'small', sx: { width: '160px' } } }}
                   value={selectedDay}
                   format={datePickerFormat}
                   onChange={day => {
@@ -756,18 +704,25 @@ export default function Status() {
                 {...dataGridCommonProps}
                 rowHeight={50}
                 isCellEditable={params => {
-                  const eventType = (params.row as ActivityRow).eventType;
+                  if (
+                    params.field === 'launchItemId' ||
+                    params.field === 'phase' ||
+                    params.field === 'effort'
+                  ) {
+                    return true;
+                  }
+                  const eventType = (params.row as Activity).eventType;
                   return (
                     (params.field === 'description' || params.field === 'priority') &&
                     eventType === CUSTOM_EVENT
                   );
                 }}
-                processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
+                processRowUpdate={(updatedRow: Activity, oldRow: Activity) => {
                   if (
                     updatedRow.description !== oldRow.description ||
                     updatedRow.priority !== oldRow.priority ||
-                    updatedRow.launchItem.value !== oldRow.launchItem.value ||
-                    updatedRow.phase.value !== oldRow.phase.value ||
+                    updatedRow.launchItemId !== oldRow.launchItemId ||
+                    updatedRow.phase !== oldRow.phase ||
                     updatedRow.effort !== oldRow.effort
                   ) {
                     submit(
@@ -775,9 +730,9 @@ export default function Status() {
                         day: formatYYYYMMDD(selectedDay),
                         activityId: updatedRow.id,
                         description: updatedRow.description ?? null,
-                        priority: updatedRow.priority.value ? +updatedRow.priority.value : -1,
-                        launchItemId: updatedRow.launchItem.value,
-                        phase: updatedRow.phase.value,
+                        priority: updatedRow.priority ? +updatedRow.priority : -1,
+                        launchItemId: updatedRow.launchItemId ?? null,
+                        phase: updatedRow.phase ?? null,
                         effort: updatedRow.effort ?? null,
                       },
                       postJsonOptions

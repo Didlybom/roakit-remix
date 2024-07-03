@@ -193,6 +193,7 @@ export const priorityColDef = (colDef?: GridColDef) =>
           color={priorityColors[priority] ?? undefined}
           display="flex"
           justifyContent="center"
+          sx={{ cursor: colDef?.editable ? 'pointer' : undefined }}
         >
           {prioritySymbols[priority] ?? ''}
         </Box>

@@ -9,15 +9,16 @@ import type { SelectOption } from '../../utils/jsxUtils';
 
 export default function AutocompleteSelect(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  props: GridRenderEditCellParams<any, SelectOption> & { options: SelectOption[] }
+  props: GridRenderEditCellParams<any, string> & { options: SelectOption[] }
 ) {
   const { id, field, value, options } = props;
+  const optionValue = { value: value ?? '' };
   const apiRef = useGridApiContext();
   const [isOpen, setIsOpen] = useState(true);
 
   const handleChange = useCallback(
-    async (event: MuiBaseEvent, value: SelectOption) => {
-      await apiRef.current.setEditCellValue({ id, field, value }, event);
+    async (event: MuiBaseEvent, optionValue: SelectOption) => {
+      await apiRef.current.setEditCellValue({ id, field, value: optionValue.value }, event);
       apiRef.current.stopCellEditMode({ id, field });
     },
     [apiRef, field, id]
@@ -28,7 +29,7 @@ export default function AutocompleteSelect(
       componentsProps={{ popper: { style: { width: 'fit-content' } } }}
       noOptionsText={<Box fontSize="small">no match</Box>}
       size="small"
-      value={value}
+      value={optionValue}
       open={isOpen}
       onClose={() => setIsOpen(false)}
       onKeyDown={e => (e.key === 'Escape' ? setIsOpen(false) : null)}

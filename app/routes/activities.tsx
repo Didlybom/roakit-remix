@@ -109,7 +109,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-type ActivityRow = Omit<Activity, 'initiativeId'> & { initiative: SelectOption; note?: string };
+type ActivityRow = Activity & { note?: string };
 type ActivityPayload = { id: string; artifact: Artifact; createdTimestamp: number }[];
 
 interface ActionRequest {
@@ -151,7 +151,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ) {
         counters[activity.artifact]++;
       }
-      const activityDoc = firestore.doc('customers/' + customerId + '/activities/' + activity.id);
+      const activityDoc = firestore.doc(`customers/${customerId}/activities/${activity.id}`);
       batch.update(activityDoc, { initiative: initiativeId ?? '' });
     });
     await batch.commit(); // up to 500 operations
@@ -250,7 +250,7 @@ export default function ActivityReview() {
             loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
           : undefined,
         priority,
-        initiative: { value: initiativeId || mapping?.initiatives[0] || '' },
+        initiativeId: initiativeId || mapping?.initiatives[0] || '',
         // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
         launchItemId:
           activity.launchItemId != null ? activity.launchItemId : mapping?.launchItems[0] ?? '',
@@ -344,28 +344,25 @@ export default function ActivityReview() {
         },
       },
       {
-        field: 'initiative',
+        field: 'initiativeId',
         headerName: 'Goal',
         minWidth: 100,
         type: 'singleSelect',
         valueOptions: initiativeOptions,
         editable: true,
         sortable: false,
-        renderCell: params => {
-          const option = params.value as SelectOption;
-          return (
-            <Box>
-              <Button
-                tabIndex={params.tabIndex}
-                color="inherit"
-                endIcon={<ArrowDropDownIcon />}
-                sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-              >
-                {option.value ? loaderData.initiatives[option.value]?.key ?? 'unknown' : '⋯'}
-              </Button>
-            </Box>
-          );
-        },
+        renderCell: params => (
+          <Box>
+            <Button
+              tabIndex={params.tabIndex}
+              color="inherit"
+              endIcon={<ArrowDropDownIcon />}
+              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+            >
+              {params.value ? loaderData.initiatives[`${params.value}`]?.key ?? 'unknown' : '⋯'}
+            </Button>
+          </Box>
+        ),
         renderEditCell: params => <AutocompleteSelect {...params} options={initiativeOptions} />,
       },
       {
@@ -428,7 +425,7 @@ export default function ActivityReview() {
                 }
                 activities
                   .filter(a => rowSelectionModel.includes(a.id))
-                  .forEach(activity => (activity.initiative.value = bulkInitiative));
+                  .forEach(activity => (activity.initiativeId = bulkInitiative));
                 setActivities(activities);
                 assignInitiativeFetcher.submit(
                   {
@@ -526,13 +523,12 @@ export default function ActivityReview() {
           }}
           slots={{ toolbar: rowSelectionModel.length ? BulkToolbar : undefined }}
           processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
-            if (updatedRow.initiative.value !== oldRow.initiative.value) {
+            if (updatedRow.initiativeId !== oldRow.initiativeId) {
               assignInitiativeFetcher.submit(
                 {
-                  initiativeId: updatedRow.initiative.value,
+                  initiativeId: updatedRow.initiativeId,
                   initiativeCountersLastUpdated:
-                    loaderData.initiatives[updatedRow.initiative.value]?.countersLastUpdated ??
-                    null,
+                    loaderData.initiatives[updatedRow.initiativeId]?.countersLastUpdated ?? null,
                   activities: [
                     {
                       id: updatedRow.id,

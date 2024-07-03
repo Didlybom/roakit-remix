@@ -57,16 +57,7 @@ export default function PhasesByInitiatives({
             yAxis={[{ tickMinStep: 1 }]}
             {...widgetSize}
             margin={{ bottom: 60 }}
-            slotProps={{
-              legend: {
-                direction: 'row',
-                position: { vertical: 'top', horizontal: 'middle' },
-                itemMarkHeight: 10,
-                itemGap: 20,
-                padding: 0,
-                labelStyle: { fontSize: 12 },
-              },
-            }}
+            slotProps={{ legend: { hidden: true } }}
             colors={pastelColors}
           />
         </Paper>
