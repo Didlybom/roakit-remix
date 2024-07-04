@@ -16,6 +16,7 @@ import {
   type Activity,
   type ActivityMetadata,
   type Artifact,
+  type CustomerSettings,
   type DaySummaries,
   type Identity,
   type Initiative,
@@ -40,6 +41,28 @@ const retryProps = (message: string) => ({
   onRetry: (e: unknown) => logger.warn(e, message),
 });
 
+const makeCustomerSettingsCacheKey = (customerId: number) => `${customerId};settings`;
+const customerSettingsCache = new NodeCache({ stdTTL: 300 /* seconds */, useClones: false });
+
+export const queryCustomer = async (customerId: number): Promise<CustomerSettings> => {
+  const cacheKey = makeCustomerSettingsCacheKey(customerId);
+  const cache: CustomerSettings | undefined = customerSettingsCache.get(cacheKey);
+  if (cache != null) {
+    return cache;
+  }
+  const doc = await retry(
+    async () => await firestore.doc(`customers/${customerId}`).get(),
+    retryProps('Retrying queryCustomer...')
+  );
+  const data = doc.data();
+  if (!data) {
+    throw Error(`Customer ${customerId} not found`);
+  }
+  const settings = parse<schemas.CustomerType>(schemas.customerSchema, data, 'customer ' + doc.id);
+  customerSettingsCache.set(cacheKey, settings);
+  return settings;
+};
+
 export const queryUser = async (
   email: string
 ): Promise<{ customerId: number; id: string; role: Role }> => {
@@ -50,10 +73,10 @@ export const queryUser = async (
     )
   ).docs;
   if (userDocs.length === 0) {
-    throw Error('User not found');
+    throw Error(`User ${email} not found`);
   }
   if (userDocs.length > 1) {
-    throw Error('More than one User found');
+    throw Error(`More than one User found for ${email}`);
   }
   const data = parse<schemas.UserType>(
     schemas.userSchema,

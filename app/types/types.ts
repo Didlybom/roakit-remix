@@ -31,6 +31,11 @@ export const PHASES = new Map<string, { sortOrder: number; label: string }>([
 
 export const CUSTOM_EVENT = 'custom';
 
+export type CustomerSettings = {
+  name?: string;
+  ticketBaseUrl?: string;
+};
+
 export type Initiative = {
   id: string;
   key: string;

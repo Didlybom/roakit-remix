@@ -323,8 +323,10 @@ export default function ActivityReview() {
         true /* show link */
       ),
       actionColDef({ field: 'action' }),
-      descriptionColDef({ field: 'metadata' }, (element, content) =>
-        setPopover({ element, content })
+      descriptionColDef(
+        { field: 'metadata' },
+        (element, content) => setPopover({ element, content }),
+        loaderData.customerSettings?.ticketBaseUrl
       ),
       priorityColDef({ field: 'priority' }),
       {
@@ -388,7 +390,13 @@ export default function ActivityReview() {
         setCodePopover({ element, content })
       ),
     ],
-    [initiativeOptions, loaderData.actors, loaderData.initiatives, loaderData.launchItems]
+    [
+      initiativeOptions,
+      loaderData.actors,
+      loaderData.customerSettings?.ticketBaseUrl,
+      loaderData.initiatives,
+      loaderData.launchItems,
+    ]
   );
 
   function BulkToolbar() {

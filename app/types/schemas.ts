@@ -41,6 +41,12 @@ export const accountSchema = z.object({
 });
 export type AccountType = z.infer<typeof accountSchema>;
 
+export const customerSchema = z.object({
+  name: z.string().optional(),
+  ticketBaseUrl: z.string().optional(),
+});
+export type CustomerType = z.infer<typeof customerSchema>;
+
 export const userSchema = z.object({
   email: z.string(),
   customerId: z.number(),

@@ -394,15 +394,24 @@ export default function UserActivity() {
             : null;
         },
       },
-      descriptionColDef({ field: 'metadata' }, (element, content) =>
-        setPopover({ element, content })
+      descriptionColDef(
+        { field: 'metadata' },
+        (element, content) => setPopover({ element, content }),
+        loaderData.customerSettings?.ticketBaseUrl
       ),
       priorityColDef({ field: 'priority' }),
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
       ),
     ],
-    [groupBy, loaderData.userId, loaderData.actors, loaderData.launchItems, loaderData.initiatives]
+    [
+      groupBy,
+      loaderData.userId,
+      loaderData.customerSettings?.ticketBaseUrl,
+      loaderData.actors,
+      loaderData.launchItems,
+      loaderData.initiatives,
+    ]
   );
 
   const actorHeader = useCallback(

@@ -4,9 +4,8 @@ export const caseInsensitiveSort = (data: string[]): string[] =>
 export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
-export const JIRA_REGEXP = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/;
-export const JIRA_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
-
+export const JIRA_TICKET_REGEXP = /([A-Z][A-Z0-9]+-[0-9]+)/;
+const JIRA_PROJECT_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
 const JIRA_TICKET_REGEXP_G = /([A-Z][A-Z0-9]+-[0-9]+)/g;
 
 export const findJiraProjects = (data?: string): string[] => {
@@ -14,7 +13,7 @@ export const findJiraProjects = (data?: string): string[] => {
     return [];
   }
   const projects = new Set<string>();
-  [...data.matchAll(JIRA_REGEXP_G)].forEach(m => {
+  [...data.matchAll(JIRA_PROJECT_REGEXP_G)].forEach(m => {
     projects.add(m[1]); // dedupes
   });
   return [...projects];

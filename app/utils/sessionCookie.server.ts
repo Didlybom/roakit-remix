@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
-import { queryUser } from '../firestore.server/fetchers.server';
+import { queryCustomer, queryUser } from '../firestore.server/fetchers.server';
 import type { DateRangeEnding, DateRangeValue } from './dateUtils';
 import { DateRange, formatYYYYMMDD, isValidDate } from './dateUtils';
 import type { Role } from './rbac';
@@ -19,6 +19,7 @@ export interface SessionData {
   role?: Role;
   isNavOpen?: boolean;
   dateFilter?: DateRangeEnding;
+  customerSettings?: { name?: string; ticketBaseUrl?: string };
 }
 
 export interface CookieData {
@@ -72,6 +73,8 @@ export const getSessionData = async (request: Request): Promise<SessionData> => 
     sessionData.role = userData.role;
     if (sessionData.customerId != +token.customerId) {
       sessionData.isLoggedIn = false; // force user to re-login if customerId is not there or wrong
+    } else {
+      sessionData.customerSettings = await queryCustomer(sessionData.customerId);
     }
   }
   return sessionData;

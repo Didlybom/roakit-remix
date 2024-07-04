@@ -40,6 +40,7 @@ import { findTicket } from '../../utils/activityFeed';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx, internalLinkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
+import LinkifyJira from '../LinkifyJira';
 
 export const dataGridCommonProps = {
   autosizeOnMount: true,
@@ -205,7 +206,8 @@ const pluralizeMemo = memoize(pluralize);
 
 export const descriptionColDef = (
   colDef?: GridColDef,
-  setPopover?: (element: HTMLElement, content: JSX.Element) => void
+  setPopover?: (element: HTMLElement, content: JSX.Element) => void,
+  ticketBaseUrl?: string
 ) =>
   ({
     headerName: 'Description',
@@ -252,6 +254,7 @@ export const descriptionColDef = (
         activity.metadata ? getActivityActionDescription(activity.metadata) : undefined;
 
       const commits = activity.metadata?.commits;
+
       return (
         <Stack direction="row" useFlexGap>
           {link}
@@ -263,7 +266,9 @@ export const descriptionColDef = (
           {actionDescription || comment || commits ?
             <Stack mt={'3px'} pl={url && icon ? undefined : '32px'} minWidth={0}>
               <Box title={description} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
-                {description}
+                {ticketBaseUrl ?
+                  <LinkifyJira content={description} baseUrl={ticketBaseUrl} />
+                : description}
               </Box>
               {actionDescription && (
                 <Typography

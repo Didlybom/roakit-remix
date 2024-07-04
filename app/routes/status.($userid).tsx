@@ -380,7 +380,8 @@ export default function Status() {
       : []),
       descriptionColDef(
         { field: 'description', editable: true /* see isCellEditable below for granularity */ },
-        (element, content) => setPopover({ element, content })
+        (element, content) => setPopover({ element, content }),
+        loaderData.customerSettings?.ticketBaseUrl
       ),
       priorityColDef({
         field: 'priority',
@@ -490,9 +491,10 @@ export default function Status() {
     ],
     [
       showTeam,
-      launchItemOptions,
+      loaderData.customerSettings?.ticketBaseUrl,
       loaderData.actors,
       loaderData.launchItems,
+      launchItemOptions,
       confirm,
       handleDeleteClick,
     ]
