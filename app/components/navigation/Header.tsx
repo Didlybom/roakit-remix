@@ -5,9 +5,10 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
+import type {
+  AppBarProps} from '@mui/material';
 import {
   AppBar,
-  AppBarProps,
   Box,
   IconButton,
   LinearProgress,

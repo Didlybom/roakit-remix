@@ -1,4 +1,5 @@
-import { Alert, SxProps } from '@mui/material';
+import type { SxProps } from '@mui/material';
+import { Alert } from '@mui/material';
 import { errMsg } from './errorUtils';
 
 export type SelectOption = { value: string; label?: string; color?: string | null };
@@ -21,7 +22,7 @@ export const internalLinkSx: SxProps = {
 };
 
 export const disabledNotOpaqueSx: SxProps = {
-  ['&.Mui-disabled']: { opacity: 'initial' },
+  '&.Mui-disabled': { opacity: 'initial' },
 };
 
 export const windowOpen = (event: MouseEvent, url: string) => {

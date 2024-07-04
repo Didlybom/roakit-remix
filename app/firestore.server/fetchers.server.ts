@@ -26,7 +26,8 @@ import {
 } from '../types/types';
 import { findTicket } from '../utils/activityFeed';
 import { daysInMonth } from '../utils/dateUtils';
-import { DEFAULT_ROLE, Role } from '../utils/rbac';
+import type { Role } from '../utils/rbac';
+import { DEFAULT_ROLE } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = pino({ name: 'firestore:fetchers' });
@@ -328,7 +329,7 @@ export const fetchTicketPrioritiesWithCache = async (
   }
   (await retry(async () => await Promise.all(batches), retryProps('Retrying fetchTickets...')))
     .flatMap(t => t.docs)
-    .map(doc => {
+    .forEach(doc => {
       const data = parse<schemas.TicketType>(schemas.ticketSchema, doc.data(), 'ticket ' + doc.id);
       tickets[doc.id] = data.priority;
     });

@@ -1,4 +1,5 @@
-import { SubmitOptions, json } from '@remix-run/react';
+import type { SubmitOptions } from '@remix-run/react';
+import { json } from '@remix-run/react';
 
 export const postJsonOptions: SubmitOptions = {
   method: 'POST',

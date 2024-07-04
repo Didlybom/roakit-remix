@@ -1,4 +1,5 @@
-import dayjs, { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import isTodayPlugin from 'dayjs/plugin/isToday';
 import isYesterdayPlugin from 'dayjs/plugin/isYesterday';
 import localizedFormatPlugin from 'dayjs/plugin/localizedFormat';

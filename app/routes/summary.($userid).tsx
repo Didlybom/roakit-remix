@@ -27,7 +27,7 @@ import { grey } from '@mui/material/colors';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -37,7 +37,8 @@ import {
   useSearchParams,
   useSubmit,
 } from '@remix-run/react';
-import dayjs, { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
@@ -65,8 +66,8 @@ import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../ut
 import { postJsonOptions } from '../utils/httpUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { ActivityResponse } from './fetcher.activities.($userid)';
-import { SummariesResponse } from './fetcher.summaries.($userid)';
+import type { ActivityResponse } from './fetcher.activities.($userid)';
+import type { SummariesResponse } from './fetcher.summaries.($userid)';
 
 const logger = pino({ name: 'route:summary.user' });
 

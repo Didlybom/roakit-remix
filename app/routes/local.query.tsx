@@ -1,4 +1,5 @@
-import { LoaderFunctionArgs, json } from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs} from '@remix-run/server-runtime';
+import { json } from '@remix-run/server-runtime';
 import { firestore } from '../firebase.server';
 import { loadSession } from '../utils/authUtils.server';
 import { View } from '../utils/rbac';

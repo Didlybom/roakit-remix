@@ -1,4 +1,5 @@
-import pino, { Logger } from 'pino';
+import type { Logger } from 'pino';
+import pino from 'pino';
 import { setTimeout } from 'timers/promises';
 
 const loggers: Record<string, Logger> = {};

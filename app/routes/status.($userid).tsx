@@ -28,7 +28,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import {
   useActionData,
   useFetcher,
@@ -38,7 +38,8 @@ import {
   useSearchParams,
   useSubmit,
 } from '@remix-run/react';
-import dayjs, { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -85,7 +86,7 @@ import {
 } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { priorityColors, priorityLabels } from '../utils/theme';
-import { ActivityResponse } from './fetcher.activities.($userid)';
+import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:status.user' });
 

@@ -162,7 +162,7 @@ export default function ConfluenceSettings({
         onClick={e =>
           setPopover({
             element: e.currentTarget,
-            content: <img src={confluenceImage} width="800" height="604" />,
+            content: <img src={confluenceImage} width="800" height="604" alt="Screenshot" />,
           })
         }
       />

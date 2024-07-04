@@ -10,7 +10,8 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 import pino from 'pino';
-import { SyntheticEvent, useEffect, useState } from 'react';
+import type { SyntheticEvent} from 'react';
+import { useEffect, useState } from 'react';
 import App from '../components/App';
 import Copyright from '../components/Copyright';
 import { clientAuth } from '../firebase.client';

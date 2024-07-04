@@ -1,5 +1,5 @@
 import { Box, Stack } from '@mui/material';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Copyright from './Copyright';
 
 export default function Layout({

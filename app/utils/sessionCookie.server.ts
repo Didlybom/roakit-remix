@@ -4,13 +4,8 @@ import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
-import {
-  DateRange,
-  DateRangeValue,
-  formatYYYYMMDD,
-  isValidDate,
-  type DateRangeEnding,
-} from './dateUtils';
+import type { DateRangeEnding, DateRangeValue } from './dateUtils';
+import { DateRange, formatYYYYMMDD, isValidDate } from './dateUtils';
 import type { Role } from './rbac';
 
 const logger = pino({ name: 'utils:session-cookie' });

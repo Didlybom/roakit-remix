@@ -1,4 +1,8 @@
 import { FilterList as FilterListIcon } from '@mui/icons-material';
+import type {
+  SelectChangeEvent,
+  SxProps,
+  Theme} from '@mui/material';
 import {
   Box,
   Checkbox,
@@ -7,10 +11,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  SelectChangeEvent,
-  Stack,
-  SxProps,
-  Theme,
+  Stack
 } from '@mui/material';
 import type { ReactElement } from 'react';
 

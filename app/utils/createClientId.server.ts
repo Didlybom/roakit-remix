@@ -1,7 +1,8 @@
 // See https://source.cloud.google.com/eternal-impulse-412418/liaison/+/main:functions/build/client-id.ts
 
 import { Buffer } from 'buffer';
-import { BinaryToTextEncoding, createHmac } from 'crypto';
+import type { BinaryToTextEncoding} from 'crypto';
+import { createHmac } from 'crypto';
 import { liaison } from '../proto/liaison';
 import ClientId = liaison.v1.ClientId;
 

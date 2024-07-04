@@ -13,16 +13,16 @@ import {
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import {
+import type {
   GridColDef,
   GridDensity,
   GridFeatureMode,
+  GridRenderCellParams,
   GridRowSelectionModel,
   GridSortDirection,
-  GridToolbarContainer,
-  type GridRenderCellParams,
 } from '@mui/x-data-grid';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import { GridToolbarContainer } from '@mui/x-data-grid';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import pino from 'pino';
 import pluralize from 'pluralize';
@@ -35,7 +35,8 @@ import {
 } from '../activityProcessors/activityMapper';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
-import CodePopover, { CodePopoverContent } from '../components/CodePopover';
+import type { CodePopoverContent } from '../components/CodePopover';
+import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';

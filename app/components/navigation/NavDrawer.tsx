@@ -12,6 +12,8 @@ import {
   ShortText as SummariesIcon,
   EditNote as SummaryIcon,
 } from '@mui/icons-material';
+import type {
+  SvgIconTypeMap} from '@mui/material';
 import {
   Box,
   Divider,
@@ -23,10 +25,9 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  SvgIconTypeMap,
   Typography,
 } from '@mui/material';
-import { OverridableComponent } from '@mui/material/OverridableComponent';
+import type { OverridableComponent } from '@mui/material/OverridableComponent';
 import { grey } from '@mui/material/colors';
 import { useCallback } from 'react';
 import { Role, View } from '../../utils/rbac';

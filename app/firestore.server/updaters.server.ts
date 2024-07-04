@@ -49,7 +49,7 @@ export const updateInitiativeCounters = async (
     initiative.counters!.activities[flatCount.artifact] += flatCount.count;
   });
   void Promise.all(
-    Object.keys(initiatives).map(initiativeId => {
+    Object.keys(initiatives).map(initiativeId => () => {
       const initiative = initiatives[initiativeId];
       const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
       void initiativeDoc.set(

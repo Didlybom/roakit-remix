@@ -1,3 +1,5 @@
+import type {
+  SxProps} from '@mui/material';
 import {
   Alert,
   Box,
@@ -5,7 +7,6 @@ import {
   IconButton,
   Paper,
   Snackbar,
-  SxProps,
   Tab,
   Tabs,
   Tooltip,

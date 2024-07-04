@@ -1,9 +1,10 @@
+import type {
+  DataGridProps,
+  GridCellModesModel,
+  GridCellParams} from '@mui/x-data-grid';
 import {
   DataGrid,
-  DataGridProps,
-  GridCellModes,
-  GridCellModesModel,
-  GridCellParams,
+  GridCellModes
 } from '@mui/x-data-grid';
 import { useCallback, useState } from 'react';
 

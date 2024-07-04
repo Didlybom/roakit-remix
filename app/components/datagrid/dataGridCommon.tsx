@@ -16,15 +16,14 @@ import {
   styled,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import {
-  GridActionsCellItem,
+import type {
   GridColDef,
   GridDensity,
   GridRenderCellParams,
+  GridSortCellParams,
   GridSortDirection,
-  gridStringOrNumberComparator,
-  type GridSortCellParams,
 } from '@mui/x-data-grid';
+import { GridActionsCellItem, gridStringOrNumberComparator } from '@mui/x-data-grid';
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';

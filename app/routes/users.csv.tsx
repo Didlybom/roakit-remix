@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs } from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../types/types';

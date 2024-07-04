@@ -6,7 +6,7 @@ import {
   Unstable_Grid2 as Grid,
   Stack,
 } from '@mui/material';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
 import pino from 'pino';
@@ -30,7 +30,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
-import { GroupedActivitiesResponse } from './fetcher.grouped-activities';
+import type { GroupedActivitiesResponse } from './fetcher.grouped-activities';
 
 const logger = pino({ name: 'route:dashboard' });
 

@@ -82,7 +82,7 @@ export default function JiraSettings({
         onClick={e =>
           setPopover({
             element: e.currentTarget,
-            content: <img src={jiraImage} width="870" height="389" />,
+            content: <img src={jiraImage} width="870" height="389" alt="Screenshot" />,
           })
         }
       />

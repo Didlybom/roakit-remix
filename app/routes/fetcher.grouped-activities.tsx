@@ -1,4 +1,5 @@
-import { LoaderFunctionArgs, TypedResponse, json } from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs, TypedResponse} from '@remix-run/server-runtime';
+import { json } from '@remix-run/server-runtime';
 import dayjs from 'dayjs';
 import pino from 'pino';
 import { groupActivities, type GroupedActivities } from '../activityProcessors/activityGrouper';
@@ -15,9 +16,11 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
+import type { DateRange} from '../utils/dateUtils';
+import { dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import { ErrorField, errorJsonResponse } from '../utils/httpUtils';
+import type { ErrorField} from '../utils/httpUtils';
+import { errorJsonResponse } from '../utils/httpUtils';
 import { View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:fetcher.grouped-activities' });

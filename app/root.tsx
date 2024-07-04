@@ -17,8 +17,10 @@ import {
   useLoaderData,
   useRouteError,
 } from '@remix-run/react';
-import { ReactNode, useContext } from 'react';
-import clientConfig, { ClientEnv } from './client-env/client-env.server';
+import type { ReactNode} from 'react';
+import { useContext } from 'react';
+import type { ClientEnv } from './client-env/client-env.server';
+import clientConfig from './client-env/client-env.server';
 import ClientStyleContext from './components/ClientStyleContext';
 import Layout from './components/Layout';
 import { errMsg } from './utils/errorUtils';

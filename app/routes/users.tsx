@@ -24,16 +24,17 @@ import {
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import { DataGrid, GridActionsCellItem, GridColDef, GridSortDirection } from '@mui/x-data-grid';
+import type { GridColDef, GridSortDirection } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
+import type { ShouldRevalidateFunction } from '@remix-run/react';
 import {
   Link as RemixLink,
-  ShouldRevalidateFunction,
   useActionData,
   useLoaderData,
   useNavigation,
   useSubmit,
 } from '@remix-run/react';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';

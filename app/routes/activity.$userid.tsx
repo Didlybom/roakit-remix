@@ -22,8 +22,9 @@ import {
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import { DataGrid, GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
-import { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
+import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
 import {
   useFetcher,
   useLoaderData,
@@ -45,7 +46,8 @@ import {
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
-import CodePopover, { CodePopoverContent } from '../components/CodePopover';
+import type { CodePopoverContent } from '../components/CodePopover';
+import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import {
   actionColDef,
@@ -86,7 +88,7 @@ import {
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
-import { ActivityResponse } from './fetcher.activities.($userid)';
+import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 const logger = pino({ name: 'route:activity.user' });
 

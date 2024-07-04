@@ -138,7 +138,7 @@ export default function GitHubSettings({
         onClick={e =>
           setPopover({
             element: e.currentTarget,
-            content: <img src={githubImage} width="768" height="794" />,
+            content: <img src={githubImage} width="768" height="794" alt="Screenshot" />,
           })
         }
       />

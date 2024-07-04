@@ -9,7 +9,7 @@ import { Alert, Box, Chip, Divider, Link, Paper, Stack, Typography, styled } fro
 import { grey } from '@mui/material/colors';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import {
   useFetcher,
   useLoaderData,

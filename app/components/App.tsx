@@ -1,5 +1,6 @@
 import { Box, styled } from '@mui/material';
-import { ReactNode, useState } from 'react';
+import type { ReactNode} from 'react';
+import { useState } from 'react';
 import { type DateRangeEnding } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
 import { DEFAULT_ROLE, type Role, type View } from '../utils/rbac';

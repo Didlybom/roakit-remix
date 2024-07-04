@@ -1,10 +1,11 @@
 import { Unstable_Grid2 as Grid } from '@mui/material';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 import packageJson from '../../package.json';
 import App from '../components/App';
 import { View } from '../utils/rbac';
-import { SessionData, getSessionData } from '../utils/sessionCookie.server';
+import type { SessionData } from '../utils/sessionCookie.server';
+import { getSessionData } from '../utils/sessionCookie.server';
 
 export const meta = () => [{ title: 'Version Info | ROAKIT' }];
 

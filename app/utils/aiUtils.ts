@@ -1,4 +1,4 @@
-import { GenerateContentResult } from '@google-cloud/vertexai';
+import type { GenerateContentResult } from '@google-cloud/vertexai';
 import {
   CUSTOM_EVENT,
   type Activity,

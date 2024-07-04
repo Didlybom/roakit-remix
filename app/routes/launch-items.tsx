@@ -18,18 +18,16 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {
-  GridActionsCellItem,
+import type {
   GridColDef,
-  GridRowEditStopReasons,
+  GridEventListener,
+  GridRenderEditCellParams,
   GridRowId,
   GridSortDirection,
-  useGridApiContext,
-  type GridEventListener,
-  type GridRenderEditCellParams,
 } from '@mui/x-data-grid';
+import { GridActionsCellItem, GridRowEditStopReasons, useGridApiContext } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
-import { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
