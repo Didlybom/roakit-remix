@@ -5,17 +5,8 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import type {
-  AppBarProps} from '@mui/material';
-import {
-  AppBar,
-  Box,
-  IconButton,
-  LinearProgress,
-  Stack,
-  Toolbar,
-  styled,
-} from '@mui/material';
+import type { AppBarProps } from '@mui/material';
+import { AppBar, Box, IconButton, LinearProgress, Stack, Toolbar, styled } from '@mui/material';
 import dayjs from 'dayjs';
 import RoakitIcon from '../../icons/Roakit';
 import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
@@ -87,7 +78,7 @@ export default function Header({
           </IconButton>
         )}
         <Box title="Roakit" mr={2} display={{ xs: 'none', sm: 'flex' }}>
-          <RoakitIcon width="45px" height="20px" />
+          <RoakitIcon width="45px" height="19px" />
         </Box>
         {view !== View.Login && view !== View.Logout && (
           <>
