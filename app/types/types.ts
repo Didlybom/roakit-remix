@@ -147,7 +147,7 @@ export type Activity = {
   artifact: Artifact;
   timestamp: number;
   initiativeId: string;
-  launchItemId?: string;
+  launchItemId?: string | null;
   effort?: number | null;
   phase?: Phase | null;
   priority?: number;
