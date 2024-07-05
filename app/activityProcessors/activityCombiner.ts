@@ -61,9 +61,20 @@ export const combineAndPushActivity = (newActivity: Activity, activities: Activi
     );
     if (indexPushActivity >= 0) {
       const foundActivity = activities[indexPushActivity];
-      const urls = foundActivity.metadata!.commits!.map(c => c.url);
-      // if at least one commit is identical, we combine the 2 activities
-      if (newActivity.metadata.commits.some(a => urls.indexOf(a.url) !== -1)) {
+      const urls: string[] = [];
+      const messages: string[] = [];
+      foundActivity.metadata!.commits!.forEach(c => {
+        if (c.url) {
+          urls.push(c.url);
+        }
+        messages.push(c.message);
+      });
+      // if at least one commit is "identical", we combine the 2 activities
+      if (
+        newActivity.metadata.commits.some(
+          a => (a.url && urls.indexOf(a.url) !== -1) || messages.indexOf(a.message) !== -1
+        )
+      ) {
         const commits = [...foundActivity.metadata!.commits!];
         newActivity.metadata.commits.forEach(commit => {
           if (!commits.some(c => c.url === commit.url)) {
