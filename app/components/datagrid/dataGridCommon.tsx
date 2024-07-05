@@ -223,17 +223,25 @@ export const descriptionColDef = (
       let urlTitle = '';
       if (url) {
         if (url.type === 'jira') {
-          icon = <JiraIcon color={theme.palette.primary.main} />;
+          icon = (
+            <Box mr="2px">
+              <JiraIcon color={theme.palette.primary.main} />
+            </Box>
+          );
           urlTitle = 'Go to Jira page';
         } else if (url.type === 'confluence') {
-          icon = <ConfluenceIcon color={theme.palette.primary.main} />;
+          icon = (
+            <Box mr="2px">
+              <ConfluenceIcon color={theme.palette.primary.main} />{' '}
+            </Box>
+          );
           urlTitle = 'Go to Confluence page';
         } else if (url.type === 'github') {
           icon = <GitHubIcon color="primary" />;
           urlTitle = 'Go to Github page';
         }
       } else if (activity.event === CUSTOM_EVENT) {
-        icon = <CustomEventIcon fontSize="small" sx={{ color: grey[400] }} />;
+        icon = <CustomEventIcon fontSize="small" sx={{ color: grey[400], mr: '2px' }} />;
       }
       const link =
         url && icon ?
@@ -264,8 +272,8 @@ export const descriptionColDef = (
             </Box>
           )}
           {actionDescription || comment || commits ?
-            <Stack mt={'3px'} pl={url && icon ? undefined : '32px'} minWidth={0}>
-              <Box title={description} fontSize="small" lineHeight={1.1} sx={ellipsisSx}>
+            <Stack mt={'2px'} pl={icon ? undefined : '22px'} minWidth={0}>
+              <Box title={description} fontSize="small" lineHeight={1.2} sx={ellipsisSx}>
                 {ticketBaseUrl ?
                   <LinkifyJira content={description} baseUrl={ticketBaseUrl} />
                 : description}

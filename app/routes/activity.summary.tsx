@@ -1,10 +1,4 @@
-import {
-  AutoAwesome as AIIcon,
-  History as HistoryIcon,
-  Science as ScienceIcon,
-  ShortText as SummariesIcon,
-  Groups as TeamIcon,
-} from '@mui/icons-material';
+import { AutoAwesome as AIIcon, Groups as TeamIcon } from '@mui/icons-material';
 import { Alert, Box, Chip, Divider, Link, Paper, Stack, Typography, styled } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -24,7 +18,6 @@ import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/MarkdownText';
-import SmallButton from '../components/SmallButton';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import {} from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
@@ -212,7 +205,7 @@ export default function Dashboard() {
           </LocalizationProvider>
         </Stack>
         <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
-          <Typography paragraph fontSize="small">
+          <Typography fontSize="small">
             <b>Work in progress.</b>{' '}
             <Link
               onClick={() => {
@@ -226,23 +219,6 @@ export default function Dashboard() {
             >
               April 18 has some data
             </Link>
-            .
-          </Typography>
-          <Typography fontSize="small">
-            See also{' '}
-            <SmallButton
-              href="/summary/multi"
-              label="Summary Forms"
-              icon={<SummariesIcon fontSize="small" />}
-            />{' '}
-            to submit data,{' '}
-            <SmallButton
-              href="/activities"
-              label="All Activity"
-              icon={<HistoryIcon fontSize="small" />}
-            />{' '}
-            to assign goals to activities, and{' '}
-            <SmallButton href="/ai" label="AI Playground" icon={<ScienceIcon fontSize="small" />} />
             .
           </Typography>
         </Alert>

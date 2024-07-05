@@ -116,7 +116,7 @@ export default function DateRangePicker({
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': { borderColor: color, opacity: 0.7 },
                     '&:hover fieldset': { borderColor: color, opacity: 0.7 },
-                    '&.Mui-focused fieldset': { borderColor: color, opacity: 0.7 },
+                    '& .Mui-focused fieldset': { borderColor: color, opacity: 0.7 },
                   },
                 },
               },

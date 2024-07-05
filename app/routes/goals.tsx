@@ -7,7 +7,6 @@ import {
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,6 +27,7 @@ import { useConfirm } from 'material-ui-confirm';
 import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
+import SmallChip from '../components/SmallChip';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditTextarea from '../components/datagrid/EditTextarea';
 import { dataGridCommonProps } from '../components/datagrid/dataGridCommon';
@@ -209,13 +209,7 @@ export default function Initiatives() {
         return params.value ?
             <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
               {splitTags(params.value as string).map((tag, i) => (
-                <Chip
-                  key={i}
-                  variant="outlined"
-                  size="small"
-                  label={tag}
-                  sx={{ fontSize: '9px', mr: '4px' }}
-                />
+                <SmallChip key={i} label={tag} sx={{ mr: '4px' }} />
               ))}
             </Box>
           : null;

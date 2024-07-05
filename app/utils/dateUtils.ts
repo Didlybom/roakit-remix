@@ -48,7 +48,7 @@ export const formatMonthDay = (date: Date) =>
 export const isToday = (date: Dayjs) => date.isToday();
 export const isYesterday = (date: Dayjs) => date.isYesterday();
 
-export const endOfDay = (date: Dayjs) => Math.min(Date.now(), date.endOf('day').valueOf());
+export const endOfDay = (date: Dayjs) => date.endOf('day').valueOf();
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',

@@ -9,15 +9,17 @@ import {
   Box,
   Button,
   Divider,
+  FormControl,
   FormControlLabel,
-  FormGroup,
+  FormLabel,
   Unstable_Grid2 as Grid,
   IconButton,
   InputAdornment,
   Link,
   Pagination,
+  Radio,
+  RadioGroup,
   Stack,
-  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -49,6 +51,7 @@ import BoxPopover from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
+import SmallChip from '../components/SmallChip';
 import {
   actionColDef,
   actorColDef,
@@ -66,7 +69,13 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
-import type { Account, AccountToIdentityRecord, Activity, ActivityRecord } from '../types/types';
+import {
+  PHASES,
+  type Account,
+  type AccountToIdentityRecord,
+  type Activity,
+  type ActivityRecord,
+} from '../types/types';
 import { getActivityDescription } from '../utils/activityDescription';
 import { artifactActions, buildArtifactActionKey } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
@@ -130,6 +139,12 @@ const userActivityRows = (
 enum GroupBy {
   Contributor = 'contributor',
   Launch = 'launch',
+}
+
+enum SortActorsBy {
+  Name = 'name',
+  Total = 'total',
+  Effort = 'effort',
 }
 
 const groupActivityKey: Record<GroupBy, keyof Activity> = {
@@ -208,7 +223,7 @@ export default function UserActivity() {
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [sortActors, setSortActors] = useState<SortActorsBy>(SortActorsBy.Total);
   const [scrollToGroup, setScrollToGroup] = useState<string | null | undefined>(null);
   const [showOnlyActor, setShowOnlyActor] = useState<string | null>(null);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
@@ -222,7 +237,10 @@ export default function UserActivity() {
   const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
 
   const sortAndSetUserActivities = useCallback(() => {
-    const getLabelForKey = (key: string) => {
+    const getLabelForKey = (key: string | null) => {
+      if (key == null) {
+        return 'ZZZ';
+      }
       if (groupBy === GroupBy.Contributor) {
         return loaderData.actors[key]?.name ?? 'ZZZ';
       }
@@ -248,15 +266,26 @@ export default function UserActivity() {
         sortMap(
           actionFilter.length ? filteredSnapshot : snapshot.current,
           groupBy ?
-            (a, b) =>
-              sortAlphabetically ?
-                caseInsensitiveCompare(getLabelForKey(a.key), getLabelForKey(b.key))
-              : (b.key ? b.count : 0) - (a.key ? a.count : 0)
+            (a, b) => {
+              if (sortActors === SortActorsBy.Name) {
+                return caseInsensitiveCompare(getLabelForKey(a.key), getLabelForKey(b.key));
+              }
+              if (sortActors === SortActorsBy.Total) {
+                return b.values.length - a.values.length;
+              }
+              if (sortActors === SortActorsBy.Effort) {
+                return (
+                  b.values.reduce((total, el) => total + (el.effort ?? 0), 0) -
+                  a.values.reduce((total, el) => total + (el.effort ?? 0), 0)
+                );
+              }
+              return 0;
+            }
           : null
         )
       );
     }
-  }, [groupBy, loaderData.actors, loaderData.launchItems, actionFilter, sortAlphabetically]);
+  }, [groupBy, loaderData.actors, loaderData.launchItems, actionFilter, sortActors]);
 
   const fetchActivities = useCallback((dateFilter: DateRangeEnding) => {
     setIsRendering(true);
@@ -315,7 +344,7 @@ export default function UserActivity() {
 
   useEffect(() => {
     sortAndSetUserActivities();
-  }, [actionFilter, sortAlphabetically, sortAndSetUserActivities]);
+  }, [actionFilter, sortActors, sortAndSetUserActivities]);
 
   // Auto scrollers
   useEffect(() => {
@@ -400,6 +429,12 @@ export default function UserActivity() {
         loaderData.customerSettings?.ticketBaseUrl
       ),
       priorityColDef({ field: 'priority' }),
+      {
+        field: 'phase',
+        headerName: 'Phase',
+        valueGetter: (value: string) => PHASES.get(value)?.label ?? value,
+      },
+      { field: 'effort', headerName: 'Effort' },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
       ),
@@ -467,21 +502,24 @@ export default function UserActivity() {
     if (loaderData.userId !== ALL || groupBy !== GroupBy.Contributor) {
       return [null, null];
     }
-    let activityCount = 0;
+    let actorActivityCount = 0;
     const actorList = [...activities.keys()].map((actorId, i) => {
-      const actorActivityCount = activities.get(actorId)?.length ?? 0;
-      activityCount += actorActivityCount;
+      const activityCount = activities.get(actorId)?.length ?? 0;
+      const effortTotal = activities
+        .get(actorId)
+        ?.reduce((total, el) => total + (el.effort ?? 0), 0);
+      actorActivityCount += activityCount;
       return (
         <Box
           key={i}
-          mb={!sortAlphabetically && i === 9 ? 2 : undefined}
+          mb={sortActors !== SortActorsBy.Name && i === 9 ? 2 : undefined}
           color={actorId ? undefined : grey[500]}
         >
           <Link
             sx={internalLinkSx}
             color={actorId ? undefined : grey[500]}
             onClick={() => {
-              if (!sortAlphabetically && i <= 9 && showOnlyActor == null) {
+              if (sortActors !== SortActorsBy.Name && i <= 9 && showOnlyActor == null) {
                 setScrollToGroup(actorId);
               } else {
                 setShowOnlyActor(actorId ?? '');
@@ -491,28 +529,29 @@ export default function UserActivity() {
           >
             {loaderData.actors[actorId ?? '']?.name ?? 'Unknown'}
           </Link>
-          {` (${actorActivityCount})`}
+          <SmallChip
+            label={effortTotal ? `${activityCount} / ${effortTotal}` : `${activityCount}`}
+            tooltip={
+              effortTotal ?
+                `${activityCount} activities / effort: ${effortTotal}`
+              : `${activityCount} activities`
+            }
+            sx={{ ml: 1, mt: '-2px' }}
+          />
         </Box>
       );
     });
-    return [actorList, activityCount];
-  }, [
-    activities,
-    groupBy,
-    loaderData.actors,
-    loaderData.userId,
-    showOnlyActor,
-    sortAlphabetically,
-  ]);
+    return [actorList, actorActivityCount];
+  }, [activities, groupBy, loaderData.actors, loaderData.userId, showOnlyActor, sortActors]);
 
   const [launchList, launchActivityCount] = useMemo(() => {
     if (groupBy !== GroupBy.Launch) {
       return [null, null];
     }
-    let activityCount = 0;
+    let launchActivityCount = 0;
     const launchList = [...activities.keys()].map((launchId, i) => {
-      const launchActivityCount = activities.get(launchId)?.length ?? 0;
-      activityCount += launchActivityCount;
+      const activityCount = activities.get(launchId)?.length ?? 0;
+      launchActivityCount += activityCount;
       let label;
       if (!launchId) {
         label = 'No launch item';
@@ -538,11 +577,11 @@ export default function UserActivity() {
           >
             {label}
           </Link>
-          {` (${launchActivityCount})`}
+          <SmallChip label={`${activityCount}`} sx={{ ml: 1, mt: '-2px' }} />
         </Box>
       );
     });
-    return [launchList, activityCount];
+    return [launchList, launchActivityCount];
   }, [activities, groupBy, loaderData.launchItems]);
 
   let activityCount = actorActivityCount ?? launchActivityCount;
@@ -715,36 +754,54 @@ export default function UserActivity() {
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Stack m={3}>
         <Stack direction="row">
-          {groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && (
-            <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
-              <Box sx={{ position: 'relative' }}>
-                <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
-                  <FormGroup sx={{ mb: 2, ml: 2 }}>
-                    {activities.size > 0 && (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={sortAlphabetically}
-                            onChange={e => {
-                              setIsRendering(true);
-                              setSortAlphabetically(e.target.checked);
-                              window.scrollTo({ top: 0 });
-                            }}
-                          />
-                        }
-                        label="Sort alphabetically"
-                        title="Sort alphabetically or by activity count"
-                        disableTypography
-                      />
-                    )}
-                  </FormGroup>
-                  {actorList}
-                  {launchList}
+          {groupBy &&
+            (loaderData.userId === ALL || groupBy === GroupBy.Launch) &&
+            activities.size > 0 && (
+              <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
+                <Box sx={{ position: 'relative' }}>
+                  <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
+                    <FormControl sx={{ mb: 1, ml: 1 }}>
+                      <FormLabel sx={{ fontSize: 'small', ml: -1 }}>Sort by</FormLabel>
+                      <RadioGroup
+                        row
+                        value={sortActors}
+                        onChange={e => {
+                          setIsRendering(true);
+                          setSortActors(e.target.value as SortActorsBy);
+                          window.scrollTo({ top: 0 });
+                        }}
+                        sx={{
+                          '& .MuiFormControlLabel-label': { fontSize: 11 },
+                          '& .MuiSvgIcon-root': { fontSize: 18 },
+                          '& .MuiRadio-root': { p: '5px' },
+                        }}
+                      >
+                        <FormControlLabel
+                          value={SortActorsBy.Name}
+                          control={<Radio />}
+                          label="name"
+                          title="Contributor's name"
+                        />
+                        <FormControlLabel
+                          value={SortActorsBy.Total}
+                          control={<Radio />}
+                          label="total"
+                          title="Total number of activities"
+                        />
+                        <FormControlLabel
+                          value={SortActorsBy.Effort}
+                          control={<Radio />}
+                          label="effort"
+                          title="Total effort for all activities"
+                        />
+                      </RadioGroup>
+                    </FormControl>
+                    {actorList}
+                    {launchList}
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          )}
+            )}
           <Stack flex={1} minWidth={0}>
             <Grid
               container
@@ -795,15 +852,15 @@ export default function UserActivity() {
                   </Grid>
                   <Grid>
                     <FilterMenu
-                      label="Group"
+                      label="Group by"
                       icon={<GroupIcon fontSize="small" />}
                       selectedValue={groupBy ?? ''}
                       items={[
                         { value: '', label: 'None', color: grey[500] },
                         ...(loaderData.userId === ALL ?
-                          [{ value: GroupBy.Contributor, label: 'by Contributor' }]
+                          [{ value: GroupBy.Contributor, label: 'Contributor' }]
                         : []),
-                        { value: GroupBy.Launch, label: 'by Launch' },
+                        { value: GroupBy.Launch, label: 'Launch' },
                       ]}
                       onChange={value => {
                         setActivities(new Map());

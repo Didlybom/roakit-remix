@@ -21,10 +21,6 @@ export const internalLinkSx: SxProps = {
   ...ellipsisSx,
 };
 
-export const disabledNotOpaqueSx: SxProps = {
-  '&.Mui-disabled': { opacity: 'initial' },
-};
-
 export const windowOpen = (event: MouseEvent, url: string) => {
   event.stopPropagation();
   window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
