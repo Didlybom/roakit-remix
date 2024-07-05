@@ -45,11 +45,13 @@ export const groupByArray = <T>(
 
 export const sortMap = <T>(
   arrayMap: { key: string | null; values: T[] }[],
-  compare: ((a: { key: string; count: number }, b: { key: string; count: number }) => number) | null
+  compare:
+    | ((a: { key: string | null; values: T[] }, b: { key: string | null; values: T[] }) => number)
+    | null
 ): Map<string | null, T[]> => {
   if (compare) {
     arrayMap.sort((a, b) =>
-      compare({ key: a.key!, count: a.values.length }, { key: b.key!, count: b.values.length })
+      compare({ key: a.key, values: a.values }, { key: b.key, values: b.values })
     );
   }
   const sorted = new Map<string | null, T[]>();
@@ -60,5 +62,8 @@ export const sortMap = <T>(
 export const groupByAndSort = <T>(
   array: T[],
   key: keyof T,
-  compare: (a: { key: string; count: number }, b: { key: string; count: number }) => number
+  compare: (
+    a: { key: string | null; values: T[] },
+    b: { key: string | null; values: T[] }
+  ) => number
 ): Map<string | null, T[]> => sortMap(groupByArray(array, key), compare);

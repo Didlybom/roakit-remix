@@ -21,7 +21,7 @@ test('groupBy', () => {
 test('groupByAndSort', () => {
   const dict: Record<string, string> = { a: 'AAA', b: 'BBB', c: 'CCC' };
   let result = groupByAndSort(cloneArray(data), 'k', (x, y) =>
-    dict[x.key].localeCompare(dict[y.key])
+    dict[x.key!].localeCompare(dict[y.key!])
   );
   expect([...result]).toEqual([
     ['a', [{ v: 'a1' }, { v: 'a2' }, { v: 'a3' }]],
@@ -30,14 +30,16 @@ test('groupByAndSort', () => {
   ]);
 
   dict.a = 'ZZZ';
-  result = groupByAndSort(cloneArray(data), 'k', (x, y) => dict[x.key].localeCompare(dict[y.key]));
+  result = groupByAndSort(cloneArray(data), 'k', (x, y) =>
+    dict[x.key!].localeCompare(dict[y.key!])
+  );
   expect([...result]).toEqual([
     ['b', [{ v: 'b1' }, { v: 'b2' }]],
     ['c', [{ v: 'c1' }]],
     ['a', [{ v: 'a1' }, { v: 'a2' }, { v: 'a3' }]],
   ]);
 
-  result = groupByAndSort(cloneArray(data), 'k', (x, y) => x.count - y.count);
+  result = groupByAndSort(cloneArray(data), 'k', (x, y) => x.values.length - y.values.length);
   expect([...result]).toEqual([
     ['c', [{ v: 'c1' }]],
     ['b', [{ v: 'b1' }, { v: 'b2' }]],
