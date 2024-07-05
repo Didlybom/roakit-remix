@@ -509,7 +509,8 @@ export default function Users() {
         .filter(
           identity =>
             !searchTerm ||
-            (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0)
+            (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0) ||
+            identity.id.toLowerCase().indexOf(searchTerm) >= 0
         )
         .map(identity => ({
           ...identity,
@@ -521,7 +522,9 @@ export default function Users() {
     (tabValue as UsersTab) === UsersTab.NeedsReview ?
       loaderData.accountsToReview.filter(
         account =>
-          !searchTerm || (account.name && account.name.toLowerCase().indexOf(searchTerm) >= 0)
+          !searchTerm ||
+          (account.name && account.name.toLowerCase().indexOf(searchTerm) >= 0) ||
+          (account.id && account.id.toLowerCase().indexOf(searchTerm) >= 0)
       )
     : [];
 
