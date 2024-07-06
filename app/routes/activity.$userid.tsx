@@ -242,6 +242,13 @@ export default function UserActivity() {
 
   const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
 
+  const reset = useCallback(() => {
+    setActivities(new Map());
+    setTotalActivityCount(null);
+    setIsRendering(true);
+    setPaginationModel({ ...paginationModel, page: 0 });
+  }, [paginationModel]);
+
   const sortAndSetUserActivities = useCallback(() => {
     const getLabelForKey = (key: string | null) => {
       if (key == null) {
@@ -403,7 +410,15 @@ export default function UserActivity() {
               return activity.launchItemId ?
                   <Link
                     onClick={() => {
+                      reset();
                       setGroupBy(GroupBy.Launch);
+                      setSearchParams(
+                        prev => {
+                          prev.set(SEARCH_PARAM_GROUPBY, GroupBy.Launch);
+                          return prev;
+                        },
+                        { preventScrollReset: true }
+                      );
                       setTimeout(() => setScrollToGroup(activity.launchItemId), 0);
                     }}
                     title={loaderData.launchItems[activity.launchItemId]?.label}
@@ -452,6 +467,8 @@ export default function UserActivity() {
       loaderData.actors,
       loaderData.launchItems,
       loaderData.initiatives,
+      reset,
+      setSearchParams,
     ]
   );
 
@@ -835,10 +852,7 @@ export default function UserActivity() {
                 { value: GroupBy.Launch, label: 'Launch' },
               ]}
               onChange={value => {
-                setActivities(new Map());
-                setTotalActivityCount(null);
-                setIsRendering(true);
-                setPaginationModel({ ...paginationModel, page: 0 });
+                reset();
                 setGroupBy((value as GroupBy) || null); // will trigger effect to re-set activities
                 setSearchParams(prev => {
                   if (value === '') {
@@ -906,7 +920,7 @@ export default function UserActivity() {
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}
       onDateRangeSelect={dateRange => {
-        setPaginationModel({ ...paginationModel, page: 0 });
+        reset();
         setDateFilter(dateRange);
       }}
       onDateRangeRefresh={() => {

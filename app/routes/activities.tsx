@@ -360,7 +360,7 @@ export default function ActivityReview() {
               tabIndex={params.tabIndex}
               color="inherit"
               endIcon={<ArrowDropDownIcon />}
-              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
+              sx={{ ml: -1, fontWeight: 400, textTransform: 'none' }}
             >
               {params.value ? loaderData.initiatives[`${params.value}`]?.key ?? 'unknown' : '⋯'}
             </Button>

@@ -1,6 +1,5 @@
 import {
   AddCircle as AddCircleIcon,
-  ArrowDropDown as ArrowDropDownIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
   Search as SearchIcon,
@@ -43,6 +42,7 @@ import App from '../components/App';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import DropDownButton from '../components/datagrid/DropDownButton';
 import {
   dataGridCommonProps,
   dateColDef,
@@ -89,9 +89,6 @@ const VIEW = View.Users;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
-  if (sessionData.role !== Role.Admin) {
-    throw new Response(null, { status: 403 });
-  }
   try {
     const [identities, fetchedAccountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
@@ -322,18 +319,15 @@ export default function Users() {
         ],
         editable: true,
         renderCell: params => (
-          <Box height="45px" display="flex" alignItems="center">
-            <Button
+          <Box height="100%" display="flex" alignItems="center">
+            <DropDownButton
               tabIndex={params.tabIndex}
-              color="inherit"
-              size="small"
-              endIcon={<ArrowDropDownIcon />}
-              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-            >
-              {params.value && params.value !== UNSET_MANAGER_ID ?
-                findManagerName(params.value as string)
-              : '⋯'}
-            </Button>
+              label={
+                params.value && params.value !== UNSET_MANAGER_ID ?
+                  findManagerName(params.value as string)
+                : null
+              }
+            />
           </Box>
         ),
       },
@@ -380,15 +374,10 @@ export default function Users() {
           const user = (params.row as Identity).user;
           return user?.id ?
               <Box height="45px" display="flex" alignItems="center">
-                <Button
+                <DropDownButton
                   tabIndex={params.tabIndex}
-                  color="inherit"
-                  size="small"
-                  endIcon={<ArrowDropDownIcon />}
-                  sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-                >
-                  {roleLabels.find(r => r.value === params.value)?.label}
-                </Button>
+                  label={roleLabels.find(r => r.value === params.value)?.label}
+                />
               </Box>
             : null;
         },

@@ -1,8 +1,4 @@
-import {
-  Add as AddIcon,
-  ArrowDropDown as ArrowDropDownIcon,
-  DeleteOutlined as DeleteIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, DeleteOutlined as DeleteIcon } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -64,6 +60,7 @@ import {
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import DropDownButton from '../components/datagrid/DropDownButton';
 import SelectField from '../components/SelectField';
 import { firestore } from '../firebase.server';
 import {
@@ -404,17 +401,15 @@ export default function Status() {
           ),
         editable: true,
         renderCell: params => (
-          <Box>
-            <Button
+          <Box height="100%" display="flex" alignItems="center">
+            <DropDownButton
               tabIndex={params.tabIndex}
-              color="inherit"
-              endIcon={<ArrowDropDownIcon />}
-              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-            >
-              <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
-                {params.value ? loaderData.launchItems[`${params.value}`]?.key ?? 'unknown' : '⋯'}
-              </Box>
-            </Button>
+              label={
+                <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
+                  {params.value ? loaderData.launchItems[`${params.value}`]?.key ?? 'unknown' : '⋯'}
+                </Box>
+              }
+            />
           </Box>
         ),
         renderEditCell: params => <AutocompleteSelect {...params} options={launchItemOptions} />,
@@ -429,15 +424,11 @@ export default function Status() {
           (PHASES.get(a)?.sortOrder ?? 999) - (PHASES.get(b)?.sortOrder ?? 999),
         editable: true,
         renderCell: params => (
-          <Box>
-            <Button
+          <Box height="100%" display="flex" alignItems="center">
+            <DropDownButton
               tabIndex={params.tabIndex}
-              color="inherit"
-              endIcon={<ArrowDropDownIcon />}
-              sx={{ ml: -1, fontWeight: '400', textTransform: 'none' }}
-            >
-              <Box>{params.value ? PHASES.get(`${params.value}`)?.label ?? 'unknown' : '⋯'}</Box>
-            </Button>
+              label={params.value ? PHASES.get(`${params.value}`)?.label ?? 'unknown' : null}
+            />
           </Box>
         ),
         renderEditCell: params => <AutocompleteSelect {...params} options={phaseOptions} />,

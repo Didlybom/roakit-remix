@@ -79,7 +79,7 @@ export default function DateRangePicker({
         onClick={e => setMenuEl(e.currentTarget)}
         sx={{
           color,
-          fontWeight: '400',
+          fontWeight: 400,
           fontSize: ' small',
           textWrap: 'nowrap',
           textTransform: 'none',
