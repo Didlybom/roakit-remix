@@ -38,7 +38,7 @@ import {
 } from '../../utils/activityDescription';
 import { findTicket } from '../../utils/activityFeed';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
-import { ellipsisSx, internalLinkSx } from '../../utils/jsxUtils';
+import { ellipsisSx, linkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 import LinkifyJira from '../LinkifyJira';
 
@@ -118,7 +118,7 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
               tabIndex={params.tabIndex}
               href={'/activity/' + encodeURI(account.id)}
               title={account.name}
-              sx={internalLinkSx}
+              sx={linkSx}
             >
               {account.name}
             </Link>
@@ -324,7 +324,7 @@ export const descriptionColDef = (
                       </List>
                     );
                   }}
-                  sx={{ lineHeight: 1.5, ...internalLinkSx }}
+                  sx={{ lineHeight: 1.5, ...linkSx }}
                 >
                   {`and ${commits.length - 1} more ${pluralizeMemo('commit', commits.length - 1)}`}
                 </Link>

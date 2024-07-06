@@ -1,4 +1,4 @@
-import type { ActivityMetadata, TicketRecord } from '../types/types';
+import type { Activity, ActivityMetadata, TicketRecord } from '../types/types';
 import { findJiraTickets } from './stringUtils';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
@@ -52,4 +52,11 @@ export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata)
 
 export const buildArtifactActionKey = (artifact: string, action: string) => {
   return artifact + '-' + action;
+};
+
+export const activitiesTotalEffort = (activities: Activity[]) => {
+  const activitiesWithEffort = activities.filter(activity => activity.effort != null);
+  return activitiesWithEffort.length ?
+      activitiesWithEffort.reduce((total, activity) => total + activity.effort!, 0)
+    : undefined;
 };

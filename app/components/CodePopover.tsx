@@ -4,7 +4,7 @@ import { grey } from '@mui/material/colors';
 import { Link as RemixLink } from '@remix-run/react';
 import { LinkIt } from 'react-linkify-it';
 import type { Activity, Identity } from '../types/types';
-import { formatJson, internalLinkSx } from '../utils/jsxUtils';
+import { formatJson, linkSx } from '../utils/jsxUtils';
 
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const IDENTITYID_REGEXP = /(?<="identityId": ")(.*)(?=")/;
@@ -76,7 +76,7 @@ export default function CodePopover({
             component={(firebaseId: string, key: number) => (
               <Link
                 key={key}
-                sx={internalLinkSx}
+                sx={linkSx}
                 href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/${options.linkifyActivityId ? 'activities' : 'identities'}/${firebaseId}`}
                 target="_blank"
               >
@@ -91,7 +91,7 @@ export default function CodePopover({
                   <Link
                     component={RemixLink}
                     key={key}
-                    sx={internalLinkSx}
+                    sx={linkSx}
                     to={'/event/view/' + filePath}
                     target="_blank"
                   >

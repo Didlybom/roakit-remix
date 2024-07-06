@@ -14,7 +14,7 @@ export const verticalStickyBarSx: SxProps = {
   overflowY: 'auto',
 };
 
-export const internalLinkSx: SxProps = {
+export const linkSx: SxProps = {
   cursor: 'pointer',
   textDecoration: 'none',
   '&:hover': { borderBottom: 'dotted 1px' },

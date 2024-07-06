@@ -62,7 +62,7 @@ import {
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { ellipsisSx, errorAlert, internalLinkSx, loaderErrorResponse } from '../utils/jsxUtils';
+import { ellipsisSx, errorAlert, linkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
 
 const logger = pino({ name: 'route:identities' });
@@ -262,7 +262,7 @@ export default function Users() {
               tabIndex={params.tabIndex}
               href={`/activity/${encodeURI(id)}`}
               title="View activity"
-              sx={internalLinkSx}
+              sx={linkSx}
             >
               {params.value}
             </Link>
@@ -412,7 +412,7 @@ export default function Users() {
               tabIndex={params.tabIndex}
               href={`/activity/${encodeURI(id)}`}
               title="View activity"
-              sx={internalLinkSx}
+              sx={linkSx}
             >
               {params.value}
             </Link>

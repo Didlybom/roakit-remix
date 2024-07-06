@@ -17,14 +17,14 @@ import {
   useLoaderData,
   useRouteError,
 } from '@remix-run/react';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useContext } from 'react';
 import type { ClientEnv } from './client-env/client-env.server';
 import clientConfig from './client-env/client-env.server';
 import ClientStyleContext from './components/ClientStyleContext';
 import Layout from './components/Layout';
 import { errMsg } from './utils/errorUtils';
-import { internalLinkSx } from './utils/jsxUtils';
+import { linkSx } from './utils/jsxUtils';
 import theme from './utils/theme';
 
 interface DocumentProps {
@@ -135,11 +135,11 @@ export function ErrorBoundary() {
           {!isRouteErrorResponse(error) && (
             <Typography mt={2}>
               You can try to{' '}
-              <Link onClick={() => window.location.reload()} sx={internalLinkSx}>
+              <Link onClick={() => window.location.reload()} sx={linkSx}>
                 refresh
               </Link>
               , or{' '}
-              <Link href="/logout" sx={internalLinkSx}>
+              <Link href="/logout" sx={linkSx}>
                 logout
               </Link>{' '}
               and login again.

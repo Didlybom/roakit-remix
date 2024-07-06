@@ -7,7 +7,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   switch (sessionData.role) {
     case Role.Admin:
     case Role.Monitor:
-      return redirect('/activity/*');
+      return redirect('/activity/*?groupby=contributor');
     case Role.Contributor:
     default:
       return redirect('/status');

@@ -22,12 +22,7 @@ import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.s
 import {} from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
-import {
-  errorAlert,
-  internalLinkSx,
-  loaderErrorResponse,
-  loginWithRedirectUrl,
-} from '../utils/jsxUtils';
+import { errorAlert, linkSx, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
 import type { SummariesResponse } from './fetcher.summaries.($userid)';
@@ -215,7 +210,7 @@ export default function Dashboard() {
                   return prev;
                 });
               }}
-              sx={internalLinkSx}
+              sx={linkSx}
             >
               April 18 has some data
             </Link>

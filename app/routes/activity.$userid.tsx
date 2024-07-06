@@ -3,6 +3,10 @@ import {
   AccountTree as GroupIcon,
   OpenInNew as OpenInNewIcon,
   Search as SearchIcon,
+  SortByAlpha as SortByAlphaIcon,
+  FitnessCenter as SortByEffortIcon,
+  Numbers as SortByTotalIcon,
+  Sort as SortIcon,
   ZoomOutMap as ZoomOutIcon,
 } from '@mui/icons-material';
 import {
@@ -10,17 +14,15 @@ import {
   Button,
   Divider,
   FormControl,
-  FormControlLabel,
-  FormLabel,
   Unstable_Grid2 as Grid,
   IconButton,
   InputAdornment,
   Link,
   Pagination,
-  Radio,
-  RadioGroup,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
@@ -77,7 +79,11 @@ import {
   type ActivityRecord,
 } from '../types/types';
 import { getActivityDescription } from '../utils/activityDescription';
-import { artifactActions, buildArtifactActionKey } from '../utils/activityFeed';
+import {
+  activitiesTotalEffort,
+  artifactActions,
+  buildArtifactActionKey,
+} from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   DateRange,
@@ -89,7 +95,7 @@ import {
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
   errorAlert,
-  internalLinkSx,
+  linkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
   verticalStickyBarSx,
@@ -104,7 +110,7 @@ const logger = pino({ name: 'route:activity.user' });
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   let title = 'User';
   if (data?.userId && data.userId !== ALL) {
-    title = data.actors[data.userId]?.name ?? 'User';
+    title = data.actors[data.userId]?.name ?? 'Contributor';
   }
   return [{ title: `${title} Activity | ROAKIT` }];
 };
@@ -401,7 +407,7 @@ export default function UserActivity() {
                       setTimeout(() => setScrollToGroup(activity.launchItemId), 0);
                     }}
                     title={loaderData.launchItems[activity.launchItemId]?.label}
-                    sx={internalLinkSx}
+                    sx={linkSx}
                     color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}
                   >
                     {params.value}
@@ -504,11 +510,11 @@ export default function UserActivity() {
     }
     let actorActivityCount = 0;
     const actorList = [...activities.keys()].map((actorId, i) => {
-      const activityCount = activities.get(actorId)?.length ?? 0;
-      const effortTotal = activities
-        .get(actorId)
-        ?.reduce((total, el) => total + (el.effort ?? 0), 0);
+      const actorActivities = activities.get(actorId);
+      const activityCount = actorActivities?.length ?? 0;
+      const effortTotal = actorActivities ? activitiesTotalEffort(actorActivities) : undefined;
       actorActivityCount += activityCount;
+      const activityCountString = activityCount.toLocaleString();
       return (
         <Box
           key={i}
@@ -516,7 +522,7 @@ export default function UserActivity() {
           color={actorId ? undefined : grey[500]}
         >
           <Link
-            sx={internalLinkSx}
+            sx={linkSx}
             color={actorId ? undefined : grey[500]}
             onClick={() => {
               if (sortActors !== SortActorsBy.Name && i <= 9 && showOnlyActor == null) {
@@ -530,13 +536,17 @@ export default function UserActivity() {
             {loaderData.actors[actorId ?? '']?.name ?? 'Unknown'}
           </Link>
           <SmallChip
-            label={effortTotal ? `${activityCount} / ${effortTotal}` : `${activityCount}`}
-            tooltip={
-              effortTotal ?
-                `${activityCount} activities / effort: ${effortTotal}`
-              : `${activityCount} activities`
+            label={
+              effortTotal != null ?
+                `${activityCountString} / ${effortTotal}`
+              : `${activityCountString}`
             }
-            sx={{ ml: 1, mt: '-2px' }}
+            tooltip={
+              effortTotal != null ?
+                `${activityCountString} ${pluralize('activity', activityCount)} / effort: ${effortTotal.toLocaleString()}`
+              : `${activityCountString} ${pluralize('activity', activityCount)}`
+            }
+            sx={{ ml: '5px', mt: '-2px' }}
           />
         </Box>
       );
@@ -567,7 +577,7 @@ export default function UserActivity() {
         >
           <Link
             sx={{
-              ...internalLinkSx,
+              ...linkSx,
               '&:hover': {
                 color: launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
               },
@@ -577,7 +587,7 @@ export default function UserActivity() {
           >
             {label}
           </Link>
-          <SmallChip label={`${activityCount}`} sx={{ ml: 1, mt: '-2px' }} />
+          <SmallChip label={`${activityCount}`} sx={{ ml: '5px', mt: '-2px' }} />
         </Box>
       );
     });
@@ -597,10 +607,7 @@ export default function UserActivity() {
         const filteredRows =
           searchTerm ?
             rows.filter(activity => {
-              if (!activity.metadata) {
-                return false;
-              }
-              const summary = getActivityDescription(activity); // FIXME consider precalculating the summary
+              const summary = getActivityDescription(activity); // FIXME consider precalculating
               return summary && summary.toLowerCase().indexOf(searchTerm) >= 0;
             })
           : rows;
@@ -636,9 +643,6 @@ export default function UserActivity() {
       const filteredRows =
         searchTerm ?
           rows.filter(activity => {
-            if (!activity.metadata) {
-              return false;
-            }
             const description = getActivityDescription(activity); // FIXME consider precalculating
             return description && description.toLowerCase().indexOf(searchTerm) >= 0;
           })
@@ -687,9 +691,6 @@ export default function UserActivity() {
     const filteredRows =
       searchTerm ?
         rows.filter(activity => {
-          if (!activity.metadata) {
-            return false;
-          }
           const description = getActivityDescription(activity); // FIXME consider precalculating
           return description && description.toLowerCase().indexOf(searchTerm) >= 0;
         })
@@ -727,6 +728,176 @@ export default function UserActivity() {
     activityCount = ungroupedActivityCount;
   }
 
+  const navBar =
+    groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && activities.size > 0 ?
+      <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
+        <Box sx={{ position: 'relative' }}>
+          <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
+            <FormControl sx={{ mb: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <SortIcon fontSize="small" />
+                <ToggleButtonGroup
+                  size="small"
+                  value={sortActors}
+                  exclusive
+                  onChange={(_, sortValue) => {
+                    setIsRendering(true);
+                    setSortActors(sortValue as SortActorsBy);
+                    window.scrollTo({ top: 0 });
+                  }}
+                  sx={{ '& .MuiToggleButton-root': { py: '2px', textTransform: 'none' } }}
+                >
+                  <ToggleButton
+                    value={SortActorsBy.Name}
+                    title={
+                      groupBy === GroupBy.Launch ?
+                        'Sort navigation list by launch item'
+                      : "Sort navigation list by contributor's name"
+                    }
+                  >
+                    <SortByAlphaIcon sx={{ width: 18, height: 18 }} />
+                  </ToggleButton>
+                  <ToggleButton
+                    value={SortActorsBy.Total}
+                    title="Sort navigation list by total number of activities"
+                  >
+                    <SortByTotalIcon sx={{ width: 18, height: 18 }} />
+                  </ToggleButton>
+                  <ToggleButton
+                    value={SortActorsBy.Effort}
+                    title="Sort  navigation list by total effort for all activities"
+                  >
+                    <SortByEffortIcon sx={{ width: 18, height: 18 }} />
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Stack>
+            </FormControl>
+            {actorList}
+            {launchList}
+          </Box>
+        </Box>
+      </Box>
+    : null;
+
+  const filterBar = (
+    <Grid container columns={loaderData.userId !== ALL ? 4 : 3} spacing={2} alignItems="center">
+      {loaderData.userId !== ALL && <Grid>{actorHeader(loaderData.userId!)}</Grid>}
+      <Grid flex={1} />
+      <Grid>
+        {loaderData.userId !== ALL && (
+          <Button
+            variant="outlined"
+            href={
+              '/activity/*?groupby=' +
+              (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
+              (actionFilter.length ? `&action=${actionFilter.join(',')}` : '')
+            }
+            endIcon={<ZoomOutIcon fontSize="small" />}
+            sx={{ mr: 1, textTransform: 'none', textWrap: 'nowrap' }}
+          >
+            {'All contributors'}
+          </Button>
+        )}
+      </Grid>
+      <Grid>
+        <Grid container spacing={3}>
+          <Grid>
+            <TextField
+              autoComplete="off"
+              value={searchFilter}
+              placeholder="Search"
+              title="Search descriptions"
+              size="small"
+              sx={{
+                width: { xs: '11ch', sm: '12ch' },
+                minWidth: { xs: '100px', sm: '160px' },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              onChange={e => setSearchFilter(e.target.value)}
+            />
+          </Grid>
+          <Grid>
+            <FilterMenu
+              label="Group by"
+              icon={<GroupIcon fontSize="small" />}
+              selectedValue={groupBy ?? ''}
+              items={[
+                { value: '', label: 'None', color: grey[500] },
+                ...(loaderData.userId === ALL ?
+                  [{ value: GroupBy.Contributor, label: 'Contributor' }]
+                : []),
+                { value: GroupBy.Launch, label: 'Launch' },
+              ]}
+              onChange={value => {
+                setActivities(new Map());
+                setTotalActivityCount(null);
+                setIsRendering(true);
+                setPaginationModel({ ...paginationModel, page: 0 });
+                setGroupBy((value as GroupBy) || null); // will trigger effect to re-set activities
+                setSearchParams(prev => {
+                  if (value === '') {
+                    prev.delete(SEARCH_PARAM_GROUPBY);
+                  } else {
+                    prev.set(SEARCH_PARAM_GROUPBY, value as string);
+                  }
+                  return prev;
+                });
+              }}
+            />
+          </Grid>
+          <Grid>
+            <FilterMenu
+              label="Action"
+              multiple
+              selectedValue={actionFilter}
+              items={[
+                ...[...artifactActions].map(([key, action]) => ({
+                  value: key,
+                  label: action.label,
+                })),
+              ]}
+              onChange={values => {
+                setActionFilter(values as string[]);
+                setSearchParams(prev => {
+                  if (values.length) {
+                    prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
+                  } else {
+                    prev.delete(SEARCH_PARAM_ACTION);
+                  }
+                  return prev;
+                });
+              }}
+            />
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
+  );
+
+  const totalIndicator = (
+    <Box display="flex" justifyContent="right" mt={1}>
+      {activityCount != null &&
+        totalActivityCount != null &&
+        activityCount !== totalActivityCount && (
+          <Typography variant="subtitle2">
+            {activityCount.toLocaleString()} / {totalActivityCount.toLocaleString()}{' '}
+            {pluralize('activity', totalActivityCount)}
+          </Typography>
+        )}
+      {activityCount != null && activityCount === totalActivityCount && (
+        <Typography variant="subtitle2">
+          {activityCount.toLocaleString()} {pluralize('activity', activityCount)}
+        </Typography>
+      )}
+    </Box>
+  );
+
   return (
     <App
       view={VIEW}
@@ -754,173 +925,10 @@ export default function UserActivity() {
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Stack m={3}>
         <Stack direction="row">
-          {groupBy &&
-            (loaderData.userId === ALL || groupBy === GroupBy.Launch) &&
-            activities.size > 0 && (
-              <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
-                <Box sx={{ position: 'relative' }}>
-                  <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
-                    <FormControl sx={{ mb: 1, ml: 1 }}>
-                      <FormLabel sx={{ fontSize: 'small', ml: -1 }}>Sort by</FormLabel>
-                      <RadioGroup
-                        row
-                        value={sortActors}
-                        onChange={e => {
-                          setIsRendering(true);
-                          setSortActors(e.target.value as SortActorsBy);
-                          window.scrollTo({ top: 0 });
-                        }}
-                        sx={{
-                          '& .MuiFormControlLabel-label': { fontSize: 11 },
-                          '& .MuiSvgIcon-root': { fontSize: 18 },
-                          '& .MuiRadio-root': { p: '5px' },
-                        }}
-                      >
-                        <FormControlLabel
-                          value={SortActorsBy.Name}
-                          control={<Radio />}
-                          label="name"
-                          title="Contributor's name"
-                        />
-                        <FormControlLabel
-                          value={SortActorsBy.Total}
-                          control={<Radio />}
-                          label="total"
-                          title="Total number of activities"
-                        />
-                        <FormControlLabel
-                          value={SortActorsBy.Effort}
-                          control={<Radio />}
-                          label="effort"
-                          title="Total effort for all activities"
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                    {actorList}
-                    {launchList}
-                  </Box>
-                </Box>
-              </Box>
-            )}
+          {navBar}
           <Stack flex={1} minWidth={0}>
-            <Grid
-              container
-              columns={loaderData.userId !== ALL ? 4 : 3}
-              spacing={2}
-              alignItems="center"
-            >
-              {loaderData.userId !== ALL && <Grid>{actorHeader(loaderData.userId!)}</Grid>}
-              <Grid flex={1} />
-              <Grid>
-                {loaderData.userId !== ALL && (
-                  <Button
-                    variant="outlined"
-                    href={
-                      '/activity/*?groupby=' +
-                      (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
-                      (actionFilter.length ? `&action=${actionFilter.join(',')}` : '')
-                    }
-                    endIcon={<ZoomOutIcon fontSize="small" />}
-                    sx={{ mr: 1, textTransform: 'none', textWrap: 'nowrap' }}
-                  >
-                    {'All contributors'}
-                  </Button>
-                )}
-              </Grid>
-              <Grid>
-                <Grid container spacing={3}>
-                  <Grid>
-                    <TextField
-                      autoComplete="off"
-                      value={searchFilter}
-                      placeholder="Search"
-                      title="Search descriptions"
-                      size="small"
-                      sx={{ width: '12ch', minWidth: { xs: '110px', sm: '170px' } }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment
-                            position="start"
-                            sx={{ display: { xs: 'none', sm: 'flex' } }}
-                          >
-                            <SearchIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                      onChange={e => setSearchFilter(e.target.value)}
-                    />
-                  </Grid>
-                  <Grid>
-                    <FilterMenu
-                      label="Group by"
-                      icon={<GroupIcon fontSize="small" />}
-                      selectedValue={groupBy ?? ''}
-                      items={[
-                        { value: '', label: 'None', color: grey[500] },
-                        ...(loaderData.userId === ALL ?
-                          [{ value: GroupBy.Contributor, label: 'Contributor' }]
-                        : []),
-                        { value: GroupBy.Launch, label: 'Launch' },
-                      ]}
-                      onChange={value => {
-                        setActivities(new Map());
-                        setTotalActivityCount(null);
-                        setIsRendering(true);
-                        setPaginationModel({ ...paginationModel, page: 0 });
-                        setGroupBy((value as GroupBy) || null); // will trigger effect to re-set activities
-                        setSearchParams(prev => {
-                          if (value === '') {
-                            prev.delete(SEARCH_PARAM_GROUPBY);
-                          } else {
-                            prev.set(SEARCH_PARAM_GROUPBY, value as string);
-                          }
-                          return prev;
-                        });
-                      }}
-                    />
-                  </Grid>
-                  <Grid>
-                    <FilterMenu
-                      label="Activity Type"
-                      multiple
-                      selectedValue={actionFilter}
-                      items={[
-                        ...[...artifactActions].map(([key, action]) => ({
-                          value: key,
-                          label: action.label,
-                        })),
-                      ]}
-                      onChange={values => {
-                        setActionFilter(values as string[]);
-                        setSearchParams(prev => {
-                          if (values.length) {
-                            prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
-                          } else {
-                            prev.delete(SEARCH_PARAM_ACTION);
-                          }
-                          return prev;
-                        });
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-            </Grid>
-            <Box display="flex" justifyContent="right" mt={1}>
-              {activityCount != null &&
-                totalActivityCount != null &&
-                activityCount !== totalActivityCount && (
-                  <Typography variant="subtitle2">
-                    {activityCount.toLocaleString()} / {totalActivityCount.toLocaleString()}{' '}
-                    {pluralize('activity', totalActivityCount)}
-                  </Typography>
-                )}
-              {activityCount != null && activityCount === totalActivityCount && (
-                <Typography variant="subtitle2">
-                  {activityCount.toLocaleString()} {pluralize('activity', activityCount)}
-                </Typography>
-              )}
-            </Box>
+            {filterBar}
+            {totalIndicator}
             {gridsByContributor}
             {gridsByLaunch}
             {gridsUngrouped}

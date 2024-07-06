@@ -67,7 +67,7 @@ import { postJsonOptions } from '../utils/httpUtils';
 import {
   ellipsisSx,
   errorAlert,
-  internalLinkSx,
+  linkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
   type SelectOption,
@@ -313,7 +313,7 @@ export default function ActivityReview() {
                   fontSize="small"
                   href={`/activity/${encodeURI(account.id)}`}
                   title="View activity"
-                  sx={internalLinkSx}
+                  sx={linkSx}
                 >
                   {account.name}
                 </Link>
