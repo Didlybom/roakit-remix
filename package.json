@@ -7,8 +7,8 @@
   "scripts": {
     "artifactregistry:login": "npx google-artifactregistry-auth",
     "build": "remix build",
-    "local": "cross-env remix dev --manual",
-    "local:prod": "cross-env ROAKIT_ENV=production remix dev --manual",
+    "local": "cross-env NODE_OPTIONS=--max-old-space-size=8192 remix dev --manual",
+    "local:prod": "cross-env ROAKIT_ENV=production NODE_OPTIONS=--max-old-space-size=8192 remix dev --manual",
     "deploy": "npm run build &&firebase use default && npm run firebase:deploy",
     "deploy:prod": "npm run build && npm run lint && npm run tsc && firebase use prod && npm run firebase:deploy && npm run smoke",
     "build:vite": "remix vite:build",
