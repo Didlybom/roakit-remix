@@ -803,7 +803,7 @@ export default function UserActivity() {
       <Grid>
         {loaderData.userId !== ALL && (
           <Button
-            variant="outlined"
+            variant="text"
             href={
               '/activity/*?groupby=' +
               (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
