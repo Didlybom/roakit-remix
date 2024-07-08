@@ -217,7 +217,8 @@ export const descriptionColDef = (
     renderCell: params => {
       const activity = params.row as Activity;
       const description = getActivityDescription(activity);
-      const comment = activity.metadata?.comment?.body;
+      const comment =
+        activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
       const url = activity.metadata ? getActivityUrl(activity) : undefined;
       let icon;
       let urlTitle = '';
@@ -300,7 +301,7 @@ export const descriptionColDef = (
                 </Typography>
               )}
               {comment && (
-                <Typography title={comment} fontSize="smaller" color={grey[500]} sx={ellipsisSx}>
+                <Typography fontSize="smaller" color={grey[500]} sx={ellipsisSx}>
                   {comment}
                 </Typography>
               )}
@@ -346,7 +347,9 @@ export const descriptionColDef = (
               pl={icon ? undefined : '35px'}
               sx={ellipsisSx}
             >
-              {description}
+              {ticketBaseUrl ?
+                <LinkifyJira content={description} baseUrl={ticketBaseUrl} />
+              : description}
             </Box>
           }
         </Stack>

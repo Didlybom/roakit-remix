@@ -16,10 +16,14 @@ const isMatching = (a: Activity, b: Activity) =>
   a.actorId === b.actorId &&
   a.artifact === b.artifact &&
   a.eventType === b.eventType &&
-  a.action === b.action &&
-  (a.event === b.event ||
-    (a.event?.startsWith('pull_request') && b.event?.startsWith('pull_request')) ||
-    (a.event?.startsWith('comment_') && b.event?.startsWith('comment_')));
+  ((a.action === b.action &&
+    (a.event === b.event ||
+      (a.event?.startsWith('pull_request') && b.event?.startsWith('pull_request')) ||
+      (a.event?.startsWith('comment_') && b.event?.startsWith('comment_')))) ||
+    (a.action === 'created' &&
+      b.action === 'updated' &&
+      a.event === 'jira:issue_created' &&
+      b.event === 'jira:issue_updated'));
 
 /**
  * Try to combine newActivity with an existing element of activities, keeping the nex index.
@@ -100,12 +104,16 @@ export const combineAndPushActivity = (newActivity: Activity, activities: Activi
     if (indexIssueActivity >= 0 && newActivity.metadata.changeLog) {
       const foundActivity = activities[indexIssueActivity];
       newActivity.metadata.changeLog.push(...foundActivity.metadata!.changeLog!);
+      if (newActivity.action === 'updated' && foundActivity.action === 'created') {
+        newActivity.action = 'created';
+        newActivity.event = foundActivity.event;
+      }
       combineToNewActivity(activities, indexIssueActivity, foundActivity, newActivity);
       return activities;
     }
   }
 
-  // Jira attachment
+  // Jira multiple attachments
   else if (newActivity.event === 'attachment_created' && newActivity.metadata?.attachment) {
     const indexPageActivity = activities.findLastIndex(a => isMatching(a, newActivity));
     if (indexPageActivity >= 0) {
@@ -118,6 +126,8 @@ export const combineAndPushActivity = (newActivity: Activity, activities: Activi
         newActivity.metadata.attachments = {
           files: [foundActivity.metadata!.attachment, newActivity.metadata.attachment],
         };
+      } else {
+        return activities;
       }
       newActivity.metadata.attachment = undefined;
       combineToNewActivity(activities, indexPageActivity, foundActivity, newActivity);
@@ -125,8 +135,33 @@ export const combineAndPushActivity = (newActivity: Activity, activities: Activi
     }
   }
 
-  // Jira comment
-  else if (newActivity.event === 'comment_updated' && newActivity.metadata?.comment?.id) {
+  // Jira multiple comments
+  else if (newActivity.event?.startsWith('comment_') && newActivity.metadata?.comment) {
+    const indexPageActivity = activities.findLastIndex(a => isMatching(a, newActivity));
+    if (indexPageActivity >= 0) {
+      const foundActivity = activities[indexPageActivity];
+      if (foundActivity.metadata!.comments) {
+        newActivity.metadata.comments = [
+          ...foundActivity.metadata!.comments,
+          newActivity.metadata.comment,
+        ];
+      } else if (foundActivity.metadata!.comment) {
+        newActivity.metadata.comments = [
+          foundActivity.metadata!.comment,
+          newActivity.metadata.comment,
+        ];
+      } else {
+        return activities;
+      }
+      newActivity.metadata.comment = undefined;
+      newActivity.event = 'comment_*';
+      combineToNewActivity(activities, indexPageActivity, foundActivity, newActivity);
+      return activities;
+    }
+  }
+
+  // Jira single comment update
+  else if (newActivity.event?.startsWith('comment_') && newActivity.metadata?.comment?.id) {
     const indexPageActivity = activities.findLastIndex(
       a =>
         isMatching(a, newActivity) && newActivity.metadata!.comment!.id === a.metadata?.comment?.id

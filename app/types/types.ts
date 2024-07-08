@@ -128,6 +128,7 @@ export type ActivityMetadata = {
     uri?: string;
     parent?: { type: string; title: string; uri?: string };
   };
+  comments?: { id: string; body: string; uri?: string }[];
   label?: {
     name: string;
     contentType: string;

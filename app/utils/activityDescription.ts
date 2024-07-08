@@ -260,6 +260,9 @@ export const getActivityUrl = (activity: Activity): { url: string; type: FeedTyp
   if (metadata?.comment?.uri) {
     return { url: `${metadata.comment.uri}`, type };
   }
+  if (metadata?.comments && metadata.comments[0]?.uri) {
+    return { url: `${metadata.comments[0].uri}`, type };
+  }
   if (metadata?.label?.contentUri) {
     return { url: `${metadata.label.contentUri}`, type };
   }
