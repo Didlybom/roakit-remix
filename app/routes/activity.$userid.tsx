@@ -4,7 +4,7 @@ import {
   OpenInNew as OpenInNewIcon,
   Search as SearchIcon,
   SortByAlpha as SortByAlphaIcon,
-  FitnessCenter as SortByEffortIcon,
+  Timelapse as SortByEffortIcon,
   Numbers as SortByTotalIcon,
   Sort as SortIcon,
   ZoomOutMap as ZoomOutIcon,
