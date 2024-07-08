@@ -68,7 +68,6 @@ import { Role, View } from '../utils/rbac';
 const logger = pino({ name: 'route:identities' });
 
 const MAX_IMPORT = 500;
-const UNSET_MANAGER_ID = '_UNSET_MANAGER_';
 
 const UNKNOWN_EMAIL_IMPORT = '<EMAIL_REPLACE_ME>';
 
@@ -138,7 +137,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
       await firestore
         .doc(`customers/${sessionData.customerId!}/identities/${actionRequest.identityId}`)
         .update({
-          managerId: actionRequest.managerId === UNSET_MANAGER_ID ? '' : actionRequest.managerId,
+          managerId: actionRequest.managerId ?? '',
         });
       return { status: { code: 'userUpdated', message: "User's team updated" } };
     } catch (e) {
@@ -182,9 +181,9 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
       importCount++;
       batch.set(identitiesColl.doc(), {
         dateCreated,
-        managerId,
         displayName,
         email,
+        managerId: managerId ?? '',
         accounts: [
           ...(jiraId ? [{ feedId: 2, type: 'jira', id: jiraId, name: displayName }] : []),
           ...(gitHubId ? [{ feedId: 1, type: 'github', id: gitHubId, name: '' }] : []),
@@ -307,12 +306,12 @@ export default function Users() {
         headerName: 'Team',
         type: 'singleSelect',
         sortComparator: (a: string, b: string) => {
-          const aName = a === UNSET_MANAGER_ID ? 'ZZZ' : findManagerName(a);
-          const bName = b === UNSET_MANAGER_ID ? 'ZZZ' : findManagerName(b);
+          const aName = !a ? 'ZZZ' : findManagerName(a);
+          const bName = !b ? 'ZZZ' : findManagerName(b);
           return aName.localeCompare(bName);
         },
         valueOptions: params => [
-          { value: UNSET_MANAGER_ID, label: '[unset]' },
+          { value: '', label: '[unset]' },
           ...loaderData.identities.list
             .filter(i => i.id !== (params.row as Identity).id)
             .map(identity => ({ value: identity.id, label: identity.displayName })),
@@ -322,11 +321,7 @@ export default function Users() {
           <Box height="100%" display="flex" alignItems="center">
             <DropDownButton
               tabIndex={params.tabIndex}
-              label={
-                params.value && params.value !== UNSET_MANAGER_ID ?
-                  findManagerName(params.value as string)
-                : null
-              }
+              label={params.value ? findManagerName(params.value as string) : null}
             />
           </Box>
         ),
@@ -494,17 +489,12 @@ export default function Users() {
 
   const filteredIdentities =
     (tabValue as UsersTab) === UsersTab.Directory ?
-      identities
-        .filter(
-          identity =>
-            !searchTerm ||
-            (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0) ||
-            identity.id.toLowerCase().indexOf(searchTerm) >= 0
-        )
-        .map(identity => ({
-          ...identity,
-          managerId: identity.managerId ?? UNSET_MANAGER_ID,
-        }))
+      identities.filter(
+        identity =>
+          !searchTerm ||
+          (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0) ||
+          identity.id.toLowerCase().indexOf(searchTerm) >= 0
+      )
     : [];
 
   const filteredAccounts =
