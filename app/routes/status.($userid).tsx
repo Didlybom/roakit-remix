@@ -1,4 +1,9 @@
-import { Add as AddIcon, DeleteOutlined as DeleteIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  KeyboardArrowLeft as ArrowLeftIcon,
+  KeyboardArrowRight as ArrowRightIcon,
+  DeleteOutlined as DeleteIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -9,6 +14,7 @@ import {
   DialogTitle,
   FormControlLabel,
   Unstable_Grid2 as Grid,
+  IconButton,
   Snackbar,
   Stack,
   Switch,
@@ -264,6 +270,7 @@ export default function Status() {
       dayjs(searchParams.get(SEARCH_PARAM_DAY))
     : dayjs().subtract(1, 'days')
   );
+  const isTodaySelected = isToday(selectedDay);
   const [showTeam, setShowTeam] = useState(false);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
@@ -492,7 +499,7 @@ export default function Status() {
   );
 
   let datePickerFormat = 'MMM Do';
-  if (isToday(selectedDay)) {
+  if (isTodaySelected) {
     datePickerFormat = 'Today';
   } else if (isYesterday(selectedDay)) {
     datePickerFormat = 'Yesterday';
@@ -680,16 +687,32 @@ export default function Status() {
         </Grid>
         <Grid flex={1} minWidth={300}>
           <Stack spacing={2} sx={{ ml: 2 }}>
-            <Button
-              onClick={() => {
-                setNewActivity(emptyActivity);
-                setShowNewDialog(true);
-              }}
-              startIcon={<AddIcon />}
-              sx={{ width: 'fit-content' }}
-            >
-              New Activity
-            </Button>
+            <Stack direction="row">
+              <IconButton
+                onClick={() => setSelectedDay(selectedDay.subtract(1, 'day'))}
+                title="Previous day"
+              >
+                <ArrowLeftIcon />
+              </IconButton>
+              <IconButton
+                disabled={isTodaySelected}
+                onClick={() => setSelectedDay(selectedDay.add(1, 'day'))}
+                title="Next day"
+              >
+                <ArrowRightIcon />
+              </IconButton>
+              <Box flex={1} />
+              <Button
+                onClick={() => {
+                  setNewActivity(emptyActivity);
+                  setShowNewDialog(true);
+                }}
+                startIcon={<AddIcon />}
+                sx={{ width: 'fit-content' }}
+              >
+                New Activity
+              </Button>
+            </Stack>
             <StyledMuiError>
               <DataGridWithSingleClickEditing
                 columns={columns}
