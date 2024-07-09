@@ -121,6 +121,7 @@ export type ActivityMetadata = {
   page?: { id: string; title: string; version?: string; uri?: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
+  pullRequestIssue?: { title: string; uri?: string };
   commits?: { message: string; url?: string }[];
   comment?: {
     id: string;

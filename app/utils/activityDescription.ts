@@ -50,7 +50,11 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
     return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
   }
   if (metadata?.pullRequestComment) {
-    return metadata.pullRequestComment.body;
+    return (
+      metadata.pullRequest?.title ??
+      metadata.pullRequestIssue?.title ??
+      metadata.pullRequestComment.body
+    ); // prefer the PR title
   }
   if (metadata?.commits?.length) {
     return metadata.commits[0].message;
