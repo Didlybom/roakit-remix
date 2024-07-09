@@ -344,7 +344,7 @@ export const descriptionColDef = (
           : <Box
               fontSize="small"
               title={description}
-              pl={icon ? undefined : '35px'}
+              pl={icon ? undefined : '22px'}
               sx={ellipsisSx}
             >
               {ticketBaseUrl ?

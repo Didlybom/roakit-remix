@@ -1,11 +1,22 @@
 import {
   ArrowDropDown as ArrowDropDownIcon,
   ArrowDropUp as ArrowDropUpIcon,
+  KeyboardArrowLeft as ArrowLeftIcon,
+  KeyboardArrowRight as ArrowRightIcon,
   CalendarMonth as LargeDateRangeIcon,
   DateRange as MediumDateRangeIcon,
   Today as SmallDateRangeIcon,
 } from '@mui/icons-material';
-import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Stack } from '@mui/material';
+import {
+  Box,
+  Button,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Stack,
+} from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import type { Dayjs } from 'dayjs';
@@ -33,16 +44,19 @@ export default function DateRangePicker({
   dateRange,
   endDay = dayjs(),
   onSelect,
+  prevAndNextButtons = true,
   color = 'white',
 }: {
   dateRange: DateRange;
   endDay: Dayjs;
   onSelect: (dateRangeEnding: DateRangeEnding) => void;
+  prevAndNextButtons?: boolean;
   color?: string;
 }) {
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
   const [range, setRange] = useState<DateRange>(dateRange);
   const [day, setDay] = useState<Dayjs>(endDay);
+  const isTodaySelected = isToday(day);
 
   const handleDateRangeClick = async (dateRange: DateRange) => {
     setMenuEl(null);
@@ -64,7 +78,7 @@ export default function DateRangePicker({
   };
 
   let datePickerFormat = 'MMM Do';
-  if (isToday(day)) {
+  if (isTodaySelected) {
     datePickerFormat = 'Today';
   } else if (isYesterday(day)) {
     datePickerFormat = 'Yesterday';
@@ -100,9 +114,6 @@ export default function DateRangePicker({
           </MenuItem>
         ))}
       </Menu>
-      <Box fontSize="small" mr={1}>
-        {'ending'}
-      </Box>
       <Box mt="1px">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
@@ -128,6 +139,26 @@ export default function DateRangePicker({
           />
         </LocalizationProvider>
       </Box>
+      {prevAndNextButtons && (
+        <>
+          <IconButton
+            onClick={() => handleEndDayClick(day.subtract(1, 'day'))}
+            title="Previous day"
+            sx={{ ml: '4px', color, p: '2px' }}
+          >
+            <ArrowLeftIcon fontSize="small" />
+          </IconButton>
+          {!isTodaySelected && (
+            <IconButton
+              onClick={() => handleEndDayClick(day.add(1, 'day'))}
+              title="Next day"
+              sx={{ color, p: '2px' }}
+            >
+              <ArrowRightIcon fontSize="small" />
+            </IconButton>
+          )}
+        </>
+      )}
     </Stack>
   );
 }
