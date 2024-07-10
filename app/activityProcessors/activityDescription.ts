@@ -1,5 +1,5 @@
 import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '../types/types';
-import { mimeTypeToType } from './stringUtils';
+import { mimeTypeToType } from '../utils/stringUtils';
 
 export const ACTIVITY_DESCRIPTION_LIST_SEPARATOR = ', ';
 

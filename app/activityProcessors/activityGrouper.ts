@@ -1,5 +1,5 @@
 import type { Activity, ArtifactCount, PhaseCount } from '../types/types';
-import { buildArtifactActionKey } from '../utils/activityFeed';
+import { buildArtifactActionKey } from './activityFeed';
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 

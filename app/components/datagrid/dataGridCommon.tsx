@@ -27,16 +27,16 @@ import { GridActionsCellItem, gridStringOrNumberComparator } from '@mui/x-data-g
 import memoize from 'fast-memoize';
 import pluralize from 'pluralize';
 import { useEffect, useState } from 'react';
-import ConfluenceIcon from '../../icons/Confluence';
-import JiraIcon from '../../icons/Jira';
-import { CUSTOM_EVENT, type Account, type Activity } from '../../types/types';
 import {
   ACTIVITY_DESCRIPTION_LIST_SEPARATOR,
   getActivityActionDescription,
   getActivityDescription,
   getActivityUrl,
-} from '../../utils/activityDescription';
-import { findTicket } from '../../utils/activityFeed';
+} from '../../activityProcessors/activityDescription';
+import { findTicket } from '../../activityProcessors/activityFeed';
+import ConfluenceIcon from '../../icons/Confluence';
+import JiraIcon from '../../icons/Jira';
+import { CUSTOM_EVENT, type Account, type Activity } from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx, linkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';

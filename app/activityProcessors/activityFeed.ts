@@ -1,5 +1,5 @@
 import type { Activity, ActivityMetadata, TicketRecord } from '../types/types';
-import { findJiraTickets } from './stringUtils';
+import { findJiraTickets } from '../utils/stringUtils';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
   ['task-created', { sortOrder: 1, label: 'Task created' }],

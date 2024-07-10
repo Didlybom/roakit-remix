@@ -41,6 +41,12 @@ import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
+import { getActivityDescription } from '../activityProcessors/activityDescription';
+import {
+  activitiesTotalEffort,
+  artifactActions,
+  buildArtifactActionKey,
+} from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   MapperType,
@@ -78,12 +84,6 @@ import {
   type Activity,
   type ActivityRecord,
 } from '../types/types';
-import { getActivityDescription } from '../utils/activityDescription';
-import {
-  activitiesTotalEffort,
-  artifactActions,
-  buildArtifactActionKey,
-} from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import {
   DateRange,

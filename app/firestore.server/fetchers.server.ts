@@ -4,6 +4,7 @@ import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import pino from 'pino';
 import { combineAndPushActivity } from '../activityProcessors/activityCombiner';
+import { findTicket } from '../activityProcessors/activityFeed';
 import { firestore } from '../firebase.server';
 import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
@@ -25,7 +26,6 @@ import {
   type Summary,
   type TicketRecord,
 } from '../types/types';
-import { findTicket } from '../utils/activityFeed';
 import { daysInMonth } from '../utils/dateUtils';
 import type { Role } from '../utils/rbac';
 import { DEFAULT_ROLE } from '../utils/rbac';

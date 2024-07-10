@@ -27,6 +27,7 @@ import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-ru
 import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
+import { inferPriority } from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   MapperType,
@@ -60,7 +61,6 @@ import {
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
 import type { Account, Activity, Artifact, ArtifactCount } from '../types/types';
-import { inferPriority } from '../utils/activityFeed';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';

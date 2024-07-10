@@ -1,11 +1,14 @@
 import type { GenerateContentResult } from '@google-cloud/vertexai';
 import {
+  getActivityActionDescription,
+  getActivityDescription,
+} from '../activityProcessors/activityDescription';
+import {
   CUSTOM_EVENT,
   type Activity,
   type ActorRecord,
   type InitiativeRecord,
 } from '../types/types';
-import { getActivityActionDescription, getActivityDescription } from './activityDescription';
 import { formatJson } from './jsxUtils';
 import { cloneArray } from './mapUtils';
 
