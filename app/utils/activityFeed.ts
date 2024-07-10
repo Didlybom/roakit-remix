@@ -2,20 +2,21 @@ import type { Activity, ActivityMetadata, TicketRecord } from '../types/types';
 import { findJiraTickets } from './stringUtils';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
-  ['task-created', { sortOrder: 1, label: 'Task creation' }],
-  ['task-updated', { sortOrder: 2, label: 'Task update' }],
-  ['task-deleted', { sortOrder: 3, label: 'Task deletion' }],
-  ['taskOrg-created', { sortOrder: 4, label: 'Task org. creation' }],
-  ['taskOrg-updated', { sortOrder: 5, label: 'Task org. update' }],
-  ['code-created', { sortOrder: 6, label: 'Code creation' }],
-  ['code-updated', { sortOrder: 7, label: 'Code update' }],
-  ['code-deleted', { sortOrder: 8, label: 'Code deletion' }],
-  ['codeOrg-created', { sortOrder: 9, label: 'Code org. creation' }],
-  ['codeOrg-updated', { sortOrder: 10, label: 'Code org. update' }],
-  ['codeOrg-deleted', { sortOrder: 11, label: 'Code org. deletion' }],
-  ['docOrg-created', { sortOrder: 12, label: 'Doc org. creation' }],
-  ['doc-created', { sortOrder: 13, label: 'Doc creation' }],
-  ['doc-updated', { sortOrder: 14, label: 'Doc update' }],
+  ['task-created', { sortOrder: 1, label: 'Task created' }],
+  ['task-updated', { sortOrder: 2, label: 'Task updated' }],
+  ['task-deleted', { sortOrder: 3, label: 'Task deleted' }],
+  ['taskOrg-created', { sortOrder: 4, label: 'Task org. created' }],
+  ['taskOrg-updated', { sortOrder: 5, label: 'Task org. updated' }],
+  ['code-created', { sortOrder: 6, label: 'Code created' }],
+  ['code-updated', { sortOrder: 7, label: 'Code updated' }],
+  ['code-deleted', { sortOrder: 8, label: 'Code deleted' }],
+  ['code-unknown', { sortOrder: 9, label: 'Code misc.' }],
+  ['codeOrg-created', { sortOrder: 10, label: 'Code org. created' }],
+  ['codeOrg-updated', { sortOrder: 11, label: 'Code org. updated' }],
+  ['codeOrg-deleted', { sortOrder: 12, label: 'Code org. deleted' }],
+  ['docOrg-created', { sortOrder: 13, label: 'Doc org. created' }],
+  ['doc-created', { sortOrder: 14, label: 'Doc created' }],
+  ['doc-updated', { sortOrder: 15, label: 'Doc updated' }],
 ]);
 
 // return the first ticket referenced from metadata fields

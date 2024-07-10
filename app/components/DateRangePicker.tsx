@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   Stack,
+  type ButtonPropsColorOverrides,
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -51,7 +52,7 @@ export default function DateRangePicker({
   endDay: Dayjs;
   onSelect: (dateRangeEnding: DateRangeEnding) => void;
   prevAndNextButtons?: boolean;
-  color?: string;
+  color?: ButtonPropsColorOverrides;
 }) {
   const [menuEl, setMenuEl] = useState<null | HTMLElement>(null);
   const [range, setRange] = useState<DateRange>(dateRange);
@@ -91,8 +92,8 @@ export default function DateRangePicker({
           menuEl ? <ArrowDropUpIcon sx={{ ml: -1 }} /> : <ArrowDropDownIcon sx={{ ml: -1 }} />
         }
         onClick={e => setMenuEl(e.currentTarget)}
+        color="inherit"
         sx={{
-          color,
           fontWeight: 400,
           fontSize: ' small',
           textWrap: 'nowrap',
@@ -114,7 +115,7 @@ export default function DateRangePicker({
           </MenuItem>
         ))}
       </Menu>
-      <Box mt="1px">
+      <Box color="inherit" mt="1px">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
             disableFuture={true}
@@ -144,7 +145,8 @@ export default function DateRangePicker({
           <IconButton
             onClick={() => handleEndDayClick(day.subtract(1, 'day'))}
             title="Previous day"
-            sx={{ ml: '4px', color, p: '2px' }}
+            color="inherit"
+            sx={{ ml: '4px', p: '2px' }}
           >
             <ArrowLeftIcon fontSize="small" />
           </IconButton>
@@ -152,7 +154,8 @@ export default function DateRangePicker({
             <IconButton
               onClick={() => handleEndDayClick(day.add(1, 'day'))}
               title="Next day"
-              sx={{ color, p: '2px' }}
+              color="inherit"
+              sx={{ p: '2px' }}
             >
               <ArrowRightIcon fontSize="small" />
             </IconButton>

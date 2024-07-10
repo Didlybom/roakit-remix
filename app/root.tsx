@@ -120,8 +120,9 @@ export function ErrorBoundary() {
       case 404:
         message = 'Oops! Looks like you tried to visit a page that does not exist.';
         break;
+      case 400:
       default:
-        throw new Error((error.data as string) || error.statusText);
+        message = (error.data as string) || error.statusText || 'An error occurred';
     }
   } else {
     message = errMsg(error, 'An error occurred');

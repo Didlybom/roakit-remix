@@ -1,4 +1,5 @@
 import {
+  AccountCircle as AccountIcon,
   AddCircle as AddCircleIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
@@ -20,7 +21,7 @@ import {
   Tab,
   Tabs,
   TextField,
-  Typography,
+  Tooltip,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
 import type { GridColDef, GridSortDirection } from '@mui/x-data-grid';
@@ -64,6 +65,7 @@ import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, linkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
+import theme from '../utils/theme';
 
 const logger = pino({ name: 'route:identities' });
 
@@ -269,36 +271,43 @@ export default function Users() {
       {
         field: 'accounts',
         headerName: 'Accounts',
-        flex: 1,
         sortable: false,
         renderCell: params => {
-          return (params.value as Identity['accounts']).map((account, i) => (
-            <Stack key={i} direction="row" spacing="10px" sx={{ textWrap: 'nowrap' }}>
-              <Typography
-                component="div"
-                fontSize="small"
-                color={!account.id ? 'error' : 'inherited'}
-              >
-                <Stack direction="row" spacing={1} alignItems={'center'}>
-                  {account.type === 'github' && <GitHubIcon sx={{ fontSize: '12px' }} />}
-                  {account.type === 'jira' && (
+          return (
+            <Stack direction="row" spacing={1} height="100%" alignItems={'center'}>
+              {(params.value as Identity['accounts']).map((account, i) => {
+                const color = !account.id ? theme.palette.error.main : 'inherited';
+                let icon;
+                if (account.type === 'github') {
+                  icon = <GitHubIcon sx={{ color, fontSize: '12px' }} />;
+                } else if (account.type === 'jira') {
+                  icon = (
                     <Box component="span" sx={{ fontSize: '10px' }}>
-                      <JiraIcon />
+                      <JiraIcon color={color} />
                     </Box>
-                  )}
-                  <Box>{account.id || 'n/a'}</Box>
-                  {account.name && <Box sx={ellipsisSx}>{account.name}</Box>}
-                  <Link
-                    href={account.url}
-                    target="_blank"
-                    sx={{ cursor: 'pointer', ...ellipsisSx }}
+                  );
+                } else {
+                  icon = <AccountIcon sx={{ fontSize: '12px' }}></AccountIcon>;
+                }
+                return (
+                  <Tooltip
+                    key={i}
+                    title={account.id ? `${account.id} ${account.name}` : 'No account'}
                   >
-                    {account.url}
-                  </Link>
-                </Stack>
-              </Typography>
+                    {account.url ?
+                      <Link
+                        href={account.url}
+                        target="_blank"
+                        sx={{ cursor: 'pointer', ...ellipsisSx }}
+                      >
+                        {icon}
+                      </Link>
+                    : icon}
+                  </Tooltip>
+                );
+              })}
             </Stack>
-          ));
+          );
         },
       },
       {
@@ -602,7 +611,7 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               columns={identityCols}
               rows={filteredIdentities}
               {...dataGridCommonProps}
-              rowHeight={65}
+              rowHeight={50}
               paginationModel={paginationModel}
               onPaginationModelChange={newPaginationModel => setPaginationModel(newPaginationModel)}
               initialState={{

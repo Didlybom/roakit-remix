@@ -5,7 +5,7 @@ import {
   Search as SearchIcon,
   SortByAlpha as SortByAlphaIcon,
   Timelapse as SortByEffortIcon,
-  Numbers as SortByTotalIcon,
+  Functions as SortByTotalIcon,
   Sort as SortIcon,
   ZoomOutMap as ZoomOutIcon,
 } from '@mui/icons-material';
