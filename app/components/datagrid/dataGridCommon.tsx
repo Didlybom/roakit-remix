@@ -97,11 +97,12 @@ export const dateColDef = (colDef?: GridColDef) =>
     headerName: 'Date',
     type: 'dateTime',
     valueFormatter: (value: Date) => formatRelative(value),
-    renderCell: (params: GridRenderCellParams) => (
-      <Box title={formatMonthDayTime(params.value as Date)} fontSize="small" sx={ellipsisSx}>
-        <AutoRefreshingRelativeDate date={params.value as Date} />
-      </Box>
-    ),
+    renderCell: (params: GridRenderCellParams<any, Date>) =>
+      params.value ?
+        <Box title={formatMonthDayTime(params.value)} fontSize="small" sx={ellipsisSx}>
+          <AutoRefreshingRelativeDate date={params.value} />
+        </Box>
+      : null,
     ...colDef,
   }) as GridColDef;
 
@@ -110,10 +111,10 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
     headerName: 'Contributor',
     sortComparator: (a: Account, b: Account) =>
       (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? ''),
-    renderCell: (params: GridRenderCellParams) => {
-      const account = params.value as Account;
+    renderCell: (params: GridRenderCellParams<any, Account>) => {
+      const account = params.value;
       if (showActivityLink) {
-        return !account ? '' : (
+        return account ?
             <Link
               tabIndex={params.tabIndex}
               href={'/activity/' + encodeURI(account.id)}
@@ -122,9 +123,9 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
             >
               {account.name}
             </Link>
-          );
+          : null;
       }
-      return <Box title={account.name}>{account.name}</Box>;
+      return account ? <Box title={account.name}>{account.name}</Box> : null;
     },
     ...colDef,
   }) as GridColDef;
@@ -133,9 +134,9 @@ export const actionColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Action',
     valueGetter: (value, row: Activity) => `${row.artifact} ${value as string}`,
-    renderCell: (params: GridRenderCellParams) => {
-      const action = params.value as string;
-      const activity = params.row as Activity;
+    renderCell: (params: GridRenderCellParams<Activity, string>) => {
+      const action = params.value;
+      const activity = params.row;
       const event = activity.event;
       const codeAction = activity.metadata?.codeAction;
       if (!event) {
@@ -184,21 +185,19 @@ export const priorityColDef = (colDef?: GridColDef) =>
         return (a === -1 || a == null ? 9999 : a) - (b === -1 || b == null ? 9999 : b);
       };
     },
-    renderCell: params => {
-      const priority = params.value as number;
-      return (
+    renderCell: (params: GridRenderCellParams<Activity, number>) =>
+      params.value != null ?
         <Box
           fontSize="large"
           fontWeight="600"
-          color={priorityColors[priority] ?? undefined}
+          color={priorityColors[params.value] ?? undefined}
           display="flex"
           justifyContent="center"
           sx={{ cursor: colDef?.editable ? 'pointer' : undefined }}
         >
-          {prioritySymbols[priority] ?? ''}
+          {prioritySymbols[params.value] ?? ''}
         </Box>
-      );
-    },
+      : null,
     ...colDef,
   }) as GridColDef;
 
@@ -214,8 +213,8 @@ export const descriptionColDef = (
     minWidth: 300,
     flex: 1,
     valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getActivityDescription(row),
-    renderCell: params => {
-      const activity = params.row as Activity;
+    renderCell: (params: GridRenderCellParams<Activity, number>) => {
+      const activity = params.row;
       const description = getActivityDescription(activity);
       const comment =
         activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;

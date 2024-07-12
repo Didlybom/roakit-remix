@@ -24,7 +24,13 @@ import {
   Tooltip,
 } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import type { GridColDef, GridSortDirection } from '@mui/x-data-grid';
+import type {
+  GridColDef,
+  GridRenderCellParams,
+  GridRowParams,
+  GridSortDirection,
+  GridValueOptionsParams,
+} from '@mui/x-data-grid';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import type { ShouldRevalidateFunction } from '@remix-run/react';
 import {
@@ -225,10 +231,10 @@ export default function Users() {
   const [identities, setIdentities] = useState(loaderData.identities.list);
   const [imports, setImports] = useState('');
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
-  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [searchFilter, setSearchFilter] = useState('');
   const [searchTerm] = useDebounce(searchFilter.trim().toLowerCase(), 50);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
-  const [confirmation, setConfirmation] = useState('false');
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -251,29 +257,26 @@ export default function Users() {
       {
         field: 'displayName',
         headerName: 'Name',
-        renderCell: params => {
-          const id = (params.row as Identity).id;
-          return (
-            <Link
-              tabIndex={params.tabIndex}
-              href={`/activity/${encodeURI(id)}`}
-              title="View activity"
-              sx={linkSx}
-            >
-              {params.value}
-            </Link>
-          );
-        },
+        renderCell: (params: GridRenderCellParams<Identity, string>) => (
+          <Link
+            tabIndex={params.tabIndex}
+            href={`/activity/${encodeURI(params.row.id)}`}
+            title="View activity"
+            sx={linkSx}
+          >
+            {params.value}
+          </Link>
+        ),
       },
       { field: 'email', headerName: 'Email' },
       {
         field: 'accounts',
         headerName: 'Accounts',
         sortable: false,
-        renderCell: params => {
-          return (
+        renderCell: (params: GridRenderCellParams<Identity, Account[]>) =>
+          params.value ?
             <Stack direction="row" spacing={1} height="100%" alignItems={'center'}>
-              {(params.value as Identity['accounts']).map((account, i) => {
+              {params.value.map((account, i) => {
                 const color = !account.id ? theme.palette.error.main : 'inherited';
                 let icon;
                 if (account.type === 'github') {
@@ -305,8 +308,7 @@ export default function Users() {
                 );
               })}
             </Stack>
-          );
-        },
+          : null,
       },
       {
         field: 'managerId',
@@ -317,18 +319,18 @@ export default function Users() {
           const bName = !b ? 'ZZZ' : findManagerName(b);
           return aName.localeCompare(bName);
         },
-        valueOptions: params => [
+        valueOptions: (params: GridValueOptionsParams<Identity>) => [
           { value: '', label: '[unset]' },
           ...loaderData.identities.list
-            .filter(i => i.id !== (params.row as Identity).id)
+            .filter(i => i.id !== params.row?.id)
             .map(identity => ({ value: identity.id, label: identity.displayName })),
         ],
         editable: true,
-        renderCell: params => (
+        renderCell: (params: GridRenderCellParams<Identity, string>) => (
           <Box height="100%" display="flex" alignItems="center">
             <DropDownButton
               tabIndex={params.tabIndex}
-              label={params.value ? findManagerName(params.value as string) : null}
+              label={params.value ? findManagerName(params.value) : null}
             />
           </Box>
         ),
@@ -338,10 +340,10 @@ export default function Users() {
         field: 'firebaseId',
         headerName: 'Login ID',
         valueGetter: (_, row: Identity) => row.user!.id,
-        renderCell: params => {
+        renderCell: (params: GridRenderCellParams<Identity, string>) => {
           return params.value ?
               <Box whiteSpace="noWrap" sx={ellipsisSx}>
-                {params.value as string}
+                {params.value}
               </Box>
             : <Box display="flex" height="100%" alignItems="center">
                 <IconButton
@@ -349,7 +351,7 @@ export default function Users() {
                   title="Allow the user to login to ROAKIT"
                   onClick={() =>
                     submit(
-                      { createFirebaseUserForEmail: (params.row as Identity).email ?? null },
+                      { createFirebaseUserForEmail: params.row.email ?? null },
                       postJsonOptions
                     )
                   }
@@ -372,17 +374,15 @@ export default function Users() {
           user: { ...row.user, role: value },
         }),
         valueOptions: () => roleLabels,
-        renderCell: params => {
-          const user = (params.row as Identity).user;
-          return user?.id ?
-              <Box height="45px" display="flex" alignItems="center">
-                <DropDownButton
-                  tabIndex={params.tabIndex}
-                  label={roleLabels.find(r => r.value === params.value)?.label}
-                />
-              </Box>
-            : null;
-        },
+        renderCell: (params: GridRenderCellParams<Identity, string>) =>
+          params.row.user?.id ?
+            <Box height="45px" display="flex" alignItems="center">
+              <DropDownButton
+                tabIndex={params.tabIndex}
+                label={roleLabels.find(r => r.value === params.value)?.label}
+              />
+            </Box>
+          : null,
       },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
@@ -424,12 +424,12 @@ export default function Users() {
       {
         field: 'actions',
         type: 'actions',
-        getActions: params => [
+        getActions: (params: GridRowParams<Account>) => [
           <GridActionsCellItem
             key={1}
             icon={<UploadIcon fontSize="small" />}
             onClick={() => {
-              const account = params.row as Account;
+              const account = params.row;
               setImports(
                 (imports ? `${imports}\n` : '') +
                   UNKNOWN_EMAIL_IMPORT +

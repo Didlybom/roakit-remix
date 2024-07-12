@@ -21,8 +21,11 @@ import {
 import type {
   GridColDef,
   GridEventListener,
+  GridPreProcessEditCellProps,
+  GridRenderCellParams,
   GridRenderEditCellParams,
   GridRowId,
+  GridRowParams,
   GridSortDirection,
 } from '@mui/x-data-grid';
 import { GridActionsCellItem, GridRowEditStopReasons, useGridApiContext } from '@mui/x-data-grid';
@@ -128,7 +131,7 @@ function ColorValue({ color }: { color?: string }) {
       width={40}
       height={20}
       border="solid 1px"
-      sx={{ cursor: ' pointer', backgroundColor: color, opacity: color ? 1 : 0.3 }}
+      sx={{ cursor: 'pointer', backgroundColor: color, opacity: color ? 1 : 0.3 }}
     />
   );
 }
@@ -230,12 +233,10 @@ export default function LaunchItems() {
       field: 'key',
       headerName: 'Key',
       editable: true,
-      preProcessEditCellProps: params => {
-        return {
-          ...params.props,
-          error: !(params.props.value as string)?.trim(),
-        };
-      },
+      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
+        ...params.props,
+        error: !params.props.value?.trim(),
+      }),
     },
     {
       field: 'color',
@@ -257,22 +258,22 @@ export default function LaunchItems() {
       flex: 1,
       editable: true,
       sortable: false,
-      renderCell: params => (
+      renderCell: (params: GridRenderCellParams<LaunchItemRow, string>) => (
         <Box
           tabIndex={params.tabIndex}
-          title={params.value as string}
+          title={params.value}
           fontFamily="Roboto Mono, monospace"
           fontSize="11px"
           sx={ellipsisSx}
         >
-          {(params.value as string) || '⋯'}
+          {params.value || '⋯'}
         </Box>
       ),
       renderEditCell: params => <EditTextarea {...params} />,
-      preProcessEditCellProps: params => {
+      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => {
         try {
           if (params.props.value) {
-            compileExpression(params.props.value as string);
+            compileExpression(params.props.value);
           }
           return { ...params.props, error: false };
         } catch (e) {
@@ -284,26 +285,24 @@ export default function LaunchItems() {
       field: 'actions',
       type: 'actions',
       cellClassName: 'actions',
-      getActions: params => {
-        const launchItem = params.row as LaunchItemRow;
-        return [
-          <GridActionsCellItem
-            key={1}
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={async () => {
-              try {
-                await confirm({
-                  description: `Please confirm the deletion of launch item "${launchItem.label || launchItem.key}".`,
-                });
-                handleDeleteClick(params.id);
-              } catch {
-                /* user cancelled */
-              }
-            }}
-          />,
-        ];
-      },
+      getActions: (params: GridRowParams<LaunchItemRow>) => [
+        <GridActionsCellItem
+          key={1}
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={async () => {
+            try {
+              await confirm({
+                title: 'Confirm Deletion',
+                description: `Delete the launch item "${params.row.label || params.row.key}"?`,
+              });
+              handleDeleteClick(params.row.id);
+            } catch {
+              /* user cancelled */
+            }
+          }}
+        />,
+      ],
     },
   ];
 

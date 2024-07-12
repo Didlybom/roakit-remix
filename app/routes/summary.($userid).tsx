@@ -172,10 +172,10 @@ export default function Summary() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const submit = useSubmit();
-  const activitiesFetcher = useFetcher();
-  const fetchedActivities = activitiesFetcher.data as ActivityResponse;
-  const summaryFetcher = useFetcher();
-  const fetchedSummaries = summaryFetcher.data as SummariesResponse;
+  const activitiesFetcher = useFetcher<ActivityResponse>();
+  const fetchedActivities = activitiesFetcher.data;
+  const summaryFetcher = useFetcher<SummariesResponse>();
+  const fetchedSummaries = summaryFetcher.data;
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(

@@ -65,8 +65,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const loaderData = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const summaryFetcher = useFetcher();
-  const fetchedSummaries = summaryFetcher.data as SummariesResponse;
+  const summaryFetcher = useFetcher<SummariesResponse>();
+  const fetchedSummaries = summaryFetcher.data;
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
     searchParams.get(SEARCH_PARAM_DAY) ?
       dayjs(searchParams.get(SEARCH_PARAM_DAY))

@@ -64,8 +64,8 @@ export default function Dashboard() {
   const navigation = useNavigation();
   const navigate = useNavigate();
   const loaderData = useLoaderData<typeof loader>();
-  const groupedActivitiesFetcher = useFetcher();
-  const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivitiesResponse;
+  const groupedActivitiesFetcher = useFetcher<GroupedActivitiesResponse>();
+  const groupedActivitiesResponse = groupedActivitiesFetcher.data;
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );

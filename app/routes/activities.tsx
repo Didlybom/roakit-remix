@@ -175,8 +175,8 @@ export default function ActivityReview() {
   const navigate = useNavigate();
   const assignInitiativeFetcher = useFetcher();
   const loaderData = useLoaderData<typeof loader>();
-  const activitiesFetcher = useFetcher();
-  const fetchedActivities = activitiesFetcher.data as ActivityPageResponse;
+  const activitiesFetcher = useFetcher<ActivityPageResponse>();
+  const fetchedActivities = activitiesFetcher.data;
   const [activities, setActivities] = useState<ActivityRow[] | null>(null);
   const [activityFilter, setActivityFilter] = useState<ShowActivity>('');
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
@@ -294,17 +294,16 @@ export default function ActivityReview() {
       actorColDef(
         {
           field: 'actor',
-          valueGetter: (_, row) => {
-            const fields = row as Activity;
-            return fields.actorId ?
+          valueGetter: (_, row: Activity) => {
+            return row.actorId ?
                 ({
-                  id: fields.actorId,
-                  name: loaderData.actors[fields.actorId]?.name ?? 'unknown',
+                  id: row.actorId,
+                  name: loaderData.actors[row.actorId]?.name ?? 'unknown',
                 } as Account)
               : null;
           },
-          renderCell: params => {
-            const account = params.value as Account;
+          renderCell: (params: GridRenderCellParams<Activity, Account>) => {
+            const account = params.value;
             return account ?
                 <Link
                   tabIndex={params.tabIndex}
@@ -332,8 +331,8 @@ export default function ActivityReview() {
         headerName: 'Launch',
         valueGetter: (value: string) => loaderData.launchItems[value]?.key,
         getSortComparator: sortComparatorKeepingNullAtTheBottom,
-        renderCell: (params: GridRenderCellParams) => {
-          const activity = params.row as Activity;
+        renderCell: (params: GridRenderCellParams<Activity, string>) => {
+          const activity = params.row;
           return activity.launchItemId ?
               <Box
                 title={loaderData.launchItems[activity.launchItemId]?.label}
@@ -352,7 +351,7 @@ export default function ActivityReview() {
         valueOptions: initiativeOptions,
         editable: true,
         sortable: false,
-        renderCell: params => (
+        renderCell: (params: GridRenderCellParams<Activity, string>) => (
           <Box>
             <Button
               tabIndex={params.tabIndex}
@@ -372,12 +371,12 @@ export default function ActivityReview() {
         width: 150,
         editable: true,
         sortable: false,
-        renderCell: params => (
+        renderCell: (params: GridRenderCellParams<Activity, string>) => (
           <Box
             tabIndex={params.tabIndex}
             fontSize="small"
             color={theme.palette.primary.main}
-            title={params.value as string}
+            title={params.value}
             sx={{ ...ellipsisSx, cursor: 'pointer' }}
           >
             {params.value || '⋯'}

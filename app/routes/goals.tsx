@@ -18,7 +18,15 @@ import {
   Typography,
   styled,
 } from '@mui/material';
-import type { GridColDef, GridEventListener, GridRowId, GridSortDirection } from '@mui/x-data-grid';
+import type {
+  GridColDef,
+  GridEventListener,
+  GridPreProcessEditCellProps,
+  GridRenderCellParams,
+  GridRowId,
+  GridRowParams,
+  GridSortDirection,
+} from '@mui/x-data-grid';
 import { GridActionsCellItem, GridRowEditStopReasons } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
@@ -194,24 +202,24 @@ export default function Initiatives() {
       field: 'key',
       headerName: 'Key',
       editable: true,
-      preProcessEditCellProps: params => {
-        return { ...params.props, error: !(params.props.value as string)?.trim() };
-      },
+      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
+        ...params.props,
+        error: !params.props.value?.trim(),
+      }),
     },
     { field: 'label', headerName: 'Label', editable: true },
     {
       field: 'tags',
       headerName: 'Tags',
       editable: true,
-      renderCell: params => {
-        return params.value ?
-            <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
-              {splitTags(params.value as string).map((tag, i) => (
-                <SmallChip key={i} label={tag} sx={{ mr: '4px' }} />
-              ))}
-            </Box>
-          : null;
-      },
+      renderCell: (params: GridRenderCellParams<InitiativeRow, string>) =>
+        params.value ?
+          <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
+            {splitTags(params.value).map((tag, i) => (
+              <SmallChip key={i} label={tag} sx={{ mr: '4px' }} />
+            ))}
+          </Box>
+        : null,
     },
     {
       field: 'reference',
@@ -222,18 +230,17 @@ export default function Initiatives() {
       field: 'url',
       headerName: 'URL',
       editable: true,
-      renderCell: params => {
-        return params.value ?
-            <IconButton
-              tabIndex={params.tabIndex}
-              href={params.value as string}
-              target="_blank"
-              sx={{ ml: -1 }}
-            >
-              <OpenInNewIcon fontSize="small" />
-            </IconButton>
-          : null;
-      },
+      renderCell: (params: GridRenderCellParams<InitiativeRow, string>) =>
+        params.value ?
+          <IconButton
+            tabIndex={params.tabIndex}
+            href={params.value}
+            target="_blank"
+            sx={{ ml: -1 }}
+          >
+            <OpenInNewIcon fontSize="small" />
+          </IconButton>
+        : null,
     },
     {
       field: 'activityMapper',
@@ -241,22 +248,22 @@ export default function Initiatives() {
       flex: 1,
       editable: true,
       sortable: false,
-      renderCell: params => (
+      renderCell: (params: GridRenderCellParams<InitiativeRow, string>) => (
         <Box
           tabIndex={params.tabIndex}
-          title={params.value as string}
+          title={params.value}
           fontFamily="Roboto Mono, monospace"
           fontSize="11px"
           sx={ellipsisSx}
         >
-          {(params.value as string) || '⋯'}
+          {params.value || '⋯'}
         </Box>
       ),
       renderEditCell: params => <EditTextarea {...params} />,
-      preProcessEditCellProps: params => {
+      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => {
         try {
           if (params.props.value) {
-            compileExpression(params.props.value as string);
+            compileExpression(params.props.value);
           }
           return { ...params.props, error: false };
         } catch (e) {
@@ -268,26 +275,24 @@ export default function Initiatives() {
       field: 'actions',
       type: 'actions',
       cellClassName: 'actions',
-      getActions: params => {
-        const initiative = params.row as InitiativeRow;
-        return [
-          <GridActionsCellItem
-            key={1}
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={async () => {
-              try {
-                await confirm({
-                  description: `Please confirm the deletion of goal "${initiative.label || initiative.key}".`,
-                });
-                handleDeleteClick(params.id);
-              } catch {
-                /* user cancelled */
-              }
-            }}
-          />,
-        ];
-      },
+      getActions: (params: GridRowParams<InitiativeRow>) => [
+        <GridActionsCellItem
+          key={1}
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={async () => {
+            try {
+              await confirm({
+                title: 'Confirm Deletion',
+                description: `Delete the goal "${params.row.label || params.row.key}"?`,
+              });
+              handleDeleteClick(params.id);
+            } catch {
+              /* user cancelled */
+            }
+          }}
+        />,
+      ],
     },
   ];
 

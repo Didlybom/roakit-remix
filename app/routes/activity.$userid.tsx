@@ -214,15 +214,15 @@ export default function UserActivity() {
   const navigation = useNavigation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activitiesFetcher = useFetcher();
-  const fetchedActivity = activitiesFetcher.data as ActivityResponse;
+  const activitiesFetcher = useFetcher<ActivityResponse>();
+  const fetchedActivity = activitiesFetcher.data;
   const [actionFilter, setActionFilter] = useState(
     searchParams.get(SEARCH_PARAM_ACTION)?.split(',') ?? []
   );
   const [groupBy, setGroupBy] = useState<GroupBy | null>(
     searchParams.get(SEARCH_PARAM_GROUPBY) as GroupBy
   );
-  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [searchFilter, setSearchFilter] = useState('');
   const [searchTerm] = useDebounce(searchFilter.trim().toLowerCase(), 50);
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
@@ -379,7 +379,7 @@ export default function UserActivity() {
     () => [
       dateColDef({
         field: 'timestamp',
-        valueGetter: value => (value ? new Date(value) : value),
+        valueGetter: (value: number) => (value ? new Date(value) : value),
       }),
       ...(groupBy !== GroupBy.Contributor && loaderData.userId === ALL ?
         [
@@ -403,8 +403,8 @@ export default function UserActivity() {
             headerName: 'Launch',
             valueGetter: (value: string) => loaderData.launchItems[value]?.key,
             getSortComparator: sortComparatorKeepingNullAtTheBottom,
-            renderCell: (params: GridRenderCellParams) => {
-              const activity = params.row as Activity;
+            renderCell: (params: GridRenderCellParams<Activity, string>) => {
+              const activity = params.row;
               return activity.launchItemId ?
                   <Link
                     onClick={() => {
@@ -435,12 +435,10 @@ export default function UserActivity() {
         headerName: 'Goal',
         valueGetter: (value: string) => loaderData.initiatives[value]?.key,
         getSortComparator: sortComparatorKeepingNullAtTheBottom,
-        renderCell: (params: GridRenderCellParams) => {
-          const activity = params.row as Activity;
-          return activity.initiativeId ?
-              <Box title={loaderData.initiatives[activity.initiativeId]?.label}>{params.value}</Box>
-            : null;
-        },
+        renderCell: (params: GridRenderCellParams<Activity, string>) =>
+          params.row.initiativeId ?
+            <Box title={loaderData.initiatives[params.row.initiativeId]?.label}>{params.value}</Box>
+          : null,
       },
       descriptionColDef(
         { field: 'metadata' },
