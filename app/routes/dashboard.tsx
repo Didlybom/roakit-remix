@@ -10,6 +10,7 @@ import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import type { GroupedActivities } from '../activityProcessors/activityGrouper';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import ActiveContributors from '../components/dashboard/ActiveContributors.';
@@ -65,7 +66,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const loaderData = useLoaderData<typeof loader>();
   const groupedActivitiesFetcher = useFetcher<GroupedActivitiesResponse>();
-  const groupedActivitiesResponse = groupedActivitiesFetcher.data;
+  const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivities;
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
@@ -80,10 +81,10 @@ export default function Dashboard() {
   }, [dateFilter]);
 
   useEffect(() => {
-    if (groupedActivitiesResponse?.error?.status === 401) {
+    if (groupedActivitiesFetcher.data?.error?.status === 401) {
       navigate(loginWithRedirectUrl());
     }
-  }, [groupedActivitiesResponse?.error, navigate]);
+  }, [groupedActivitiesFetcher.data?.error, navigate]);
 
   const charts = (
     <Stack spacing={3} m={3} onClick={e => e.stopPropagation()}>
@@ -220,7 +221,7 @@ export default function Dashboard() {
       onDateRangeSelect={dateRange => setDateFilter(dateRange)}
       showProgress={navigation.state !== 'idle' || groupedActivitiesFetcher.state !== 'idle'}
     >
-      {errorAlert(groupedActivitiesResponse?.error?.message)}
+      {errorAlert(groupedActivitiesFetcher.data?.error?.message)}
       {charts}
     </App>
   );

@@ -6,7 +6,7 @@ import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
   type: 'initiatives' | 'launchItems';
-  groupedActivities: GroupedActivities;
+  groupedActivities?: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
 };
