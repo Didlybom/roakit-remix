@@ -295,7 +295,7 @@ export default function Summary() {
     if (fetchedActivities?.error?.status === 401 || fetchedSummaries?.error?.status === 401) {
       navigate(loginWithRedirectUrl());
     }
-  }, [fetchedActivities?.error, fetchedSummaries?.error?.status, navigate]);
+  }, [fetchedActivities?.error?.status, fetchedSummaries?.error?.status, navigate]);
 
   return (
     <App
