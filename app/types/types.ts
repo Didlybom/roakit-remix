@@ -119,6 +119,8 @@ export type ActivityMetadata = {
   worklog?: unknown;
   space?: { title: string; uri?: string };
   page?: { id: string; title: string; version?: string; uri?: string };
+  oldParent?: { id: string; title: string };
+  newParent?: { id: string; title: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   pullRequestIssue?: { title: string; uri?: string };

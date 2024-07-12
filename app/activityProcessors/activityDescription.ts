@@ -208,6 +208,10 @@ export const getActivityActionDescription = (metadata: ActivityMetadata) => {
     if (metadata?.attachments?.files?.length) {
       return metadata.attachments.files.map(f => f.uri).join(', ');
     }
+    if (metadata?.oldParent?.title && metadata?.newParent?.title) {
+      const version = metadata?.page?.version ? `Version ${metadata.page.version}. ` : '';
+      return `${version}Moved from ${metadata.oldParent.title} to ${metadata.newParent.title}`;
+    }
     if (metadata?.page?.version) {
       return `Version ${metadata.page.version}`;
     }
