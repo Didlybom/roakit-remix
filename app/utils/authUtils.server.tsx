@@ -1,10 +1,10 @@
 import type { Params } from '@remix-run/react';
 import { redirect } from '@remix-run/server-runtime';
-import pino from 'pino';
+import { getLogger } from './loggerUtils.server';
 import { checkAccess, type View } from './rbac';
 import { getSessionData } from './sessionCookie.server';
 
-const logger = pino({ name: 'authUtils' });
+const logger = getLogger('authUtils');
 
 export const loadSession = async (request: Request, view: View, params?: Params<string>) => {
   let sessionData;

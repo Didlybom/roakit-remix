@@ -24,7 +24,6 @@ import type {
 import { GridToolbarContainer } from '@mui/x-data-grid';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
-import pino from 'pino';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
 import { inferPriority } from '../activityProcessors/activityFeed';
@@ -72,11 +71,10 @@ import {
   loginWithRedirectUrl,
   type SelectOption,
 } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
 import type { ActivityPageResponse } from './fetcher.activities.page';
-
-const logger = pino({ name: 'route:activities' });
 
 const MAX_BATCH = 500;
 const DELETE = '_DELETE_';
@@ -105,7 +103,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       tickets,
     };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:activities').error(e);
     throw loaderErrorResponse(e);
   }
 };
@@ -165,7 +163,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return null;
   } catch (e) {
-    logger.error(e);
+    getLogger('route:activities').error(e);
     throw new Response(`Failed to save data. ${errMsg(e)}`, { status: 500 });
   }
 };

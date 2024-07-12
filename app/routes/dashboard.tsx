@@ -9,7 +9,6 @@ import {
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
-import pino from 'pino';
 import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
@@ -29,10 +28,9 @@ import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import type { GroupedActivitiesResponse } from './fetcher.grouped-activities';
-
-const logger = pino({ name: 'route:dashboard' });
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
@@ -57,7 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return { ...sessionData, actors, initiatives, launchItems };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:dashboard').error(e);
     throw loaderErrorResponse(e);
   }
 };

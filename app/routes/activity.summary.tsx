@@ -12,7 +12,6 @@ import {
   useSearchParams,
 } from '@remix-run/react';
 import dayjs, { type Dayjs } from 'dayjs';
-import pino from 'pino';
 import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
@@ -23,11 +22,10 @@ import {} from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import { errorAlert, linkSx, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
 import type { SummariesResponse } from './fetcher.summaries.($userid)';
-
-const logger = pino({ name: 'route:activity.summaries' });
 
 export const meta = () => [{ title: 'Activity Summary | ROAKIT' }];
 
@@ -47,7 +45,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return { ...sessionData, actors };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:activity.summary').error(e);
     throw loaderErrorResponse(e);
   }
 };

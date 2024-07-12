@@ -1,9 +1,9 @@
 import retry from 'async-retry';
-import pino from 'pino';
 import { cloudstore } from '../firebase.server';
 import { RoakitError } from '../utils/errorUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 
-const logger = pino({ name: 'cloudstore:fetchers' });
+const logger = getLogger('cloudstore:fetchers');
 
 const retryProps = (message: string) => ({
   // see https://github.com/tim-kos/node-retry#api

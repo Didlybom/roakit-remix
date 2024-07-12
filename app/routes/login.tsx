@@ -9,8 +9,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth';
-import pino from 'pino';
-import type { SyntheticEvent} from 'react';
+import type { SyntheticEvent } from 'react';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
 import Copyright from '../components/Copyright';
@@ -19,10 +18,9 @@ import { auth as serverAuth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
 import { ONE_DAY } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
-
-const logger = pino({ name: 'route:login' });
 
 export const meta = () => [{ title: 'Login | ROAKIT' }];
 
@@ -44,7 +42,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  logger.info(`${token.email} logged in`);
+  getLogger('route:login').info(`${token.email} logged in`);
 
   const jwt = await serverAuth.createSessionCookie(idToken, {
     // 1 day - can be up to 2 weeks, see matching cookie expiration below

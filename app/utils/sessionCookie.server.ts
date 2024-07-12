@@ -1,14 +1,14 @@
 import { createCookie } from '@remix-run/node';
 import dayjs from 'dayjs';
-import pino from 'pino';
 import { getSelectorsByUserAgent } from 'react-device-detect';
 import { auth } from '../firebase.server';
 import { queryCustomer, queryUser } from '../firestore.server/fetchers.server';
 import type { DateRangeEnding, DateRangeValue } from './dateUtils';
 import { DateRange, formatYYYYMMDD, isValidDate } from './dateUtils';
+import { getLogger } from './loggerUtils.server';
 import type { Role } from './rbac';
 
-const logger = pino({ name: 'utils:session-cookie' });
+const logger = getLogger('sessionCookie');
 
 export interface SessionData {
   redirect?: string;

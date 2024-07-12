@@ -37,7 +37,6 @@ import {
   useSearchParams,
 } from '@remix-run/react';
 import dayjs from 'dayjs';
-import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -100,12 +99,11 @@ import {
   loginWithRedirectUrl,
   verticalStickyBarSx,
 } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
-
-const logger = pino({ name: 'route:activity.user' });
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   let title = 'User';
@@ -206,7 +204,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       accountMap: identities.accountMap,
     };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:activity.user').error(e);
     throw loaderErrorResponse(e);
   }
 };

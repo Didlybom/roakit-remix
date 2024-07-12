@@ -1,7 +1,6 @@
-import type { LoaderFunctionArgs, TypedResponse} from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
 import dayjs from 'dayjs';
-import pino from 'pino';
 import { groupActivities, type GroupedActivities } from '../activityProcessors/activityGrouper';
 import { identifyActivities } from '../activityProcessors/activityIdentifier';
 import {
@@ -16,14 +15,13 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
-import type { DateRange} from '../utils/dateUtils';
+import type { DateRange } from '../utils/dateUtils';
 import { dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import type { ErrorField} from '../utils/httpUtils';
+import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:fetcher.grouped-activities' });
 
 export type GroupedActivitiesResponse = { error?: ErrorField } & GroupedActivities;
 
@@ -94,7 +92,7 @@ export const loader = async ({
     );
     return json({ ...groupedActivities });
   } catch (e) {
-    logger.error(e);
+    getLogger('route:fetcher.grouped-activities').error(e);
     return errorJsonResponse(
       errMsg(e, 'Fetching grouped activities failed'),
       e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500

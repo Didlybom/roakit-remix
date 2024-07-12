@@ -10,7 +10,7 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.4.0",
+    "@google-cloud/functions-framework": "^3.4.1",
     "@remix-run/node": "^2.10.2",
     "compression": "^1.7.4",
     "firebase-admin": "^12.2.0",

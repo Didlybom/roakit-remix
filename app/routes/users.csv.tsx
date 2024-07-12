@@ -1,12 +1,10 @@
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
-import pino from 'pino';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { contentLength } from '../utils/httpUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:users.csv' });
 
 const VIEW = View.UsersCSV;
 
@@ -33,7 +31,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
   } catch (e) {
-    logger.error(e);
+    getLogger('route:users.csv').error(e);
     throw e;
   }
 };

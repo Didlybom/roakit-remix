@@ -1,6 +1,5 @@
-import type { LoaderFunctionArgs, TypedResponse} from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
-import pino from 'pino';
 import {
   fetchAllSummaries,
   fetchSummaries,
@@ -9,11 +8,12 @@ import {
 import type { DaySummaries, Summary } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import type { ErrorField} from '../utils/httpUtils';
+import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 
-const logger = pino({ name: 'route:fetcher.summaries' });
+const logger = getLogger('route:fetcher.summaries');
 
 const ALL = '*';
 

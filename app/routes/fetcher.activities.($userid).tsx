@@ -1,6 +1,5 @@
-import type { LoaderFunctionArgs, TypedResponse} from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
-import pino from 'pino';
 import {
   fetchActivities,
   queryIdentity,
@@ -9,11 +8,10 @@ import {
 import type { ActivityRecord } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import type { ErrorField} from '../utils/httpUtils';
+import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:fetcher.activities' });
 
 export interface ActivityResponse {
   error?: ErrorField;
@@ -84,7 +82,7 @@ export const loader = async ({
     activities.forEach(activity => (activityRecord[activity.id] = activity));
     return json({ activities: activityRecord });
   } catch (e) {
-    logger.error(e);
+    getLogger('route:fetcher.activities').error(e);
     return errorJsonResponse(
       errMsg(e, 'Fetching activities failed'),
       e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500

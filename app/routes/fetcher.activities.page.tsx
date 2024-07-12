@@ -1,15 +1,13 @@
-import type { LoaderFunctionArgs, TypedResponse} from '@remix-run/server-runtime';
+import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
-import pino from 'pino';
 import { fetchActivitiesPage } from '../firestore.server/fetchers.server';
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
-import type { ErrorField} from '../utils/httpUtils';
+import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:fetcher.activities.page' });
 
 export interface ActivityPageResponse {
   error?: ErrorField;
@@ -52,7 +50,7 @@ export const loader = async ({
     });
     return json({ activities, activityTotal });
   } catch (e) {
-    logger.error(e);
+    getLogger('route:fetcher.activities.page').error(e);
     return errorJsonResponse(
       errMsg(e, 'Fetching activities page failed'),
       e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500

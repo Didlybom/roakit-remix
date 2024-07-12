@@ -30,7 +30,6 @@ import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-r
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
-import pino from 'pino';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { GithubPicker as ColorPicker, type ColorResult } from 'react-color';
 import App from '../components/App';
@@ -45,9 +44,8 @@ import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:launch-items' });
 
 interface LaunchItemRow {
   id: string;
@@ -74,7 +72,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const launchItems = await fetchLaunchItems(sessionData.customerId!);
     return { ...sessionData, launchItems };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:launch-items').error(e);
     throw loaderErrorResponse(e);
   }
 };

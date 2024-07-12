@@ -39,7 +39,6 @@ import {
 } from '@remix-run/react';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import pino from 'pino';
 import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
@@ -65,11 +64,10 @@ import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 import type { SummariesResponse } from './fetcher.summaries.($userid)';
-
-const logger = pino({ name: 'route:summary.user' });
 
 export const meta = () => [{ title: 'Summary Form | ROAKIT' }];
 
@@ -112,7 +110,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       launchItems,
     };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:summary.user').error(e);
     throw loaderErrorResponse(e);
   }
 };

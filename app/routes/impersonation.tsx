@@ -17,16 +17,14 @@ import {
 } from '@mui/material';
 import { useLoaderData } from '@remix-run/react';
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
-import pino from 'pino';
 import { useState } from 'react';
 import App from '../components/App';
 import SmallButton from '../components/SmallButton';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { loaderErrorResponse } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:impersonation' });
 
 export const meta = () => [{ title: 'Impersonation | ROAKIT' }];
 
@@ -38,7 +36,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const identities = await fetchIdentities(sessionData.customerId!);
     return { ...sessionData, identities };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:impersonation').error(e);
     throw loaderErrorResponse(e);
   }
 };

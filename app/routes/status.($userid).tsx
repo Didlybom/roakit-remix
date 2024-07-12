@@ -43,7 +43,6 @@ import {
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useConfirm } from 'material-ui-confirm';
-import pino from 'pino';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
@@ -87,11 +86,10 @@ import {
   loginWithRedirectUrl,
   type SelectOption,
 } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { priorityColors, priorityLabels } from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
-
-const logger = pino({ name: 'route:status.user' });
 
 export const meta = () => [{ title: 'Status Form | ROAKIT' }];
 
@@ -135,7 +133,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       accountMap: identities.accountMap,
     };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:status.user').error(e);
     throw loaderErrorResponse(e);
   }
 };
@@ -228,7 +226,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       createdTimestamp: actionRequest.newActivity.eventTimestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
       initiative: '',
     });
-    logger.info('Saved custom activity ' + ref.id);
+    getLogger('route:status.user').info('Saved custom activity ' + ref.id);
     return { status: { code: 'created', message: 'Activity created' } };
   }
 

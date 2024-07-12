@@ -24,7 +24,6 @@ import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-r
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
-import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../components/App';
 import SmallChip from '../components/SmallChip';
@@ -37,9 +36,8 @@ import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-
-const logger = pino({ name: 'route:initiatives' });
 
 interface InitiativeRow {
   id: string;
@@ -70,7 +68,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { ...sessionData, initiatives };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:initiatives').error(e);
     throw loaderErrorResponse(e);
   }
 };

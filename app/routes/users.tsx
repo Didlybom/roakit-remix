@@ -35,7 +35,6 @@ import {
   useSubmit,
 } from '@remix-run/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
-import pino from 'pino';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -64,10 +63,9 @@ import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, linkSx, loaderErrorResponse } from '../utils/jsxUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import { Role, View } from '../utils/rbac';
 import theme from '../utils/theme';
-
-const logger = pino({ name: 'route:identities' });
 
 const MAX_IMPORT = 500;
 
@@ -110,7 +108,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
     return { ...sessionData, identities, accountsToReview };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:users').error(e);
     throw loaderErrorResponse(e);
   }
 };

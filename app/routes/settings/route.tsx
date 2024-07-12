@@ -1,5 +1,4 @@
-import type {
-  SxProps} from '@mui/material';
+import type { SxProps } from '@mui/material';
 import {
   Alert,
   Box,
@@ -15,7 +14,6 @@ import {
 import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
-import pino from 'pino';
 import { useEffect, useState } from 'react';
 import App from '../../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../../components/BoxPopover';
@@ -26,12 +24,11 @@ import { bannedRecordSchema, feedSchema } from '../../types/schemas';
 import { FEED_TYPES } from '../../types/types';
 import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
+import { getLogger } from '../../utils/loggerUtils.server';
 import { View } from '../../utils/rbac';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
-
-const logger = pino({ name: 'route:settings' });
 
 export const meta = () => [{ title: 'Settings | ROAKIT' }];
 
@@ -81,7 +78,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return { ...sessionData, feeds, initiatives };
   } catch (e) {
-    logger.error(e);
+    getLogger('route:settings').error(e);
     throw e;
   }
 };
@@ -126,7 +123,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return null;
   } catch (e) {
-    logger.error(e);
+    getLogger('route:settings').error(e);
     return { error: 'Failed to save' };
   }
 };

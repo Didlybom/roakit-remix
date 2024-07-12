@@ -2,7 +2,6 @@ import retry from 'async-retry';
 import dayjs from 'dayjs';
 import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
-import pino from 'pino';
 import { combineAndPushActivity } from '../activityProcessors/activityCombiner';
 import { findTicket } from '../activityProcessors/activityFeed';
 import { firestore } from '../firebase.server';
@@ -27,11 +26,12 @@ import {
   type TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
+import { getLogger } from '../utils/loggerUtils.server';
 import type { Role } from '../utils/rbac';
 import { DEFAULT_ROLE } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
-const logger = pino({ name: 'firestore:fetchers' });
+const logger = getLogger('firestore:fetchers');
 
 const retryProps = (message: string) => ({
   // see https://github.com/tim-kos/node-retry#api
