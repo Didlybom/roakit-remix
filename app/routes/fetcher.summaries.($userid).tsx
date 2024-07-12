@@ -13,8 +13,6 @@ import { errorJsonResponse } from '../utils/httpUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 
-const logger = getLogger('route:fetcher.summaries');
-
 const ALL = '*';
 
 export interface SummariesResponse {
@@ -55,7 +53,7 @@ export const loader = async ({
       : { summaries: await fetchSummaries(sessionData.customerId!, userId, { day, month }) }
     );
   } catch (e) {
-    logger.error(e);
+    getLogger('route:fetcher.summaries').error(e);
     return errorJsonResponse(
       errMsg(e, 'Fetching summaries failed'),
       e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500
