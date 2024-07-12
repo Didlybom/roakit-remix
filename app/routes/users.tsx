@@ -468,7 +468,7 @@ export default function Users() {
             placeholder="Search"
             title="Search names"
             size="small"
-            sx={{ width: '12ch', minWidth: { xs: '110px', sm: '170px' } }}
+            sx={{ width: '12ch', minWidth: { xs: '110px', sm: '250px' } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
@@ -502,7 +502,13 @@ export default function Users() {
         identity =>
           !searchTerm ||
           (identity.displayName && identity.displayName.toLowerCase().indexOf(searchTerm) >= 0) ||
-          identity.id.toLowerCase().indexOf(searchTerm) >= 0
+          (identity.email && identity.email.toLowerCase().indexOf(searchTerm) >= 0) ||
+          identity.id.toLowerCase().indexOf(searchTerm) >= 0 ||
+          identity.accounts.some(
+            account =>
+              account.id.toLowerCase().indexOf(searchTerm) >= 0 ||
+              (account.name && account.name.toLowerCase().indexOf(searchTerm) >= 0)
+          )
       )
     : [];
 
