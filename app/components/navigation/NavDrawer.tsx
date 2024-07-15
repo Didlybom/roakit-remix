@@ -12,8 +12,7 @@ import {
   ShortText as SummariesIcon,
   EditNote as SummaryIcon,
 } from '@mui/icons-material';
-import type {
-  SvgIconTypeMap} from '@mui/material';
+import type { SvgIconTypeMap } from '@mui/material';
 import {
   Box,
   Divider,
@@ -107,8 +106,8 @@ export default function NavDrawer({
       <List>
         {(role === Role.Admin || role === Role.Monitor) &&
           item(View.ActivitySummary, '/activity/summary', SummariesIcon, 'Activity Summary', view)}
-        {item(View.Status, '/status', StatusIcon, 'Status Form', view)}
-        {item(View.Summary, '/summary', SummaryIcon, 'Summary Form', view)}
+        {item(View.Status, '/status', StatusIcon, 'My Status', view)}
+        {item(View.Summary, '/summary', SummaryIcon, 'My Summary', view)}
       </List>
       {(role === Role.Admin || role === Role.Monitor) && (
         <>

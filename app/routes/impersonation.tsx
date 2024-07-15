@@ -50,14 +50,9 @@ export default function Impersonation() {
       <Alert severity="info" icon={<ScienceIcon />}>
         This page is for experimenting by letting admins impersonate contributors. Logged-in
         contributors will land directly on their{' '}
-        <SmallButton href="/status/" label="Status Form" icon={<StatusIcon fontSize="small" />} />{' '}
-        or{' '}
-        <SmallButton
-          href="/summary/"
-          label="Summary Form"
-          icon={<SummaryIcon fontSize="small" />}
-        />
-        , as when you click on a name here.
+        <SmallButton href="/status/" label="Status" icon={<StatusIcon fontSize="small" />} /> or{' '}
+        <SmallButton href="/summary/" label="Summary" icon={<SummaryIcon fontSize="small" />} />, as
+        when you click on a name here.
       </Alert>
       <FormControl sx={{ mx: 3, mt: 2, mb: 1 }}>
         <FormLabel sx={{ fontSize: 'small' }}>Links go to...</FormLabel>
@@ -83,7 +78,7 @@ export default function Impersonation() {
         {loaderData.identities.list.map((identity, i) => (
           <ListItem key={i}>
             <ListItemText>
-              <Link href={`/${route}/${encodeURI(identity.id)}`} fontSize="small">
+              <Link href={`/${ route }/${ encodeURI(identity.id) }`} fontSize="small">
                 {identity.displayName}
               </Link>
             </ListItemText>

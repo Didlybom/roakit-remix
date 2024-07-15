@@ -51,12 +51,12 @@ export const buildActivitySummaryPrompt = (
         : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?
-          (
+          ((
             actors[activity.actorId] ??
             Object.values(actors).find(actor =>
               actor.accounts?.flatMap(acct => acct.id).includes(activity.actorId!)
             )
-          )?.name ?? undefined
+          )?.name ?? undefined)
         : undefined;
 
       const activityStringDedupe = description + (actionDescription ?? '') + (contributor ?? '');
@@ -79,7 +79,7 @@ export const buildActivitySummaryPrompt = (
 
 export const getSummaryResult = (content: GenerateContentResult) => {
   let summary =
-    content.response.candidates ? content.response.candidates[0].content.parts[0].text ?? '' : '';
+    content.response.candidates ? (content.response.candidates[0].content.parts[0].text ?? '') : '';
   try {
     if (summary.startsWith('```json')) {
       summary = formatJson(JSON.parse(summary.replace('```json', '').replace('```', '')));

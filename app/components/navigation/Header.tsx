@@ -27,8 +27,8 @@ const NavBar = styled(AppBar, {
     duration: theme.transitions.duration.leavingScreen,
   }),
   ...(navbarOpen && {
-    width: `calc(100% - ${navbarWidth}px)`,
-    marginLeft: `${navbarWidth}px`,
+    width: `calc(100% - ${ navbarWidth }px)`,
+    marginLeft: `${ navbarWidth }px`,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
