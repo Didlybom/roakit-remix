@@ -1,10 +1,12 @@
 import { styled } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import { PickersDay, type PickersDayProps } from '@mui/x-date-pickers';
 import type dayjs from 'dayjs';
 import { formatYYYYMMDD } from '../utils/dateUtils';
+import theme from '../utils/theme';
 
-const HighlightedPickersDay = styled(PickersDay)(() => ({ backgroundColor: grey[200] }));
+const HighlightedPickersDay = styled(PickersDay)(() => ({
+  backgroundColor: theme.palette.grey[200],
+}));
 
 export type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?: string[] };
 

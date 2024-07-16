@@ -1,7 +1,6 @@
 // see https://codepen.io/peeke/pen/BjxXZa
 
 import { keyframes, styled } from '@mui/material';
-import { grey } from '@mui/material/colors';
 
 const pulseRing = keyframes`
   0% {
@@ -26,7 +25,7 @@ const pulseDot = keyframes`
 };
 `;
 
-const Pulse = styled('div')(() => ({
+const Pulse = styled('div')(({ theme }) => ({
   width: '5px',
   height: '5px',
 
@@ -40,7 +39,7 @@ const Pulse = styled('div')(() => ({
     marginLeft: '-100%',
     marginTop: '-100%',
     borderRadius: '45px',
-    backgroundColor: grey[300],
+    backgroundColor: theme.palette.grey[300],
     animation: `${pulseRing} 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite`,
   },
 

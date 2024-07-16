@@ -1,9 +1,5 @@
 import { Typography } from '@mui/material';
-import memoize from 'fast-memoize';
-import pluralize from 'pluralize';
 import { ellipsisSx } from '../../utils/jsxUtils';
-
-export const pluralizeMemo = memoize(pluralize);
 
 export const commonPaperSx = ({ isLoading = false }: { isLoading?: boolean }) => ({
   width: 320,

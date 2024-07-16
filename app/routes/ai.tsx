@@ -15,7 +15,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
@@ -34,6 +33,7 @@ import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { formatJson, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
+import theme from '../utils/theme';
 
 export const meta = () => [{ title: 'AI playground | ROAKIT' }];
 
@@ -195,7 +195,7 @@ export default function AIPlayground() {
                 component="pre"
                 fontFamily="Roboto Mono, monospace"
                 fontSize="smaller"
-                color={grey[700]}
+                color={theme.palette.grey[700]}
                 sx={{
                   whiteSpace: 'pre-wrap',
                   p: 2,

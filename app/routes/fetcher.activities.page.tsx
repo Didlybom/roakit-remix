@@ -33,10 +33,13 @@ export const loader = async ({
   const startAfter = searchParams.get('startAfter') ? +searchParams.get('startAfter')! : undefined;
   const endBefore = searchParams.get('endBefore') ? +searchParams.get('endBefore')! : undefined;
   const limit = searchParams.get('limit') ? +searchParams.get('limit')! : undefined;
+  const combine = searchParams.get('combine') ? searchParams.get('combine') === 'true' : undefined;
   const withInitiatives =
     searchParams.get('withInitiatives') ?
       searchParams.get('withInitiatives') === 'true'
     : undefined;
+  const withTotal =
+    searchParams.get('withTotal') ? searchParams.get('withTotal') === 'true' : undefined;
   if (!limit) {
     return errorJsonResponse('Fetching activities page failed. Invalid params.', 400);
   }
@@ -47,6 +50,8 @@ export const loader = async ({
       endBefore,
       limit,
       withInitiatives,
+      withTotal,
+      combine,
     });
     return json({ activities, activityTotal });
   } catch (e) {

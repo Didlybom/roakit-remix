@@ -1,10 +1,10 @@
 import { Close as CloseIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
-import { IconButton, Link, Popover, Stack, Typography } from '@mui/material';
-import { grey } from '@mui/material/colors';
+import { IconButton, Link, Popover, Stack, Typography, type PopoverReference } from '@mui/material';
 import { Link as RemixLink } from '@remix-run/react';
 import { LinkIt } from 'react-linkify-it';
 import type { Activity, Identity } from '../types/types';
 import { formatJson, linkSx } from '../utils/jsxUtils';
+import theme from '../utils/theme';
 
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const IDENTITYID_REGEXP = /(?<="identityId": ")(.*)(?=")/;
@@ -20,11 +20,13 @@ export default function CodePopover({
   onClose,
   customerId,
   options,
+  anchorReference = 'anchorEl',
 }: {
   popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
   options?: { linkifyActivityId?: boolean; linkifyIdentityId?: boolean };
+  anchorReference?: PopoverReference;
 }) {
   if (!popover?.content) {
     return null;
@@ -47,9 +49,15 @@ export default function CodePopover({
     <Popover
       id={popover.element ? 'popover' : undefined}
       open={!!popover?.element}
-      anchorEl={popover?.element}
       onClose={onClose}
+      anchorReference={anchorReference}
+      anchorEl={anchorReference === 'anchorEl' ? popover?.element : undefined}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      sx={
+        anchorReference ?
+          { display: 'flex', justifyContent: 'center', alignItems: 'center' }
+        : undefined
+      }
     >
       <Stack direction="row" sx={{ m: 1, position: 'absolute', top: 2, right: 0 }}>
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
@@ -63,7 +71,7 @@ export default function CodePopover({
         component="pre"
         fontSize="11px"
         fontFamily="Roboto Mono, monospace"
-        color={grey[700]}
+        color={theme.palette.grey[700]}
         sx={{
           p: 2,
           whiteSpace: 'pre-wrap',

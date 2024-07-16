@@ -1,12 +1,12 @@
 import DoneIcon from '@mui/icons-material/Done';
 import { Button, TextField } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import { useNavigation, useSubmit } from '@remix-run/react';
 import { useState } from 'react';
 import { bannedRecordSchema } from '../../types/schemas';
 import { postJsonOptions } from '../../utils/httpUtils';
 import { areRecordsEqual } from '../../utils/mapUtils';
 import { sortAndFormatRecord } from '../../utils/stringUtils';
+import theme from '../../utils/theme';
 
 export default function BannedItems({
   storedBannedItems,
@@ -58,7 +58,7 @@ export default function BannedItems({
           style: {
             fontFamily: 'Roboto Mono, monospace',
             fontSize: '.8rem',
-            backgroundColor: grey[200],
+            backgroundColor: theme.palette.grey[200],
             padding: '5px',
           },
         }}

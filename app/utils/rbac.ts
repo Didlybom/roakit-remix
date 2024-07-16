@@ -8,6 +8,7 @@ export enum View {
   ActivitySummary,
   AllActivity,
   ActivityUser,
+  Feed,
 
   Status,
   Summary,
@@ -61,7 +62,6 @@ export const checkAccess = (
     case View.ActivitySummary:
     case View.AllActivity:
     case View.ActivityUser:
-    case View.FetcherActivitiesPage:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
     case View.Impersonation:
@@ -94,9 +94,11 @@ export const checkAccess = (
       break;
 
     case View.Index:
+    case View.Feed:
     case View.Login:
     case View.Logout:
     case View.Info:
+    case View.FetcherActivitiesPage:
       // authorized to all
       break;
   }

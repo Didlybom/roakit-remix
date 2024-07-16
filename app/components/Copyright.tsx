@@ -1,5 +1,5 @@
 import { Unstable_Grid2 as Grid, Typography } from '@mui/material';
-import { grey, indigo } from '@mui/material/colors';
+import theme from '../utils/theme';
 
 export default function Copyright() {
   return (
@@ -9,9 +9,9 @@ export default function Copyright() {
         px: 2,
         py: 1,
         textWrap: 'nowrap',
-        backgroundColor: indigo[50],
+        backgroundColor: theme.palette.grey[50],
         borderTop: 'solid 1px',
-        borderColor: grey[200],
+        borderColor: theme.palette.grey[200],
       }}
     >
       <Grid>

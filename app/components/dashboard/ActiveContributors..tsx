@@ -7,8 +7,9 @@ import {
 } from '../../activityProcessors/activityGrouper';
 import type { ActorRecord } from '../../types/types';
 import { windowOpen } from '../../utils/jsxUtils';
+import { pluralizeMemo } from '../../utils/stringUtils';
 import theme from '../../utils/theme';
-import { commonPaperSx, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, widgetSize, widgetTitle } from './common';
 
 type Props = {
   groupedActivities: GroupedActivities;
@@ -40,7 +41,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
               yAxis={[
                 {
                   data: groupedActivities.topActors![action].map(a =>
-                    a.id === TOP_ACTORS_OTHERS_ID ? 'All others' : actors[a.id]?.name ?? 'unknown'
+                    a.id === TOP_ACTORS_OTHERS_ID ? 'All others' : (actors[a.id]?.name ?? 'unknown')
                   ),
                   scaleType: 'band',
                 },

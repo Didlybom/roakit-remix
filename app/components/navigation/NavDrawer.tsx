@@ -2,6 +2,7 @@ import {
   BusinessCenter as BusinessCenterIcon,
   Business as BusinessIcon,
   Dashboard as DashboardIcon,
+  RssFeed as FeedIcon,
   ManageHistory as HistoryIcon,
   RocketLaunch as LaunchIcon,
   Menu as MenuIcon,
@@ -27,9 +28,9 @@ import {
   Typography,
 } from '@mui/material';
 import type { OverridableComponent } from '@mui/material/OverridableComponent';
-import { grey } from '@mui/material/colors';
 import { useCallback } from 'react';
 import { Role, View } from '../../utils/rbac';
+import theme from '../../utils/theme';
 import DrawerHeader from './NavDrawerHeader';
 import Pulse from './Pulse';
 
@@ -104,16 +105,16 @@ export default function NavDrawer({
         </>
       )}
       <List>
-        {(role === Role.Admin || role === Role.Monitor) &&
-          item(View.ActivitySummary, '/activity/summary', SummariesIcon, 'Activity Summary', view)}
-        {item(View.Status, '/status', StatusIcon, 'My Status', view)}
-        {item(View.Summary, '/summary', SummaryIcon, 'My Summary', view)}
+        {item(View.Feed, '/feed', FeedIcon, 'Work Feed', view)}
+        {item(View.Status, '/status', StatusIcon, 'My Daily Status', view)}
       </List>
       {(role === Role.Admin || role === Role.Monitor) && (
         <>
           <Divider />
           <List>
-            <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+            <ListSubheader
+              sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
+            >
               Administration
             </ListSubheader>
             {item(View.AllActivity, '/activities', HistoryIcon, 'All Activity', view)}
@@ -122,6 +123,7 @@ export default function NavDrawer({
                 {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
                 {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
                 {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
+                {item(View.Impersonation, '/impersonation', PeopleIcon, 'User Impersonation', view)}
               </>
             )}
           </List>
@@ -131,16 +133,37 @@ export default function NavDrawer({
         <>
           <Divider />
           <List>
-            <ListSubheader sx={{ fontSize: 'small', lineHeight: '36px', color: grey[400] }}>
+            <ListSubheader
+              sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
+            >
+              Experimental
+            </ListSubheader>
+            {(role === Role.Admin || role === Role.Monitor) &&
+              item(
+                View.ActivitySummary,
+                '/activity/summary',
+                SummariesIcon,
+                'Activity Summary',
+                view
+              )}
+            {item(View.Summary, '/summary', SummaryIcon, 'My Summary', view)}
+            <Divider />
+            <ListSubheader
+              sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
+            >
               Lab
             </ListSubheader>
-            {item(View.Impersonation, '/impersonation', PeopleIcon, 'User Impersonation', view)}
             {item(null, '/ai', ScienceIcon, 'AI Playground', view)}
           </List>
         </>
       )}
       <Box flexGrow={1} />
-      <Box p={1} sx={{ backgroundColor: grey[50] }} borderTop="solid 1px" borderColor={grey[200]}>
+      <Box
+        p={1}
+        sx={{ backgroundColor: theme.palette.grey[50] }}
+        borderTop="solid 1px"
+        borderColor={theme.palette.grey[200]}
+      >
         <Typography variant="body2" color="text.secondary" pl={1}>
           {'© Roakit'} {new Date().getFullYear()}.
         </Typography>

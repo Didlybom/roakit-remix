@@ -9,7 +9,7 @@ export default function LinkifyJira({ content, baseUrl }: { content: string; bas
     () => (
       <LinkIt
         component={(jira: string, key: number) => (
-          <Link key={key} href={baseUrl + jira} target="_blank" sx={linkSx}>
+          <Link key={key} href={baseUrl + jira} target="_blank" sx={{ ...linkSx, fontWeight: 500 }}>
             {jira}
           </Link>
         )}

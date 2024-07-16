@@ -1,5 +1,5 @@
 import { Close as CloseIcon } from '@mui/icons-material';
-import { Box, IconButton, Popover } from '@mui/material';
+import { Box, IconButton, Popover, type PopoverReference } from '@mui/material';
 
 export interface BoxPopoverContent {
   element: HTMLElement;
@@ -11,10 +11,12 @@ export default function BoxPopover({
   popover,
   onClose,
   showClose = false,
+  anchorReference = 'anchorEl',
 }: {
   popover: BoxPopoverContent | null;
   onClose: () => void;
   showClose?: boolean;
+  anchorReference?: PopoverReference;
 }) {
   if (!popover?.content) {
     return null;
@@ -24,9 +26,15 @@ export default function BoxPopover({
     <Popover
       id={popover?.element ? 'popover' : undefined}
       open={!!popover?.element}
-      anchorEl={popover?.element}
       onClose={onClose}
+      anchorReference={anchorReference}
+      anchorEl={anchorReference === 'anchorEl' ? popover?.element : undefined}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      sx={
+        anchorReference ?
+          { display: 'flex', justifyContent: 'center', alignItems: 'center' }
+        : undefined
+      }
     >
       <>
         {showClose && (

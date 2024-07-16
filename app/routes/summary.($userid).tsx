@@ -23,7 +23,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import { StaticDatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -66,6 +65,7 @@ import { postJsonOptions } from '../utils/httpUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
+import theme from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 import type { SummariesResponse } from './fetcher.summaries.($userid)';
 
@@ -395,7 +395,9 @@ export default function Summary() {
                     minRows={12}
                     maxRows={12}
                     size="small"
-                    inputProps={{ sx: { mt: 1, fontSize: 'smaller', backgroundColor: grey[50] } }}
+                    inputProps={{
+                      sx: { mt: 1, fontSize: 'smaller', backgroundColor: theme.palette.grey[50] },
+                    }}
                     InputLabelProps={{ shrink: true }}
                     sx={{ mt: 3 }}
                     onChange={e => setActivitiesText(e.target.value)}

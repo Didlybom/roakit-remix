@@ -4,7 +4,11 @@ import { errMsg } from './errorUtils';
 
 export type SelectOption = { value: string; label?: string; color?: string | null };
 
-export const ellipsisSx: SxProps = { overflow: 'hidden', textOverflow: 'ellipsis' };
+export const ellipsisSx: SxProps = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
 
 export const verticalStickyBarSx: SxProps = {
   textWrap: 'nowrap',

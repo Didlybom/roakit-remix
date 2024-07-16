@@ -11,7 +11,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { useEffect, useState } from 'react';
@@ -26,6 +25,7 @@ import { loadSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import { getLogger } from '../../utils/loggerUtils.server';
 import { View } from '../../utils/rbac';
+import theme from '../../utils/theme';
 import ConfluenceSettings from './ConfluenceSettings';
 import GitHubSettings from './GitHubSettings';
 import JiraSettings from './JiraSettings';
@@ -151,9 +151,9 @@ const globalStyles = (
         fontSize: '.8rem',
         lineHeight: 1.5,
         whiteSpace: 'nowrap',
-        backgroundColor: grey[200],
+        backgroundColor: theme.palette.grey[200],
         border: '1px solid',
-        borderColor: grey[400],
+        borderColor: theme.palette.grey[400],
         borderRadius: '5px',
         padding: '1px 4px',
       },
@@ -189,7 +189,7 @@ export default function Settings() {
     <App view={VIEW} role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
       {globalStyles}
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
-      <Paper variant="outlined" sx={{ backgroundColor: grey[50], m: 2 }}>
+      <Paper variant="outlined" sx={{ backgroundColor: theme.palette.grey[50], m: 2 }}>
         <Typography variant="h6" pl={2} pt={2} pb={1}>
           Webhook Settings
         </Typography>

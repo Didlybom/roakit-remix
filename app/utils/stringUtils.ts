@@ -1,3 +1,6 @@
+import memoize from 'fast-memoize';
+import pluralize from 'pluralize';
+
 export const caseInsensitiveSort = (data: string[]): string[] =>
   data.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
@@ -68,3 +71,5 @@ export const mimeTypeToType = (mimeType: string): string | undefined => {
   }
   return undefined;
 };
+
+export const pluralizeMemo = memoize(pluralize);

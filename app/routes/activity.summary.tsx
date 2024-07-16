@@ -1,6 +1,5 @@
 import { AutoAwesome as AIIcon, Groups as TeamIcon } from '@mui/icons-material';
 import { Alert, Box, Chip, Divider, Link, Paper, Stack, Typography, styled } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import type { LoaderFunctionArgs } from '@remix-run/node';
@@ -51,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 const SummaryBox = styled(Paper)(({ theme }) => ({
-  borderColor: grey[200],
+  borderColor: theme.palette.grey[200],
   // maxHeight: 300,
   // overflow: 'scroll',
   padding: theme.spacing(1),

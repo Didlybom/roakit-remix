@@ -12,7 +12,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type {
   GridColDef,
   GridDensity,
@@ -246,13 +245,13 @@ export default function ActivityReview() {
         ...activityFields,
         actorId:
           activity.actorId ?
-            loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
+            (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
         priority,
         initiativeId: initiativeId || mapping?.initiatives[0] || '',
         // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
         launchItemId:
-          activity.launchItemId != null ? activity.launchItemId : mapping?.launchItems[0] ?? '',
+          activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
       });
     });
     setActivities(activityRows);
@@ -359,7 +358,7 @@ export default function ActivityReview() {
               endIcon={<ArrowDropDownIcon />}
               sx={{ ml: -1, fontWeight: 400, textTransform: 'none' }}
             >
-              {params.value ? loaderData.initiatives[`${params.value}`]?.key ?? 'unknown' : '⋯'}
+              {params.value ? (loaderData.initiatives[`${params.value}`]?.key ?? 'unknown') : '⋯'}
             </Button>
           </Box>
         ),
@@ -503,7 +502,7 @@ export default function ActivityReview() {
               sx={{ justifyContent: 'right' }}
               selectedValue={activityFilter}
               items={[
-                { value: '', label: 'All', color: grey[500] },
+                { value: '', label: 'All', color: theme.palette.grey[500] },
                 { value: 'withoutInitiatives', label: 'Without goals' },
                 { value: 'withInitiatives', label: 'With goals' },
               ]}

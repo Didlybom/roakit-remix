@@ -316,7 +316,7 @@ export default function Status() {
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
         actorId:
           activity.actorId ?
-            loaderData.accountMap[activity.actorId] ?? activity.actorId // resolve identity
+            (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
       });
     });
@@ -390,7 +390,6 @@ export default function Status() {
         editable: true,
         renderEditCell: params => <AutocompleteSelect {...params} options={priorityOptions} />,
       }),
-
       {
         field: 'launchItemId',
         headerName: 'Launch',
@@ -411,7 +410,9 @@ export default function Status() {
               tabIndex={params.tabIndex}
               label={
                 <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
-                  {params.value ? loaderData.launchItems[`${params.value}`]?.key ?? 'unknown' : '⋯'}
+                  {params.value ?
+                    (loaderData.launchItems[`${params.value}`]?.key ?? 'unknown')
+                  : '⋯'}
                 </Box>
               }
             />
@@ -432,7 +433,7 @@ export default function Status() {
           <Box height="100%" display="flex" alignItems="center">
             <DropDownButton
               tabIndex={params.tabIndex}
-              label={params.value ? PHASES.get(`${params.value}`)?.label ?? 'unknown' : null}
+              label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : null}
             />
           </Box>
         ),
@@ -621,7 +622,8 @@ export default function Status() {
                   {
                     newActivity: {
                       ...newActivity,
-                      eventTimestamp: selectedDay.endOf('day').valueOf(),
+                      eventTimestamp:
+                        isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
                     },
                   },
                   postJsonOptions

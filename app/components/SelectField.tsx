@@ -1,6 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type { SelectOption } from '../utils/jsxUtils';
+import theme from '../utils/theme';
 
 export default function SelectField({
   items,
@@ -20,7 +20,11 @@ export default function SelectField({
       <InputLabel>{label}</InputLabel>
       <Select value={value} label={label} onChange={e => onChange(e.target.value)} autoWidth>
         {items.map((item, i) => (
-          <MenuItem key={i} value={item.value} sx={{ color: item.value ? item.color : grey[400] }}>
+          <MenuItem
+            key={i}
+            value={item.value}
+            sx={{ color: item.value ? item.color : theme.palette.grey[400] }}
+          >
             {item.label}
           </MenuItem>
         ))}

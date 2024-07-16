@@ -25,7 +25,6 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
 import type { LoaderFunctionArgs, MetaFunction } from '@remix-run/node';
@@ -103,6 +102,7 @@ import { getLogger } from '../utils/loggerUtils.server';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare, removeSpaces } from '../utils/stringUtils';
+import theme from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -132,7 +132,7 @@ const userActivityRows = (
       ...activity,
       actorId:
         activity.actorId ?
-          accountMap[activity.actorId] ?? activity.actorId // resolve identity
+          (accountMap[activity.actorId] ?? activity.actorId) // resolve identity
         : undefined,
     };
     rows.push(row);
@@ -476,7 +476,7 @@ export default function UserActivity() {
           variant={loaderData.userId === ALL ? 'h6' : 'h3'}
           display="flex"
           alignItems="center"
-          color={grey[600]}
+          color={theme.palette.grey[600]}
           fontSize="1.1rem"
         >
           <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
@@ -532,11 +532,11 @@ export default function UserActivity() {
         <Box
           key={i}
           mb={sortActors !== SortActorsBy.Name && i === 9 ? 2 : undefined}
-          color={actorId ? undefined : grey[500]}
+          color={actorId ? undefined : theme.palette.grey[500]}
         >
           <Link
             sx={linkSx}
-            color={actorId ? undefined : grey[500]}
+            color={actorId ? undefined : theme.palette.grey[500]}
             onClick={() => {
               if (sortActors !== SortActorsBy.Name && i <= 9 && showOnlyActor == null) {
                 setScrollToGroup(actorId);
@@ -586,7 +586,7 @@ export default function UserActivity() {
           key={i}
           mb={i === 9 ? 2 : undefined}
           mt={launchId ? undefined : 2}
-          color={launchId ? undefined : grey[500]}
+          color={launchId ? undefined : theme.palette.grey[500]}
         >
           <Link
             sx={{
@@ -595,7 +595,7 @@ export default function UserActivity() {
                 color: launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
               },
             }}
-            color={launchId ? undefined : grey[500]}
+            color={launchId ? undefined : theme.palette.grey[500]}
             onClick={() => setScrollToGroup(launchId)}
           >
             {label}
@@ -667,7 +667,7 @@ export default function UserActivity() {
               direction="row"
               spacing={1}
               divider={<Divider orientation="vertical" flexItem />}
-              color={grey[launchId ? 600 : 400]}
+              color={theme.palette.grey[launchId ? 600 : 400]}
               mb={1}
               sx={{ textWrap: 'nowrap' }}
             >
@@ -745,7 +745,7 @@ export default function UserActivity() {
     groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && activities.size > 0 ?
       <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
         <Box sx={{ position: 'relative' }}>
-          <Box fontSize="small" color={grey[700]} sx={verticalStickyBarSx}>
+          <Box fontSize="small" color={theme.palette.grey[700]} sx={verticalStickyBarSx}>
             <FormControl sx={{ mb: 2 }}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <SortIcon fontSize="small" />
@@ -841,7 +841,7 @@ export default function UserActivity() {
               icon={<GroupIcon fontSize="small" />}
               selectedValue={groupBy ?? ''}
               items={[
-                { value: '', label: 'None', color: grey[500] },
+                { value: '', label: 'None', color: theme.palette.grey[500] },
                 ...(loaderData.userId === ALL ?
                   [{ value: GroupBy.Contributor, label: 'Contributor' }]
                 : []),

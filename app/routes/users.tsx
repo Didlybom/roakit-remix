@@ -23,7 +23,6 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { grey } from '@mui/material/colors';
 import type {
   GridColDef,
   GridRenderCellParams,
@@ -580,7 +579,7 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               style: {
                 fontFamily: 'Roboto Mono, monospace',
                 fontSize: '.8rem',
-                backgroundColor: grey[100],
+                backgroundColor: theme.palette.grey[100],
                 padding: '5px',
               },
             }}

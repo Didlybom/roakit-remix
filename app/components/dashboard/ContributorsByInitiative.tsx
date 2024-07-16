@@ -7,7 +7,8 @@ import {
 import { useCallback } from 'react';
 import type { GroupedActivities } from '../../activityProcessors/activityGrouper';
 import type { InitiativeRecord } from '../../types/types';
-import { commonPaperSx, pastelColors, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { pluralizeMemo } from '../../utils/stringUtils';
+import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
   type: 'initiatives' | 'launchItems';

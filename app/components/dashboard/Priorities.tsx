@@ -1,8 +1,9 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, type PieValueType } from '@mui/x-charts';
 import type { GroupedActivities } from '../../activityProcessors/activityGrouper';
+import { pluralizeMemo } from '../../utils/stringUtils';
 import { priorityColors, priorityLabels } from '../../utils/theme';
-import { commonPaperSx, pluralizeMemo, widgetSize, widgetTitle } from './common';
+import { commonPaperSx, widgetSize, widgetTitle } from './common';
 
 const priorityDefs: Record<number, Omit<PieValueType, 'value'>> = {
   1: { id: 1, label: priorityLabels[1], color: priorityColors[1] },

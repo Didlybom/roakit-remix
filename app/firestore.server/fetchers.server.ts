@@ -575,13 +575,17 @@ export const fetchActivitiesPage = async ({
   startAfter,
   endBefore,
   limit,
+  combine,
   withInitiatives,
+  withTotal = true,
 }: {
   customerId: number;
   startAfter?: number;
   endBefore?: number;
   limit: number;
+  combine?: boolean;
   withInitiatives?: boolean;
+  withTotal?: boolean;
 }) => {
   if (startAfter != null && endBefore != null) {
     throw Error('startAfter and endBefore are mutually exclusive params.');
@@ -604,7 +608,7 @@ export const fetchActivitiesPage = async ({
   const activities: Activity[] = [];
   const [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
-    fetchActivityTotalWithCache(customerId, withInitiatives),
+    withTotal ? fetchActivityTotalWithCache(customerId, withInitiatives) : undefined,
   ]);
   activityPage.forEach(doc => {
     const data = parse<schemas.ActivityType>(
@@ -623,12 +627,21 @@ export const fetchActivitiesPage = async ({
       priority: data.priority,
       initiativeId: data.initiative,
       launchItemId: data.launchItemId,
+      phase: data.phase as Phase,
+      effort: data.effort,
       description: data.description,
       metadata: data.metadata as ActivityMetadata,
       note: data.note,
       objectId: data.objectId, // for debugging
     });
   });
+  if (combine) {
+    activities.sort((a, b) => a.timestamp - b.timestamp);
+    const combinedActivities: Activity[] = [];
+    activities.forEach(activity => combineAndPushActivity(activity, combinedActivities));
+    combinedActivities.sort((a, b) => b.timestamp - a.timestamp);
+    return { activities: combinedActivities, activityTotal };
+  }
   return { activities, activityTotal };
 };
 
