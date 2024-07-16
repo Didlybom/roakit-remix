@@ -19,7 +19,7 @@ const isMatching = (a: Activity, b: Activity) =>
   ((a.action === b.action &&
     (a.event === b.event ||
       (a.event?.startsWith('pull_request') && b.event?.startsWith('pull_request')) ||
-      (a.event?.startsWith('comment_') && b.event?.startsWith('comment_')))) ||
+      (a.event?.startsWith('comment') && b.event?.startsWith('comment')))) ||
     (a.action === 'created' &&
       b.action === 'updated' &&
       a.event === 'jira:issue_created' &&
@@ -135,8 +135,8 @@ export const combineAndPushActivity = (newActivity: Activity, activities: Activi
     }
   }
 
-  // Jira multiple comments
-  else if (newActivity.event?.startsWith('comment_') && newActivity.metadata?.comment) {
+  // Jira and Confluence consecutive comments
+  else if (newActivity.event?.startsWith('comment') && newActivity.metadata?.comment) {
     const indexPageActivity = activities.findLastIndex(a => isMatching(a, newActivity));
     if (indexPageActivity >= 0) {
       const foundActivity = activities[indexPageActivity];

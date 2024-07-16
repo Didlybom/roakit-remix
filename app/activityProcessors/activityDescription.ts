@@ -34,6 +34,9 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
   if (metadata?.comment) {
     return `Commented ${metadata.comment.parent?.title}`;
   }
+  if (metadata?.comments?.length) {
+    return `Commented ${metadata.comments[0].parent?.title}`;
+  }
   if (metadata?.label) {
     return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
   }
