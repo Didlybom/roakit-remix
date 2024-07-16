@@ -375,7 +375,7 @@ export default function Users() {
         valueOptions: () => roleLabels,
         renderCell: (params: GridRenderCellParams<Identity, string>) =>
           params.row.user?.id ?
-            <Box height="45px" display="flex" alignItems="center">
+            <Box height="100%" display="flex" alignItems="center">
               <DropDownButton
                 tabIndex={params.tabIndex}
                 label={roleLabels.find(r => r.value === params.value)?.label}

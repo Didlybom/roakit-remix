@@ -45,7 +45,7 @@ import {
   compileActivityMappers,
   mapActivity,
 } from '../activityProcessors/activityMapper';
-import { ActivityPickersDay, type PickerDayWithHighlights } from '../components/ActivityPickersDay';
+import ActivityPickersDay, { type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/MarkdownText';

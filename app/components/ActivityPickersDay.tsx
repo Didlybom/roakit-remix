@@ -10,11 +10,11 @@ const HighlightedPickersDay = styled(PickersDay)(() => ({
 
 export type PickerDayWithHighlights = PickersDayProps<dayjs.Dayjs> & { highlightedDays?: string[] };
 
-export const ActivityPickersDay = (props: PickerDayWithHighlights) => {
+export default function ActivityPickersDay(props: PickerDayWithHighlights) {
   const { highlightedDays = [], day, selected, ...other } = props;
   if (!selected && highlightedDays.includes(formatYYYYMMDD(day))) {
     return <HighlightedPickersDay {...other} day={day} />;
   } else {
     return <PickersDay {...other} day={day} selected={selected} />;
   }
-};
+}

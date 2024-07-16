@@ -614,7 +614,7 @@ export const fetchActivitiesPage = async ({
     const data = parse<schemas.ActivityType>(
       schemas.activitySchema,
       doc.data(),
-      'activity ' + doc.id
+      `activity ${doc.id}`
     );
     activities.push({
       id: doc.id,
@@ -636,9 +636,10 @@ export const fetchActivitiesPage = async ({
     });
   });
   if (combine) {
-    activities.sort((a, b) => a.timestamp - b.timestamp);
     const combinedActivities: Activity[] = [];
-    activities.forEach(activity => combineAndPushActivity(activity, combinedActivities));
+    for (let i = activities.length - 1; i >= 0; i--) {
+      combineAndPushActivity(activities[i], combinedActivities);
+    }
     combinedActivities.sort((a, b) => b.timestamp - a.timestamp);
     return { activities: combinedActivities, activityTotal };
   }

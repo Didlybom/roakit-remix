@@ -27,8 +27,8 @@ const NavBar = styled(AppBar, {
     duration: theme.transitions.duration.leavingScreen,
   }),
   ...(navbarOpen && {
-    width: `calc(100% - ${ navbarWidth }px)`,
-    marginLeft: `${ navbarWidth }px`,
+    width: `calc(100% - ${navbarWidth}px)`,
+    marginLeft: `${navbarWidth}px`,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -90,7 +90,8 @@ export default function Header({
                   onSelect={onDateRangeSelect}
                 />
               )}
-              {dateRange && isToday(dayjs(dateRange.endDay)) && onDateRangeRefresh && (
+              {((dateRange && isToday(dayjs(dateRange.endDay)) && onDateRangeRefresh) ||
+                (!dateRange && onDateRangeRefresh)) && (
                 <IconButton
                   color="inherit"
                   onClick={onDateRangeRefresh}

@@ -470,7 +470,8 @@ export default function Status() {
                   onClick={async () => {
                     try {
                       await confirm({
-                        description: `Please confirm the deletion of activity "${activity.description}".`,
+                        title: 'Confirm Deletion',
+                        description: `Delete the activity "${activity.description}"?`,
                       });
                       handleDeleteClick(params.id);
                     } catch {
@@ -588,7 +589,7 @@ export default function Status() {
                     autoComplete="off"
                     label="Effort"
                     type="number"
-                    helperText="0 - 24"
+                    helperText="0 to 24 hours"
                     size="small"
                     sx={{ maxWidth: 90 }}
                     onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}

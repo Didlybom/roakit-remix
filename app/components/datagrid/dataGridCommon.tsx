@@ -15,7 +15,7 @@ import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx, linkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 import ActivityCard from '../ActivityCard';
-import { AutoRefreshingRelativeDate } from '../AutoRefreshingRelativeData';
+import AutoRefreshingRelativeDate from '../AutoRefreshingRelativeData';
 
 export const dataGridCommonProps = {
   autosizeOnMount: true,

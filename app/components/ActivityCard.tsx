@@ -51,19 +51,23 @@ export default function ActivityCard({
     if (url.type === 'jira') {
       icon = (
         <Box mr="2px">
-          <JiraIcon color={theme.palette.primary.main} />
+          <JiraIcon fontSize="small" color={theme.palette.primary.main} />
         </Box>
       );
       urlTitle = 'Go to Jira page';
     } else if (url.type === 'confluence') {
       icon = (
         <Box mr="2px">
-          <ConfluenceIcon color={theme.palette.primary.main} />{' '}
+          <ConfluenceIcon fontSize="small" color={theme.palette.primary.main} />
         </Box>
       );
       urlTitle = 'Go to Confluence page';
     } else if (url.type === 'github') {
-      icon = <GitHubIcon color="primary" />;
+      icon = (
+        <Box>
+          <GitHubIcon fontSize="small" color="primary" />
+        </Box>
+      );
       urlTitle = 'Go to Github page';
     }
   } else if (activity.event === CUSTOM_EVENT) {
@@ -110,7 +114,7 @@ export default function ActivityCard({
         <Stack mt={'2px'} pl={icon ? undefined : missingIconPadding} minWidth={0}>
           <Box
             title={description}
-            fontSize="small"
+            fontSize={format === 'Grid' ? 'small' : undefined}
             lineHeight={1.2}
             sx={format === 'Grid' ? ellipsisSx : undefined}
           >
@@ -122,7 +126,7 @@ export default function ActivityCard({
             <Typography
               component="div"
               title={actionDescription.startsWith('http') ? undefined : actionDescription}
-              fontSize="smaller"
+              fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
               sx={format === 'Grid' ? ellipsisSx : undefined}
             >
@@ -139,7 +143,7 @@ export default function ActivityCard({
           )}
           {comment && (
             <Typography
-              fontSize="smaller"
+              fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
               sx={format === 'Grid' ? ellipsisSx : undefined}
             >
@@ -149,7 +153,7 @@ export default function ActivityCard({
           {commits && commits.length > 1 && (
             <Box>
               <Link
-                fontSize="smaller"
+                fontSize={format === 'Grid' ? 'smaller' : 'small'}
                 onClick={e => {
                   setPopover?.(
                     e.currentTarget,
@@ -176,7 +180,7 @@ export default function ActivityCard({
           {commits && commits.length === 1 && (
             <Typography
               title={actionDescription}
-              fontSize="smaller"
+              fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
               sx={ellipsisSx}
             >
@@ -185,7 +189,7 @@ export default function ActivityCard({
           )}
         </Stack>
       : <Box
-          fontSize="small"
+          fontSize={format === 'Grid' ? 'small' : undefined}
           title={description}
           pl={icon ? undefined : missingIconPadding}
           sx={format === 'Grid' ? ellipsisSx : undefined}

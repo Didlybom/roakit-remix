@@ -3,7 +3,7 @@ import {
   Timelapse as EffortIcon,
   ThumbUpOffAlt as ThumbUpIcon,
 } from '@mui/icons-material';
-import { Box, CircularProgress, IconButton, Snackbar, Stack } from '@mui/material';
+import { Box, CircularProgress, IconButton, Link, Snackbar, Stack } from '@mui/material';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate } from '@remix-run/react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -20,7 +20,7 @@ import {
 } from '../activityProcessors/activityMapper';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
-import { AutoRefreshingRelativeDate } from '../components/AutoRefreshingRelativeData';
+import AutoRefreshingRelativeDate from '../components/AutoRefreshingRelativeData';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
@@ -82,6 +82,7 @@ export default function ActivityReview() {
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const heightsRef = useRef<number[]>([]);
   const listRef = useRef<VariableSizeList | null>(null);
@@ -111,6 +112,7 @@ export default function ActivityReview() {
     if (!fetchedActivities?.activities) {
       return;
     }
+    setIsLoading(false);
     const activityRows: ActivityRow[] = [];
     fetchedActivities.activities.forEach((activity: Activity) => {
       let priority = activity.priority;
@@ -135,7 +137,7 @@ export default function ActivityReview() {
           activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
       });
     });
-    setActivities([...activities, ...activityRows]);
+    setActivities([...activities, ...activityRows].sort((a, b) => b.timestamp - a.timestamp));
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedActivities?.activities]); // loaderData and activities must be omitted
@@ -155,28 +157,16 @@ export default function ActivityReview() {
         activitiesFetcher.load(query);
       };
 
-  const isRowLoaded = (index: number) => !hasNextPage || index < activities.length;
+  const loadNewRows = () => {
+    setIsLoading(true);
+    let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
+    if (activities.length) {
+      query += `&endBefore=${activities[0].timestamp}`;
+    }
+    activitiesFetcher.load(query);
+  };
 
-  const ActivityBox = ({ activity }: { activity: Activity }) => (
-    <Box
-      fontSize="14px"
-      sx={{
-        border: 1,
-        borderColor: theme.palette.grey[200],
-        borderRadius: '6px',
-        p: 1,
-        mt: '2px',
-        '&:hover': { background: theme.palette.grey[50] },
-      }}
-    >
-      <ActivityCard
-        format="Feed"
-        activity={activity}
-        ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
-        setPopover={(element, content) => setPopover({ element, content })}
-      />
-    </Box>
-  );
+  const isRowLoaded = (index: number) => !hasNextPage || index < activities.length;
 
   const getRowSize = (index: number) => heightsRef.current[index] ?? 50;
 
@@ -210,15 +200,44 @@ export default function ActivityReview() {
       <Box style={style}>
         <Box ref={ref}>
           <Stack>
-            <Stack direction="row" spacing="4px" fontSize="small">
-              <Box fontWeight={600}>
-                {loaderData.actors[activity.actorId ?? '']?.name ?? 'unknown'}
-              </Box>
+            <Stack direction="row" spacing="4px" fontSize="14px" mb="4px">
+              {activity.actorId && (
+                <Link
+                  href={`/activity/${encodeURI(activity.actorId)}`}
+                  target="_blank"
+                  fontWeight={600}
+                  sx={{
+                    color: theme.palette.text.primary,
+                    textDecoration: 'none',
+                    borderBottom: '1px dotted rgba(0,0,0,0)',
+                    borderSpacing: 0,
+                    '&:hover': { borderBottomColor: theme.palette.text.primary },
+                  }}
+                >
+                  {loaderData.actors[activity.actorId]?.name ?? 'unknown'}
+                </Link>
+              )}
               <Box color={theme.palette.grey[500]}>
                 • <AutoRefreshingRelativeDate date={activity.timestamp} />
               </Box>
             </Stack>
-            <ActivityBox activity={activity} />
+            <Box
+              fontSize="14px"
+              sx={{
+                border: 1,
+                borderColor: theme.palette.grey[200],
+                borderRadius: '6px',
+                p: 1,
+                '&:hover': { background: theme.palette.grey[50] },
+              }}
+            >
+              <ActivityCard
+                format="Feed"
+                activity={activity}
+                ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
+                setPopover={(element, content) => setPopover({ element, content })}
+              />
+            </Box>
             <Stack direction="row" fontSize="12px" spacing={2} alignItems="center" mx={1}>
               <IconButton size="small" onClick={() => setSnackMessage('Not implemented')}>
                 <ThumbUpIcon sx={{ fontSize: '14px' }} />
@@ -262,7 +281,7 @@ export default function ActivityReview() {
               </IconButton>
             </Stack>
           </Stack>
-          <Box height="10px" />
+          <Box height="15px" />
         </Box>
       </Box>
     );
@@ -271,7 +290,14 @@ export default function ActivityReview() {
   const rowCount = hasNextPage ? activities.length + 1 : activities.length;
 
   return (
-    <App view={VIEW} isLoggedIn={true} role={loaderData.role} isNavOpen={loaderData.isNavOpen}>
+    <App
+      view={VIEW}
+      isLoggedIn={true}
+      role={loaderData.role}
+      isNavOpen={loaderData.isNavOpen}
+      onDateRangeRefresh={loadNewRows}
+      showProgress={isLoading}
+    >
       {errorAlert(fetchedActivities?.error?.message)}
       <CodePopover
         popover={codePopover}
