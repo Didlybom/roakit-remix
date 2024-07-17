@@ -38,7 +38,7 @@ export default function BoxPopover({
     >
       <>
         {showClose && (
-          <Box sx={{ m: 1, position: 'absolute', top: 2, right: 0, zIndex: 2 }}>
+          <Box mr={1} mt={1} mb={-2} display="flex" justifyContent="end">
             <IconButton onClick={onClose}>
               <CloseIcon />
             </IconButton>

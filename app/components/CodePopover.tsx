@@ -59,7 +59,7 @@ export default function CodePopover({
         : undefined
       }
     >
-      <Stack direction="row" sx={{ m: 1, position: 'absolute', top: 2, right: 0 }}>
+      <Stack direction="row" mr={1} mt={1} mb={-3} display="flex" justifyContent="end">
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
           <CopyIcon />
         </IconButton>
