@@ -2,7 +2,6 @@ import {
   GitHub as GitHubIcon,
   AccountTree as GroupIcon,
   OpenInNew as OpenInNewIcon,
-  Search as SearchIcon,
   SortByAlpha as SortByAlphaIcon,
   Timelapse as SortByEffortIcon,
   Functions as SortByTotalIcon,
@@ -16,11 +15,9 @@ import {
   FormControl,
   Unstable_Grid2 as Grid,
   IconButton,
-  InputAdornment,
   Link,
   Pagination,
   Stack,
-  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -41,6 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { getActivityDescription } from '../activityProcessors/activityDescription';
 import {
+  accountUrlToWeb,
   activitiesTotalEffort,
   artifactActions,
   buildArtifactActionKey,
@@ -57,6 +55,7 @@ import BoxPopover from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
+import SearchField from '../components/SearchField';
 import SmallChip from '../components/SmallChip';
 import {
   actionColDef,
@@ -451,7 +450,7 @@ export default function UserActivity() {
         headerName: 'Phase',
         valueGetter: (value: string) => PHASES.get(value)?.label ?? value,
       },
-      { field: 'effort', headerName: 'Effort' },
+      { field: 'effort', headerName: 'Hours' },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
       ),
@@ -486,11 +485,7 @@ export default function UserActivity() {
               <IconButton
                 key={i}
                 component="a"
-                href={
-                  account.type === 'jira' || account.type === 'confluence' ?
-                    `${account.url!.split('rest')[0]}people/${account.id}`
-                  : account.url
-                }
+                href={accountUrlToWeb(account)}
                 target="_blank"
                 size="small"
                 color="primary"
@@ -778,7 +773,7 @@ export default function UserActivity() {
                   </ToggleButton>
                   <ToggleButton
                     value={SortActorsBy.Effort}
-                    title="Sort  navigation list by total effort for all activities"
+                    title="Sort  navigation list by hours spent on all activities"
                   >
                     <SortByEffortIcon sx={{ width: 18, height: 18 }} />
                   </ToggleButton>
@@ -815,24 +810,11 @@ export default function UserActivity() {
       <Grid>
         <Grid container spacing={3}>
           <Grid>
-            <TextField
-              autoComplete="off"
-              value={searchFilter}
-              placeholder="Search"
+            <SearchField
               title="Search descriptions"
-              size="small"
-              sx={{
-                width: { xs: '11ch', sm: '12ch' },
-                minWidth: { xs: '100px', sm: '160px' },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-              onChange={e => setSearchFilter(e.target.value)}
+              value={searchFilter}
+              setValue={setSearchFilter}
+              sx={{ width: { xs: '11ch', sm: '12ch' }, minWidth: { xs: '100px', sm: '160px' } }}
             />
           </Grid>
           <Grid>

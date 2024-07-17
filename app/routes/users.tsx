@@ -3,7 +3,6 @@ import {
   AddCircle as AddCircleIcon,
   Download as DownloadIcon,
   GitHub as GitHubIcon,
-  Search as SearchIcon,
   Upload as UploadIcon,
 } from '@mui/icons-material';
 import {
@@ -13,7 +12,6 @@ import {
   Divider,
   Unstable_Grid2 as Grid,
   IconButton,
-  InputAdornment,
   Link,
   Pagination,
   Snackbar,
@@ -22,6 +20,7 @@ import {
   Tabs,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import type {
   GridColDef,
@@ -43,8 +42,10 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-r
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
+import { accountUrlToWeb } from '../activityProcessors/activityFeed';
 import App from '../components/App';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
+import SearchField from '../components/SearchField';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import DropDownButton from '../components/datagrid/DropDownButton';
@@ -395,25 +396,34 @@ export default function Users() {
         field: 'id',
         headerName: 'Account ID',
         flex: 1,
-        renderCell: params => {
-          const id = (params.row as Identity).id;
-          return (
-            <Link
-              tabIndex={params.tabIndex}
-              href={`/activity/${encodeURI(id)}`}
-              title="View activity"
-              sx={linkSx}
-            >
-              {params.value}
-            </Link>
-          );
-        },
+        renderCell: (params: GridRenderCellParams<Account, string>) => (
+          <Link
+            tabIndex={params.tabIndex}
+            href={`/activity/${encodeURI(params.row.id)}`}
+            title="View activity"
+            sx={linkSx}
+          >
+            {params.value}
+          </Link>
+        ),
       },
       {
         field: 'type',
         headerName: 'Source',
         minWidth: 80,
         valueGetter: value => (value ? FEED_TYPES.find(f => f.type === value)?.label : value),
+        renderCell: (params: GridRenderCellParams<Account, string>) =>
+          params.row.url ?
+            <Link
+              tabIndex={params.tabIndex}
+              href={accountUrlToWeb(params.row)}
+              title="View account source"
+              target="_blank"
+              sx={linkSx}
+            >
+              {params.value}
+            </Link>
+          : params.value,
       },
       { field: 'name', headerName: 'Name', minWidth: 250 },
       dateColDef({
@@ -459,21 +469,11 @@ export default function Users() {
     (rowCount: number) => (
       <Grid container alignItems="center" rowSpacing={2} mb={1}>
         <Grid>
-          <TextField
-            autoComplete="off"
+          <SearchField
+            title="Search"
             value={searchFilter}
-            placeholder="Search"
-            title="Search names"
-            size="small"
+            setValue={setSearchFilter}
             sx={{ width: '12ch', minWidth: { xs: '110px', sm: '250px' } }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            onChange={e => setSearchFilter(e.target.value)}
           />
         </Grid>
         <Grid flex={1} />
@@ -542,17 +542,34 @@ export default function Users() {
         message={confirmation}
       />
       <Stack>
-        <Stack direction="row" mx={3}>
-          <TextField
-            label=" CSV list to import"
-            value={imports}
-            fullWidth
-            multiline
-            minRows={3}
-            maxRows={15}
-            helperText={
+        <Stack direction="row" mx={3} mt={3}>
+          <Stack width="100%">
+            <TextField
+              label=" CSV list to import"
+              value={imports}
+              fullWidth
+              multiline
+              minRows={3}
+              maxRows={15}
+              placeholder="jdoe@example.com, John Doe, x7jfRAz1sSko911234, l1b78K4798TBj3pPe47k, jdoe
+jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
+              size="small"
+              onChange={e => {
+                setError('');
+                setImports(e.target.value);
+              }}
+              inputProps={{
+                style: {
+                  fontFamily: 'Roboto Mono, monospace',
+                  fontSize: '.8rem',
+                  backgroundColor: theme.palette.grey[100],
+                  padding: '5px',
+                },
+              }}
+            />
+            <Typography variant="caption">
               <Stack direction="row">
-                <Box fontWeight={600} mr={2}>
+                <Box fontWeight={600} mx={2}>
                   Format:
                 </Box>
                 <Stack
@@ -567,24 +584,8 @@ export default function Users() {
                   <Box>GitHub username</Box>
                 </Stack>
               </Stack>
-            }
-            placeholder="jdoe@example.com, John Doe, x7jfRAz1sSko911234, l1b78K4798TBj3pPe47k, jdoe
-jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
-            size="small"
-            onChange={e => {
-              setError('');
-              setImports(e.target.value);
-            }}
-            inputProps={{
-              style: {
-                fontFamily: 'Roboto Mono, monospace',
-                fontSize: '.8rem',
-                backgroundColor: theme.palette.grey[100],
-                padding: '5px',
-              },
-            }}
-            sx={{ mt: 5 }}
-          />
+            </Typography>
+          </Stack>
           <Box ml={3} mb={4} alignSelf="flex-end">
             <Button
               variant="contained"
