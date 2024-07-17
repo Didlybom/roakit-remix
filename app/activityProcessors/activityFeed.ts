@@ -1,4 +1,4 @@
-import type { Activity, ActivityMetadata, TicketRecord } from '../types/types';
+import type { Account, Activity, ActivityMetadata, TicketRecord } from '../types/types';
 import { findJiraTickets } from '../utils/stringUtils';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
@@ -61,3 +61,15 @@ export const activitiesTotalEffort = (activities: Activity[]) => {
       activitiesWithEffort.reduce((total, activity) => total + activity.effort!, 0)
     : undefined;
 };
+
+export const accountUrlToWeb = (account: Account) =>
+  (
+    (account.type === 'jira' || account.type === 'confluence') &&
+    account.url &&
+    account.url.indexOf('rest') > -1
+  ) ?
+    `${account.url!.split('rest')[0]}people/${account.id}`
+  : account.url;
+
+export const issueUrlToWeb = (url: string, key: string) =>
+  url.indexOf('rest') > -1 ? `${url.split('rest')[0]}browse/${key}` : url;

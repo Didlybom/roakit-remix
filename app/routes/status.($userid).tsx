@@ -441,7 +441,7 @@ export default function Status() {
       },
       {
         field: 'effort',
-        headerName: 'Effort',
+        headerName: 'Hours',
         type: 'number',
         minWidth: 80,
         editable: true,
@@ -587,9 +587,9 @@ export default function Status() {
                 <Grid>
                   <TextField
                     autoComplete="off"
-                    label="Effort"
+                    label="Hours"
                     type="number"
-                    helperText="0 to 24 hours"
+                    helperText="0 to 24"
                     size="small"
                     sx={{ maxWidth: 90 }}
                     onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}

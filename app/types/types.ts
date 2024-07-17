@@ -56,7 +56,7 @@ export type InitiativeRecord = Record<Initiative['id'], Omit<Initiative, 'id'>>;
 export type Account = {
   id: string;
   type: string;
-  name: string;
+  name?: string;
   url?: string;
   createdTimestamp?: number;
 };
@@ -80,7 +80,7 @@ export type Actor = {
   id: string;
   name: string;
   email?: string;
-  accounts?: { id: string; type: string; url?: string }[];
+  accounts?: Account[];
 };
 export type ActorRecord = Record<Actor['id'], Omit<Actor, 'id'>>;
 

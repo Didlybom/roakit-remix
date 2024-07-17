@@ -1,5 +1,6 @@
 import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '../types/types';
 import { mimeTypeToType } from '../utils/stringUtils';
+import { issueUrlToWeb } from './activityFeed';
 
 export const ACTIVITY_DESCRIPTION_LIST_SEPARATOR = ', ';
 
@@ -260,7 +261,7 @@ export const getActivityUrl = (activity: Activity): { url: string; type: FeedTyp
     return null;
   }
   if (metadata?.issue?.uri) {
-    return { url: `${metadata.issue.uri.split('rest')[0]}browse/${metadata.issue.key}`, type };
+    return { url: issueUrlToWeb(metadata.issue.uri, metadata.issue.key), type };
   }
   if (metadata?.space?.uri) {
     return { url: `${metadata.space.uri}`, type };

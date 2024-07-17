@@ -108,6 +108,14 @@ export default function NavDrawer({
         {item(View.Feed, '/feed', FeedIcon, 'Work Feed', view)}
         {item(View.Status, '/status', StatusIcon, 'My Daily Status', view)}
       </List>
+      {role === Role.Contributor && (
+        <>
+          <Divider />
+          <List>
+            {item(View.ActivityUser, '/activity/*', SubjectIcon, 'All Contributors', view)}
+          </List>
+        </>
+      )}
       {(role === Role.Admin || role === Role.Monitor) && (
         <>
           <Divider />

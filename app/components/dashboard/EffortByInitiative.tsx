@@ -22,7 +22,7 @@ export default function InitiativeEffort({
     !!groupedActivities?.[type]?.length && (
       <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle(type === 'initiatives' ? 'Effort by Goal' : 'Effort by Launch')}
+          {widgetTitle(type === 'initiatives' ? 'Hours by Goal' : 'Hours by Launch')}
           <PieChart
             series={[
               {

@@ -15,7 +15,7 @@ export default function DropDownButton({
       color="inherit"
       size="small"
       endIcon={<ArrowDropDownIcon />}
-      sx={{ ml: -1, fontWeight: 400, textTransform: 'none' }}
+      sx={{ ml: -1, fontWeight: 400, textTransform: 'none', justifyContent: 'start' }}
     >
       {label || '⋯'}
     </Button>
