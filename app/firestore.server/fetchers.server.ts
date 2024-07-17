@@ -605,17 +605,30 @@ export const fetchActivitiesPage = async ({
   } else {
     activityPageQuery = activityPageQuery.limit(limit);
   }
-  const activities: Activity[] = [];
   const [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
     withTotal ? fetchActivityTotalWithCache(customerId, withInitiatives) : undefined,
   ]);
+
+  const activities: Activity[] = [];
+  const ticketPrioritiesToFetch = new Set<string>();
+  const activityTickets = new Map<string, string>();
+
   activityPage.forEach(doc => {
     const data = parse<schemas.ActivityType>(
       schemas.activitySchema,
       doc.data(),
       `activity ${doc.id}`
     );
+    const priority = data.priority;
+    if (!priority || priority === -1) {
+      // will find priority from metadata for activities missing one
+      const ticket = findTicket(data.metadata as ActivityMetadata);
+      if (ticket) {
+        ticketPrioritiesToFetch.add(ticket);
+        activityTickets.set(doc.id, ticket);
+      }
+    }
     activities.push({
       id: doc.id,
       action: data.action,
@@ -643,6 +656,17 @@ export const fetchActivitiesPage = async ({
     combinedActivities.sort((a, b) => b.timestamp - a.timestamp);
     return { activities: combinedActivities, activityTotal };
   }
+  if (ticketPrioritiesToFetch.size > 0) {
+    const tickets = await fetchTicketPrioritiesWithCache(customerId, [...ticketPrioritiesToFetch]);
+    activityTickets.forEach((activityTicket, activityId) => {
+      // add the found priority to the activity
+      const activity = activities.find(a => (a.id = activityId));
+      if (activity) {
+        activity.priority = tickets[activityTicket];
+      }
+    });
+  }
+
   return { activities, activityTotal };
 };
 

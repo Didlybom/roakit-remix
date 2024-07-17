@@ -25,7 +25,6 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
-import { inferPriority } from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   MapperType,
@@ -54,7 +53,6 @@ import {
   fetchIdentities,
   fetchInitiativeMap,
   fetchLaunchItemMap,
-  fetchTicketPriorityMapWithCache,
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
@@ -85,12 +83,11 @@ const VIEW = View.AllActivity;
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
-    const [initiatives, launchItems, accounts, identities, tickets] = await Promise.all([
+    const [initiatives, launchItems, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
-      fetchTicketPriorityMapWithCache(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
@@ -99,7 +96,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       launchItems,
       actors,
       accountMap: identities.accountMap,
-      tickets,
     };
   } catch (e) {
     getLogger('route:activities').error(e);
@@ -232,10 +228,6 @@ export default function ActivityReview() {
     }
     const activityRows: ActivityRow[] = [];
     fetchedActivities.activities.forEach((activity: Activity) => {
-      let priority = activity.priority;
-      if ((priority == null || priority === -1) && activity.metadata) {
-        priority = inferPriority(loaderData.tickets, activity.metadata);
-      }
       let mapping;
       if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
@@ -247,7 +239,6 @@ export default function ActivityReview() {
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
-        priority,
         initiativeId: initiativeId || mapping?.initiatives[0] || '',
         // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
         launchItemId:
