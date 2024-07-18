@@ -644,6 +644,7 @@ export const fetchActivitiesPage = async ({
       effort: data.effort,
       description: data.description,
       metadata: data.metadata as ActivityMetadata,
+      reactions: data.reactions,
       note: data.note,
       objectId: data.objectId, // for debugging
     });

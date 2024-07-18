@@ -87,6 +87,9 @@ export type TicketType = z.infer<typeof ticketSchema>;
 // this needs to be updated and deployed before ingestion adds new artifacts
 export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg', 'doc', 'docOrg'] as const;
 
+const reactionSchema = z.object({
+  like: z.record(z.string(), z.boolean()),
+});
 export const activitySchema = z.object({
   action: z.string(),
   eventType: z.string().optional(),
@@ -102,6 +105,7 @@ export const activitySchema = z.object({
   priority: z.number().optional(),
   description: z.string().nullable().optional(),
   metadata: z.any(), // we only strongly typed the parsed objects for now, see schemas.ts#ActivityMetadata
+  reactions: reactionSchema.optional(),
   note: z.string().optional(),
   objectId: z.string().optional(), // for debugging
 });

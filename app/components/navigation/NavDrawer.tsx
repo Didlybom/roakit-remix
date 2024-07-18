@@ -3,7 +3,7 @@ import {
   Business as BusinessIcon,
   Dashboard as DashboardIcon,
   RssFeed as FeedIcon,
-  ManageHistory as HistoryIcon,
+  //  ManageHistory as HistoryIcon,
   RocketLaunch as LaunchIcon,
   Menu as MenuIcon,
   PeopleOutline as PeopleIcon,
@@ -125,7 +125,7 @@ export default function NavDrawer({
             >
               Administration
             </ListSubheader>
-            {item(View.AllActivity, '/activities', HistoryIcon, 'All Activity', view)}
+            {/* {item(View.AllActivity, '/activities', HistoryIcon, 'All Activity', view)} */}
             {role === Role.Admin && (
               <>
                 {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}

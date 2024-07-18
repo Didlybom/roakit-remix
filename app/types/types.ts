@@ -147,6 +147,8 @@ export type ActivityMetadata = {
   changeLog?: ActivityChangeLog[];
 };
 
+export type Reactions = { like: Record<Identity['id'], boolean> };
+
 export type Activity = {
   id: string;
   action: string;
@@ -162,6 +164,7 @@ export type Activity = {
   priority?: number;
   description?: string | null;
   metadata?: ActivityMetadata;
+  reactions?: Reactions;
   note?: string;
   objectId?: string; // for debugging
   combinedIds?: string[];

@@ -1,16 +1,18 @@
 import {
   DataObject as DataObjectIcon,
   Timelapse as EffortIcon,
-  ThumbUpOffAlt as ThumbUpIcon,
+  ThumbUpAlt as ThumbUpIcon,
+  ThumbUpOffAlt as ThumbUpOffIcon,
 } from '@mui/icons-material';
-import { Box, CircularProgress, IconButton, Link, Snackbar, Stack } from '@mui/material';
-import type { LoaderFunctionArgs } from '@remix-run/node';
-import { useFetcher, useLoaderData, useNavigate } from '@remix-run/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Box, Button, CircularProgress, IconButton, Link, Snackbar, Stack } from '@mui/material';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
+import { useFetcher, useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useResizeDetector } from 'react-resize-detector';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { VariableSizeList } from 'react-window';
 import InfiniteLoader from 'react-window-infinite-loader';
+import { reactionCount } from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   MapperType,
@@ -23,14 +25,17 @@ import AutoRefreshingRelativeDate from '../components/AutoRefreshingRelativeData
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
+import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
   fetchLaunchItemMap,
+  queryIdentity,
 } from '../firestore.server/fetchers.server';
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
+import { postJsonOptions } from '../utils/httpUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
@@ -44,6 +49,8 @@ const VIEW = View.Feed;
 const PAGE_SIZE = 50;
 const THRESHOLD = 50;
 
+const REFRESH_INTERVAL_MS = 15 * 1000;
+
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
   try {
@@ -53,9 +60,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
+
+    const userIdentity = identities.list.find(identity => identity.email === sessionData.email);
+    if (!userIdentity) {
+      throw new Response('Identity not found', { status: 500 });
+    }
+
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
       ...sessionData,
+      identityId: userIdentity.id,
       initiatives,
       launchItems,
       actors,
@@ -67,26 +81,99 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 };
 
+interface ActionRequest {
+  activityId: string;
+  reaction: 'like';
+  plusOne: boolean;
+}
+
+interface ActionResponse {
+  status?: { code: 'reacted'; message?: string };
+  error?: string;
+}
+
+export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
+  const sessionData = await loadSession(request, VIEW, params);
+
+  const actionRequest = (await request.json()) as ActionRequest;
+  const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
+  await firestore
+    .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
+    .set({ reactions: { like: { [identity.id]: actionRequest.plusOne } } }, { merge: true });
+
+  return { status: { code: 'reacted' } };
+};
+
 type ActivityRow = Activity & { note?: string };
 
 export default function ActivityReview() {
   const navigate = useNavigate();
+  const submit = useSubmit();
   const loaderData = useLoaderData<typeof loader>();
-  const activitiesFetcher = useFetcher<ActivityPageResponse>();
-  const fetchedActivities = activitiesFetcher.data;
+  const moreActivitiesFetcher = useFetcher<ActivityPageResponse>();
+  const moreFetchedActivities = moreActivitiesFetcher.data;
+  const newActivitiesFetcher = useFetcher<ActivityPageResponse>();
+  const newFetchedActivities = newActivitiesFetcher.data;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [scrollOffset, setScrollOffset] = useState(0);
   const heightsRef = useRef<number[]>([]);
   const listRef = useRef<VariableSizeList | null>(null);
-
   const { ref: rootRef } = useResizeDetector({
     handleHeight: false,
     onResize: () => (heightsRef.current = []),
   });
+
+  const loadMoreRows =
+    moreActivitiesFetcher.state !== 'idle' ?
+      () => {}
+    : () => {
+        let query = `/fetcher/activities/page?limit=${PAGE_SIZE}&combine=true&withTotal=false`;
+        // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
+        // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
+        if (activities.length) {
+          query += `&startAfter=${activities[activities.length - 1].timestamp}`;
+        }
+        moreActivitiesFetcher.load(query);
+      };
+
+  const loadNewRows = useCallback(() => {
+    let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
+    if (activities.length) {
+      query += `&endBefore=${activities[0].timestamp}`;
+    }
+    newActivitiesFetcher.load(query);
+  }, [activities, newActivitiesFetcher]);
+
+  const buildActivityRows = useCallback(
+    (fetchedActivities: ActivityPageResponse) => {
+      const activityRows: ActivityRow[] = [];
+      fetchedActivities.activities?.forEach((activity: Activity) => {
+        let mapping;
+        if (!activity.initiativeId || activity.launchItemId == null) {
+          mapping = mapActivity(activity);
+        }
+        const { initiativeId, ...activityFields } = activity;
+        activityRows.push({
+          ...activityFields,
+          actorId:
+            activity.actorId ?
+              (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
+            : undefined,
+          initiativeId: initiativeId || mapping?.initiatives[0] || '',
+          // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
+          launchItemId:
+            activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
+        });
+      });
+      return activityRows;
+    },
+    [loaderData.accountMap]
+  );
 
   useEffect(() => {
     if (loaderData.initiatives) {
@@ -97,69 +184,43 @@ export default function ActivityReview() {
     }
   }, [loaderData.initiatives, loaderData.launchItems]);
 
+  // handle cookie expired errors
   useEffect(() => {
-    if (fetchedActivities?.error?.status === 401) {
+    if (
+      moreFetchedActivities?.error?.status === 401 ||
+      newFetchedActivities?.error?.status === 401
+    ) {
       navigate(loginWithRedirectUrl());
     }
-  }, [fetchedActivities?.error, navigate]);
+  }, [moreFetchedActivities?.error, navigate, newFetchedActivities?.error?.status]);
 
   // handle fetched activities
   useEffect(() => {
-    if (!fetchedActivities?.activities) {
-      return;
-    }
+    if (!moreFetchedActivities?.activities) return;
     setIsLoading(false);
-    const activityRows: ActivityRow[] = [];
-    fetchedActivities.activities.forEach((activity: Activity) => {
-      let mapping;
-      if (!activity.initiativeId || activity.launchItemId == null) {
-        mapping = mapActivity(activity);
-      }
-      const { initiativeId, ...activityFields } = activity;
-      activityRows.push({
-        ...activityFields,
-        actorId:
-          activity.actorId ?
-            (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
-          : undefined,
-        initiativeId: initiativeId || mapping?.initiatives[0] || '',
-        // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
-        launchItemId:
-          activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
-      });
-    });
-    setActivities([...activities, ...activityRows].sort((a, b) => b.timestamp - a.timestamp));
-
+    setActivities([...activities, ...buildActivityRows(moreFetchedActivities)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedActivities?.activities]); // loaderData and activities must be omitted
+  }, [moreFetchedActivities?.activities]); // loaderData and activities must be omitted
 
-  const hasNextPage = true;
+  useEffect(() => {
+    if (!newFetchedActivities?.activities) return;
+    setIsLoading(false);
+    setActivities([...buildActivityRows(newFetchedActivities), ...activities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newFetchedActivities?.activities]); // loaderData and activities must be omitted
 
-  const loadMoreRows =
-    activitiesFetcher.state !== 'idle' ?
-      () => {}
-    : () => {
-        let query = `/fetcher/activities/page?limit=${PAGE_SIZE}&combine=true&withTotal=false`;
-        // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
-        // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
-        if (activities.length) {
-          query += `&startAfter=${activities[activities.length - 1].timestamp}`;
-        }
-        activitiesFetcher.load(query);
-      };
+  // auto fetch new activities
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (moreActivitiesFetcher.state !== 'idle' || scrollOffset > 0) return;
+      loadNewRows();
+    }, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [loadNewRows, moreActivitiesFetcher.state, scrollOffset]);
 
-  const loadNewRows = () => {
-    setIsLoading(true);
-    let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
-    if (activities.length) {
-      query += `&endBefore=${activities[0].timestamp}`;
-    }
-    activitiesFetcher.load(query);
-  };
+  const isRowLoaded = (index: number) => index < activities.length;
 
-  const isRowLoaded = (index: number) => !hasNextPage || index < activities.length;
-
-  const getRowSize = (index: number) => heightsRef.current[index] ?? 50;
+  const getRowSize = (index: number) => heightsRef.current[index] ?? 100;
 
   const Row = ({ index, style }: { index: number; style: CSSProperties }) => {
     const ref = useRef<Element>();
@@ -187,6 +248,10 @@ export default function ActivityReview() {
         : activity.metadata.codeAction
       : ''
     }`;
+
+    const isLiked = activity.reactions?.like[loaderData.identityId];
+    const likeCount = activity.reactions ? reactionCount(activity.reactions).like : 0;
+
     return (
       <Box style={style}>
         <Box ref={ref}>
@@ -229,10 +294,30 @@ export default function ActivityReview() {
                 setPopover={(element, content) => setPopover({ element, content })}
               />
             </Box>
-            <Stack direction="row" fontSize="12px" spacing={2} alignItems="center" mx={1}>
-              <IconButton size="small" onClick={() => setSnackMessage('Not implemented')}>
-                <ThumbUpIcon sx={{ fontSize: '14px' }} />
-              </IconButton>
+            <Stack direction="row" fontSize="12px" spacing={2} alignItems="center">
+              <Button
+                variant="text"
+                size="small"
+                title={isLiked ? 'Unlike' : 'Like'}
+                startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOffIcon />}
+                onClick={() => {
+                  if (!activity.reactions) {
+                    activity.reactions = { like: { [loaderData.identityId]: true } };
+                  } else {
+                    activity.reactions.like[loaderData.identityId] = !isLiked;
+                  }
+                  submit(
+                    {
+                      activityId: activity.id,
+                      reaction: 'like',
+                      plusOne: !isLiked,
+                    },
+                    postJsonOptions
+                  );
+                }}
+              >
+                {likeCount > 0 ? likeCount : ' '}
+              </Button>
               <Box flex={1} />
               <Box>
                 <Box component="span" color={theme.palette.grey[500]}>
@@ -278,18 +363,21 @@ export default function ActivityReview() {
     );
   };
 
-  const rowCount = hasNextPage ? activities.length + 1 : activities.length;
-
   return (
     <App
       view={VIEW}
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
-      onDateRangeRefresh={loadNewRows}
+      onDateRangeRefresh={() => {
+        setIsLoading(true);
+        loadNewRows();
+        listRef.current?.scrollToItem(0);
+      }}
       showProgress={isLoading}
+      showPulse={scrollOffset === 0}
     >
-      {errorAlert(fetchedActivities?.error?.message)}
+      {errorAlert(moreFetchedActivities?.error?.message)}
       <CodePopover
         popover={codePopover}
         onClose={() => setCodePopover(null)}
@@ -314,7 +402,7 @@ export default function ActivityReview() {
           {({ height, width }) => (
             <InfiniteLoader
               isItemLoaded={isRowLoaded}
-              itemCount={rowCount}
+              itemCount={activities.length + 1}
               loadMoreItems={loadMoreRows}
               minimumBatchSize={PAGE_SIZE}
               threshold={THRESHOLD}
@@ -324,11 +412,12 @@ export default function ActivityReview() {
                   itemSize={getRowSize}
                   width={width}
                   height={height}
-                  itemCount={rowCount}
+                  itemCount={activities.length + 1}
                   ref={elem => {
                     ref(elem);
                     listRef.current = elem;
                   }}
+                  onScroll={({ scrollOffset }) => setScrollOffset(scrollOffset)}
                   onItemsRendered={onItemsRendered}
                 >
                   {Row}
