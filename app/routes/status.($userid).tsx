@@ -879,8 +879,8 @@ export default function Status() {
             >
               <span>
                 {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
-                Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
-                to change day.
+                Press <code>N</code> to create a custom activity, press <code>[</code> and{' '}
+                <code>]</code> to change day.
               </span>
             </Typography>
           </Stack>

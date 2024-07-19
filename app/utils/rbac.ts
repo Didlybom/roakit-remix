@@ -61,6 +61,7 @@ export const checkAccess = (
     case View.Dashboard:
     case View.ActivitySummary:
     case View.AllActivity:
+    case View.ActivityUser:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
     case View.Impersonation:
@@ -72,6 +73,7 @@ export const checkAccess = (
     case View.Summary:
     case View.FetcherStatuses:
     case View.FetcherSummaries:
+    case View.FetcherActivities:
       throwIf(!params);
       // userid param not allowed for non admins
       throwIf(
@@ -93,11 +95,9 @@ export const checkAccess = (
 
     case View.Index:
     case View.Feed:
-    case View.ActivityUser:
     case View.Login:
     case View.Logout:
     case View.Info:
-    case View.FetcherActivities:
     case View.FetcherActivitiesPage:
       // authorized to all
       break;

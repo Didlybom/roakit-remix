@@ -4,7 +4,16 @@ import {
   ThumbUpAlt as ThumbUpIcon,
   ThumbUpOffAlt as ThumbUpOffIcon,
 } from '@mui/icons-material';
-import { Box, Button, CircularProgress, IconButton, Link, Snackbar, Stack } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  Link,
+  Snackbar,
+  Stack,
+  Tooltip,
+} from '@mui/material';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -12,7 +21,7 @@ import { useResizeDetector } from 'react-resize-detector';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { VariableSizeList } from 'react-window';
 import InfiniteLoader from 'react-window-infinite-loader';
-import { reactionCount } from '../activityProcessors/activityFeed';
+import { reactionCount, reactionNames } from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   MapperType,
@@ -36,6 +45,7 @@ import {
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { postJsonOptions } from '../utils/httpUtils';
+import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
@@ -67,9 +77,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
 
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
+
+    const activityUserIds =
+      params.userid ?
+        getAllPossibleActivityUserIds(params.userid, identities.list, identities.accountMap)
+      : [];
+
     return {
       ...sessionData,
       identityId: userIdentity.id,
+      activityUserIds,
       initiatives,
       launchItems,
       actors,
@@ -138,6 +155,9 @@ export default function ActivityReview() {
         if (activities.length) {
           query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
         }
+        if (loaderData.activityUserIds?.length) {
+          query += `&userIds=${loaderData.activityUserIds.join(',')}`;
+        }
         moreActivitiesFetcher.load(query);
       };
 
@@ -146,8 +166,11 @@ export default function ActivityReview() {
     if (activities.length) {
       query += `&endBefore=${activities[0].createdTimestamp}`;
     }
+    if (loaderData.activityUserIds?.length) {
+      query += `&userIds=${loaderData.activityUserIds}`;
+    }
     newActivitiesFetcher.load(query);
-  }, [activities, newActivitiesFetcher]);
+  }, [activities, newActivitiesFetcher, loaderData.activityUserIds]);
 
   const buildActivityRows = useCallback(
     (fetchedActivities: ActivityPageResponse) => {
@@ -259,8 +282,7 @@ export default function ActivityReview() {
             <Stack direction="row" spacing="4px" fontSize="14px" mb="4px">
               {activity.actorId && (
                 <Link
-                  href={`/activity/${encodeURI(activity.actorId)}`}
-                  target="_blank"
+                  href={`/feed/${encodeURI(activity.actorId)}`}
                   fontWeight={600}
                   sx={{
                     color: theme.palette.text.primary,
@@ -295,29 +317,37 @@ export default function ActivityReview() {
               />
             </Box>
             <Stack direction="row" fontSize="12px" spacing={2} alignItems="center">
-              <Button
-                variant="text"
-                size="small"
-                title={isLiked ? 'Unlike' : 'Like'}
-                startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOffIcon />}
-                onClick={() => {
-                  if (!activity.reactions) {
-                    activity.reactions = { like: { [loaderData.identityId]: true } };
-                  } else {
-                    activity.reactions.like[loaderData.identityId] = !isLiked;
-                  }
-                  submit(
-                    {
-                      activityId: activity.id,
-                      reaction: 'like',
-                      plusOne: !isLiked,
-                    },
-                    postJsonOptions
-                  );
-                }}
+              <Tooltip
+                arrow
+                title={
+                  activity.reactions ?
+                    reactionNames(activity.reactions, loaderData.actors).like
+                  : ''
+                }
               >
-                {likeCount > 0 ? likeCount : ' '}
-              </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOffIcon />}
+                  onClick={() => {
+                    if (!activity.reactions) {
+                      activity.reactions = { like: { [loaderData.identityId]: true } };
+                    } else {
+                      activity.reactions.like[loaderData.identityId] = !isLiked;
+                    }
+                    submit(
+                      {
+                        activityId: activity.id,
+                        reaction: 'like',
+                        plusOne: !isLiked,
+                      },
+                      postJsonOptions
+                    );
+                  }}
+                >
+                  {likeCount > 0 ? likeCount : ' '}
+                </Button>
+              </Tooltip>
               <Box flexGrow={1} />
               <Box>
                 <Box component="span" color={theme.palette.grey[500]}>

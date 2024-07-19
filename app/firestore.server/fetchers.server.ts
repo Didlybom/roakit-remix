@@ -575,6 +575,7 @@ export const fetchActivitiesPage = async ({
   customerId,
   startAfter,
   endBefore,
+  userIds,
   limit,
   combine,
   withInitiatives,
@@ -583,6 +584,7 @@ export const fetchActivitiesPage = async ({
   customerId: number;
   startAfter?: number;
   endBefore?: number;
+  userIds?: string[];
   limit: number;
   combine?: boolean;
   withInitiatives?: boolean;
@@ -597,6 +599,9 @@ export const fetchActivitiesPage = async ({
     activityQuery = activitiesCollection;
   } else {
     activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
+  }
+  if (userIds?.length) {
+    activityQuery = activityQuery.where('actorAccountId', 'in', userIds);
   }
   let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
   if (startAfter != null) {

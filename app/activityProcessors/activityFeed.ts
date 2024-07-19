@@ -1,4 +1,11 @@
-import type { Account, Activity, ActivityMetadata, Reactions, TicketRecord } from '../types/types';
+import type {
+  Account,
+  Activity,
+  ActivityMetadata,
+  ActorRecord,
+  Reactions,
+  TicketRecord,
+} from '../types/types';
 import { findJiraTickets } from '../utils/stringUtils';
 
 export const artifactActions = new Map<string, { sortOrder: number; label: string }>([
@@ -75,5 +82,12 @@ export const issueUrlToWeb = (url: string, key: string) =>
   url.indexOf('rest') > -1 ? `${url.split('rest')[0]}browse/${key}` : url;
 
 export const reactionCount = (reactions: Reactions) => ({
-  like: Object.entries(reactions.like).filter(([_, v]) => v).length,
+  like: Object.entries(reactions.like).filter(([, v]) => v).length,
+});
+
+export const reactionNames = (reactions: Reactions, actors: ActorRecord) => ({
+  like: Object.entries(reactions.like)
+    .filter(([, v]) => v)
+    .map(([id]) => actors[id]?.name)
+    .join(', '),
 });
