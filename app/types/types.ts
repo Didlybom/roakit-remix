@@ -156,6 +156,7 @@ export type Activity = {
   event?: string;
   actorId?: string;
   artifact: Artifact;
+  createdTimestamp: number;
   timestamp: number;
   initiativeId: string;
   launchItemId?: string | null;

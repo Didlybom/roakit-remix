@@ -136,7 +136,7 @@ export default function ActivityReview() {
         // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
         // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
         if (activities.length) {
-          query += `&startAfter=${activities[activities.length - 1].timestamp}`;
+          query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
         }
         moreActivitiesFetcher.load(query);
       };
@@ -144,7 +144,7 @@ export default function ActivityReview() {
   const loadNewRows = useCallback(() => {
     let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
     if (activities.length) {
-      query += `&endBefore=${activities[0].timestamp}`;
+      query += `&endBefore=${activities[0].createdTimestamp}`;
     }
     newActivitiesFetcher.load(query);
   }, [activities, newActivitiesFetcher]);
@@ -318,7 +318,7 @@ export default function ActivityReview() {
               >
                 {likeCount > 0 ? likeCount : ' '}
               </Button>
-              <Box flex={1} />
+              <Box flexGrow={1} />
               <Box>
                 <Box component="span" color={theme.palette.grey[500]}>
                   {activity.artifact} {activity.action}

@@ -208,9 +208,9 @@ export default function ActivityReview() {
       // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
       // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
       if (prevPaginationModel.page < paginationModel.page) {
-        query += `&startAfter=${activities[activities.length - 1].timestamp}`;
+        query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
       } else if (prevPaginationModel.page > paginationModel.page) {
-        query += `&endBefore=${activities[0].timestamp}`;
+        query += `&endBefore=${activities[0].createdTimestamp}`;
       } else {
         // reachable on dev hot reload, then page is the same but we are reloading UI
         return;
