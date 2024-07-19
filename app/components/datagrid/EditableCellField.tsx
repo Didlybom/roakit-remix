@@ -37,7 +37,13 @@ export default function EditableCellField({
           {label || '⋯'}
         </Button>
       </Box>
-    : <Box textAlign="start" letterSpacing="normal">
+    : <Box
+        height="100%"
+        display="flex"
+        alignItems="center"
+        textAlign="start"
+        letterSpacing="normal"
+      >
         {label || '⋯'}
       </Box>;
 }

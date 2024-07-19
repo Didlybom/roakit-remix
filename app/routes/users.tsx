@@ -222,13 +222,15 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   return {};
 };
 
+type IdentityRow = Identity & { hovered?: boolean };
+
 export default function Users() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
   const [tabValue, setTabValue] = useState(0);
-  const [identities, setIdentities] = useState(loaderData.identities.list);
+  const [identities, setIdentities] = useState<IdentityRow[]>(loaderData.identities.list);
   const [imports, setImports] = useState('');
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
@@ -236,7 +238,6 @@ export default function Users() {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
-  const [hoveredIdentityId, setHoveredIdentityId] = useState<string | null>(null);
 
   useEffect(() => {
     setIdentities(loaderData.identities.list);
@@ -320,18 +321,18 @@ export default function Users() {
           const bName = !b ? 'ZZZ' : findManagerName(b);
           return aName.localeCompare(bName);
         },
-        valueOptions: (params: GridValueOptionsParams<Identity>) => [
+        valueOptions: (params: GridValueOptionsParams<IdentityRow>) => [
           { value: '', label: '[unset]' },
           ...loaderData.identities.list
             .filter(i => i.id !== params.row?.id)
             .map(identity => ({ value: identity.id, label: identity.displayName })),
         ],
         editable: true,
-        renderCell: (params: GridRenderCellParams<Identity, string>) => (
+        renderCell: (params: GridRenderCellParams<IdentityRow, string>) => (
           <Box height="100%" display="flex" alignItems="center">
             <EditableCellField
               layout="dropdown"
-              hovered={hoveredIdentityId === params.row.id}
+              hovered={params.row.hovered}
               label={params.value ? findManagerName(params.value) : null}
             />
           </Box>
@@ -342,7 +343,7 @@ export default function Users() {
         field: 'firebaseId',
         headerName: 'Login ID',
         valueGetter: (_, row: Identity) => row.user!.id,
-        renderCell: (params: GridRenderCellParams<Identity, string>) => {
+        renderCell: (params: GridRenderCellParams<IdentityRow, string>) => {
           return params.value ?
               <Box whiteSpace="noWrap" sx={ellipsisSx}>
                 {params.value}
@@ -370,18 +371,18 @@ export default function Users() {
         type: 'singleSelect',
         minWidth: 150,
         editable: true,
-        valueGetter: (v_, row: Identity) => row.user!.role,
-        valueSetter: (value: Role, row: Identity) => ({
+        valueGetter: (_, row: IdentityRow) => row.user!.role,
+        valueSetter: (value: Role, row: IdentityRow) => ({
           ...row,
           user: { ...row.user, role: value },
         }),
         valueOptions: () => roleLabels,
-        renderCell: (params: GridRenderCellParams<Identity, string>) =>
+        renderCell: (params: GridRenderCellParams<IdentityRow, string>) =>
           params.row.user?.id ?
             <Box height="100%" display="flex" alignItems="center">
               <EditableCellField
                 layout="dropdown"
-                hovered={hoveredIdentityId === params.row.id}
+                hovered={params.row.hovered}
                 label={roleLabels.find(r => r.value === params.value)?.label}
               />
             </Box>
@@ -391,7 +392,7 @@ export default function Users() {
         setCodePopover({ element, content })
       ),
     ];
-  }, [hoveredIdentityId, loaderData.identities.list, submit]);
+  }, [loaderData.identities.list, submit]);
 
   const accountReviewCols = useMemo<GridColDef[]>(
     () => [
@@ -621,8 +622,22 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               rowHeight={50}
               slotProps={{
                 row: {
-                  onMouseEnter: e => setHoveredIdentityId(e.currentTarget.getAttribute('data-id')),
-                  onMouseLeave: e => setHoveredIdentityId(null),
+                  onMouseEnter: e => {
+                    const identity = identities.find(
+                      a => a.id === e.currentTarget.getAttribute('data-id')
+                    );
+                    if (identity) {
+                      identity.hovered = true;
+                      setIdentities([...identities]);
+                    }
+                  },
+                  onMouseLeave: e => {
+                    const identity = identities.find(a => a.hovered);
+                    if (identity) {
+                      identity.hovered = false;
+                      setIdentities([...identities]);
+                    }
+                  },
                 },
               }}
               paginationModel={paginationModel}

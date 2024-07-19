@@ -2,6 +2,7 @@ import {
   Add as AddIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
   KeyboardArrowRight as ArrowRightIcon,
+  Close as CloseIcon,
   DeleteOutlined as DeleteIcon,
 } from '@mui/icons-material';
 import {
@@ -47,7 +48,7 @@ import {
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useConfirm } from 'material-ui-confirm';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { getActivityDescription } from '../activityProcessors/activityDescription';
 import { findTicket } from '../activityProcessors/activityFeed';
@@ -262,6 +263,8 @@ const priorityOptions: SelectOption[] = [
   })),
 ];
 
+type ActivityRow = Activity & { hovered?: boolean };
+
 export default function Status() {
   const navigation = useNavigation();
   const navigate = useNavigate();
@@ -270,7 +273,7 @@ export default function Status() {
   const confirm = useConfirm();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<ActivityRow[]>([]);
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
@@ -285,8 +288,6 @@ export default function Status() {
 
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newActivity, setNewActivity] = useState(emptyActivity);
-
-  const [hoveredActivityId, setHoveredActivityId] = useState<string | null>(null);
 
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
@@ -403,12 +404,13 @@ export default function Status() {
         field: 'description',
         headerName: 'Description',
         flex: 1,
-        valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getActivityDescription(row), // sort by ticket or description
+        valueGetter: (_, row: ActivityRow) =>
+          findTicket(row.metadata) ?? getActivityDescription(row), // sort by ticket or description
         editable: true /* see isCellEditable below for granularity */,
-        renderCell: (params: GridRenderCellParams<Activity, number>) => (
+        renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField
             layout="text"
-            hovered={hoveredActivityId === params.row.id && params.row.event === CUSTOM_EVENT}
+            hovered={params.row.hovered && params.row.event === CUSTOM_EVENT}
             label={
               <ActivityCard
                 format="Grid"
@@ -426,10 +428,10 @@ export default function Status() {
         type: 'singleSelect',
         valueOptions: priorityOptions,
         valueGetter: (value: number) => `${value}`,
-        renderCell: (params: GridRenderCellParams<Activity, string>) => (
+        renderCell: (params: GridRenderCellParams<ActivityRow, string>) => (
           <EditableCellField
             layout="dropdown"
-            hovered={hoveredActivityId === params.row.id && params.row.event === CUSTOM_EVENT}
+            hovered={params.row.hovered && params.row.event === CUSTOM_EVENT}
             label={
               <Box
                 fontSize={params.value && params.value !== '-1' ? 'large' : undefined}
@@ -463,7 +465,7 @@ export default function Status() {
           <Box height="100%" display="flex" alignItems="center">
             <EditableCellField
               layout="dropdown"
-              hovered={hoveredActivityId === params.row.id}
+              hovered={params.row.hovered}
               label={
                 <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
                   {params.value ?
@@ -489,7 +491,7 @@ export default function Status() {
           <Box height="100%" display="flex" alignItems="center">
             <EditableCellField
               layout="dropdown"
-              hovered={hoveredActivityId === params.row.id}
+              hovered={params.row.hovered}
               label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : '⋯'}
             />
           </Box>
@@ -499,6 +501,7 @@ export default function Status() {
       {
         field: 'effort',
         headerName: 'Hours',
+        headerAlign: 'left',
         type: 'number',
         minWidth: 80,
         editable: true,
@@ -506,10 +509,10 @@ export default function Status() {
           ...params.props,
           error: params.props.value != null && (params.props.value < 0 || params.props.value > 24),
         }),
-        renderCell: (params: GridRenderCellParams<Activity, number>) => (
+        renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField
             layout="text"
-            hovered={hoveredActivityId === params.row.id}
+            hovered={params.row.hovered}
             label={params.value ?? '⋯'}
           />
         ),
@@ -518,8 +521,8 @@ export default function Status() {
         field: 'actionDelete',
         type: 'actions',
         cellClassName: 'actions',
-        getActions: (params: GridRowParams<Activity>) =>
-          params.row.event === CUSTOM_EVENT ?
+        getActions: (params: GridRowParams<ActivityRow>) =>
+          params.row.hovered && params.row.event === CUSTOM_EVENT ?
             [
               <GridActionsCellItem
                 key={1}
@@ -550,13 +553,23 @@ export default function Status() {
       loaderData.actors,
       loaderData.launchItems,
       launchItemOptions,
-      hoveredActivityId,
       confirm,
       handleDeleteClick,
     ]
   );
 
+  const isActivitySubmittable = useCallback(
+    () =>
+      newActivity.action &&
+      newActivity.artifact &&
+      newActivity.description.trim() &&
+      (newActivity.effort ?? 0) <= 24 &&
+      (newActivity.effort ?? 0) >= 0,
+    [newActivity.action, newActivity.artifact, newActivity.description, newActivity.effort]
+  );
+
   const handleSubmitNewActivity = useCallback(() => {
+    if (!isActivitySubmittable) return;
     setShowNewDialog(false);
     submit(
       {
@@ -567,7 +580,7 @@ export default function Status() {
       },
       postJsonOptions
     );
-  }, [newActivity, selectedDay, submit]);
+  }, [isActivitySubmittable, newActivity, selectedDay, submit]);
 
   let datePickerFormat = 'MMM Do';
   if (isTodaySelected) {
@@ -601,9 +614,15 @@ export default function Status() {
       <Dialog
         open={showNewDialog}
         onClose={() => setShowNewDialog(false)}
-        onKeyUp={e => (e.key === 'Enter' ? handleSubmitNewActivity() : null)}
         fullWidth
         disableRestoreFocus
+        PaperProps={{
+          component: 'form',
+          onSubmit: (e: FormEvent) => {
+            e.preventDefault();
+            handleSubmitNewActivity();
+          },
+        }}
       >
         <DialogTitle>New Activity</DialogTitle>
         <DialogContent>
@@ -611,6 +630,7 @@ export default function Status() {
             <Stack direction="row" spacing={3}>
               <SelectField
                 required
+                autoFocus
                 value={newActivity.action}
                 onChange={newValue => setNewActivity({ ...newActivity, action: newValue })}
                 label="Action"
@@ -670,28 +690,33 @@ export default function Status() {
               </Grid>
             </Box>
             <TextField
+              variant="standard"
               required
               autoComplete="off"
               label="Description"
-              size="small"
               fullWidth
               onChange={e => setNewActivity({ ...newActivity, description: e.target.value })}
             />
           </Stack>
+          <IconButton
+            onClick={() => setShowNewDialog(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: theme => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
           <DialogActions>
-            <Button onClick={() => setShowNewDialog(false)}>Cancel</Button>
             <Button
+              variant="contained"
+              sx={{ borderRadius: 28, textTransform: 'none' }}
               type="submit"
-              disabled={
-                !newActivity.action ||
-                !newActivity.artifact ||
-                !newActivity.description.trim() ||
-                (newActivity.effort ?? 0) > 24 ||
-                (newActivity.effort ?? 0) < 0
-              }
-              onClick={handleSubmitNewActivity}
+              disabled={!isActivitySubmittable()}
             >
-              Save
+              Post
             </Button>
           </DialogActions>
         </DialogContent>
@@ -763,9 +788,9 @@ export default function Status() {
                 }}
                 startIcon={<AddIcon />}
                 variant="contained"
-                sx={{ width: 'fit-content', borderRadius: 28, textTransform: 'none' }}
+                sx={{ borderRadius: 28, textTransform: 'none' }}
               >
-                Post custom activity
+                Post Custom Activity
               </Button>
             </Stack>
             <StyledMuiError>
@@ -777,9 +802,22 @@ export default function Status() {
                 rowHeight={50}
                 slotProps={{
                   row: {
-                    onMouseEnter: e =>
-                      setHoveredActivityId(e.currentTarget.getAttribute('data-id')),
-                    onMouseLeave: e => setHoveredActivityId(null),
+                    onMouseEnter: e => {
+                      const activity = activities.find(
+                        a => a.id === e.currentTarget.getAttribute('data-id')
+                      );
+                      if (activity) {
+                        activity.hovered = true;
+                        setActivities([...activities]);
+                      }
+                    },
+                    onMouseLeave: e => {
+                      const activity = activities.find(a => a.hovered);
+                      if (activity) {
+                        activity.hovered = false;
+                        setActivities([...activities]);
+                      }
+                    },
                   },
                 }}
                 isCellEditable={(params: GridCellParams<Activity>) => {
@@ -821,7 +859,6 @@ export default function Status() {
                 }}
               />
             </StyledMuiError>
-
             <Typography
               variant="caption"
               fontStyle="italic"

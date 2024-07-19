@@ -7,18 +7,26 @@ export default function SelectField({
   value,
   label,
   required,
+  autoFocus,
   onChange,
 }: {
   items: SelectOption[];
   value: string;
   label: string;
   required?: boolean;
+  autoFocus?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
-    <FormControl required={required} size="small" sx={{ width: 130 }}>
+    <FormControl autoFocus={autoFocus} required={required} size="small" sx={{ width: 130 }}>
       <InputLabel>{label}</InputLabel>
-      <Select value={value} label={label} onChange={e => onChange(e.target.value)} autoWidth>
+      <Select
+        autoFocus={autoFocus}
+        value={value}
+        label={label}
+        onChange={e => onChange(e.target.value)}
+        autoWidth
+      >
         {items.map((item, i) => (
           <MenuItem
             key={i}
