@@ -1,11 +1,5 @@
-import type {
-  DataGridProps,
-  GridCellModesModel,
-  GridCellParams} from '@mui/x-data-grid';
-import {
-  DataGrid,
-  GridCellModes
-} from '@mui/x-data-grid';
+import type { DataGridProps, GridCellModesModel, GridCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridCellModes } from '@mui/x-data-grid';
 import { useCallback, useState } from 'react';
 
 // see https://mui.com/x/react-data-grid/recipes-editing/#single-click-editing

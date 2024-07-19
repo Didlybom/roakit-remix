@@ -13,3 +13,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 printf "${GREEN}✔  smoke test:${RESET} OK\n"
+date

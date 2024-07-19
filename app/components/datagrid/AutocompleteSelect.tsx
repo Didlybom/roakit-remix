@@ -4,7 +4,7 @@ import {
   type GridRenderEditCellParams,
   type MuiBaseEvent,
 } from '@mui/x-data-grid';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import type { SelectOption } from '../../utils/jsxUtils';
 
 export default function AutocompleteSelect(
@@ -14,7 +14,6 @@ export default function AutocompleteSelect(
   const { id, field, value, options } = props;
   const optionValue = { value: value ?? '' };
   const apiRef = useGridApiContext();
-  const [isOpen, setIsOpen] = useState(true);
 
   const handleChange = useCallback(
     async (event: MuiBaseEvent, optionValue: SelectOption) => {
@@ -24,15 +23,19 @@ export default function AutocompleteSelect(
     [apiRef, field, id]
   );
 
+  const handleClose = useCallback(() => {
+    apiRef.current.stopCellEditMode({ id, field, ignoreModifications: true });
+  }, [apiRef, field, id]);
+
   return (
     <Autocomplete<SelectOption, false, true /* disableClearable */, false>
       componentsProps={{ popper: { style: { width: 'fit-content' } } }}
       noOptionsText={<Box fontSize="small">no match</Box>}
       size="small"
       value={optionValue}
-      open={isOpen}
-      onClose={() => setIsOpen(false)}
-      onKeyDown={e => (e.key === 'Escape' ? setIsOpen(false) : null)}
+      open={true}
+      onClose={handleClose}
+      onKeyDown={e => (e.key === 'Escape' ? handleClose() : null)}
       onChange={handleChange}
       options={options}
       getOptionLabel={(option: SelectOption) => option.label ?? ''}

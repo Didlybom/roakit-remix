@@ -48,7 +48,7 @@ import CodePopover, { type CodePopoverContent } from '../components/CodePopover'
 import SearchField from '../components/SearchField';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
-import DropDownButton from '../components/datagrid/DropDownButton';
+import EditableCellField from '../components/datagrid/EditableCellField';
 import {
   dataGridCommonProps,
   dateColDef,
@@ -236,6 +236,7 @@ export default function Users() {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
+  const [hoveredIdentityId, setHoveredIdentityId] = useState<string | null>(null);
 
   useEffect(() => {
     setIdentities(loaderData.identities.list);
@@ -328,8 +329,9 @@ export default function Users() {
         editable: true,
         renderCell: (params: GridRenderCellParams<Identity, string>) => (
           <Box height="100%" display="flex" alignItems="center">
-            <DropDownButton
-              tabIndex={params.tabIndex}
+            <EditableCellField
+              layout="dropdown"
+              hovered={hoveredIdentityId === params.row.id}
               label={params.value ? findManagerName(params.value) : null}
             />
           </Box>
@@ -377,8 +379,9 @@ export default function Users() {
         renderCell: (params: GridRenderCellParams<Identity, string>) =>
           params.row.user?.id ?
             <Box height="100%" display="flex" alignItems="center">
-              <DropDownButton
-                tabIndex={params.tabIndex}
+              <EditableCellField
+                layout="dropdown"
+                hovered={hoveredIdentityId === params.row.id}
                 label={roleLabels.find(r => r.value === params.value)?.label}
               />
             </Box>
@@ -388,7 +391,7 @@ export default function Users() {
         setCodePopover({ element, content })
       ),
     ];
-  }, [loaderData.identities, submit]);
+  }, [hoveredIdentityId, loaderData.identities.list, submit]);
 
   const accountReviewCols = useMemo<GridColDef[]>(
     () => [
@@ -568,7 +571,7 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               }}
             />
             <Typography variant="caption">
-              <Stack direction="row">
+              <Stack direction="row" mt="4px">
                 <Box fontWeight={600} mx={2}>
                   Format:
                 </Box>
@@ -616,6 +619,12 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               rows={filteredIdentities}
               {...dataGridCommonProps}
               rowHeight={50}
+              slotProps={{
+                row: {
+                  onMouseEnter: e => setHoveredIdentityId(e.currentTarget.getAttribute('data-id')),
+                  onMouseLeave: e => setHoveredIdentityId(null),
+                },
+              }}
               paginationModel={paginationModel}
               onPaginationModelChange={newPaginationModel => setPaginationModel(newPaginationModel)}
               initialState={{

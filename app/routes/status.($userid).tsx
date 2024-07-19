@@ -24,8 +24,12 @@ import {
 import {
   GridActionsCellItem,
   gridStringOrNumberComparator,
+  type GridCellParams,
   type GridColDef,
+  type GridPreProcessEditCellProps,
+  type GridRenderCellParams,
   type GridRowId,
+  type GridRowParams,
 } from '@mui/x-data-grid';
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -44,12 +48,16 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useConfirm } from 'material-ui-confirm';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { getActivityDescription } from '../activityProcessors/activityDescription';
+import { findTicket } from '../activityProcessors/activityFeed';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   compileActivityMappers,
   mapActivity,
   MapperType,
 } from '../activityProcessors/activityMapper';
+import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
@@ -59,13 +67,12 @@ import {
   actorColDef,
   dataGridCommonProps,
   dateColDef,
-  descriptionColDef,
   priorityColDef,
   StyledMuiError,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
-import DropDownButton from '../components/datagrid/DropDownButton';
+import EditableCellField from '../components/datagrid/EditableCellField';
 import SelectField from '../components/SelectField';
 import { firestore } from '../firebase.server';
 import {
@@ -88,7 +95,7 @@ import {
 } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-import { priorityColors, priorityLabels } from '../utils/theme';
+import theme, { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 export const meta = () => [{ title: 'Status Form | ROAKIT' }];
@@ -246,11 +253,14 @@ const phaseOptions: SelectOption[] = [
   ...[...PHASES.entries()].map(([phaseId, phase]) => ({ value: phaseId, label: phase.label })),
 ];
 
-const priorityOptions: SelectOption[] = [1, 2, 3, 4, 5].map(i => ({
-  value: `${i}`,
-  label: priorityLabels[i],
-  color: priorityColors[i],
-}));
+const priorityOptions: SelectOption[] = [
+  { value: '-1', label: '[unset]' },
+  ...[1, 2, 3, 4, 5].map(i => ({
+    value: `${i}`,
+    label: priorityLabels[i],
+    color: priorityColors[i],
+  })),
+];
 
 export default function Status() {
   const navigation = useNavigation();
@@ -276,8 +286,17 @@ export default function Status() {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newActivity, setNewActivity] = useState(emptyActivity);
 
+  const [hoveredActivityId, setHoveredActivityId] = useState<string | null>(null);
+
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
+
+  const previousDay = () => setSelectedDay(selectedDay.subtract(1, 'day'));
+  const nextDay = () => setSelectedDay(selectedDay.add(1, 'day'));
+
+  useHotkeys('n', () => setShowNewDialog(true));
+  useHotkeys('[', previousDay);
+  useHotkeys(']', nextDay, { enabled: !isTodaySelected });
 
   useEffect(() => {
     compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
@@ -380,14 +399,50 @@ export default function Status() {
           }),
         ]
       : []),
-      descriptionColDef(
-        { field: 'description', editable: true /* see isCellEditable below for granularity */ },
-        (element, content) => setPopover({ element, content }),
-        loaderData.customerSettings?.ticketBaseUrl
-      ),
+      {
+        field: 'description',
+        headerName: 'Description',
+        flex: 1,
+        valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getActivityDescription(row), // sort by ticket or description
+        editable: true /* see isCellEditable below for granularity */,
+        renderCell: (params: GridRenderCellParams<Activity, number>) => (
+          <EditableCellField
+            layout="text"
+            hovered={hoveredActivityId === params.row.id && params.row.event === CUSTOM_EVENT}
+            label={
+              <ActivityCard
+                format="Grid"
+                activity={params.row}
+                ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
+                setPopover={(element, content) => setPopover({ element, content })}
+              />
+            }
+          />
+        ),
+      },
       priorityColDef({
         field: 'priority',
-        editable: true,
+        editable: true /* see isCellEditable below for granularity */,
+        type: 'singleSelect',
+        valueOptions: priorityOptions,
+        valueGetter: (value: number) => `${value}`,
+        renderCell: (params: GridRenderCellParams<Activity, string>) => (
+          <EditableCellField
+            layout="dropdown"
+            hovered={hoveredActivityId === params.row.id && params.row.event === CUSTOM_EVENT}
+            label={
+              <Box
+                fontSize={params.value && params.value !== '-1' ? 'large' : undefined}
+                fontWeight={params.value && params.value !== '-1' ? 600 : undefined}
+                color={priorityColors[params.value ? +params.value : -1] ?? undefined}
+              >
+                {params.value && params.value !== '-1' ?
+                  (prioritySymbols[+params.value] ?? '')
+                : '⋯'}
+              </Box>
+            }
+          />
+        ),
         renderEditCell: params => <AutocompleteSelect {...params} options={priorityOptions} />,
       }),
       {
@@ -406,8 +461,9 @@ export default function Status() {
         editable: true,
         renderCell: params => (
           <Box height="100%" display="flex" alignItems="center">
-            <DropDownButton
-              tabIndex={params.tabIndex}
+            <EditableCellField
+              layout="dropdown"
+              hovered={hoveredActivityId === params.row.id}
               label={
                 <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
                   {params.value ?
@@ -431,9 +487,10 @@ export default function Status() {
         editable: true,
         renderCell: params => (
           <Box height="100%" display="flex" alignItems="center">
-            <DropDownButton
-              tabIndex={params.tabIndex}
-              label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : null}
+            <EditableCellField
+              layout="dropdown"
+              hovered={hoveredActivityId === params.row.id}
+              label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : '⋯'}
             />
           </Box>
         ),
@@ -445,43 +502,43 @@ export default function Status() {
         type: 'number',
         minWidth: 80,
         editable: true,
-        preProcessEditCellProps: params => {
-          const value = params.props.value as number;
-          return { ...params.props, error: value < 0 || value > 24 };
-        },
-        renderCell: params => (
-          <Box tabIndex={params.tabIndex} sx={{ cursor: ' pointer' }}>
-            {(params.value as number) ?? '⋯'}
-          </Box>
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps<number>) => ({
+          ...params.props,
+          error: params.props.value != null && (params.props.value < 0 || params.props.value > 24),
+        }),
+        renderCell: (params: GridRenderCellParams<Activity, number>) => (
+          <EditableCellField
+            layout="text"
+            hovered={hoveredActivityId === params.row.id}
+            label={params.value ?? '⋯'}
+          />
         ),
       },
       {
         field: 'actionDelete',
         type: 'actions',
         cellClassName: 'actions',
-        getActions: params => {
-          const activity = params.row as Activity;
-          return activity.event === CUSTOM_EVENT ?
-              [
-                <GridActionsCellItem
-                  key={1}
-                  icon={<DeleteIcon />}
-                  label="Delete"
-                  onClick={async () => {
-                    try {
-                      await confirm({
-                        title: 'Confirm Deletion',
-                        description: `Delete the activity "${activity.description}"?`,
-                      });
-                      handleDeleteClick(params.id);
-                    } catch {
-                      /* user cancelled */
-                    }
-                  }}
-                />,
-              ]
-            : [];
-        },
+        getActions: (params: GridRowParams<Activity>) =>
+          params.row.event === CUSTOM_EVENT ?
+            [
+              <GridActionsCellItem
+                key={1}
+                icon={<DeleteIcon />}
+                label="Delete"
+                onClick={async () => {
+                  try {
+                    await confirm({
+                      title: 'Confirm Deletion',
+                      description: `Delete the activity "${params.row.description}"?`,
+                    });
+                    handleDeleteClick(params.id);
+                  } catch {
+                    /* user cancelled */
+                  }
+                }}
+              />,
+            ]
+          : [],
       },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
@@ -493,10 +550,24 @@ export default function Status() {
       loaderData.actors,
       loaderData.launchItems,
       launchItemOptions,
+      hoveredActivityId,
       confirm,
       handleDeleteClick,
     ]
   );
+
+  const handleSubmitNewActivity = useCallback(() => {
+    setShowNewDialog(false);
+    submit(
+      {
+        newActivity: {
+          ...newActivity,
+          eventTimestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
+        },
+      },
+      postJsonOptions
+    );
+  }, [newActivity, selectedDay, submit]);
 
   let datePickerFormat = 'MMM Do';
   if (isTodaySelected) {
@@ -530,6 +601,7 @@ export default function Status() {
       <Dialog
         open={showNewDialog}
         onClose={() => setShowNewDialog(false)}
+        onKeyUp={e => (e.key === 'Enter' ? handleSubmitNewActivity() : null)}
         fullWidth
         disableRestoreFocus
       >
@@ -617,19 +689,7 @@ export default function Status() {
                 (newActivity.effort ?? 0) > 24 ||
                 (newActivity.effort ?? 0) < 0
               }
-              onClick={() => {
-                setShowNewDialog(false);
-                submit(
-                  {
-                    newActivity: {
-                      ...newActivity,
-                      eventTimestamp:
-                        isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
-                    },
-                  },
-                  postJsonOptions
-                );
-              }}
+              onClick={handleSubmitNewActivity}
             >
               Save
             </Button>
@@ -689,17 +749,10 @@ export default function Status() {
         <Grid flex={1} minWidth={300}>
           <Stack spacing={2} sx={{ ml: 2 }}>
             <Stack direction="row">
-              <IconButton
-                onClick={() => setSelectedDay(selectedDay.subtract(1, 'day'))}
-                title="Previous day"
-              >
+              <IconButton onClick={previousDay} title="Previous day">
                 <ArrowLeftIcon />
               </IconButton>
-              <IconButton
-                disabled={isTodaySelected}
-                onClick={() => setSelectedDay(selectedDay.add(1, 'day'))}
-                title="Next day"
-              >
+              <IconButton disabled={isTodaySelected} onClick={nextDay} title="Next day">
                 <ArrowRightIcon />
               </IconButton>
               <Box flex={1} />
@@ -709,9 +762,10 @@ export default function Status() {
                   setShowNewDialog(true);
                 }}
                 startIcon={<AddIcon />}
-                sx={{ width: 'fit-content' }}
+                variant="contained"
+                sx={{ width: 'fit-content', borderRadius: 28, textTransform: 'none' }}
               >
-                New Activity
+                Post custom activity
               </Button>
             </Stack>
             <StyledMuiError>
@@ -721,7 +775,14 @@ export default function Status() {
                 loading={activitiesFetcher.state !== 'idle'}
                 {...dataGridCommonProps}
                 rowHeight={50}
-                isCellEditable={params => {
+                slotProps={{
+                  row: {
+                    onMouseEnter: e =>
+                      setHoveredActivityId(e.currentTarget.getAttribute('data-id')),
+                    onMouseLeave: e => setHoveredActivityId(null),
+                  },
+                }}
+                isCellEditable={(params: GridCellParams<Activity>) => {
                   if (
                     params.field === 'launchItemId' ||
                     params.field === 'phase' ||
@@ -729,7 +790,7 @@ export default function Status() {
                   ) {
                     return true;
                   }
-                  const eventType = (params.row as Activity).eventType;
+                  const eventType = params.row.eventType;
                   return (
                     (params.field === 'description' || params.field === 'priority') &&
                     eventType === CUSTOM_EVENT
@@ -738,7 +799,7 @@ export default function Status() {
                 processRowUpdate={(updatedRow: Activity, oldRow: Activity) => {
                   if (
                     updatedRow.description !== oldRow.description ||
-                    updatedRow.priority !== oldRow.priority ||
+                    updatedRow.priority != oldRow.priority ||
                     updatedRow.launchItemId !== oldRow.launchItemId ||
                     updatedRow.phase !== oldRow.phase ||
                     updatedRow.effort !== oldRow.effort
@@ -760,6 +821,31 @@ export default function Status() {
                 }}
               />
             </StyledMuiError>
+
+            <Typography
+              variant="caption"
+              fontStyle="italic"
+              color={theme.palette.grey[500]}
+              display="flex"
+              justifyContent="center"
+              sx={{
+                code: {
+                  backgroundColor: theme.palette.grey[200],
+                  border: '1px solid',
+                  borderColor: theme.palette.grey[400],
+                  borderRadius: '5px',
+                  p: '1px 4px',
+                  mt: '-2px',
+                  mx: '1px',
+                },
+              }}
+            >
+              <span>
+                {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
+                Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
+                to change day.
+              </span>
+            </Typography>
           </Stack>
         </Grid>
       </Grid>
