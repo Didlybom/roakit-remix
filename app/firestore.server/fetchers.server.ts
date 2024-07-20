@@ -32,6 +32,7 @@ import { DEFAULT_ROLE } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = getLogger('firestore:fetchers');
+const EXPLAIN_QUERIES = process.env?.LOG_LEVEL === 'debug';
 
 const retryProps = (message: string) => ({
   // see https://github.com/tim-kos/node-retry#api
@@ -454,6 +455,9 @@ export const fetchActivities = async ({
     if (endDate) {
       query = query.endAt(endDate);
     }
+    if (EXPLAIN_QUERIES) {
+      logger.info(await explainQuery(query));
+    }
     batches.push(query.get());
   } else {
     while (userIds.length) {
@@ -467,6 +471,9 @@ export const fetchActivities = async ({
         .limit(20000); // FIXME limit
       if (endDate) {
         query = query.endAt(endDate);
+      }
+      if (EXPLAIN_QUERIES) {
+        logger.info(await explainQuery(query));
       }
       batches.push(query.get());
     }
@@ -611,6 +618,11 @@ export const fetchActivitiesPage = async ({
   } else {
     activityPageQuery = activityPageQuery.limit(limit);
   }
+
+  if (EXPLAIN_QUERIES) {
+    logger.info(await explainQuery(activityPageQuery));
+  }
+
   const [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
     withTotal ? fetchActivityTotalWithCache(customerId, withInitiatives) : undefined,
@@ -745,4 +757,12 @@ export const fetchAllSummaries = async (
     });
   });
   return summaries;
+};
+
+const explainQuery = async (query: FirebaseFirestore.Query) => {
+  const metrics = (await query.explain({ analyze: true })).metrics;
+  return {
+    indexesUsed: metrics.planSummary.indexesUsed,
+    executionStats: metrics.executionStats,
+  };
 };
