@@ -25,7 +25,7 @@ export const linkSx: SxProps = {
   ...ellipsisSx,
 };
 
-export const windowOpen = (event: MouseEvent, url: string) => {
+export const windowOpen = (event: MouseEvent | React.MouseEvent, url: string) => {
   event.stopPropagation();
   window.open(url, event.metaKey || event.ctrlKey ? '_blank' : '_self');
 };

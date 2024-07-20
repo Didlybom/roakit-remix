@@ -5,6 +5,7 @@ import {
   ThumbUpOffAlt as ThumbUpOffIcon,
 } from '@mui/icons-material';
 import {
+  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -46,10 +47,16 @@ import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
-import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  loaderErrorResponse,
+  loginWithRedirectUrl,
+  windowOpen,
+} from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-import theme, { priorityColors, prioritySymbols } from '../utils/theme';
+import { nameInitials, stringColor } from '../utils/stringUtils';
+import theme, { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import type { ActivityPageResponse } from './fetcher.activities.page';
 
 export const meta = () => [{ title: 'Work Feed | ROAKIT' }];
@@ -274,117 +281,139 @@ export default function ActivityReview() {
 
     const isLiked = activity.reactions?.like[loaderData.identityId];
     const likeCount = activity.reactions ? reactionCount(activity.reactions).like : 0;
-
+    const name = activity.actorId ? loaderData.actors[activity.actorId]?.name : undefined;
+    const initials = nameInitials(name);
+    const href = activity.actorId ? `/feed/${encodeURI(activity.actorId)}` : undefined;
+    const avatar = (
+      <Avatar
+        onClick={href ? e => windowOpen(e, href) : undefined}
+        sx={{
+          bgcolor: stringColor(name),
+          cursor: href ? 'pointer' : undefined,
+          width: 36,
+          height: 36,
+          mr: 1,
+        }}
+      >
+        {initials}
+      </Avatar>
+    );
     return (
       <Box style={style}>
         <Box ref={ref}>
-          <Stack>
-            <Stack direction="row" spacing="4px" fontSize="14px" mb="4px">
-              {activity.actorId && (
-                <Link
-                  href={`/feed/${encodeURI(activity.actorId)}`}
-                  fontWeight={600}
-                  sx={{
-                    color: theme.palette.text.primary,
-                    textDecoration: 'none',
-                    borderBottom: '1px dotted rgba(0,0,0,0)',
-                    borderSpacing: 0,
-                    '&:hover': { borderBottomColor: theme.palette.text.primary },
-                  }}
-                >
-                  {loaderData.actors[activity.actorId]?.name ?? 'unknown'}
-                </Link>
-              )}
-              <Box color={theme.palette.grey[500]}>
-                • <AutoRefreshingRelativeDate date={activity.timestamp} />
-              </Box>
-            </Stack>
-            <Box
-              fontSize="14px"
-              sx={{
-                border: 1,
-                borderColor: theme.palette.grey[200],
-                borderRadius: '6px',
-                p: 1,
-                '&:hover': { background: theme.palette.grey[50] },
-              }}
-            >
-              <ActivityCard
-                format="Feed"
-                activity={activity}
-                ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
-                setPopover={(element, content) => setPopover({ element, content })}
-              />
-            </Box>
-            <Stack direction="row" fontSize="12px" spacing={2} alignItems="center">
-              <Tooltip
-                arrow
-                title={
-                  activity.reactions ?
-                    reactionNames(activity.reactions, loaderData.actors).like
-                  : ''
-                }
-              >
-                <Button
-                  variant="text"
+          <Stack direction="row">
+            {avatar}
+            <Stack flexGrow={1}>
+              <Stack direction="row" spacing="4px" fontSize="14px" mb="4px" alignItems="center">
+                {href && (
+                  <Link
+                    href={href}
+                    fontWeight={600}
+                    sx={{
+                      color: theme.palette.text.primary,
+                      textDecoration: 'none',
+                      borderBottom: '0.5px solid rgba(0,0,0,0)',
+                      borderSpacing: 0,
+                      '&:hover': { borderBottomColor: theme.palette.text.primary },
+                    }}
+                  >
+                    {name ?? 'unknown'}
+                  </Link>
+                )}
+                <Box color={theme.palette.grey[500]}>
+                  • <AutoRefreshingRelativeDate date={activity.timestamp} />
+                </Box>
+                <Box flexGrow={1} />
+                <Tooltip title={`{ ${event} }`} arrow>
+                  <Box
+                    fontSize="12px"
+                    color={theme.palette.grey[500]}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    {activity.artifact} {activity.action}
+                  </Box>
+                </Tooltip>
+                <IconButton
                   size="small"
-                  startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOffIcon />}
-                  onClick={() => {
-                    if (!activity.reactions) {
-                      activity.reactions = { like: { [loaderData.identityId]: true } };
-                    } else {
-                      activity.reactions.like[loaderData.identityId] = !isLiked;
-                    }
-                    submit(
-                      {
-                        activityId: activity.id,
-                        reaction: 'like',
-                        plusOne: !isLiked,
-                      },
-                      postJsonOptions
-                    );
-                  }}
+                  title="View JSON"
+                  onClick={e => setCodePopover({ element: e.currentTarget, content: activity })}
                 >
-                  {likeCount > 0 ? likeCount : ' '}
-                </Button>
-              </Tooltip>
-              <Box flexGrow={1} />
-              <Box>
-                <Box component="span" color={theme.palette.grey[500]}>
-                  {activity.artifact} {activity.action}
-                </Box>
-                <Box component="span" color={theme.palette.grey[400]}>
-                  {' '}
-                  • {event}
-                </Box>
-              </Box>
-              {activity.launchItemId != null && (
-                <Box
-                  color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}
-                  title={loaderData.launchItems[activity.launchItemId]?.label}
-                >
-                  {loaderData.launchItems[activity.launchItemId]?.key}
-                </Box>
-              )}
-              {activity.priority != null && (
-                <Box fontWeight="600" color={priorityColors[activity.priority] ?? undefined}>
-                  {prioritySymbols[activity.priority] ?? ''}
-                </Box>
-              )}
-              {activity.phase && <Box>{activity.phase}</Box>}
-              {activity.effort && (
-                <>
-                  <EffortIcon sx={{ fontSize: '14px', pr: '4px' }} />
-                  {activity.effort}
-                </>
-              )}
-              <IconButton
-                size="small"
-                title="View JSON"
-                onClick={e => setCodePopover({ element: e.currentTarget, content: activity })}
+                  <DataObjectIcon sx={{ fontSize: '14px' }} />
+                </IconButton>
+              </Stack>
+              <Box
+                fontSize="14px"
+                sx={{
+                  border: 1,
+                  borderColor: theme.palette.grey[200],
+                  borderRadius: '6px',
+                  p: 1,
+                  minHeight: '45px',
+                  '&:hover': { background: theme.palette.grey[50] },
+                }}
               >
-                <DataObjectIcon sx={{ fontSize: '14px' }} />
-              </IconButton>
+                <ActivityCard
+                  format="Feed"
+                  activity={activity}
+                  ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
+                  setPopover={(element, content) => setPopover({ element, content })}
+                />
+              </Box>
+              <Stack direction="row" fontSize="12px" spacing={2} mt="2px" alignItems="start">
+                <Tooltip
+                  arrow
+                  title={
+                    activity.reactions ?
+                      reactionNames(activity.reactions, loaderData.actors).like
+                    : ''
+                  }
+                >
+                  <Button
+                    variant="text"
+                    size="small"
+                    startIcon={isLiked ? <ThumbUpIcon /> : <ThumbUpOffIcon />}
+                    onClick={() => {
+                      if (!activity.reactions) {
+                        activity.reactions = { like: { [loaderData.identityId]: true } };
+                      } else {
+                        activity.reactions.like[loaderData.identityId] = !isLiked;
+                      }
+                      submit(
+                        {
+                          activityId: activity.id,
+                          reaction: 'like',
+                          plusOne: !isLiked,
+                        },
+                        postJsonOptions
+                      );
+                    }}
+                  >
+                    <Box fontSize="12px">{likeCount > 0 ? likeCount : ''}</Box>
+                  </Button>
+                </Tooltip>
+                <Box flexGrow={1} />
+                {activity.launchItemId != null && (
+                  <Tooltip title={loaderData.launchItems[activity.launchItemId]?.label} arrow>
+                    <Box color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}>
+                      {loaderData.launchItems[activity.launchItemId]?.key}
+                    </Box>
+                  </Tooltip>
+                )}
+                {activity.priority != null && (
+                  <Tooltip title={`${priorityLabels[activity.priority]} priority`} arrow>
+                    <Box fontWeight="600" color={priorityColors[activity.priority] ?? undefined}>
+                      {prioritySymbols[activity.priority] ?? ''}
+                    </Box>
+                  </Tooltip>
+                )}
+                {activity.phase && <Box>{activity.phase}</Box>}
+                {activity.effort && (
+                  <>
+                    <EffortIcon sx={{ fontSize: '14px', pr: '4px' }} />
+                    {activity.effort}
+                  </>
+                )}
+              </Stack>
             </Stack>
           </Stack>
           <Box height="15px" />
@@ -428,8 +457,8 @@ export default function ActivityReview() {
         message={snackMessage}
       />
       <Box ref={rootRef} height="calc(100vh - 90px)" m={3}>
-        <AutoSizer>
-          {({ height, width }) => (
+        <AutoSizer disableWidth>
+          {({ height }) => (
             <InfiniteLoader
               isItemLoaded={isRowLoaded}
               itemCount={activities.length + 1}
@@ -440,8 +469,8 @@ export default function ActivityReview() {
               {({ onItemsRendered, ref }) => (
                 <VariableSizeList
                   itemSize={getRowSize}
-                  width={width}
                   height={height}
+                  width="100%"
                   itemCount={activities.length + 1}
                   ref={elem => {
                     ref(elem);

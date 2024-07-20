@@ -49,7 +49,7 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
               onItemClick={(event, data) => {
                 if (data) {
                   windowOpen(
-                    event.nativeEvent,
+                    event,
                     `/activity/${
                       data.dataIndex === 10 ?
                         '*'

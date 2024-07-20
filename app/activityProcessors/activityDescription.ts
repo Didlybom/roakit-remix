@@ -81,7 +81,11 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
 const transitionString = (prefix: string, changeLog: ActivityChangeLog) =>
   prefix + changeLog.oldValue + ' → ' + changeLog.newValue;
 
-const codeActionString = (codeAction: string, metadata: ActivityMetadata) => {
+const codeActionString = (
+  codeAction: string,
+  metadata: ActivityMetadata,
+  options?: { verbose?: boolean }
+) => {
   if (codeAction === 'opened') {
     return 'opened';
   }
@@ -113,14 +117,17 @@ const codeActionString = (codeAction: string, metadata: ActivityMetadata) => {
     return 'dismissed';
   }
   if (codeAction === 'created' && metadata.pullRequestComment) {
-    return 'commented';
+    return options?.verbose ? `commented: ${metadata.pullRequestComment.body}` : 'commented';
   }
   if (codeAction === 'deleted' && metadata.pullRequestComment) {
     return 'comment deleted';
   }
 };
 
-export const getActivityActionDescription = (metadata: ActivityMetadata) => {
+export const getActivityActionDescription = (
+  metadata: ActivityMetadata,
+  options?: { verbose?: boolean }
+): string[] | undefined => {
   try {
     if (metadata?.issue) {
       const actions: string[] = [];
@@ -198,44 +205,44 @@ export const getActivityActionDescription = (metadata: ActivityMetadata) => {
           actions.push('Story Points: ' + changeLog.newValue);
         }
         if (changeLog.field === 'summary') {
-          actions.push('Updated summary');
+          actions.push('Set summary');
         }
         if (changeLog.field === 'description') {
-          actions.push('Updated description');
+          actions.push(options?.verbose ? `Description: ${changeLog.newValue}` : 'Set description');
         }
       });
-      return actions.join(', ');
+      return actions;
     }
-    if (metadata?.attachment) {
-      return metadata.attachment.uri;
+    if (metadata?.attachment?.uri) {
+      return [metadata.attachment.uri];
     }
     if (metadata?.attachments?.files?.length) {
-      return metadata.attachments.files.map(f => f.uri).join(', ');
+      return metadata.attachments.files.filter(f => f.uri).map(f => f.uri!);
     }
     if (metadata?.oldParent?.title && metadata?.newParent?.title) {
       const version = metadata?.page?.version ? `Version ${metadata.page.version}. ` : '';
-      return `${version}Moved from ${metadata.oldParent.title} to ${metadata.newParent.title}`;
+      return [`${version}Moved from ${metadata.oldParent.title} to ${metadata.newParent.title}`];
     }
     if (metadata?.page?.version) {
-      return `Version ${metadata.page.version}`;
+      return [`Version ${metadata.page.version}`];
     }
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
       const codeAction = metadata.codeAction;
       if (Array.isArray(codeAction)) {
-        return 'PR ' + codeAction.map(a => codeActionString(a, metadata)).join(', ');
+        return codeAction.map(a => `PR ${codeActionString(a, metadata, options)}`);
       } else {
-        return 'PR ' + codeActionString(codeAction, metadata);
+        return [`PR ${codeActionString(codeAction, metadata, options)}`];
       }
     }
     if (metadata?.codeAction === 'member_invited') {
-      return 'Member invited';
+      return ['Member invited'];
     }
     if (metadata?.codeAction === 'edited') {
-      return 'Edited';
+      return ['Edited'];
     }
   } catch (e) {
-    return '';
+    return undefined;
   }
 };
 

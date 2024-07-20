@@ -11,10 +11,12 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Paper,
   Stack,
   Typography,
 } from '@mui/material';
 import { GridActionsCellItem } from '@mui/x-data-grid';
+import type { ReactNode } from 'react';
 import {
   ACTIVITY_DESCRIPTION_LIST_SEPARATOR,
   getActivityActionDescription,
@@ -28,6 +30,12 @@ import { ellipsisSx, linkSx } from '../utils/jsxUtils';
 import { pluralizeMemo } from '../utils/stringUtils';
 import theme from '../utils/theme';
 import LinkifyJira from './LinkifyJira';
+
+const SubCard = ({ text }: { text: string }) => (
+  <Paper variant="outlined" square={false} sx={{ p: 1, wordBreak: 'break-word' }}>
+    <Box color={theme.palette.grey[500]}>{text}</Box>
+  </Paper>
+);
 
 export default function ActivityCard({
   format,
@@ -43,7 +51,27 @@ export default function ActivityCard({
   setPopover?: (element: HTMLElement, content: JSX.Element) => void;
 }) {
   const description = getActivityDescription(activity);
-  const comment = activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
+  let comment: ReactNode | string | null =
+    activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
+  if (format === 'Feed' && comment) {
+    if (activity.metadata?.comments) {
+      comment = (
+        <Stack spacing={1}>
+          <>Commented</>
+          {activity.metadata.comments.map((comment, i) => (
+            <SubCard key={i} text={comment.body} />
+          ))}
+        </Stack>
+      );
+    } else if (activity.metadata?.comment) {
+      comment = (
+        <Stack spacing={1}>
+          <>Commented</>
+          <SubCard text={activity.metadata.comment.body} />
+        </Stack>
+      );
+    }
+  }
   const url = activity.metadata ? getActivityUrl(activity) : undefined;
   let icon;
   let urlTitle = '';
@@ -96,14 +124,16 @@ export default function ActivityCard({
     : null;
 
   const actionDescription =
-    activity.metadata ? getActivityActionDescription(activity.metadata) : undefined;
+    activity.metadata ?
+      getActivityActionDescription(activity.metadata, { verbose: true })
+    : undefined;
 
   const commits = activity.metadata?.commits;
 
   const missingIconPadding = format === 'Grid' ? '22px' : undefined;
 
   return (
-    <Stack direction="row" useFlexGap>
+    <Stack direction="row" width="100%">
       {link}
       {!link && (
         <Box display="flex" alignItems={format === 'Grid' ? 'center' : 'start'} ml="4px" mr="7px">
@@ -111,38 +141,47 @@ export default function ActivityCard({
         </Box>
       )}
       {actionDescription || comment || commits ?
-        <Stack mt={'2px'} pl={icon ? undefined : missingIconPadding} minWidth={0}>
+        <Stack mt={'2px'} pl={icon ? undefined : missingIconPadding} width="100%" minWidth={0}>
           <Box
             title={description}
             fontSize={format === 'Grid' ? 'small' : undefined}
             lineHeight={1.2}
+            mb={format === 'Feed' ? '2px' : undefined}
             sx={format === 'Grid' ? ellipsisSx : undefined}
           >
             {ticketBaseUrl ?
               <LinkifyJira content={description} baseUrl={ticketBaseUrl} />
             : description}
           </Box>
-          {actionDescription && (
+          {actionDescription && actionDescription[0] && (
             <Typography
               component="div"
-              title={actionDescription.startsWith('http') ? undefined : actionDescription}
               fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
+              mt="4px"
               sx={format === 'Grid' ? ellipsisSx : undefined}
             >
-              {actionDescription.startsWith('http') ?
+              {actionDescription[0].startsWith('http') ?
                 <Stack direction="row" spacing={1} maxWidth={'300px'}>
-                  {actionDescription.split(ACTIVITY_DESCRIPTION_LIST_SEPARATOR).map((url, i) => (
+                  {actionDescription[0].split(ACTIVITY_DESCRIPTION_LIST_SEPARATOR).map((url, i) => (
                     <Link key={i} href={url} target="_blank">
                       <AttachmentIcon sx={{ fontSize: '14px' }} />
                     </Link>
                   ))}
                 </Stack>
-              : actionDescription}
+              : format === 'Grid' ?
+                actionDescription.join(', ')
+              : <Stack spacing={1}>
+                  {actionDescription.map((action, i) => (
+                    <SubCard key={i} text={action} />
+                  ))}
+                </Stack>
+              }
             </Typography>
           )}
           {comment && (
             <Typography
+              component="div"
               fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
               sx={format === 'Grid' ? ellipsisSx : undefined}
@@ -179,7 +218,8 @@ export default function ActivityCard({
           )}
           {commits && commits.length === 1 && (
             <Typography
-              title={actionDescription}
+              component="div"
+              title={actionDescription?.join(', ')}
               fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
               sx={ellipsisSx}
@@ -192,6 +232,7 @@ export default function ActivityCard({
           fontSize={format === 'Grid' ? 'small' : undefined}
           title={description}
           pl={icon ? undefined : missingIconPadding}
+          mb={format === 'Feed' ? '2px' : undefined}
           sx={format === 'Grid' ? ellipsisSx : undefined}
         >
           {ticketBaseUrl ?

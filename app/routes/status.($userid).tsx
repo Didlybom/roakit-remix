@@ -8,7 +8,6 @@ import {
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -49,6 +48,7 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useConfirm } from 'material-ui-confirm';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { getActivityDescription } from '../activityProcessors/activityDescription';
 import { findTicket } from '../activityProcessors/activityFeed';
@@ -75,6 +75,7 @@ import {
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditableCellField from '../components/datagrid/EditableCellField';
 import SelectField from '../components/SelectField';
+import SmallAvatarChip from '../components/SmallAvatarChip';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
@@ -749,7 +750,7 @@ export default function Status() {
                 Activities for…
               </Typography>
               <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
-                <Chip size="small" label={loaderData.userDisplayName} />
+                <SmallAvatarChip name={loaderData.userDisplayName} />
               </Box>
               {!!loaderData.reportIds?.length && (
                 <FormControlLabel
@@ -765,7 +766,7 @@ export default function Status() {
               )}
               {loaderData.reportIds?.map(reportId => (
                 <Box key={reportId} sx={{ opacity: showTeam ? undefined : 0.3 }}>
-                  <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
+                  <SmallAvatarChip name={loaderData.actors[reportId]?.name} />
                 </Box>
               ))}
             </Stack>
@@ -859,30 +860,32 @@ export default function Status() {
                 }}
               />
             </StyledMuiError>
-            <Typography
-              variant="caption"
-              fontStyle="italic"
-              color={theme.palette.grey[500]}
-              display="flex"
-              justifyContent="center"
-              sx={{
-                code: {
-                  backgroundColor: theme.palette.grey[200],
-                  border: '1px solid',
-                  borderColor: theme.palette.grey[400],
-                  borderRadius: '5px',
-                  p: '1px 4px',
-                  mt: '-2px',
-                  mx: '1px',
-                },
-              }}
-            >
-              <span>
-                {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
-                Press <code>N</code> to create a custom activity, press <code>[</code> and{' '}
-                <code>]</code> to change day.
-              </span>
-            </Typography>
+            {!isMobile && (
+              <Typography
+                variant="caption"
+                fontStyle="italic"
+                color={theme.palette.grey[500]}
+                display="flex"
+                justifyContent="center"
+                sx={{
+                  code: {
+                    backgroundColor: theme.palette.grey[200],
+                    border: '1px solid',
+                    borderColor: theme.palette.grey[400],
+                    borderRadius: '5px',
+                    p: '1px 4px',
+                    mt: '-2px',
+                    mx: '1px',
+                  },
+                }}
+              >
+                <span>
+                  {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
+                  Press <code>N</code> to create a custom activity, <code>[</code> and{' '}
+                  <code>]</code> to go to previous/next day.
+                </span>
+              </Typography>
+            )}
           </Stack>
         </Grid>
       </Grid>

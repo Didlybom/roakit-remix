@@ -73,3 +73,68 @@ export const mimeTypeToType = (mimeType: string): string | undefined => {
 };
 
 export const pluralizeMemo = memoize(pluralize);
+
+// see https://github.com/ericvera/name-initials/blob/master/src/name-initials.js
+
+const LETTER_REGEXP = /^[a-z\u00C0-\u017F]/i;
+
+export const nameInitials = (name: string | undefined) => {
+  if (!name) return undefined;
+
+  const nameTokens = name.toUpperCase().split(/[\s+-]/);
+  let tokens = [];
+
+  let initials = '';
+
+  // Remove all tokens after the first that starts with a non-letter character
+  for (var i = 0; i < nameTokens.length; i++) {
+    if (!LETTER_REGEXP.test(nameTokens[i])) {
+      break;
+    }
+    tokens.push(nameTokens[i]);
+  }
+
+  if (tokens.length >= 1) {
+    initials += tokens[0].slice(0, 1);
+  }
+
+  if (tokens.length >= 2) {
+    // Find first non-initial
+    let foundNonInitial = false;
+
+    for (let i = 1; i < tokens.length; i++) {
+      if (!tokens[i].match(/.\./)) {
+        foundNonInitial = true;
+        initials += tokens[i].slice(0, 1);
+        break;
+      }
+    }
+
+    if (!foundNonInitial) {
+      initials += tokens[1].slice(0, 1);
+    }
+  }
+
+  return initials;
+};
+
+// see https://mui.com/material-ui/react-avatar/#system-BackgroundLetterAvatars.tsx
+export const stringColor = (string: string | undefined) => {
+  if (!string) return undefined;
+
+  let hash = 0;
+  let i;
+
+  for (i = 0; i < string.length; i += 1) {
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  let color = '#';
+
+  for (i = 0; i < 3; i += 1) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += `00${value.toString(16)}`.slice(-2);
+  }
+
+  return color;
+};

@@ -47,7 +47,7 @@ export const buildActivitySummaryPrompt = (
       }
       const actionDescription =
         options.inclActions && activity.metadata ?
-          getActivityActionDescription(activity.metadata)
+          getActivityActionDescription(activity.metadata)?.join(', ')
         : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?

@@ -7,7 +7,6 @@ import {
 import {
   Box,
   Button,
-  Chip,
   FormControlLabel,
   Unstable_Grid2 as Grid,
   Link,
@@ -49,6 +48,7 @@ import ActivityPickersDay, { type PickerDayWithHighlights } from '../components/
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import Markdown from '../components/MarkdownText';
+import SmallAvatarChip from '../components/SmallAvatarChip';
 import {
   fetchAccountMap,
   fetchIdentities,
@@ -348,7 +348,7 @@ export default function Summary() {
                 Activities for…
               </Typography>
               <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
-                <Chip size="small" label={loaderData.userDisplayName} />
+                <SmallAvatarChip name={loaderData.userDisplayName} />
               </Box>
               {!!loaderData.reportIds?.length && (
                 <FormControlLabel
@@ -371,7 +371,7 @@ export default function Summary() {
               )}
               {loaderData.reportIds?.map(reportId => (
                 <Box key={reportId} sx={{ opacity: showTeam ? 0.3 : undefined }}>
-                  <Chip size="small" label={loaderData.actors[reportId]?.name ?? 'Unknown'} />
+                  <SmallAvatarChip name={loaderData.actors[reportId]?.name} />
                 </Box>
               ))}
             </Stack>

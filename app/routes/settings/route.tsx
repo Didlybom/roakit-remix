@@ -143,24 +143,6 @@ export const screenshotThumbSx: SxProps = {
   cursor: 'pointer',
 };
 
-const globalStyles = (
-  <GlobalStyles
-    styles={{
-      code: {
-        fontFamily: 'Roboto Mono, monospace',
-        fontSize: '.8rem',
-        lineHeight: 1.5,
-        whiteSpace: 'nowrap',
-        backgroundColor: theme.palette.grey[200],
-        border: '1px solid',
-        borderColor: theme.palette.grey[400],
-        borderRadius: '5px',
-        padding: '1px 4px',
-      },
-    }}
-  />
-);
-
 enum FeedTab {
   Jira,
   GitHub,
@@ -187,7 +169,21 @@ export default function Settings() {
 
   return (
     <App view={VIEW} role={loaderData.role} isNavOpen={loaderData.isNavOpen} isLoggedIn={true}>
-      {globalStyles}
+      <GlobalStyles
+        styles={{
+          code: {
+            fontFamily: 'Roboto Mono, monospace',
+            fontSize: '.8rem',
+            lineHeight: 1.5,
+            whiteSpace: 'nowrap',
+            backgroundColor: theme.palette.grey[200],
+            border: '1px solid',
+            borderColor: theme.palette.grey[400],
+            borderRadius: '5px',
+            padding: '1px 4px',
+          },
+        }}
+      />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Paper variant="outlined" sx={{ backgroundColor: theme.palette.grey[50], m: 2 }}>
         <Typography variant="h6" pl={2} pt={2} pb={1}>
