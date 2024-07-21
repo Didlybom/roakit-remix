@@ -475,7 +475,10 @@ export default function ActivityReview() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={loaderData.customerId}
-        options={{ linkifyActivityId: true }}
+        options={{
+          linkifyObjectId: true,
+          linkifyActivityId: loaderData.email?.endsWith('@roakit.com'),
+        }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} />
       <Stack m={3}>

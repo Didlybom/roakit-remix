@@ -610,7 +610,10 @@ export default function Status() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={loaderData.customerId}
-        options={{ linkifyActivityId: true }}
+        options={{
+          linkifyObjectId: true,
+          linkifyActivityId: loaderData.email?.endsWith('@roakit.com'),
+        }}
       />
       <Dialog
         open={showNewDialog}

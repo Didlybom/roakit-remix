@@ -912,7 +912,10 @@ export default function UserActivity() {
         popover={codePopover}
         onClose={() => setCodePopover(null)}
         customerId={loaderData.customerId}
-        options={{ linkifyActivityId: true }}
+        options={{
+          linkifyObjectId: true,
+          linkifyActivityId: loaderData.email?.endsWith('@roakit.com'),
+        }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Stack m={3}>

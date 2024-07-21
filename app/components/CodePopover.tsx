@@ -25,9 +25,12 @@ export default function CodePopover({
   popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
-  options?: { linkifyActivityId?: boolean; linkifyIdentityId?: boolean };
+  options?: { linkifyObjectId?: boolean; linkifyActivityId?: boolean; linkifyIdentityId?: boolean };
   anchorReference?: PopoverReference;
 }) {
+  if (options?.linkifyActivityId && options?.linkifyIdentityId) {
+    throw Error('linkifyActivityId and linkifyIdentityId are mutually exclusive.');
+  }
   if (!popover?.content) {
     return null;
   }
@@ -45,6 +48,68 @@ export default function CodePopover({
   } else {
     formattedContent = formatJson(popover.content);
   }
+
+  const formattedContentWithObjectIdLink =
+    options?.linkifyObjectId ?
+      <LinkIt
+        component={(filePath: string, key: number) => (
+          <Link
+            component={RemixLink}
+            key={key}
+            sx={linkSx}
+            to={'/event/view/' + filePath}
+            target="_blank"
+          >
+            {filePath}
+          </Link>
+        )}
+        regex={OBJECTID_REGEXP}
+      >
+        {formattedContent}
+      </LinkIt>
+    : formattedContent;
+
+  let formattedContentWithLinks;
+  if (options?.linkifyActivityId) {
+    formattedContentWithLinks = (
+      <LinkIt
+        component={(firebaseId: string, key: number) => (
+          <Link
+            key={key}
+            sx={linkSx}
+            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities}/${firebaseId}`}
+            target="_blank"
+          >
+            {firebaseId}
+          </Link>
+        )}
+        regex={ACTIVITYID_REGEXP}
+      >
+        {formattedContentWithObjectIdLink}
+      </LinkIt>
+    );
+  } else if (options?.linkifyIdentityId) {
+    formattedContentWithLinks = (
+      <LinkIt
+        component={(firebaseId: string, key: number) => (
+          <Link
+            key={key}
+            sx={linkSx}
+            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/identities}/${firebaseId}`}
+            target="_blank"
+          >
+            {firebaseId}
+          </Link>
+        )}
+        regex={IDENTITYID_REGEXP}
+      >
+        {formattedContentWithObjectIdLink}
+      </LinkIt>
+    );
+  } else {
+    formattedContentWithLinks = formattedContentWithObjectIdLink;
+  }
+
   return (
     <Popover
       id={popover.element ? 'popover' : undefined}
@@ -79,40 +144,7 @@ export default function CodePopover({
           minHeight: '70px',
         }}
       >
-        {options?.linkifyActivityId || options?.linkifyIdentityId ?
-          <LinkIt
-            component={(firebaseId: string, key: number) => (
-              <Link
-                key={key}
-                sx={linkSx}
-                href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/${options.linkifyActivityId ? 'activities' : 'identities'}/${firebaseId}`}
-                target="_blank"
-              >
-                {firebaseId}
-              </Link>
-            )}
-            regex={options.linkifyActivityId ? ACTIVITYID_REGEXP : IDENTITYID_REGEXP}
-          >
-            {options?.linkifyActivityId ?
-              <LinkIt
-                component={(filePath: string, key: number) => (
-                  <Link
-                    component={RemixLink}
-                    key={key}
-                    sx={linkSx}
-                    to={'/event/view/' + filePath}
-                    target="_blank"
-                  >
-                    {filePath}
-                  </Link>
-                )}
-                regex={OBJECTID_REGEXP}
-              >
-                {formattedContent}
-              </LinkIt>
-            : formattedContent}
-          </LinkIt>
-        : formattedContent}
+        {formattedContentWithLinks}
       </Typography>
     </Popover>
   );
