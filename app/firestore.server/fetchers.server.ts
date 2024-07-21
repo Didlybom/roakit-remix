@@ -456,7 +456,7 @@ export const fetchActivities = async ({
       query = query.endAt(endDate);
     }
     if (EXPLAIN_QUERIES) {
-      logger.info(await explainQuery(query));
+      logger.debug(await explainQuery(query));
     }
     batches.push(query.get());
   } else {
@@ -473,7 +473,7 @@ export const fetchActivities = async ({
         query = query.endAt(endDate);
       }
       if (EXPLAIN_QUERIES) {
-        logger.info(await explainQuery(query));
+        logger.debug(await explainQuery(query));
       }
       batches.push(query.get());
     }
@@ -620,7 +620,7 @@ export const fetchActivitiesPage = async ({
   }
 
   if (EXPLAIN_QUERIES) {
-    logger.info(await explainQuery(activityPageQuery));
+    logger.debug(await explainQuery(activityPageQuery));
   }
 
   const [activityPage, activityTotal] = await Promise.all([
