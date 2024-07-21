@@ -83,7 +83,7 @@ export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
   }
 };
 
-export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
+export const formatRelative = (date: Date) => dayjs().to(dayjs(date), true /* without suffix */);
 
 export const formatDayLocal = (date: Dayjs) => date?.format('LL') ?? null;
 
