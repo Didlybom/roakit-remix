@@ -18,32 +18,35 @@ dayjs.updateLocale('en', {
     future: 'in %s',
     past: '%s ago',
     s: 'a few secs',
-    m: 'a min',
+    m: '1m',
     mm: '%d mins',
-    h: 'an hour',
-    hh: '%d hours',
-    d: 'a day',
-    dd: '%d days',
-    M: 'a month',
-    MM: '%d months',
-    y: 'a year',
-    yy: '%d years',
+    h: '1h',
+    hh: '%dh',
+    d: '1d',
+    dd: '%dd',
+    M: '1m',
+    MM: '%dm',
+    y: '1y',
+    yy: '%dy',
   },
 });
 
 export const ONE_HOUR = 60 * 60 * 1000;
 export const ONE_DAY = 24 * ONE_HOUR;
 
-export const formatMonthDayTime = (date: Date) =>
-  date.toLocaleDateString('en-us', {
+export const formatMonthDayTime = (date: Date | number) =>
+  (typeof date === 'number' ? new Date(date) : date).toLocaleDateString('en-us', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
   });
 
-export const formatMonthDay = (date: Date) =>
-  date.toLocaleDateString('en-us', { month: 'short', day: 'numeric' });
+export const formatMonthDay = (date: Date | number) =>
+  (typeof date === 'number' ? new Date(date) : date).toLocaleDateString('en-us', {
+    month: 'short',
+    day: 'numeric',
+  });
 
 export const isToday = (date: Dayjs) => date.isToday();
 export const isYesterday = (date: Dayjs) => date.isYesterday();
@@ -83,7 +86,7 @@ export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
   }
 };
 
-export const formatRelative = (date: Date) => dayjs().to(dayjs(date), true /* without suffix */);
+export const formatRelative = (date: Date) => dayjs().to(dayjs(date), true /* no suffix */);
 
 export const formatDayLocal = (date: Dayjs) => date?.format('LL') ?? null;
 
