@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
-import Markdown from '../components/MarkdownText';
+import MarkdownText from '../components/MarkdownText';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import {} from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
@@ -124,7 +124,7 @@ export default function Dashboard() {
                 <>
                   {summary.aiSummary && (
                     <SummaryBox variant="outlined">
-                      <Markdown markdownText={summary.aiSummary} />
+                      <MarkdownText text={summary.aiSummary} ignoreLinks />
                       <IconIndicator
                         icon={<AIIcon fontSize="small" />}
                         title="AI powered"
@@ -134,12 +134,12 @@ export default function Dashboard() {
                   )}
                   {summary.userSummary && (
                     <SummaryBox variant="outlined">
-                      <Markdown markdownText={summary.userSummary} />
+                      <MarkdownText text={summary.userSummary} ignoreLinks />
                     </SummaryBox>
                   )}
                   {summary.aiTeamSummary && (
                     <SummaryBox variant="outlined">
-                      <Markdown markdownText={summary.aiTeamSummary} />
+                      <MarkdownText text={summary.aiTeamSummary} ignoreLinks />
                       <IconIndicator
                         icon={<AIIcon fontSize="small" />}
                         title="AI powered"
@@ -155,7 +155,7 @@ export default function Dashboard() {
                   )}
                   {summary.userTeamSummary && (
                     <SummaryBox variant="outlined">
-                      <Markdown markdownText={summary.userTeamSummary} />
+                      <MarkdownText text={summary.userTeamSummary} ignoreLinks />
                       <IconIndicator icon={<TeamIcon fontSize="small" />} title="Team" top={10} />
                     </SummaryBox>
                   )}

@@ -442,7 +442,11 @@ export default function UserActivity() {
       descriptionColDef(
         { field: 'metadata' },
         (element, content) => setPopover({ element, content }),
-        loaderData.customerSettings?.ticketBaseUrl
+        {
+          ticketBaseUrl: loaderData.customerSettings?.ticketBaseUrl,
+          actors: loaderData.actors,
+          accountMap: loaderData.accountMap,
+        }
       ),
       priorityColDef({ field: 'priority' }),
       {
@@ -460,6 +464,7 @@ export default function UserActivity() {
       loaderData.userId,
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.actors,
+      loaderData.accountMap,
       loaderData.launchItems,
       loaderData.initiatives,
       reset,

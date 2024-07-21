@@ -47,6 +47,7 @@
     "firebase-admin": "^12.2.0",
     "google-protobuf": "^3.21.4",
     "isbot": "^5.1.13",
+    "jira2md": "^3.0.1",
     "json-stable-stringify": "^1.1.1",
     "markdown-to-jsx": "^7.4.7",
     "material-ui-confirm": "^3.0.16",

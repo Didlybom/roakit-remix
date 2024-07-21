@@ -77,7 +77,7 @@ export default function CodePopover({
           <Link
             key={key}
             sx={linkSx}
-            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities}/${firebaseId}`}
+            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/${firebaseId}`}
             target="_blank"
           >
             {firebaseId}
@@ -95,7 +95,7 @@ export default function CodePopover({
           <Link
             key={key}
             sx={linkSx}
-            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/identities}/${firebaseId}`}
+            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/identities/${firebaseId}`}
             target="_blank"
           >
             {firebaseId}

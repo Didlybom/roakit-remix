@@ -313,7 +313,11 @@ export default function ActivityReview() {
       descriptionColDef(
         { field: 'metadata' },
         (element, content) => setPopover({ element, content }),
-        loaderData.customerSettings?.ticketBaseUrl
+        {
+          ticketBaseUrl: loaderData.customerSettings?.ticketBaseUrl,
+          actors: loaderData.actors,
+          accountMap: loaderData.accountMap,
+        }
       ),
       priorityColDef({ field: 'priority' }),
       {
@@ -379,6 +383,7 @@ export default function ActivityReview() {
     ],
     [
       initiativeOptions,
+      loaderData.accountMap,
       loaderData.actors,
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.initiatives,

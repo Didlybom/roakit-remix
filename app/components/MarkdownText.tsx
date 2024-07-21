@@ -1,9 +1,15 @@
 import MarkdownToJSX from 'markdown-to-jsx';
 
-export default function MarkdownText({ markdownText }: { markdownText: string }) {
+export default function MarkdownText({
+  text,
+  ignoreLinks,
+}: {
+  text: string;
+  ignoreLinks?: boolean;
+}) {
   return (
-    <MarkdownToJSX options={{ overrides: { a: { component: 'span' } } }}>
-      {markdownText}
+    <MarkdownToJSX options={{ ...(ignoreLinks && { overrides: { a: { component: 'span' } } }) }}>
+      {text}
     </MarkdownToJSX>
   );
 }

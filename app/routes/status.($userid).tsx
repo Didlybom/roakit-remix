@@ -417,6 +417,8 @@ export default function Status() {
                 format="Grid"
                 activity={params.row}
                 ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
+                actors={loaderData.actors}
+                accountMap={loaderData.accountMap}
                 setPopover={(element, content) => setPopover({ element, content })}
               />
             }
@@ -550,10 +552,11 @@ export default function Status() {
     ],
     [
       showTeam,
-      loaderData.customerSettings?.ticketBaseUrl,
-      loaderData.actors,
-      loaderData.launchItems,
       launchItemOptions,
+      loaderData.actors,
+      loaderData.customerSettings?.ticketBaseUrl,
+      loaderData.accountMap,
+      loaderData.launchItems,
       confirm,
       handleDeleteClick,
     ]

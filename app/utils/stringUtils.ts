@@ -8,6 +8,7 @@ export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 export const JIRA_TICKET_REGEXP = /([A-Z][A-Z0-9]+-[0-9]+)/;
+export const JIRA_ACCOUNT_REGEXP_G = /(?:[[]~accountid:)(.*?)(?:[\]])/g;
 const JIRA_PROJECT_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
 const JIRA_TICKET_REGEXP_G = /([A-Z][A-Z0-9]+-[0-9]+)/g;
 
@@ -32,6 +33,8 @@ export const findJiraTickets = (data?: string): string[] => {
   });
   return [...projects];
 };
+
+export const linkifyJiraAccount = (data: string) => {};
 
 export const removeSpaces = (data: string): string => data.replace(/\s/g, '');
 

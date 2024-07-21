@@ -20,7 +20,7 @@ import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/re
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { identifyAccounts, identifyActivities } from '../activityProcessors/activityIdentifier';
-import Markdown from '../components/MarkdownText';
+import MarkdownText from '../components/MarkdownText';
 import {
   fetchAccountMap,
   fetchActivities,
@@ -186,7 +186,7 @@ export default function AIPlayground() {
               }}
             >
               <Box fontSize="smaller">
-                <Markdown markdownText={output ?? ''} />
+                <MarkdownText text={output ?? ''} ignoreLinks />
               </Box>
             </Paper>
             <Typography variant="caption">Raw Response</Typography>

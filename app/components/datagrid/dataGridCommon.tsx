@@ -10,7 +10,12 @@ import type {
 import { GridActionsCellItem, gridStringOrNumberComparator } from '@mui/x-data-grid';
 import { getActivityDescription } from '../../activityProcessors/activityDescription';
 import { findTicket } from '../../activityProcessors/activityFeed';
-import { type Account, type Activity } from '../../types/types';
+import {
+  type Account,
+  type AccountToIdentityRecord,
+  type Activity,
+  type ActorRecord,
+} from '../../types/types';
 import { formatMonthDayTime, formatRelative } from '../../utils/dateUtils';
 import { ellipsisSx, linkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
@@ -167,9 +172,9 @@ export const priorityColDef = (colDef?: GridColDef) =>
   }) as GridColDef;
 
 export const descriptionColDef = (
-  colDef?: GridColDef,
-  setPopover?: (element: HTMLElement, content: JSX.Element) => void,
-  ticketBaseUrl?: string
+  colDef: GridColDef,
+  setPopover: (element: HTMLElement, content: JSX.Element) => void,
+  meta: { ticketBaseUrl?: string; actors: ActorRecord; accountMap: AccountToIdentityRecord }
 ) =>
   ({
     headerName: 'Description',
@@ -181,7 +186,9 @@ export const descriptionColDef = (
         format="Grid"
         activity={params.row}
         tabIndex={params.tabIndex}
-        ticketBaseUrl={ticketBaseUrl}
+        ticketBaseUrl={meta.ticketBaseUrl}
+        actors={meta.actors}
+        accountMap={meta.accountMap}
         setPopover={setPopover}
       />
     ),

@@ -105,6 +105,7 @@ export type ActivityChangeLog = {
   field: string;
   oldValue?: string;
   newValue?: string;
+  newId?: string;
 };
 
 export type ActivityMetadata = {

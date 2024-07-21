@@ -16,7 +16,7 @@ export const DEFAULT_PROMPT =
   'Output a categorized summary of these activities. Remove duplicates. Without title, introduction, notes and conclusion. Output markdown.';
 
 export const buildActivitySummaryPrompt = (
-  activities: Omit<Activity, 'id'>[] | null,
+  activities: Activity[] | null,
   actors: ActorRecord | null,
   initiatives: InitiativeRecord | null,
   options: {
@@ -47,7 +47,7 @@ export const buildActivitySummaryPrompt = (
       }
       const actionDescription =
         options.inclActions && activity.metadata ?
-          getActivityActionDescription(activity.metadata)?.join(', ')
+          getActivityActionDescription(activity)?.join(', ')
         : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?

@@ -47,7 +47,7 @@ import {
 import ActivityPickersDay, { type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
-import Markdown from '../components/MarkdownText';
+import MarkdownText from '../components/MarkdownText';
 import SmallAvatarChip from '../components/SmallAvatarChip';
 import {
   fetchAccountMap,
@@ -469,7 +469,7 @@ export default function Summary() {
                               {aiSummaryText && (
                                 <>
                                   <Box sx={{ maxHeight: 300, overflow: 'scroll' }}>
-                                    <Markdown markdownText={aiSummaryText} />
+                                    <MarkdownText text={aiSummaryText} ignoreLinks />
                                   </Box>
                                   <IconIndicator
                                     icon={<PreviewIcon fontSize="small" />}

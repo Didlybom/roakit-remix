@@ -1,8 +1,7 @@
+import type { ReactNode } from 'react';
 import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '../types/types';
 import { mimeTypeToType } from '../utils/stringUtils';
 import { issueUrlToWeb } from './activityFeed';
-
-export const ACTIVITY_DESCRIPTION_LIST_SEPARATOR = ', ';
 
 export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
   if (activity.description) {
@@ -42,9 +41,7 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
     return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
   }
   if (metadata?.attachments) {
-    const files = metadata.attachments.files
-      .map(f => f.filename)
-      .join(ACTIVITY_DESCRIPTION_LIST_SEPARATOR);
+    const files = metadata.attachments.files.map(f => f.filename).join(', ');
     return metadata.attachments.parent ?
         `Attached ${files} to ${metadata.attachments.parent.type} ${metadata.attachments.parent.title}`
       : `Attached ${files}`;
@@ -84,7 +81,7 @@ const transitionString = (prefix: string, changeLog: ActivityChangeLog) =>
 const codeActionString = (
   codeAction: string,
   metadata: ActivityMetadata,
-  options?: { verbose?: boolean }
+  options?: { format?: 'Grid' | 'Feed' }
 ) => {
   if (codeAction === 'opened') {
     return 'opened';
@@ -117,7 +114,9 @@ const codeActionString = (
     return 'dismissed';
   }
   if (codeAction === 'created' && metadata.pullRequestComment) {
-    return options?.verbose ? `commented: ${metadata.pullRequestComment.body}` : 'commented';
+    return options?.format === 'Feed' ?
+        `commented: ${metadata.pullRequestComment.body}`
+      : 'commented';
   }
   if (codeAction === 'deleted' && metadata.pullRequestComment) {
     return 'comment deleted';
@@ -125,9 +124,10 @@ const codeActionString = (
 };
 
 export const getActivityActionDescription = (
-  metadata: ActivityMetadata,
-  options?: { verbose?: boolean }
-): string[] | undefined => {
+  activity: Activity,
+  options?: { format?: 'Grid' | 'Feed' }
+): ReactNode[] | undefined => {
+  const metadata = activity.metadata;
   try {
     if (metadata?.issue) {
       const actions: string[] = [];
@@ -139,10 +139,14 @@ export const getActivityActionDescription = (
           actions.push(transitionString('Assignee: ', changeLog));
         }
         if (changeLog.field === 'assignee' && !changeLog.oldValue && changeLog.newValue) {
-          actions.push('Assignee: ' + changeLog.newValue);
+          if (options?.format === 'Feed' && activity.eventType === 'jira' && changeLog.newId) {
+            actions.push(`Assigned to [~accountid:${changeLog.newId}]`);
+          } else {
+            actions.push('Assigned to ' + changeLog.newValue);
+          }
         }
         if (changeLog.field === 'assignee' && changeLog.oldValue && !changeLog.newValue) {
-          actions.push('Unassigned: ' + changeLog.oldValue);
+          actions.push('Unassigned from ' + changeLog.oldValue);
         }
         if (changeLog.field === 'labels' && changeLog.oldValue && changeLog.newValue) {
           actions.push(transitionString('Labels: ', changeLog));
@@ -208,7 +212,9 @@ export const getActivityActionDescription = (
           actions.push('Set summary');
         }
         if (changeLog.field === 'description') {
-          actions.push(options?.verbose ? `Description: ${changeLog.newValue}` : 'Set description');
+          actions.push(
+            options?.format === 'Feed' ? `Description: ${changeLog.newValue}` : 'Set description'
+          );
         }
       });
       return actions;

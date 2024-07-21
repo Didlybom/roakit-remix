@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  GlobalStyles,
   IconButton,
   Link,
   Snackbar,
@@ -45,9 +46,11 @@ import {
 } from '../firestore.server/fetchers.server';
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
+import { formatMonthDayTime } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
+  ellipsisSx,
   errorAlert,
   loaderErrorResponse,
   loginWithRedirectUrl,
@@ -67,6 +70,32 @@ const PAGE_SIZE = 50;
 const THRESHOLD = 50;
 
 const REFRESH_INTERVAL_MS = 15 * 1000;
+
+const globalStyles = (
+  <GlobalStyles
+    styles={{
+      a: {
+        color: theme.palette.primary.main, //cursor: 'pointer',
+        textDecoration: 'none',
+      },
+      em: { fontStyle: 'normal' },
+      table: {
+        color: theme.palette.grey[500],
+        fontSize: 'small',
+        textAlign: 'left',
+        borderCollapse: 'collapse',
+      },
+      'th, td': {
+        border: '0.5px solid',
+        borderColor: theme.palette.grey[200],
+        padding: '4px',
+      },
+      th: {
+        backgroundColor: theme.palette.grey[50],
+      },
+    }}
+  />
+);
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
@@ -303,28 +332,38 @@ export default function ActivityReview() {
         <Box ref={ref}>
           <Stack direction="row">
             {avatar}
-            <Stack flexGrow={1}>
-              <Stack direction="row" spacing="4px" fontSize="14px" mb="4px" alignItems="center">
+            <Stack flexGrow={1} minWidth={0}>
+              <Stack
+                useFlexGap
+                direction="row"
+                spacing="4px"
+                fontSize="14px"
+                mb="4px"
+                alignItems="center"
+              >
                 {href && (
                   <Link
                     href={href}
-                    fontWeight={600}
                     sx={{
+                      fontWeight: 600,
                       color: theme.palette.text.primary,
+                      ...ellipsisSx,
                       textDecoration: 'none',
-                      borderBottom: '0.5px solid rgba(0,0,0,0)',
                       borderSpacing: 0,
+                      borderBottom: '0.5px solid rgba(0,0,0,0)',
                       '&:hover': { borderBottomColor: theme.palette.text.primary },
                     }}
                   >
                     {name ?? 'unknown'}
                   </Link>
                 )}
-                <Box color={theme.palette.grey[500]}>
-                  • <AutoRefreshingRelativeDate date={activity.timestamp} />
-                </Box>
+                <Tooltip title={formatMonthDayTime(activity.timestamp)}>
+                  <Box color={theme.palette.grey[500]} sx={{ whiteSpace: 'nowrap' }}>
+                    • <AutoRefreshingRelativeDate date={activity.timestamp} />
+                  </Box>
+                </Tooltip>
                 <Box flexGrow={1} />
-                <Tooltip title={`{ ${event} }`} arrow>
+                <Tooltip title={`{ ${event} }`}>
                   <Box
                     fontSize="12px"
                     color={theme.palette.grey[500]}
@@ -356,12 +395,13 @@ export default function ActivityReview() {
                   format="Feed"
                   activity={activity}
                   ticketBaseUrl={loaderData.customerSettings?.ticketBaseUrl}
+                  actors={loaderData.actors}
+                  accountMap={loaderData.accountMap}
                   setPopover={(element, content) => setPopover({ element, content })}
                 />
               </Box>
               <Stack direction="row" fontSize="12px" spacing={2} mt="2px" alignItems="start">
                 <Tooltip
-                  arrow
                   title={
                     activity.reactions ?
                       reactionNames(activity.reactions, loaderData.actors).like
@@ -393,14 +433,14 @@ export default function ActivityReview() {
                 </Tooltip>
                 <Box flexGrow={1} />
                 {activity.launchItemId != null && (
-                  <Tooltip title={loaderData.launchItems[activity.launchItemId]?.label} arrow>
+                  <Tooltip title={loaderData.launchItems[activity.launchItemId]?.label}>
                     <Box color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}>
                       {loaderData.launchItems[activity.launchItemId]?.key}
                     </Box>
                   </Tooltip>
                 )}
                 {activity.priority != null && (
-                  <Tooltip title={`${priorityLabels[activity.priority]} priority`} arrow>
+                  <Tooltip title={`${priorityLabels[activity.priority]} priority`}>
                     <Box fontWeight="600" color={priorityColors[activity.priority] ?? undefined}>
                       {prioritySymbols[activity.priority] ?? ''}
                     </Box>
@@ -460,6 +500,8 @@ export default function ActivityReview() {
         message={snackMessage}
       />
       <Box ref={rootRef} height="calc(100vh - 90px)" m={3}>
+        {globalStyles}
+
         <AutoSizer disableWidth>
           {({ height }) => (
             <InfiniteLoader
