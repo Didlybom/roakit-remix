@@ -32,7 +32,7 @@ import { DEFAULT_ROLE } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
 
 const logger = getLogger('firestore:fetchers');
-const EXPLAIN_QUERIES = process.env?.LOG_LEVEL === 'debug';
+const EXPLAIN_QUERIES = process.env?.EXPLAIN_QUERIES === 'true';
 
 const retryProps = (message: string) => ({
   // see https://github.com/tim-kos/node-retry#api

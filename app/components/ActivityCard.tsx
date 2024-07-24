@@ -5,7 +5,6 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
-  IconButton,
   Link,
   List,
   ListItem,
@@ -31,32 +30,61 @@ import {
   type ActorRecord,
 } from '../types/types';
 import { ellipsisSx, linkSx } from '../utils/jsxUtils';
-import { pluralizeMemo } from '../utils/stringUtils';
+import {
+  convertEmojis,
+  IMG_TAG_REGEXP_G,
+  JIRA_IMAGE_REGEXP_G,
+  pluralizeMemo,
+} from '../utils/stringUtils';
 import theme from '../utils/theme';
-import { linkifyJiraAccount, LinkifyJiraTicket } from './LinkifyJira';
+import {
+  linkifyGitHubAccount,
+  linkifyJiraAccount,
+  linkifyJiraTicket,
+  LinkifyJiraTicket,
+} from './Linkify';
 import MarkdownText from './MarkdownText';
 const j2m = require('jira2md');
 
+// see https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=all
+const cleanupJiraMarkup = (content: string) =>
+  content.replaceAll('|smart-link', '').replace(JIRA_IMAGE_REGEXP_G, '(image)');
+
+const cleanupMarkup = (content: string) => content.replaceAll(IMG_TAG_REGEXP_G, '(image)');
+
 const SubCard = ({
   content,
-  isJira,
+  eventType,
   meta,
 }: {
   content: ReactNode;
-  isJira: boolean;
-  meta?: { actors: ActorRecord; accountMap: AccountToIdentityRecord };
+  eventType?: string;
+  meta?: { actors: ActorRecord; accountMap: AccountToIdentityRecord; ticketBaseUrl?: string };
 }) => {
-  const linkifiedContent =
-    isJira && meta && typeof content === 'string' ? linkifyJiraAccount(content, meta) : content;
-  const processedContent =
-    isJira && typeof content === 'string' ?
-      <Box>
-        <MarkdownText text={j2m.to_markdown(linkifiedContent)} />
-      </Box>
-    : content;
+  let linkifiedContent;
+  let contentNode;
+  if (typeof content === 'string') {
+    if (eventType === 'jira' && meta) {
+      linkifiedContent = linkifyJiraAccount(content, meta);
+    } else if (eventType === 'github' && meta) {
+      linkifiedContent = linkifyGitHubAccount(content, meta);
+    } else {
+      linkifiedContent = content;
+    }
+    if (meta?.ticketBaseUrl) {
+      linkifiedContent = linkifyJiraTicket(linkifiedContent, { ticketBaseUrl: meta.ticketBaseUrl });
+    }
+    if (eventType === 'jira') {
+      linkifiedContent = cleanupJiraMarkup(linkifiedContent);
+    }
+    linkifiedContent = cleanupMarkup(linkifiedContent);
+    contentNode = <MarkdownText text={j2m.to_markdown(linkifiedContent)} />;
+  } else {
+    contentNode = content;
+  }
   return (
     <Paper variant="outlined" square={false} sx={{ p: 1, wordBreak: 'break-word' }}>
-      <Box color={theme.palette.grey[500]}>{processedContent}</Box>
+      <Box color={theme.palette.grey[500]}>{contentNode}</Box>
     </Paper>
   );
 };
@@ -82,34 +110,36 @@ export default function ActivityCard({
   let comment: ReactNode | string | null =
     activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
   if (format === 'Feed' && comment) {
-    if (activity.metadata?.comments) {
+    if (activity.metadata?.comments?.some(c => c.body)) {
       comment = (
         <Stack spacing={1}>
-          <>Commented</>
-          {activity.metadata.comments.map((comment, i) => (
-            <SubCard
-              key={i}
-              content={comment.body}
-              isJira={activity.eventType === 'jira'}
-              meta={activity.eventType === 'jira' ? { actors, accountMap } : undefined}
-            />
-          ))}
+          <Box>Commented</Box>
+          {activity.metadata.comments
+            .filter(c => c.body)
+            .map((comment, i) => (
+              <SubCard
+                key={i}
+                content={convertEmojis(comment.body)}
+                eventType={activity.eventType}
+                meta={{ actors, accountMap, ticketBaseUrl }}
+              />
+            ))}
         </Stack>
       );
-    } else if (activity.metadata?.comment) {
+    } else if (activity.metadata?.comment?.body) {
       comment = (
         <Stack spacing={1}>
-          <>Commented</>
+          <Box>Commented</Box>
           <SubCard
-            content={activity.metadata.comment.body}
-            isJira={activity.eventType === 'jira'}
-            meta={activity.eventType === 'jira' ? { actors, accountMap } : undefined}
+            content={convertEmojis(activity.metadata.comment.body)}
+            eventType={activity.eventType}
+            meta={{ actors, accountMap, ticketBaseUrl }}
           />
         </Stack>
       );
     }
   }
-  const url = activity.metadata ? getActivityUrl(activity) : undefined;
+  const url = format === 'Grid' && activity.metadata ? getActivityUrl(activity) : undefined;
   let icon;
   let urlTitle = '';
   if (url) {
@@ -135,28 +165,21 @@ export default function ActivityCard({
       );
       urlTitle = 'Go to Github page';
     }
-  } else if (activity.event === CUSTOM_EVENT) {
+  } else if (activity.event === CUSTOM_EVENT && format === 'Grid') {
     icon = <CustomEventIcon fontSize="small" sx={{ color: theme.palette.grey[400], mr: '2px' }} />;
   }
   const link =
     url && icon ?
-      <Box display="flex" alignItems={format === 'Grid' ? 'center' : 'start'} mr="4px">
-        {format === 'Grid' && (
-          <GridActionsCellItem
-            tabIndex={tabIndex}
-            icon={icon}
-            label={urlTitle}
-            // @ts-expect-error weird compile error with href
-            href={url.url}
-            title={urlTitle}
-            target="_blank"
-          />
-        )}
-        {format === 'Feed' && (
-          <IconButton size="small" href={url.url} title={urlTitle} target="_blank">
-            {icon}
-          </IconButton>
-        )}
+      <Box display="flex" alignItems={'center'} mr="4px">
+        <GridActionsCellItem
+          tabIndex={tabIndex}
+          icon={icon}
+          label={urlTitle}
+          // @ts-expect-error weird compile error with href
+          href={url.url}
+          title={urlTitle}
+          target="_blank"
+        />
       </Box>
     : null;
 
@@ -170,15 +193,15 @@ export default function ActivityCard({
   return (
     <Stack direction="row" width="100%">
       {link}
-      {!link && (
-        <Box display="flex" alignItems={format === 'Grid' ? 'center' : 'start'} ml="4px" mr="7px">
+      {!link && icon && (
+        <Box display="flex" alignItems="center" ml="4px" mr="7px">
           {icon}
         </Box>
       )}
       {actionDescription || comment || commits ?
         <Stack mt="2px" pl={icon ? undefined : missingIconPadding} width="100%" minWidth={0}>
           <Box
-            title={description}
+            title={format === 'Grid' ? description : undefined}
             fontSize={format === 'Grid' ? 'small' : undefined}
             lineHeight={1.2}
             mb={format === 'Feed' ? '2px' : undefined}
@@ -211,8 +234,8 @@ export default function ActivityCard({
                     <SubCard
                       key={i}
                       content={action}
-                      isJira={activity.eventType === 'jira'}
-                      meta={activity.eventType === 'jira' ? { actors, accountMap } : undefined}
+                      eventType={activity.eventType}
+                      meta={{ actors, accountMap, ticketBaseUrl }}
                     />
                   ))}
                 </Stack>
@@ -270,7 +293,7 @@ export default function ActivityCard({
         </Stack>
       : <Box
           fontSize={format === 'Grid' ? 'small' : undefined}
-          title={description}
+          title={format === 'Grid' ? description : undefined}
           pl={icon ? undefined : missingIconPadding}
           mb={format === 'Feed' ? '2px' : undefined}
           sx={format === 'Grid' ? ellipsisSx : undefined}

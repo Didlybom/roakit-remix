@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import RoakitIcon from '../../icons/Roakit';
 import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
 import { Role, View } from '../../utils/rbac';
+import ClickableAvatar from '../ClickableAvatar';
 import DateRangePicker from '../DateRangePicker';
 
 interface NavBarProps extends AppBarProps {
@@ -38,6 +39,8 @@ const NavBar = styled(AppBar, {
 
 export default function Header({
   isLoggedIn,
+  identityId,
+  userName,
   role,
   view,
   dateRange,
@@ -49,6 +52,8 @@ export default function Header({
   onNavBarOpen,
 }: {
   isLoggedIn: boolean;
+  identityId?: string;
+  userName?: string;
   role: Role;
   view: View;
   dateRange?: DateRangeEnding;
@@ -122,9 +127,20 @@ export default function Header({
               </IconButton>
             )}
             {isLoggedIn && (
-              <IconButton href="/logout" title="Logout" color="inherit">
-                <LogoutIcon />
-              </IconButton>
+              <>
+                {identityId && (
+                  <ClickableAvatar
+                    title="My feed"
+                    name={userName}
+                    href={`/feed/${encodeURI(identityId)}`}
+                    size={24}
+                    sx={{ ml: 1 }}
+                  />
+                )}
+                <IconButton href="/logout" title="Logout" color="inherit">
+                  <LogoutIcon />
+                </IconButton>
+              </>
             )}
           </>
         )}

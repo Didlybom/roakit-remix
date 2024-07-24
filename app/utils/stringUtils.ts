@@ -1,4 +1,6 @@
+import EmojiConvertor from 'emoji-js';
 import memoize from 'fast-memoize';
+import type { Logger } from 'pino';
 import pluralize from 'pluralize';
 
 export const caseInsensitiveSort = (data: string[]): string[] =>
@@ -8,9 +10,14 @@ export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 export const JIRA_TICKET_REGEXP = /([A-Z][A-Z0-9]+-[0-9]+)/;
-export const JIRA_ACCOUNT_REGEXP_G = /(?:[[]~accountid:)(.*?)(?:[\]])/g;
+export const JIRA_FAKE_TICKET_REGEXP = /([A-Z][A-Z0-9]+)-0+$/;
 const JIRA_PROJECT_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
-const JIRA_TICKET_REGEXP_G = /([A-Z][A-Z0-9]+-[0-9]+)/g;
+export const JIRA_TICKET_REGEXP_G = /([A-Z][A-Z0-9]+-[0-9]+)/g;
+
+export const JIRA_ACCOUNT_REGEXP_G = /(?:[[]~accountid:)(.+?)(?:[\]])/g;
+export const JIRA_IMAGE_REGEXP_G = /!(.+?)!/g;
+export const MENTION_REGEXP_G = /\B@([\w-]+)/g;
+export const IMG_TAG_REGEXP_G = /(<img.+?>)/g;
 
 export const findJiraProjects = (data?: string): string[] => {
   if (!data) {
@@ -140,4 +147,15 @@ export const stringColor = (string: string | undefined) => {
   }
 
   return color;
+};
+
+const emojiConvertor = new EmojiConvertor();
+export const convertEmojis = (string: string | undefined, options?: { metricsLogger?: Logger }) => {
+  let timer = 0;
+  if (options?.metricsLogger) {
+    timer = Date.now();
+  }
+  const result = string ? emojiConvertor.replace_colons(string) : undefined;
+  options?.metricsLogger?.info({ emojiConvertorDuration: Date.now() - timer });
+  return result;
 };

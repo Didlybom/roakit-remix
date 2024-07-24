@@ -31,6 +31,13 @@ const theme = createTheme({
     secondary: { main: green[700] },
     error: { main: red.A400 },
   },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        rounded: { borderRadius: 8 },
+      },
+    },
+  },
 });
 
 export default theme;

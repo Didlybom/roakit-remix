@@ -1,5 +1,5 @@
 import { Box, styled } from '@mui/material';
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { type DateRangeEnding } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
@@ -33,6 +33,8 @@ const Main = styled('main', { shouldForwardProp: prop => prop !== 'open' })<{
 export default function App({
   isLoggedIn,
   view,
+  identityId,
+  userName,
   role = DEFAULT_ROLE,
   dateRange,
   onDateRangeSelect,
@@ -43,6 +45,8 @@ export default function App({
   children,
 }: {
   isLoggedIn: boolean;
+  identityId?: string;
+  userName?: string;
   role?: Role;
   view: View;
   dateRange?: DateRangeEnding;
@@ -53,7 +57,7 @@ export default function App({
   isNavOpen?: boolean;
   children?: ReactNode;
 }) {
-  const [isOpen, setIsOpen] = useState(isLoggedIn ? isNavOpen ?? true : false);
+  const [isOpen, setIsOpen] = useState(isLoggedIn ? (isNavOpen ?? true) : false);
 
   const toggleNavBar = async (isNavOpen: boolean) => {
     setIsOpen(isNavOpen);
@@ -64,6 +68,8 @@ export default function App({
     <Box sx={{ display: 'flex' }}>
       <Header
         isLoggedIn={isLoggedIn}
+        identityId={identityId}
+        userName={userName}
         role={role}
         view={view}
         dateRange={dateRange}

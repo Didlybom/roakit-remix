@@ -1,4 +1,5 @@
 import {
+  RssFeed as FeedIcon,
   GitHub as GitHubIcon,
   AccountTree as GroupIcon,
   OpenInNew as OpenInNewIcon,
@@ -187,6 +188,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
+    const userIdentity = identities.list.find(identity => identity.email === sessionData.email);
+    if (!userIdentity) {
+      throw new Response('Identity not found', { status: 500 });
+    }
+
     const userId = params.userid;
     const activityUserIds =
       userId && userId !== ALL ?
@@ -196,6 +202,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return {
       ...sessionData,
       userId,
+      identityId: userIdentity.id,
       activityUserIds,
       initiatives,
       launchItems,
@@ -492,6 +499,7 @@ export default function UserActivity() {
                 component="a"
                 href={accountUrlToWeb(account)}
                 target="_blank"
+                title="Go to source"
                 size="small"
                 color="primary"
               >
@@ -500,16 +508,29 @@ export default function UserActivity() {
               </IconButton>
             ))}
           {loaderData.userId === ALL && actorId && (
-            <IconButton
-              component="a"
-              href={
-                `/activity/${encodeURI(actorId)}` +
-                (actionFilter.length ? `?action=${actionFilter.join(',')}` : '')
-              }
-              size="small"
-            >
-              <OpenInNewIcon sx={{ width: 15, height: 15 }} />
-            </IconButton>
+            <>
+              <IconButton
+                component="a"
+                href={
+                  `/activity/${encodeURI(actorId)}` +
+                  (actionFilter.length ? `?action=${actionFilter.join(',')}` : '')
+                }
+                title="Open in single view"
+                size="small"
+                color="primary"
+              >
+                <OpenInNewIcon sx={{ width: 15, height: 15 }} />
+              </IconButton>
+              <IconButton
+                component="a"
+                href={`/feed/${encodeURI(actorId)}`}
+                title="Go to feed"
+                size="small"
+                color="primary"
+              >
+                <FeedIcon sx={{ width: 15, height: 15 }} />
+              </IconButton>{' '}
+            </>
           )}
         </Typography>
       );
@@ -899,6 +920,8 @@ export default function UserActivity() {
     <App
       view={VIEW}
       isLoggedIn={true}
+      identityId={loaderData.identityId}
+      userName={loaderData.actors[loaderData.identityId]?.name}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}

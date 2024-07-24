@@ -1,4 +1,10 @@
-import { areRecordsEqual, cloneArray, groupBy, groupByAndSort } from '../../app/utils/mapUtils';
+import {
+  areRecordsEqual,
+  cloneArray,
+  dedupeConsecutiveItems,
+  groupBy,
+  groupByAndSort,
+} from '../../app/utils/mapUtils';
 
 const data = [
   { k: 'a', v: 'a1' },
@@ -53,4 +59,18 @@ test('areRecordsEqual', () => {
   const rec3: Record<string, boolean> = { a: true };
   expect(areRecordsEqual(rec1, rec2)).toBe(true);
   expect(areRecordsEqual(rec1, rec3)).toBe(false);
+});
+
+test('dedupeConsecutiveItems', () => {
+  const arr = [
+    { a: 1, b: 2 },
+    { a: 1, b: 3 },
+    { a: 4, b: 4 },
+    { a: 1, b: 5 },
+  ];
+  expect(dedupeConsecutiveItems(arr, (x, y) => x.a === y.a)).toEqual([
+    { a: 1, b: 2 },
+    { a: 4, b: 4 },
+    { a: 1, b: 5 },
+  ]);
 });

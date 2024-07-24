@@ -1,52 +1,41 @@
 import type { ReactNode } from 'react';
 import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '../types/types';
-import { mimeTypeToType } from '../utils/stringUtils';
+import { convertEmojis, mimeTypeToType } from '../utils/stringUtils';
 import { issueUrlToWeb } from './activityFeed';
 
-export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
+export const getActivityDescription = (activity: Activity) => {
   if (activity.description) {
     return activity.description;
   }
 
   const metadata = activity.metadata;
-  if (metadata?.issue) {
-    return metadata.issue.key + ' ' + metadata.issue.summary;
-  }
+  if (metadata?.issue) return metadata.issue.key + ' ' + metadata.issue.summary;
   if (metadata?.attachment?.filename) {
     const type = metadata.attachment.mimeType ? mimeTypeToType(metadata.attachment.mimeType) : null;
     return type ?
         `Attached ${type} ${metadata.attachment.filename}`
       : `Attached ${metadata.attachment.filename}`;
   }
-  if (metadata?.sprint) {
-    return `Sprint ${metadata.sprint.name} ${metadata.sprint.state}`;
-  }
-  if (metadata?.worklog) {
-    return 'Worklog';
-  }
-
-  if (metadata?.space) {
-    return `Space: ${metadata.space.title}`;
-  }
-  if (metadata?.page) {
-    return `${metadata.page.title}`;
-  }
-  if (metadata?.comment) {
-    return `Commented ${metadata.comment.parent?.title}`;
-  }
-  if (metadata?.comments?.length) {
-    return `Commented ${metadata.comments[0].parent?.title}`;
-  }
-  if (metadata?.label) {
+  if (metadata?.sprint) return `Sprint ${metadata.sprint.name} ${metadata.sprint.state}`;
+  if (metadata?.worklog) return 'Worklog';
+  if (metadata?.space) return `Space: ${metadata.space.title}`;
+  if (metadata?.page) return metadata.page.title;
+  if (metadata?.comment && metadata?.pullRequest)
+    return metadata.comment.parent?.title || 'Commented';
+  if (metadata?.comments?.length && metadata?.pullRequest)
+    return metadata.comments[0].parent?.title || 'Commented';
+  if (metadata?.label && !metadata?.pullRequest) {
     return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
   }
   if (metadata?.attachments) {
-    const files = metadata.attachments.files.map(f => f.filename).join(', ');
+    const files = metadata.attachments.files
+      .filter(f => f.filename)
+      .map(f => f.filename)
+      .join(', ');
     return metadata.attachments.parent ?
         `Attached ${files} to ${metadata.attachments.parent.type} ${metadata.attachments.parent.title}`
       : `Attached ${files}`;
   }
-
   if (metadata?.pullRequest) {
     return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
   }
@@ -57,70 +46,46 @@ export const getActivityDescription = (activity: Omit<Activity, 'id'>) => {
       metadata.pullRequestComment.body
     ); // prefer the PR title
   }
-  if (metadata?.commits?.length) {
-    return metadata.commits[0].message;
-  }
-  if (activity.event === 'organization') {
-    return 'Organization';
-  }
-  if (activity.event === 'repository') {
-    return 'Repository';
-  }
-  if (activity.event === 'repository_ruleset') {
-    return 'Repository ruleset';
-  }
-  if (activity.event === 'project_created') {
-    return 'Project created';
-  }
+  if (metadata?.commits?.length) return metadata.commits[0].message;
+  if (activity.event === 'organization') return 'Organization';
+  if (activity.event === 'repository') return 'Repository';
+  if (activity.event === 'repository_ruleset') return 'Repository ruleset';
+  if (activity.event === 'project_created') return 'Project created';
   return '';
 };
 
 const transitionString = (prefix: string, changeLog: ActivityChangeLog) =>
-  prefix + changeLog.oldValue + ' → ' + changeLog.newValue;
+  `${prefix + changeLog.oldValue} → ${changeLog.newValue}`;
 
 const codeActionString = (
   codeAction: string,
   metadata: ActivityMetadata,
   options?: { format?: 'Grid' | 'Feed' }
 ) => {
-  if (codeAction === 'opened') {
-    return 'opened';
-  }
-  if (codeAction === 'ready_for_review') {
-    return 'ready for review';
-  }
-  if (codeAction === 'review_requested') {
-    return 'review requested';
-  }
-  if (codeAction === 'submitted') {
-    return 'submitted';
-  }
-  if (codeAction === 'assigned') {
-    return 'assigned';
-  }
-  if (codeAction === 'resolved') {
-    return 'discussion resolved';
-  }
-  if (codeAction === 'edited') {
-    return 'edited';
-  }
-  if (codeAction === 'labeled') {
-    return 'labeled';
-  }
-  if (codeAction === 'closed') {
-    return 'closed';
-  }
-  if (codeAction === 'dismissed') {
-    return 'dismissed';
-  }
+  if (codeAction === 'opened') return 'opened';
+  if (codeAction === 'ready_for_review') return 'ready for review';
+  if (codeAction === 'review_requested') return 'review requested';
+  if (codeAction === 'review_request_removed') return 'review request removed';
+  if (codeAction === 'submitted') return 'submitted';
+  if (codeAction === 'assigned') return 'assigned';
+  if (codeAction === 'resolved') return 'discussion resolved';
+  if (codeAction === 'edited') return 'edited';
+  if (codeAction === 'closed') return 'closed';
+  if (codeAction === 'dismissed') return 'dismissed';
+  if (codeAction === 'reopened') return 'reopened';
   if (codeAction === 'created' && metadata.pullRequestComment) {
     return options?.format === 'Feed' ?
-        `commented: ${metadata.pullRequestComment.body}`
+        `commented:\n\n${metadata.pullRequestComment.body}`
       : 'commented';
   }
-  if (codeAction === 'deleted' && metadata.pullRequestComment) {
-    return 'comment deleted';
-  }
+  if (codeAction === 'created') return 'created';
+  if (codeAction === 'converted_to_draft') return 'converted to draft';
+  if (codeAction === 'deleted' && metadata.pullRequestComment) return 'comment deleted';
+  if (codeAction === 'deleted') return 'deleted';
+  if (codeAction.startsWith('labeled'))
+    return options?.format === 'Feed' ? convertEmojis(codeAction) : 'labeled';
+  if (codeAction === 'unlabeled') return 'unlabeled';
+  return codeAction;
 };
 
 export const getActivityActionDescription = (
@@ -133,10 +98,21 @@ export const getActivityActionDescription = (
       const actions: string[] = [];
       metadata.changeLog?.forEach(changeLog => {
         if (changeLog.field === 'status' && changeLog.oldValue && changeLog.newValue) {
-          actions.push('Status: ' + changeLog.oldValue + ' → ' + changeLog.newValue);
+          actions.push(transitionString('Status: ', changeLog));
         }
         if (changeLog.field === 'assignee' && changeLog.oldValue && changeLog.newValue) {
-          actions.push(transitionString('Assignee: ', changeLog));
+          if (
+            options?.format === 'Feed' &&
+            activity.eventType === 'jira' &&
+            changeLog.oldId &&
+            changeLog.newId
+          ) {
+            actions.push(
+              `Assignee: [~accountid:${changeLog.oldId}] → [~accountid:${changeLog.newId}]`
+            );
+          } else {
+            actions.push(transitionString('Assignee: ', changeLog));
+          }
         }
         if (changeLog.field === 'assignee' && !changeLog.oldValue && changeLog.newValue) {
           if (options?.format === 'Feed' && activity.eventType === 'jira' && changeLog.newId) {
@@ -151,6 +127,9 @@ export const getActivityActionDescription = (
         if (changeLog.field === 'labels' && changeLog.oldValue && changeLog.newValue) {
           actions.push(transitionString('Labels: ', changeLog));
         }
+        if (changeLog.field === 'priority' && changeLog.oldValue && changeLog.newValue) {
+          actions.push(transitionString('Priority: ', changeLog));
+        }
         if (changeLog.field === 'labels' && !changeLog.oldValue && changeLog.newValue) {
           actions.push('Labeled: ' + changeLog.newValue);
         }
@@ -158,7 +137,7 @@ export const getActivityActionDescription = (
           actions.push('Unlabeled: ' + changeLog.oldValue);
         }
         if (changeLog.field === 'Link' && changeLog.newValue) {
-          actions.push(changeLog.newValue); // "This issue relates to XXX"
+          actions.push(changeLog.newValue);
         }
         if (changeLog.field === 'Domain' && changeLog.newValue) {
           actions.push('Domain: ' + changeLog.newValue);
@@ -213,10 +192,15 @@ export const getActivityActionDescription = (
         }
         if (changeLog.field === 'description') {
           actions.push(
-            options?.format === 'Feed' ? `Description: ${changeLog.newValue}` : 'Set description'
+            options?.format === 'Feed' ?
+              `Description:\n\n${convertEmojis(changeLog.newValue)}`
+            : 'Set description'
           );
         }
       });
+      if (activity.action === 'created') {
+        actions.push('Issue created');
+      }
       return actions;
     }
     if (metadata?.attachment?.uri) {
@@ -230,7 +214,9 @@ export const getActivityActionDescription = (
       return [`${version}Moved from ${metadata.oldParent.title} to ${metadata.newParent.title}`];
     }
     if (metadata?.page?.version) {
-      return [`Version ${metadata.page.version}`];
+      return [
+        `Version${metadata.page.version.indexOf(',') > 0 ? 's' : ''} ${metadata.page.version}`,
+      ];
     }
 
     if (metadata?.codeAction && (metadata?.pullRequest || metadata?.pullRequestComment)) {
@@ -270,39 +256,23 @@ export const getActivityUrl = (activity: Activity): { url: string; type: FeedTyp
       type = 'github';
     }
   }
-  if (!type) {
-    return null;
-  }
+  if (!type) return null;
+
   if (metadata?.issue?.uri) {
     return { url: issueUrlToWeb(metadata.issue.uri, metadata.issue.key), type };
   }
-  if (metadata?.space?.uri) {
-    return { url: `${metadata.space.uri}`, type };
-  }
-  if (metadata?.page?.uri) {
-    return { url: `${metadata.page.uri}`, type };
-  }
-  if (metadata?.comment?.uri) {
-    return { url: `${metadata.comment.uri}`, type };
-  }
-  if (metadata?.comments && metadata.comments[0]?.uri) {
-    return { url: `${metadata.comments[0].uri}`, type };
-  }
-  if (metadata?.label?.contentUri) {
-    return { url: `${metadata.label.contentUri}`, type };
-  }
-  if (metadata?.attachments?.parent?.uri) {
-    return { url: `${metadata.attachments.parent.uri}`, type };
-  }
 
-  if (metadata?.pullRequest?.uri) {
-    return { url: metadata.pullRequest.uri, type };
-  }
-  if (metadata?.pullRequestComment?.uri) {
-    return { url: metadata.pullRequestComment.uri, type };
-  }
-  if (metadata?.commits?.length) {
-    return { url: metadata.commits[0].url!, type };
-  }
+  if (metadata?.space?.uri) return { url: metadata.space.uri, type };
+  if (metadata?.page?.uri) return { url: metadata.page.uri, type };
+  if (metadata?.comment?.uri) return { url: metadata.comment.uri, type };
+  if (metadata?.comments && metadata.comments[0]?.uri)
+    return { url: metadata.comments[0].uri, type };
+  if (metadata?.label?.contentUri) return { url: metadata.label.contentUri, type };
+  if (metadata?.attachments?.parent?.uri) return { url: metadata.attachments.parent.uri, type };
+
+  if (metadata?.pullRequest?.uri) return { url: metadata.pullRequest.uri, type };
+  if (metadata?.pullRequestComment?.uri) return { url: metadata.pullRequestComment.uri, type };
+  if (metadata?.commits?.length) return { url: metadata.commits[0].url!, type };
+
   return null;
 };

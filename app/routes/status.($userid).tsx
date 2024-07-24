@@ -74,6 +74,7 @@ import {
 } from '../components/datagrid/dataGridCommon';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditableCellField from '../components/datagrid/EditableCellField';
+import HelperText from '../components/HelperText';
 import SelectField from '../components/SelectField';
 import SmallAvatarChip from '../components/SmallAvatarChip';
 import { firestore } from '../firebase.server';
@@ -97,7 +98,7 @@ import {
 } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-import theme, { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
+import { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 export const meta = () => [{ title: 'Status Form | ROAKIT' }];
@@ -134,6 +135,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     return {
       ...sessionData,
       userId,
+      identityId: userIdentity.id,
       userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
       initiatives,
@@ -597,6 +599,8 @@ export default function Status() {
     <App
       view={VIEW}
       isLoggedIn={true}
+      identityId={loaderData.identityId}
+      userName={loaderData.userDisplayName}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       showProgress={navigation.state !== 'idle' || activitiesFetcher.state !== 'idle'}
@@ -692,6 +696,10 @@ export default function Status() {
                     size="small"
                     sx={{ maxWidth: 90 }}
                     onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
+                    error={
+                      newActivity.effort != null &&
+                      (newActivity.effort < 0 || newActivity.effort > 24)
+                    }
                   />
                 </Grid>
               </Grid>
@@ -867,30 +875,11 @@ export default function Status() {
               />
             </StyledMuiError>
             {!isMobile && (
-              <Typography
-                variant="caption"
-                fontStyle="italic"
-                color={theme.palette.grey[500]}
-                display="flex"
-                justifyContent="center"
-                sx={{
-                  code: {
-                    backgroundColor: theme.palette.grey[200],
-                    border: '1px solid',
-                    borderColor: theme.palette.grey[400],
-                    borderRadius: '5px',
-                    p: '1px 4px',
-                    mt: '-2px',
-                    mx: '1px',
-                  },
-                }}
-              >
-                <span>
-                  {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
-                  Press <code>N</code> to create a custom activity, <code>[</code> and{' '}
-                  <code>]</code> to go to previous/next day.
-                </span>
-              </Typography>
+              <HelperText>
+                {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
+                Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
+                to go to previous/next day.
+              </HelperText>
             )}
           </Stack>
         </Grid>

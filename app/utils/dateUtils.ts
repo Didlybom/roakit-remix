@@ -17,17 +17,17 @@ dayjs.updateLocale('en', {
   relativeTime: {
     future: 'in %s',
     past: '%s ago',
-    s: 'a few secs',
+    s: 'few secs',
     m: '1m',
-    mm: '%d mins',
+    mm: '%dm',
     h: '1h',
     hh: '%dh',
     d: '1d',
     dd: '%dd',
-    M: '1m',
-    MM: '%dm',
-    y: '1y',
-    yy: '%dy',
+    M: '1 month',
+    MM: '%d months',
+    y: '1year',
+    yy: '%d years',
   },
 });
 

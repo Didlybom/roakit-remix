@@ -67,3 +67,6 @@ export const groupByAndSort = <T>(
     b: { key: string | null; values: T[] }
   ) => number
 ): Map<string | null, T[]> => sortMap(groupByArray(array, key), compare);
+
+export const dedupeConsecutiveItems = <T>(array: T[], areEqual: (a: T, b: T) => boolean): T[] =>
+  array.filter((item, pos, arr) => pos === 0 || !areEqual(item, arr[pos - 1]));
