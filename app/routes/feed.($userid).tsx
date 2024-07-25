@@ -54,10 +54,12 @@ import { formatMonthDayTime } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
+  desktopDisplaySx,
   ellipsisSx,
   errorAlert,
   loaderErrorResponse,
   loginWithRedirectUrl,
+  mobileDisplaySx,
 } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
@@ -193,7 +195,7 @@ export default function ActivityReview() {
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [listScrollOffset, setListScrollOffset] = useState(0);
 
   const listRef = useRef<VariableSizeList | null>(null);
   const heightsRef = useRef<number[]>([]);
@@ -215,7 +217,7 @@ export default function ActivityReview() {
       };
 
   const loadNewRows = () => {
-    if (moreActivitiesFetcher.state !== 'idle') return;
+    if (newActivitiesFetcher.state !== 'idle') return;
 
     let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
     if (activities.length) {
@@ -328,56 +330,32 @@ export default function ActivityReview() {
     const isLiked = activity.reactions?.like[loaderData.identityId];
     const likeCount = activity.reactions ? reactionCount(activity.reactions).like : 0;
     const userName = activity.actorId ? loaderData.actors[activity.actorId]?.name : undefined;
-    const userHref = activity.actorId ? `/feed/${encodeURI(activity.actorId)}` : undefined;
+    const userUrl = activity.actorId ? `/feed/${encodeURI(activity.actorId)}` : undefined;
 
-    const url = activity.metadata ? getActivityUrl(activity) : undefined;
+    const activityUrl = activity.metadata ? getActivityUrl(activity) : undefined;
     let sourceIcon;
     let sourceTitle;
-    if (url) {
-      if (url.type === 'jira') {
+    if (activityUrl) {
+      if (activityUrl.type === 'jira') {
         sourceIcon = <JiraIcon width={16} height={16} />;
         sourceTitle = 'Jira';
-      } else if (url.type === 'confluence') {
+      } else if (activityUrl.type === 'confluence') {
         sourceIcon = <ConfluenceIcon width={14} height={14} />;
         sourceTitle = 'Confluence';
-      } else if (url.type === 'github') {
+      } else if (activityUrl.type === 'github') {
         sourceIcon = <GitHubIcon sx={{ width: 16, height: 16 }} />;
         sourceTitle = 'GitHub';
       }
     }
-    const sourceButton =
-      url && sourceIcon && sourceTitle ?
-        <Tooltip title="Go to source">
-          <Button
-            component="a"
-            href={url.url}
-            target="_blank"
-            size="small"
-            startIcon={sourceIcon}
-            sx={{ textTransform: 'none', fontWeight: 400, py: 0, px: '4px', minWidth: 0 }}
-          >
-            <Box fontSize="12px" sx={{ display: { xs: 'none', sm: 'flex' } }}>
-              {sourceTitle}
-            </Box>
-          </Button>
-        </Tooltip>
-      : undefined;
 
     return (
       <Stack direction="row">
-        <ClickableAvatar name={userName} href={userHref} sx={{ mr: 1 }} />
+        <ClickableAvatar name={userName} href={userUrl} sx={{ mr: 1 }} />
         <Stack flexGrow={1} minWidth={0}>
-          <Stack
-            useFlexGap
-            direction="row"
-            spacing="4px"
-            fontSize="14px"
-            mb="4px"
-            alignItems="center"
-          >
-            {userHref && (
+          <Stack useFlexGap direction="row" spacing="4px" mb="4px" alignItems="center">
+            {userUrl && (
               <Link
-                href={userHref}
+                href={userUrl}
                 sx={{
                   fontWeight: 600,
                   color: theme.palette.text.primary,
@@ -390,7 +368,7 @@ export default function ActivityReview() {
               </Link>
             )}
             <Tooltip title={formatMonthDayTime(activity.timestamp)}>
-              <Box color={theme.palette.grey[500]} sx={{ whiteSpace: 'nowrap' }}>
+              <Box fontSize="14px" color={theme.palette.grey[500]} sx={{ whiteSpace: 'nowrap' }}>
                 • <AutoRefreshingRelativeDate date={activity.timestamp} />
               </Box>
             </Tooltip>
@@ -449,11 +427,7 @@ export default function ActivityReview() {
                     activity.reactions.like[loaderData.identityId] = !isLiked;
                   }
                   submit(
-                    {
-                      activityId: activity.id,
-                      reaction: 'like',
-                      plusOne: !isLiked,
-                    },
+                    { activityId: activity.id, reaction: 'like', plusOne: !isLiked },
                     postJsonOptions
                   );
                 }}
@@ -463,7 +437,22 @@ export default function ActivityReview() {
                 </Box>
               </Button>
             </Tooltip>
-            {sourceButton}
+            {activityUrl && sourceIcon && sourceTitle && (
+              <Tooltip title="Go to source">
+                <Button
+                  component="a"
+                  href={activityUrl.url}
+                  target="_blank"
+                  size="small"
+                  startIcon={sourceIcon}
+                  sx={{ textTransform: 'none', fontWeight: 400, py: 0, px: '4px', minWidth: 0 }}
+                >
+                  <Box fontSize="12px" sx={{ visibility: { xs: 'hidden', sm: undefined } }}>
+                    {sourceTitle}
+                  </Box>
+                </Button>
+              </Tooltip>
+            )}
             <Box flexGrow={1} />
             {activity.launchItemId != null && (
               <Tooltip title={loaderData.launchItems[activity.launchItemId]?.label}>
@@ -474,16 +463,13 @@ export default function ActivityReview() {
             )}
             {activity.priority != null && (
               <>
-                <Box
-                  color={priorityColors[activity.priority]}
-                  sx={{ display: { xs: 'none', sm: 'flex' } }}
-                >
+                <Box color={priorityColors[activity.priority]} sx={desktopDisplaySx}>
                   {priorityLabels[activity.priority]}
                 </Box>
                 <Box
                   fontWeight={600}
                   color={priorityColors[activity.priority]}
-                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                  sx={mobileDisplaySx}
                 >
                   {prioritySymbols[activity.priority]}
                 </Box>
@@ -518,7 +504,7 @@ export default function ActivityReview() {
         listRef.current?.scrollToItem(0);
       }}
       showProgress={isLoading}
-      showPulse={isAutoRefreshing}
+      showPulse={listScrollOffset === 0}
     >
       {errorAlert(moreFetchedActivities?.error?.message)}
       <CodePopover
@@ -553,7 +539,7 @@ export default function ActivityReview() {
         loadMoreItems={loadMoreRows}
         loadNewItems={loadNewRows}
         setRef={ref => (listRef.current = ref)}
-        setIsAutoRefreshing={setIsAutoRefreshing}
+        setListScrollOffset={setListScrollOffset}
         rowHeights={heightsRef.current}
         setRowHeights={heights => (heightsRef.current = heights)}
       />

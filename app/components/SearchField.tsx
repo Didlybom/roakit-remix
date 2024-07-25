@@ -1,5 +1,6 @@
 import { Clear as ClearIcon, Search as SearchIcon } from '@mui/icons-material';
 import { IconButton, InputAdornment, TextField, type SxProps } from '@mui/material';
+import { desktopDisplaySx } from '../utils/jsxUtils';
 
 export default function SearchField({
   title,
@@ -22,13 +23,13 @@ export default function SearchField({
       sx={sx}
       InputProps={{
         startAdornment: (
-          <InputAdornment position="start" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+          <InputAdornment position="start" sx={desktopDisplaySx}>
             <SearchIcon />
           </InputAdornment>
         ),
         ...(value && {
           endAdornment: (
-            <InputAdornment position="end" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+            <InputAdornment position="end" sx={desktopDisplaySx}>
               <IconButton edge="end" onClick={() => setValue('')}>
                 <ClearIcon />
               </IconButton>

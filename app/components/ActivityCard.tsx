@@ -190,7 +190,7 @@ export default function ActivityCard({
 
   const commits = activity.metadata?.commits;
 
-  const missingIconPadding = format === 'Grid' ? '22px' : undefined;
+  const missingIconPadding = format === 'Grid' ? '32px' : undefined;
 
   return (
     <Stack direction="row" width="100%">

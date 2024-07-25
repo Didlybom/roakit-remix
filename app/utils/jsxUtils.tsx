@@ -4,6 +4,9 @@ import { errMsg } from './errorUtils';
 
 export type SelectOption = { value: string; label?: string; color?: string | null };
 
+export const mobileDisplaySx: SxProps = { display: { xs: 'flex', sm: 'none' } };
+export const desktopDisplaySx: SxProps = { display: { xs: 'none', sm: 'flex' } };
+
 export const ellipsisSx: SxProps = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',

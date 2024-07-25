@@ -10,6 +10,7 @@ import { AppBar, Box, IconButton, LinearProgress, Stack, Toolbar, styled } from 
 import dayjs from 'dayjs';
 import RoakitIcon from '../../icons/Roakit';
 import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
+import { desktopDisplaySx } from '../../utils/jsxUtils';
 import { Role, View } from '../../utils/rbac';
 import ClickableAvatar from '../ClickableAvatar';
 import DateRangePicker from '../DateRangePicker';
@@ -82,7 +83,7 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Box title="Roakit" mr={2} display={{ xs: 'none', sm: 'flex' }}>
+        <Box title="Roakit" mr={2} sx={desktopDisplaySx}>
           <RoakitIcon width="51px" height="20px" />
         </Box>
         {view !== View.Login && view !== View.Logout && (
@@ -101,7 +102,7 @@ export default function Header({
                   color="inherit"
                   onClick={onDateRangeRefresh}
                   title="Fetch new activities"
-                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                  sx={desktopDisplaySx}
                 >
                   <RefreshIcon fontSize="small" />
                 </IconButton>

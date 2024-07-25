@@ -92,6 +92,7 @@ import {
 } from '../utils/dateUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
+  desktopDisplaySx,
   errorAlert,
   linkSx,
   loaderErrorResponse,
@@ -785,7 +786,7 @@ export default function UserActivity() {
 
   const navBar =
     groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && activities.size > 0 ?
-      <Box mr={2} display={{ xs: 'none', sm: 'flex' }}>
+      <Box mr={2} sx={desktopDisplaySx}>
         <Box sx={{ position: 'relative' }}>
           <Box fontSize="small" color={theme.palette.grey[700]} sx={verticalStickyBarSx}>
             <FormControl sx={{ mb: 2 }}>
