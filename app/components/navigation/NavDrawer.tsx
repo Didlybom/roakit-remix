@@ -1,5 +1,5 @@
 import {
-  BusinessCenter as BusinessCenterIcon,
+  // BusinessCenter as BusinessCenterIcon,
   Business as BusinessIcon,
   Dashboard as DashboardIcon,
   RssFeed as FeedIcon,
@@ -121,7 +121,7 @@ export default function NavDrawer({
             {role === Role.Admin && (
               <>
                 {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
-                {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)}
+                {/* {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)} */}
                 {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
                 {item(View.Impersonation, '/impersonation', PeopleIcon, 'User Impersonation', view)}
               </>

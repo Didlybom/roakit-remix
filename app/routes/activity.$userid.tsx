@@ -71,7 +71,7 @@ import {
 import {
   fetchAccountMap,
   fetchIdentities,
-  fetchInitiativeMap,
+  // fetchInitiativeMap,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
@@ -181,8 +181,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 
   try {
-    const [initiatives, launchItems, accounts, identities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId!),
+    const [launchItems, accounts, identities] = await Promise.all([
+      //fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
@@ -205,7 +205,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userId,
       identityId: userIdentity.id,
       activityUserIds,
-      initiatives,
+      // initiatives,
       launchItems,
       actors,
       accountMap: identities.accountMap,
@@ -316,13 +316,13 @@ export default function UserActivity() {
   }, []);
 
   useEffect(() => {
-    if (loaderData.initiatives) {
-      compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
-    }
+    // if (loaderData.initiatives) {
+    //   compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
+    // }
     if (loaderData.launchItems) {
       compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
     }
-  }, [loaderData.initiatives, loaderData.launchItems]);
+  }, [loaderData.launchItems]);
 
   // load activities
   useEffect(() => {
@@ -342,9 +342,9 @@ export default function UserActivity() {
         activityCount++;
         if (!activity.initiativeId || !activity.launchItemId) {
           const mapping = mapActivity(activity);
-          if (!activity.initiativeId) {
-            activity.initiativeId = mapping.initiatives[0] ?? '';
-          }
+          // if (!activity.initiativeId) {
+          //   activity.initiativeId = mapping.initiatives[0] ?? '';
+          // }
           if (!activity.launchItemId) {
             activity.launchItemId = mapping.launchItems[0] ?? '';
           }
@@ -437,16 +437,16 @@ export default function UserActivity() {
           },
         ]
       : []),
-      {
-        field: 'initiativeId',
-        headerName: 'Goal',
-        valueGetter: (value: string) => loaderData.initiatives[value]?.key,
-        getSortComparator: sortComparatorKeepingNullAtTheBottom,
-        renderCell: (params: GridRenderCellParams<Activity, string>) =>
-          params.row.initiativeId ?
-            <Box title={loaderData.initiatives[params.row.initiativeId]?.label}>{params.value}</Box>
-          : null,
-      },
+      // {
+      //   field: 'initiativeId',
+      //   headerName: 'Goal',
+      //   valueGetter: (value: string) => loaderData.initiatives[value]?.key,
+      //   getSortComparator: sortComparatorKeepingNullAtTheBottom,
+      //   renderCell: (params: GridRenderCellParams<Activity, string>) =>
+      //     params.row.initiativeId ?
+      //       <Box title={loaderData.initiatives[params.row.initiativeId]?.label}>{params.value}</Box>
+      //     : null,
+      // },
       descriptionColDef(
         { field: 'metadata' },
         (element, content) => setPopover({ element, content }),
@@ -474,7 +474,7 @@ export default function UserActivity() {
       loaderData.actors,
       loaderData.accountMap,
       loaderData.launchItems,
-      loaderData.initiatives,
+      // loaderData.initiatives,
       reset,
       setSearchParams,
     ]
