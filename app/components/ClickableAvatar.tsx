@@ -6,12 +6,14 @@ export default function ClickableAvatar({
   name,
   href,
   size = 36,
+  fontSize = 14,
   sx,
 }: {
   title?: string;
   name?: string;
   href?: string;
   size?: number;
+  fontSize?: number;
   sx?: SxProps;
 }) {
   return (
@@ -24,6 +26,7 @@ export default function ClickableAvatar({
         cursor: href ? 'pointer' : undefined,
         width: size,
         height: size,
+        fontSize,
         textDecoration: 'none',
         ...sx,
       }}

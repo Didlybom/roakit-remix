@@ -486,30 +486,28 @@ export default function UserActivity() {
       return (
         <Typography
           variant={loaderData.userId === ALL ? 'h6' : 'h3'}
-          display="flex"
-          alignItems="center"
           color={theme.palette.grey[600]}
           fontSize="1.1rem"
         >
-          <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
-          {actor?.accounts
-            ?.filter(account => account.url)
-            .map((account, i) => (
-              <IconButton
-                key={i}
-                component="a"
-                href={accountUrlToWeb(account)}
-                target="_blank"
-                title="Go to source"
-                size="small"
-                color="primary"
-              >
-                {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
-                {account.type === 'jira' && <JiraIcon width={15} height={15} />}
-              </IconButton>
-            ))}
-          {loaderData.userId === ALL && actorId && (
-            <>
+          <Stack direction="row" alignItems="center">
+            <Box sx={{ mr: 1, textWrap: 'nowrap' }}>{actor?.name ?? 'Unknown user'}</Box>
+            {actor?.accounts
+              ?.filter(account => account.url)
+              .map((account, i) => (
+                <IconButton
+                  key={i}
+                  component="a"
+                  href={accountUrlToWeb(account)}
+                  target="_blank"
+                  title="Go to source"
+                  size="small"
+                  color="primary"
+                >
+                  {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                  {account.type === 'jira' && <JiraIcon width={15} height={15} />}
+                </IconButton>
+              ))}
+            {loaderData.userId === ALL && actorId && (
               <IconButton
                 component="a"
                 href={
@@ -522,17 +520,17 @@ export default function UserActivity() {
               >
                 <OpenInNewIcon sx={{ width: 15, height: 15 }} />
               </IconButton>
-              <IconButton
-                component="a"
-                href={`/feed/${encodeURI(actorId)}`}
-                title="Go to feed"
-                size="small"
-                color="primary"
-              >
-                <FeedIcon sx={{ width: 15, height: 15 }} />
-              </IconButton>{' '}
-            </>
-          )}
+            )}
+            <IconButton
+              component="a"
+              href={`/feed/${encodeURI(actorId)}`}
+              title="Go to feed"
+              size="small"
+              color="primary"
+            >
+              <FeedIcon sx={{ width: 15, height: 15 }} />
+            </IconButton>
+          </Stack>
         </Typography>
       );
     },

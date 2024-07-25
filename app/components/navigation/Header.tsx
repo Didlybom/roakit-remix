@@ -102,7 +102,6 @@ export default function Header({
                   color="inherit"
                   onClick={onDateRangeRefresh}
                   title="Fetch new activities"
-                  sx={desktopDisplaySx}
                 >
                   <RefreshIcon fontSize="small" />
                 </IconButton>
@@ -135,7 +134,8 @@ export default function Header({
                     name={userName}
                     href={`/feed/${encodeURI(identityId)}`}
                     size={24}
-                    sx={{ ml: 1 }}
+                    fontSize={12}
+                    sx={{ ml: 1, ...desktopDisplaySx }}
                   />
                 )}
                 <IconButton href="/logout" title="Logout" color="inherit">

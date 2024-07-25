@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { GridActionsCellItem } from '@mui/x-data-grid';
 import type { ReactNode } from 'react';
+import { LinkItUrl } from 'react-linkify-it';
 import {
   getActivityActionDescription,
   getActivityDescription,
@@ -73,20 +74,25 @@ const SubCard = ({
     } else {
       linkifiedContent = content;
     }
-    if (meta?.ticketBaseUrl) {
+    if (meta?.ticketBaseUrl && linkifiedContent.indexOf('http') === -1) {
       linkifiedContent = linkifyJiraTicket(linkifiedContent, { ticketBaseUrl: meta.ticketBaseUrl });
     }
     if (eventType === 'jira') {
       linkifiedContent = cleanupJiraMarkup(linkifiedContent);
     }
     linkifiedContent = cleanupMarkup(linkifiedContent);
-    contentNode = <MarkdownText text={j2m.to_markdown(linkifiedContent)} />;
+    if (eventType === 'jira') {
+      linkifiedContent = j2m.to_markdown(linkifiedContent);
+    }
+    contentNode = <MarkdownText text={linkifiedContent} />;
   } else {
     contentNode = content;
   }
   return (
     <Paper variant="outlined" square={false} sx={{ p: 1, wordBreak: 'break-word' }}>
-      <Box color={theme.palette.grey[500]}>{contentNode}</Box>
+      <Box color={theme.palette.grey[500]}>
+        <LinkItUrl>{contentNode}</LinkItUrl>
+      </Box>
     </Paper>
   );
 };

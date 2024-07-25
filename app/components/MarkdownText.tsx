@@ -8,7 +8,11 @@ export default function MarkdownText({
   ignoreLinks?: boolean;
 }) {
   return (
-    <MarkdownToJSX options={{ ...(ignoreLinks && { overrides: { a: { component: 'span' } } }) }}>
+    <MarkdownToJSX
+      options={{
+        ...(ignoreLinks && { overrides: { a: { component: 'span' } } }),
+      }}
+    >
       {text}
     </MarkdownToJSX>
   );

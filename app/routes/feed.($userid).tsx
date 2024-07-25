@@ -349,7 +349,7 @@ export default function ActivityReview() {
     }
 
     return (
-      <Stack direction="row">
+      <Stack direction="row" mb={2}>
         <ClickableAvatar name={userName} href={userUrl} sx={{ mr: 1 }} />
         <Stack flexGrow={1} minWidth={0}>
           <Stack useFlexGap direction="row" spacing="4px" mb="4px" alignItems="center">
@@ -447,7 +447,7 @@ export default function ActivityReview() {
                   startIcon={sourceIcon}
                   sx={{ textTransform: 'none', fontWeight: 400, py: 0, px: '4px', minWidth: 0 }}
                 >
-                  <Box fontSize="12px" sx={{ visibility: { xs: 'hidden', sm: undefined } }}>
+                  <Box fontSize="12px" sx={{ visibility: { xs: 'hidden', sm: 'visible' } }}>
                     {sourceTitle}
                   </Box>
                 </Button>
