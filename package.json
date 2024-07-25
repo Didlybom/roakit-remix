@@ -26,16 +26,16 @@
     "svgr": "npx @svgr/cli --out-dir app/icons -- icons"
   },
   "dependencies": {
-    "@emotion/cache": "^11.13.0",
+    "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.0",
     "@emotion/server": "^11.11.0",
     "@emotion/styled": "^11.13.0",
     "@google-cloud/secret-manager": "^5.6.0",
     "@google-cloud/vertexai": "^1.4.0",
-    "@mui/material": "^5.16.4",
-    "@mui/x-charts": "^7.11.0",
-    "@mui/x-data-grid": "^7.11.0",
-    "@mui/x-date-pickers": "^7.11.0",
+    "@mui/material": "^5.16.5",
+    "@mui/x-charts": "^7.11.1",
+    "@mui/x-data-grid": "^7.11.1",
+    "@mui/x-date-pickers": "^7.11.1",
     "@remix-run/node": "^2.10.3",
     "@remix-run/react": "^2.10.3",
     "@remix-run/server-runtime": "^2.10.3",
@@ -45,7 +45,7 @@
     "fast-memoize": "^2.5.2",
     "filtrex": "^3.0.0",
     "firebase": "^10.12.4",
-    "firebase-admin": "^12.2.0",
+    "firebase-admin": "^12.3.0",
     "google-protobuf": "^3.21.4",
     "isbot": "^5.1.13",
     "jira2md": "^3.0.1",
@@ -53,8 +53,8 @@
     "markdown-to-jsx": "^7.4.7",
     "material-ui-confirm": "^3.0.16",
     "node-cache": "^5.1.2",
-    "pino": "^9.3.1",
-    "pino-pretty": "^11.2.1",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.2",
     "pluralize": "^8.0.0",
     "react": "^18.3.1",
     "react-color": "^2.19.3",
@@ -72,7 +72,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^8.57.0",
-    "@mui/icons-material": "^5.16.4",
+    "@mui/icons-material": "^5.16.5",
     "@remix-run/dev": "^2.10.3",
     "@remix-run/eslint-config": "^2.10.3",
     "@remix-run/serve": "^2.10.3",
@@ -101,8 +101,12 @@
     "ts-jest": "^29.2.3",
     "typescript": "^5.5.4",
     "typescript-eslint": "^7.17.0",
-    "vite": "^5.3.4",
+    "vite": "^5.3.5",
     "vite-tsconfig-paths": "^4.3.2"
+  },
+  "overrides": {
+    "braces": "^3.0.3",
+    "ws": "^7.5.10"
   },
   "engines": {
     "node": "20"
