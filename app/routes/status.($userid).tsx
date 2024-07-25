@@ -408,7 +408,7 @@ export default function Status() {
         headerName: 'Description',
         flex: 1,
         valueGetter: (_, row: ActivityRow) =>
-          findTicket(row.metadata) ?? getActivityDescription(row), // sort by ticket or description
+          findTicket(row.metadata) ?? getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
         editable: true /* see isCellEditable below for granularity */,
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField

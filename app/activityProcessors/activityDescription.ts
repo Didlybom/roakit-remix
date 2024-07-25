@@ -3,7 +3,10 @@ import type { Activity, ActivityChangeLog, ActivityMetadata, FeedType } from '..
 import { convertEmojis, mimeTypeToType } from '../utils/stringUtils';
 import { issueUrlToWeb } from './activityFeed';
 
-export const getActivityDescription = (activity: Activity) => {
+export const getActivityDescription = (
+  activity: Activity,
+  options: { format: 'Grid' | 'Feed' }
+) => {
   if (activity.description) {
     return activity.description;
   }
@@ -12,9 +15,8 @@ export const getActivityDescription = (activity: Activity) => {
   if (metadata?.issue) return metadata.issue.key + ' ' + metadata.issue.summary;
   if (metadata?.attachment?.filename) {
     const type = metadata.attachment.mimeType ? mimeTypeToType(metadata.attachment.mimeType) : null;
-    return type ?
-        `Attached ${type} ${metadata.attachment.filename}`
-      : `Attached ${metadata.attachment.filename}`;
+    const filename = options.format === 'Feed' ? '' : ` ${metadata.attachment.filename}`;
+    return type ? `Attached ${type}${filename}` : `Attached${filename}`;
   }
   if (metadata?.sprint) return `Sprint ${metadata.sprint.name} ${metadata.sprint.state}`;
   if (metadata?.worklog) return 'Worklog';
@@ -28,13 +30,17 @@ export const getActivityDescription = (activity: Activity) => {
     return `Labeled ${metadata?.label.contentType ? `${metadata?.label.contentType} ` : ''}${metadata?.label.name}`;
   }
   if (metadata?.attachments) {
-    const files = metadata.attachments.files
-      .filter(f => f.filename)
-      .map(f => f.filename)
-      .join(', ');
+    const files =
+      options.format === 'Feed' ?
+        ''
+      : ' ' +
+        metadata.attachments.files
+          .filter(f => f.filename)
+          .map(f => f.filename)
+          .join(', ');
     return metadata.attachments.parent ?
-        `Attached ${files} to ${metadata.attachments.parent.type} ${metadata.attachments.parent.title}`
-      : `Attached ${files}`;
+        `Attached${files} to ${metadata.attachments.parent.type} ${metadata.attachments.parent.title}`
+      : `Attached${files}`;
   }
   if (metadata?.pullRequest) {
     return `${metadata.pullRequest.codeAction ?? ''} ${metadata.pullRequest.title}`;
@@ -90,7 +96,7 @@ const codeActionString = (
 
 export const getActivityActionDescription = (
   activity: Activity,
-  options?: { format?: 'Grid' | 'Feed' }
+  options: { format: 'Grid' | 'Feed' }
 ): ReactNode[] | undefined => {
   const metadata = activity.metadata;
   try {
@@ -204,12 +210,30 @@ export const getActivityActionDescription = (
       return actions;
     }
     if (metadata?.attachment?.uri) {
-      return [metadata.attachment.uri];
+      return options.format === 'Feed' ?
+          [
+            metadata.attachment.uri ?
+              `<a href="${metadata.attachment.uri}" target="_blank">${metadata.attachment.filename}</a>`
+            : metadata.attachment.filename,
+          ]
+        : [];
     }
     if (metadata?.attachments?.files?.length) {
-      return metadata.attachments.files.filter(f => f.uri).map(f => f.uri!);
+      return options.format === 'Feed' ?
+          [
+            metadata.attachments.files
+              .map(f =>
+                f.uri ? `<a href="${f.uri}" target="_blank">${f.filename}</a>` : f.filename
+              )
+              .join(' • '),
+          ]
+        : [];
     }
-    if (metadata?.oldParent?.title && metadata?.newParent?.title) {
+    if (
+      metadata?.oldParent?.title &&
+      metadata?.newParent?.title &&
+      metadata?.oldParent?.id !== metadata?.newParent?.id
+    ) {
       const version = metadata?.page?.version ? `Version ${metadata.page.version}. ` : '';
       return [`${version}Moved from ${metadata.oldParent.title} to ${metadata.newParent.title}`];
     }

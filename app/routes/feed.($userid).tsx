@@ -78,19 +78,16 @@ export const shouldRevalidate = () => false;
 const VIEW = View.Feed;
 
 const PAGE_SIZE = 50;
-const THRESHOLD = 50;
-
-const REFRESH_INTERVAL_MS = 15 * 1000;
 
 const feedStyles = (
   <GlobalStyles
     styles={{
       a: {
-        color: theme.palette.primary.main, //cursor: 'pointer',
+        color: theme.palette.primary.main,
         textDecoration: 'none',
       },
       em: { fontStyle: 'normal' },
-      'h2, h3, h4': { fontSize: 'inherit' },
+      'h1, h2, h3, h4': { fontSize: 'inherit' },
       p: { marginTop: 0 },
       code: {
         fontFamily: 'Roboto Mono, monospace',
@@ -359,7 +356,9 @@ export default function ActivityReview() {
             startIcon={sourceIcon}
             sx={{ textTransform: 'none', fontWeight: 400, py: 0, px: '4px', minWidth: 0 }}
           >
-            <Box fontSize="12px">{sourceTitle}</Box>
+            <Box fontSize="12px" sx={{ display: { xs: 'none', sm: 'flex' } }}>
+              {sourceTitle}
+            </Box>
           </Button>
         </Tooltip>
       : undefined;
@@ -474,11 +473,21 @@ export default function ActivityReview() {
               </Tooltip>
             )}
             {activity.priority != null && (
-              <Tooltip title={`${priorityLabels[activity.priority]} priority`}>
-                <Box fontWeight="600" color={priorityColors[activity.priority] ?? undefined}>
-                  {prioritySymbols[activity.priority] ?? ''}
+              <>
+                <Box
+                  color={priorityColors[activity.priority]}
+                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                >
+                  {priorityLabels[activity.priority]}
                 </Box>
-              </Tooltip>
+                <Box
+                  fontWeight={600}
+                  color={priorityColors[activity.priority]}
+                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                >
+                  {prioritySymbols[activity.priority]}
+                </Box>
+              </>
             )}
             {activity.phase && <Box>{activity.phase}</Box>}
             {activity.effort && (
@@ -538,9 +547,6 @@ export default function ActivityReview() {
         height="calc(100vh - 90px)"
         margin={3}
         head={feedStyles}
-        minimumBatchSize={PAGE_SIZE}
-        threshold={THRESHOLD}
-        refreshIntervalMs={REFRESH_INTERVAL_MS}
         itemCount={activities.length + 2} /* +1 helper text, +1 'loading more' */
         isItemLoaded={isRowLoaded}
         rowElement={Row}

@@ -5,11 +5,15 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import { VariableSizeList } from 'react-window';
 import InfiniteLoader from 'react-window-infinite-loader';
 
+const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_THRESHOLD = 50;
+const DEFAULT_REFRESH_INTERVAL_MS = 15 * 1000;
+
 interface InfiniteListProps {
   height: string;
   margin?: number;
-  minimumBatchSize: number;
-  threshold: number;
+  minimumBatchSize?: number;
+  threshold?: number;
   refreshIntervalMs?: number;
   head: JSX.Element;
   itemCount: number;
@@ -26,10 +30,10 @@ interface InfiniteListProps {
 export default function InfiniteList({
   height,
   margin,
-  minimumBatchSize,
-  threshold,
+  minimumBatchSize = DEFAULT_PAGE_SIZE,
+  threshold = DEFAULT_THRESHOLD,
+  refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS,
   head,
-  refreshIntervalMs,
   itemCount,
   isItemLoaded,
   rowElement,

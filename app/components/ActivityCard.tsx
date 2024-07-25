@@ -1,5 +1,4 @@
 import {
-  Attachment as AttachmentIcon,
   PlaylistAddCheckCircle as CustomEventIcon,
   GitHub as GitHubIcon,
 } from '@mui/icons-material';
@@ -48,7 +47,10 @@ const j2m = require('jira2md');
 
 // see https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=all
 const cleanupJiraMarkup = (content: string) =>
-  content.replaceAll('|smart-link', '').replace(JIRA_IMAGE_REGEXP_G, '(image)');
+  content
+    .replaceAll('|smart-link', '')
+    .replace(JIRA_IMAGE_REGEXP_G, '(image)')
+    .replaceAll('(/)', '✅');
 
 const cleanupMarkup = (content: string) => content.replaceAll(IMG_TAG_REGEXP_G, '(image)');
 
@@ -106,7 +108,7 @@ export default function ActivityCard({
   accountMap: AccountToIdentityRecord;
   setPopover?: (element: HTMLElement, content: JSX.Element) => void;
 }) {
-  const description = getActivityDescription(activity);
+  const description = getActivityDescription(activity, { format });
   let comment: ReactNode | string | null =
     activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
   if (format === 'Feed' && comment) {
@@ -219,15 +221,7 @@ export default function ActivityCard({
               mt={format === 'Feed' ? '4px' : undefined}
               sx={format === 'Grid' ? ellipsisSx : undefined}
             >
-              {typeof actionDescription[0] === 'string' && actionDescription[0].startsWith('http') ?
-                <Stack direction="row" spacing={1} maxWidth={'300px'}>
-                  {actionDescription.map((url, i) => (
-                    <Link key={i} href={url as string} target="_blank">
-                      <AttachmentIcon sx={{ fontSize: '14px' }} />
-                    </Link>
-                  ))}
-                </Stack>
-              : format === 'Grid' ?
+              {format === 'Grid' ?
                 actionDescription.join(', ')
               : <Stack spacing={1}>
                   {actionDescription.map((action, i) => (

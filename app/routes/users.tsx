@@ -371,7 +371,10 @@ export default function Users() {
         type: 'singleSelect',
         minWidth: 150,
         editable: true,
-        valueGetter: (_, row: IdentityRow) => row.user!.role,
+        sortComparator: (a: string, b: string) => {
+          return (a ?? 'ZZZ').localeCompare(b ?? 'ZZZ');
+        },
+        valueGetter: (_, row: IdentityRow) => (row.user!.id ? row.user!.role : undefined),
         valueSetter: (value: Role, row: IdentityRow) => ({
           ...row,
           user: { ...row.user, role: value },

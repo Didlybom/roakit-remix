@@ -180,7 +180,8 @@ export const descriptionColDef = (
     headerName: 'Description',
     minWidth: 300,
     flex: 1,
-    valueGetter: (_, row: Activity) => findTicket(row.metadata) ?? getActivityDescription(row), // sort by ticket or description
+    valueGetter: (_, row: Activity) =>
+      findTicket(row.metadata) ?? getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
     renderCell: (params: GridRenderCellParams<Activity, number>) => (
       <ActivityCard
         format="Grid"

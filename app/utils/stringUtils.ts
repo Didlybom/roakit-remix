@@ -9,10 +9,10 @@ export const caseInsensitiveSort = (data: string[]): string[] =>
 export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
-export const JIRA_TICKET_REGEXP = /([A-Z][A-Z0-9]+-[0-9]+)/;
-export const JIRA_FAKE_TICKET_REGEXP = /([A-Z][A-Z0-9]+)-0+$/;
-const JIRA_PROJECT_REGEXP_G = /([A-Z][A-Z0-9]+)(?=-[0-9]+)/g;
-export const JIRA_TICKET_REGEXP_G = /([A-Z][A-Z0-9]+-[0-9]+)/g;
+export const JIRA_TICKET_REGEXP = /([A-Z]+-[0-9]+)/; // /([A-Z][A-Z0-9]+-[0-9]+)/;
+export const JIRA_FAKE_TICKET_REGEXP = /([A-Z]+)-0+$/;
+const JIRA_PROJECT_REGEXP_G = /([A-Z]+)(?=-[0-9]+)/g;
+export const JIRA_TICKET_REGEXP_G = /([A-Z]+-[0-9]+)/g;
 
 export const JIRA_ACCOUNT_REGEXP_G = /(?:[[]~accountid:)(.+?)(?:[\]])/g;
 export const JIRA_IMAGE_REGEXP_G = /!(.+?)!/g;
@@ -155,7 +155,7 @@ export const convertEmojis = (string: string | undefined, options?: { metricsLog
   if (options?.metricsLogger) {
     timer = Date.now();
   }
-  const result = string ? emojiConvertor.replace_colons(string) : undefined;
+  const result = string != null ? emojiConvertor.replace_colons(string) : undefined;
   options?.metricsLogger?.info({ emojiConvertorDuration: Date.now() - timer });
   return result;
 };

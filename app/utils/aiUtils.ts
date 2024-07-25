@@ -40,14 +40,14 @@ export const buildActivitySummaryPrompt = (
       if (!activity.metadata && activity.event !== CUSTOM_EVENT) {
         return;
       }
-      const description = getActivityDescription(activity);
+      const description = getActivityDescription(activity, { format: 'Grid' });
       // filter out uninteresting activities FIXME
       if (!description || description.startsWith('Attached')) {
         return;
       }
       const actionDescription =
         options.inclActions && activity.metadata ?
-          getActivityActionDescription(activity)?.join(', ')
+          getActivityActionDescription(activity, { format: 'Grid' })?.join(', ')
         : undefined;
       const contributor =
         options.inclContributors && actors && activity.actorId ?
