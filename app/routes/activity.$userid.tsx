@@ -641,7 +641,7 @@ export default function UserActivity() {
         const filteredRows =
           searchTerm ?
             rows.filter(activity => {
-              const summary = getActivityDescription(activity); // FIXME consider precalculating
+              const summary = getActivityDescription(activity, { format: 'Grid' }); // FIXME consider precalculating
               return summary && summary.toLowerCase().indexOf(searchTerm) >= 0;
             })
           : rows;
@@ -677,7 +677,14 @@ export default function UserActivity() {
       const filteredRows =
         searchTerm ?
           rows.filter(activity => {
-            const description = getActivityDescription(activity); // FIXME consider precalculating
+            if (
+              activity.actorId &&
+              (loaderData.actors[activity.actorId]?.name.toLowerCase().indexOf(searchTerm) ?? -1) >=
+                0
+            ) {
+              return true;
+            }
+            const description = getActivityDescription(activity, { format: 'Grid' }); // FIXME consider precalculating
             return description && description.toLowerCase().indexOf(searchTerm) >= 0;
           })
         : rows;
@@ -715,7 +722,15 @@ export default function UserActivity() {
             />
           </Stack>;
     });
-  }, [activities, columns, groupBy, isRendering, loaderData.launchItems, searchTerm]);
+  }, [
+    activities,
+    columns,
+    groupBy,
+    isRendering,
+    loaderData.actors,
+    loaderData.launchItems,
+    searchTerm,
+  ]);
 
   const [gridsUngrouped, ungroupedActivityCount] = useMemo(() => {
     if (groupBy != null) {
@@ -725,7 +740,13 @@ export default function UserActivity() {
     const filteredRows =
       searchTerm ?
         rows.filter(activity => {
-          const description = getActivityDescription(activity); // FIXME consider precalculating
+          if (
+            activity.actorId &&
+            (loaderData.actors[activity.actorId]?.name.toLowerCase().indexOf(searchTerm) ?? -1) >= 0
+          ) {
+            return true;
+          }
+          const description = getActivityDescription(activity, { format: 'Grid' }); // FIXME consider precalculating
           return description && description.toLowerCase().indexOf(searchTerm) >= 0;
         })
       : rows;
@@ -756,7 +777,7 @@ export default function UserActivity() {
         </>,
       filteredRows?.length,
     ];
-  }, [activities, columns, groupBy, isRendering, paginationModel, searchTerm]);
+  }, [activities, columns, groupBy, isRendering, loaderData.actors, paginationModel, searchTerm]);
 
   if (groupBy == null) {
     activityCount = ungroupedActivityCount;
@@ -837,7 +858,11 @@ export default function UserActivity() {
         <Grid container spacing={3}>
           <Grid>
             <SearchField
-              title="Search descriptions"
+              title={
+                groupBy === GroupBy.Contributor ?
+                  'Search descriptions'
+                : 'Search descriptions and contributors'
+              }
               value={searchFilter}
               setValue={setSearchFilter}
               sx={{ width: { xs: '11ch', sm: '12ch' }, minWidth: { xs: '100px', sm: '160px' } }}
