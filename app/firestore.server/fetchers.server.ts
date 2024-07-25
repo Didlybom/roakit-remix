@@ -34,6 +34,14 @@ import { withMetricsAsync } from '../utils/withMetrics.server';
 const logger = getLogger('firestore:fetchers');
 const EXPLAIN_QUERIES = process.env?.EXPLAIN_QUERIES === 'true';
 
+const explainQuery = async (query: FirebaseFirestore.Query) => {
+  const metrics = (await query.explain({ analyze: true })).metrics;
+  return {
+    indexesUsed: metrics.planSummary.indexesUsed,
+    executionStats: metrics.executionStats,
+  };
+};
+
 const retryProps = (message: string) => ({
   // see https://github.com/tim-kos/node-retry#api
   retries: 1,
@@ -533,7 +541,7 @@ export const fetchActivities = async ({
     const tickets = await fetchTicketPrioritiesWithCache(customerId, [...ticketPrioritiesToFetch]);
     activityTickets.forEach((activityTicket, activityId) => {
       // add the found priority to the activity
-      const activity = activities.find(a => (a.id = activityId));
+      const activity = activities.find(a => a.id === activityId);
       if (activity) {
         activity.priority = tickets[activityTicket];
       }
@@ -757,12 +765,4 @@ export const fetchAllSummaries = async (
     });
   });
   return summaries;
-};
-
-const explainQuery = async (query: FirebaseFirestore.Query) => {
-  const metrics = (await query.explain({ analyze: true })).metrics;
-  return {
-    indexesUsed: metrics.planSummary.indexesUsed,
-    executionStats: metrics.executionStats,
-  };
 };
