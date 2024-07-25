@@ -22,7 +22,7 @@ interface InfiniteListProps {
   loadMoreItems: () => void;
   loadNewItems: () => void;
   setRef: (ref: VariableSizeList | null) => void;
-  setIsAutoRefreshing?: (isRefreshing: boolean) => void;
+  setListScrollOffset?: (scrollOffset: number) => void;
   rowHeights: number[];
   setRowHeights: (heights: number[]) => void;
 }
@@ -40,7 +40,7 @@ export default function InfiniteList({
   loadMoreItems,
   loadNewItems,
   setRef,
-  setIsAutoRefreshing,
+  setListScrollOffset,
   rowHeights,
   setRowHeights,
 }: InfiniteListProps) {
@@ -56,21 +56,19 @@ export default function InfiniteList({
   });
   const autoRefresh = useRef<number | undefined>(undefined);
 
+  // auto refresh
   useEffect(() => {
     if (!refreshIntervalMs) return;
     if (scrollOffset === 0) {
-      if (autoRefresh.current == null) {
-        autoRefresh.current = window.setInterval(() => {
-          loadNewItems();
-        }, refreshIntervalMs);
-      }
+      autoRefresh.current = window.setInterval(loadNewItems, refreshIntervalMs);
     } else if (autoRefresh.current != null) {
       window.clearInterval(autoRefresh.current);
       autoRefresh.current = undefined;
     }
-    // return () => window.clearInterval(autoRefresh.current);
+    return () => window.clearInterval(autoRefresh.current);
   }, [loadNewItems, refreshIntervalMs, scrollOffset]);
 
+  // recalculate heights when items change
   useEffect(() => {
     setHeights([]);
   }, [itemCount, setHeights]);
@@ -120,7 +118,7 @@ export default function InfiniteList({
                 }}
                 onScroll={({ scrollOffset }) => {
                   setScrollOffset(scrollOffset);
-                  setIsAutoRefreshing?.(scrollOffset === 0);
+                  setListScrollOffset?.(scrollOffset);
                 }}
                 onItemsRendered={onItemsRendered}
               >
