@@ -104,4 +104,20 @@ export const daysInMonth = (date: Dayjs) => {
     .filter(d => d <= today);
 };
 
+export const endOfNextBusinessDay = (date: Date | number) => {
+  const day = typeof date === 'number' ? new Date(date) : date;
+  // see https://stackoverflow.com/questions/39137913/get-next-day-skip-weekends/39137972#39137972
+  let weekDay = day.getDay();
+  let add;
+  if (weekDay === 6) {
+    add = 2;
+  } else if (weekDay === 5) {
+    add = 3;
+  } else {
+    add = 1;
+  }
+  day.setDate(day.getDate() + add);
+  return endOfDay(dayjs(day));
+};
+
 export const isValidDate = (date: Dayjs) => !isNaN(date.toDate().getTime());

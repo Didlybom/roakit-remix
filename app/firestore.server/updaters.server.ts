@@ -1,8 +1,14 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '../firebase.server';
 import { ARTIFACTS } from '../types/schemas';
-import type { Artifact, ArtifactCount, InitiativeRecord } from '../types/types';
-import { ONE_HOUR } from '../utils/dateUtils';
+import {
+  CUSTOM_EVENT,
+  type Activity,
+  type Artifact,
+  type ArtifactCount,
+  type InitiativeRecord,
+} from '../types/types';
+import { endOfNextBusinessDay, ONE_HOUR } from '../utils/dateUtils';
 
 export const updateInitiativeCounters = async (
   customerId: number,
@@ -34,7 +40,7 @@ export const updateInitiativeCounters = async (
   const newFlatCounts = await Promise.all(
     flatCounters.map(async counter => {
       const countQuery = firestore
-        .collection(`customers/${ customerId }/activities`)
+        .collection(`customers/${customerId}/activities`)
         .where('artifact', '==', counter.artifact)
         .where('initiative', '==', counter.initiativeId)
         .orderBy('createdTimestamp')
@@ -51,7 +57,7 @@ export const updateInitiativeCounters = async (
   void Promise.all(
     Object.keys(initiatives).map(initiativeId => () => {
       const initiative = initiatives[initiativeId];
-      const initiativeDoc = firestore.doc(`customers/${ customerId }/initiatives/${ initiativeId }`);
+      const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
       void initiativeDoc.set(
         { counters: initiative.counters, countersLastUpdated: now },
         { merge: true }
@@ -66,7 +72,7 @@ export const incrementInitiativeCounters = async (
   initiativeId: string,
   counters: ArtifactCount
 ) => {
-  const initiativeDoc = firestore.doc(`customers/${ customerId }/initiatives/${ initiativeId }`);
+  const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
   await initiativeDoc.set(
     {
       counters: {
@@ -97,7 +103,7 @@ export const upsertSummary = async (
     userSummary: string;
   }
 ) => {
-  const coll = firestore.collection(`customers/${ customerId }/summaries/${ date }/instances`);
+  const coll = firestore.collection(`customers/${customerId}/summaries/${date}/instances`);
   const existing = await coll.where('identityId', '==', identityId).get();
   if (existing.size > 1) {
     throw Error('Found more than one summary');
@@ -107,7 +113,7 @@ export const upsertSummary = async (
     await coll.add({
       ...(isTeam ?
         { aiTeamSummary: aiSummary, userTeamSummary: userSummary }
-        : { aiSummary, userSummary }),
+      : { aiSummary, userSummary }),
       identityId,
       createdTimestamp: now,
       lastUpdatedTimestamp: now,
@@ -117,10 +123,35 @@ export const upsertSummary = async (
       {
         ...(isTeam ?
           { aiTeamSummary: aiSummary, userTeamSummary: userSummary }
-          : { aiSummary, userSummary }),
+        : { aiSummary, userSummary }),
         lastUpdatedTimestamp: now,
       },
       { merge: true }
     );
   }
+};
+
+export const upsertNextOngoingActivity = async (customerId: number, previousActivity: Activity) => {
+  const activitiesColl = firestore.collection(`customers/${customerId}/activities/`);
+
+  if (!(await activitiesColl.where('previousActivityId', '==', previousActivity.id).get()).empty) {
+    return null;
+  }
+
+  return await activitiesColl.add({
+    previousActivityId: previousActivity.id,
+    actorAccountId: previousActivity.actorId,
+    createdTimestamp: endOfNextBusinessDay(previousActivity.createdTimestamp),
+    eventType: previousActivity.eventType,
+    event: CUSTOM_EVENT,
+    ongoing: false,
+    action: previousActivity.action,
+    artifact: previousActivity.artifact,
+    launchItemId: previousActivity.launchItemId,
+    initiative: previousActivity.initiativeId,
+    phase: previousActivity.phase,
+    description: previousActivity.description,
+    priority: previousActivity.priority,
+    ...(previousActivity.metadata && { metadata: previousActivity.metadata }),
+  });
 };

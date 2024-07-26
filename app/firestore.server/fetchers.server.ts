@@ -525,6 +525,8 @@ export const fetchActivities = async ({
         initiativeId: data.initiative,
         launchItemId: data.launchItemId,
         effort: data.effort,
+        ongoing: data.ongoing,
+        previousActivityId: data.previousActivityId,
         phase: data.phase as Phase,
         priority, // see overwrite below
         eventType: data.eventType,
@@ -669,6 +671,8 @@ export const fetchActivitiesPage = async ({
       launchItemId: data.launchItemId,
       phase: data.phase as Phase,
       effort: data.effort,
+      ongoing: data.ongoing,
+      previousActivityId: data.previousActivityId,
       description: data.description,
       metadata: data.metadata as ActivityMetadata,
       reactions: data.reactions,

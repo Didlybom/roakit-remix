@@ -118,7 +118,7 @@ export type ActivityMetadata = {
     parent?: { id: string; type: string; title: string; uri?: string };
   };
   sprint?: { name: string; state: string };
-  worklog?: unknown;
+  worklog?: any;
   space?: { title: string; uri?: string };
   page?: { id: string; title: string; version?: string; uri?: string };
   oldParent?: { id: string; title: string };
@@ -163,6 +163,8 @@ export type Activity = {
   initiativeId: string;
   launchItemId?: string | null;
   effort?: number | null;
+  ongoing?: boolean | null;
+  previousActivityId?: string;
   phase?: Phase | null;
   priority?: number;
   description?: string | null;

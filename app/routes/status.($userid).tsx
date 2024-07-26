@@ -2,8 +2,10 @@ import {
   Add as AddIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
   KeyboardArrowRight as ArrowRightIcon,
+  Check as CheckIcon,
   Close as CloseIcon,
   DeleteOutlined as DeleteIcon,
+  Redo as OngoingIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -24,6 +26,7 @@ import {
 import {
   GridActionsCellItem,
   gridStringOrNumberComparator,
+  useGridApiRef,
   type GridCellParams,
   type GridColDef,
   type GridPreProcessEditCellProps,
@@ -81,11 +84,19 @@ import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchIdentities,
-  fetchInitiativeMap,
   fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
-import { CUSTOM_EVENT, PHASES, type Account, type Activity } from '../types/types';
+import { upsertNextOngoingActivity } from '../firestore.server/updaters.server';
+import {
+  CUSTOM_EVENT,
+  PHASES,
+  type Account,
+  type Activity,
+  type ActivityMetadata,
+  type Artifact,
+  type Phase,
+} from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isToday, isValidDate, isYesterday } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
@@ -112,8 +123,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
-    const [initiatives, launchItems, accounts, identities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId!),
+    const [launchItems, accounts, identities] = await Promise.all([
+      //  fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!), // could be optimized if we fetch identity first, we don't need it for individual contributors
       fetchIdentities(sessionData.customerId!),
@@ -138,7 +149,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       identityId: userIdentity.id,
       userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
-      initiatives,
+      // initiatives,
       launchItems,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       accountMap: identities.accountMap,
@@ -173,12 +184,26 @@ const emptyActivity: NewActivity = {
 
 interface ActionRequest {
   day?: string;
+
+  // update
   activityId: string;
   launchItemId: string;
   phase: string;
   description: string;
   priority: number;
   effort: number;
+  ongoing: boolean;
+
+  // field only used for next ongoing
+  eventType: string;
+  action: string;
+  artifact: string;
+  createdTimestamp: number;
+  timestamp: number;
+  initiativeId: string;
+  metadata?: ActivityMetadata;
+
+  // creation
   newActivity?: NewActivity;
 }
 
@@ -212,17 +237,37 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       return { error: errMsg(e, 'Failed to delete activity') };
     }
   }
+
   // update activity
   if (actionRequest.activityId) {
+    const activity = {
+      launchItemId: actionRequest.launchItemId,
+      phase: actionRequest.phase as Phase,
+      description: actionRequest.description,
+      priority: actionRequest.priority,
+      effort: actionRequest.effort,
+      ongoing: actionRequest.ongoing,
+    };
     await firestore
       .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
-      .update({
-        launchItemId: actionRequest.launchItemId,
-        phase: actionRequest.phase,
-        description: actionRequest.description,
-        priority: actionRequest.priority,
-        effort: actionRequest.effort,
+      .update(activity);
+    if (actionRequest.ongoing) {
+      const added = await upsertNextOngoingActivity(sessionData.customerId!, {
+        id: actionRequest.activityId,
+        ...activity,
+        actorId: identityId,
+        action: actionRequest.action,
+        artifact: actionRequest.artifact as Artifact,
+        createdTimestamp: actionRequest.createdTimestamp,
+        timestamp: actionRequest.createdTimestamp,
+        initiativeId: actionRequest.initiativeId,
+        eventType: actionRequest.eventType,
+        metadata: actionRequest.metadata,
       });
+      if (added) {
+        getLogger('route:status.user').info('Saved ongoing activity ' + added.id);
+      }
+    }
     return { status: { code: 'updated', message: 'Activity updated' } };
   }
 
@@ -288,6 +333,7 @@ export default function Status() {
   const [showTeam, setShowTeam] = useState(false);
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
+  const gridApiRef = useGridApiRef();
 
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newActivity, setNewActivity] = useState(emptyActivity);
@@ -295,17 +341,31 @@ export default function Status() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
-  const previousDay = () => setSelectedDay(selectedDay.subtract(1, 'day'));
-  const nextDay = () => setSelectedDay(selectedDay.add(1, 'day'));
+  const previousDay = () => {
+    const prevDay = selectedDay.subtract(1, 'day');
+    setSelectedDay(prevDay);
+    setSearchParams(prev => {
+      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(prevDay));
+      return prev;
+    });
+  };
+  const nextDay = () => {
+    const nextDay = selectedDay.add(1, 'day');
+    setSelectedDay(nextDay);
+    setSearchParams(prev => {
+      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(nextDay));
+      return prev;
+    });
+  };
 
   useHotkeys('n', () => setShowNewDialog(true));
   useHotkeys('[', previousDay);
   useHotkeys(']', nextDay, { enabled: !isTodaySelected });
 
   useEffect(() => {
-    compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
+    // compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
     compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-  }, [loaderData.initiatives, loaderData.launchItems]);
+  }, [loaderData.launchItems]);
 
   // load activities for the selected day
   useEffect(() => {
@@ -413,7 +473,7 @@ export default function Status() {
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField
             layout="text"
-            hovered={params.row.hovered && params.row.event === CUSTOM_EVENT}
+            hovered={params.row.hovered && params.row.eventType === CUSTOM_EVENT}
             label={
               <ActivityCard
                 format="Grid"
@@ -436,7 +496,7 @@ export default function Status() {
         renderCell: (params: GridRenderCellParams<ActivityRow, string>) => (
           <EditableCellField
             layout="dropdown"
-            hovered={params.row.hovered && params.row.event === CUSTOM_EVENT}
+            hovered={params.row.hovered && params.row.eventType === CUSTOM_EVENT}
             label={
               <Box
                 fontSize={params.value && params.value !== '-1' ? 'large' : undefined}
@@ -497,7 +557,7 @@ export default function Status() {
             <EditableCellField
               layout="dropdown"
               hovered={params.row.hovered}
-              label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : '⋯'}
+              label={params.value ? (PHASES.get(`${params.value}`)?.label ?? 'unknown') : undefined}
             />
           </Box>
         ),
@@ -515,11 +575,23 @@ export default function Status() {
           error: params.props.value != null && (params.props.value < 0 || params.props.value > 24),
         }),
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
-          <EditableCellField
-            layout="text"
-            hovered={params.row.hovered}
-            label={params.value ?? '⋯'}
-          />
+          <EditableCellField layout="text" hovered={params.row.hovered} label={params.value} />
+        ),
+      },
+      {
+        field: 'ongoing',
+        headerName: 'Ongoing?',
+        type: 'boolean',
+        editable: true,
+        renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
+          <>
+            {params.row.previousActivityId && (
+              <OngoingIcon fontSize="small" sx={{ opacity: 0.2 }} />
+            )}
+            {params.value ?
+              <CheckIcon fontSize="small" sx={{ opacity: 0.6 }} />
+            : <CloseIcon fontSize="small" sx={{ opacity: 0.6 }} />}
+          </>
         ),
       },
       {
@@ -810,6 +882,7 @@ export default function Status() {
             </Stack>
             <StyledMuiError>
               <DataGridWithSingleClickEditing
+                apiRef={gridApiRef}
                 columns={columns}
                 rows={activities}
                 loading={activitiesFetcher.state !== 'idle'}
@@ -818,35 +891,30 @@ export default function Status() {
                 slotProps={{
                   row: {
                     onMouseEnter: e => {
-                      const activity = activities.find(
-                        a => a.id === e.currentTarget.getAttribute('data-id')
+                      const activityId = e.currentTarget.getAttribute('data-id');
+                      setActivities(
+                        activities.map(activity => ({
+                          ...activity,
+                          hovered: activity.id === activityId,
+                        }))
                       );
-                      if (activity) {
-                        activity.hovered = true;
-                        setActivities([...activities]);
-                      }
                     },
-                    onMouseLeave: e => {
-                      const activity = activities.find(a => a.hovered);
-                      if (activity) {
-                        activity.hovered = false;
-                        setActivities([...activities]);
-                      }
-                    },
+                    onMouseLeave: e =>
+                      setActivities(activities.map(activity => ({ ...activity, hovered: false }))),
                   },
                 }}
                 isCellEditable={(params: GridCellParams<Activity>) => {
                   if (
                     params.field === 'launchItemId' ||
                     params.field === 'phase' ||
-                    params.field === 'effort'
+                    params.field === 'effort' ||
+                    params.field === 'ongoing'
                   ) {
                     return true;
                   }
-                  const eventType = params.row.eventType;
                   return (
                     (params.field === 'description' || params.field === 'priority') &&
-                    eventType === CUSTOM_EVENT
+                    params.row.eventType === CUSTOM_EVENT
                   );
                 }}
                 processRowUpdate={(updatedRow: Activity, oldRow: Activity) => {
@@ -855,8 +923,14 @@ export default function Status() {
                     updatedRow.priority != oldRow.priority ||
                     updatedRow.launchItemId !== oldRow.launchItemId ||
                     updatedRow.phase !== oldRow.phase ||
-                    updatedRow.effort !== oldRow.effort
+                    updatedRow.effort !== oldRow.effort ||
+                    updatedRow.ongoing != oldRow.ongoing
                   ) {
+                    setActivities(
+                      activities.map(activity =>
+                        activity.id === updatedRow.id ? { ...updatedRow } : activity
+                      )
+                    );
                     submit(
                       {
                         day: formatYYYYMMDD(selectedDay),
@@ -866,6 +940,16 @@ export default function Status() {
                         launchItemId: updatedRow.launchItemId ?? null,
                         phase: updatedRow.phase ?? null,
                         effort: updatedRow.effort ?? null,
+                        ongoing: updatedRow.ongoing ?? null,
+                        ...(updatedRow.ongoing && {
+                          eventType: updatedRow.eventType,
+                          action: updatedRow.action,
+                          artifact: updatedRow.artifact,
+                          createdTimestamp: updatedRow.createdTimestamp,
+                          timestamp: updatedRow.timestamp,
+                          initiativeId: updatedRow.initiativeId,
+                          metadata: updatedRow.metadata,
+                        }),
                       },
                       postJsonOptions
                     );
