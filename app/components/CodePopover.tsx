@@ -36,7 +36,9 @@ export default function CodePopover({
   }
   let formattedContent;
   if (options?.linkifyActivityId) {
-    const { id, combinedIds, ...content } = popover.content as Activity;
+    const { id, combinedIds, hovered, ...content } = popover.content as Activity & {
+      hovered: boolean;
+    };
     formattedContent = formatJson({
       ...content,
       activityId: id,

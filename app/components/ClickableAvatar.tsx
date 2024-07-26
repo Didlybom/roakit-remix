@@ -6,7 +6,7 @@ export default function ClickableAvatar({
   name,
   href,
   size = 36,
-  fontSize = 14,
+  fontSize = 15,
   sx,
 }: {
   title?: string;
