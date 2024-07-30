@@ -8,7 +8,7 @@ import {
   type ArtifactCount,
   type InitiativeRecord,
 } from '../types/types';
-import { endOfNextBusinessDay, ONE_HOUR } from '../utils/dateUtils';
+import { endOfDay, nextBusinessDay, ONE_HOUR } from '../utils/dateUtils';
 
 export const updateInitiativeCounters = async (
   customerId: number,
@@ -141,7 +141,7 @@ export const upsertNextOngoingActivity = async (customerId: number, previousActi
   return await activitiesColl.add({
     previousActivityId: previousActivity.id,
     actorAccountId: previousActivity.actorId,
-    createdTimestamp: endOfNextBusinessDay(previousActivity.createdTimestamp),
+    createdTimestamp: endOfDay(nextBusinessDay(previousActivity.createdTimestamp)),
     eventType: previousActivity.eventType,
     event: CUSTOM_EVENT,
     ongoing: false,

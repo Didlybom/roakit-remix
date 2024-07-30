@@ -308,9 +308,9 @@ export default function UserActivity() {
   const fetchActivities = useCallback((dateFilter: DateRangeEnding) => {
     setIsRendering(true);
     const userIds = loaderData.userId === ALL ? ALL : loaderData.activityUserIds.join(',');
-    const endDay = dayjs(dateFilter.endDay);
+    const endDay = Math.min(endOfDay(dateFilter.endDay), Date.now());
     activitiesFetcher.load(
-      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endOfDay(endDay)}`
+      `/fetcher/activities/${userIds}?userList=true&start=${dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay))}&end=${endDay}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -944,8 +944,6 @@ export default function UserActivity() {
     <App
       view={VIEW}
       isLoggedIn={true}
-      identityId={loaderData.identityId}
-      userName={loaderData.actors[loaderData.identityId]?.name}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
       dateRange={dateFilter}

@@ -16,7 +16,7 @@ dayjs.extend(isYesterdayPlugin);
 dayjs.updateLocale('en', {
   relativeTime: {
     future: 'in %s',
-    past: '%s ago',
+    past: '%s',
     s: 'few secs',
     m: '1m',
     mm: '%dm',
@@ -48,10 +48,10 @@ export const formatMonthDay = (date: Date | number) =>
     day: 'numeric',
   });
 
-export const isToday = (date: Dayjs) => date.isToday();
-export const isYesterday = (date: Dayjs) => date.isYesterday();
+export const isToday = (date: Dayjs | Date | string) => dayjs(date).isToday();
+export const isYesterday = (date: Dayjs | Date | string) => dayjs(date).isYesterday();
 
-export const endOfDay = (date: Dayjs) => date.endOf('day').valueOf();
+export const endOfDay = (date: Dayjs | Date | string): number => dayjs(date).endOf('day').valueOf();
 
 export enum DateRange {
   TwoWeeks = 'TwoWeeks',
@@ -71,7 +71,7 @@ export const dateRangeLabels: Record<DateRange, string> = {
 };
 
 export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
-  const ending = endOfDay(endDay);
+  const ending = endDay.endOf('day').valueOf();
   switch (dateRange) {
     case DateRange.TwoWeeks:
       return ending - 14 * ONE_DAY;
@@ -86,7 +86,7 @@ export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
   }
 };
 
-export const formatRelative = (date: Date) => dayjs().to(dayjs(date), true /* no suffix */);
+export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
 export const formatDayLocal = (date: Dayjs) => date?.format('LL') ?? null;
 
@@ -104,7 +104,7 @@ export const daysInMonth = (date: Dayjs) => {
     .filter(d => d <= today);
 };
 
-export const endOfNextBusinessDay = (date: Date | number) => {
+export const nextBusinessDay = (date: Date | number): Date => {
   const day = typeof date === 'number' ? new Date(date) : date;
   // see https://stackoverflow.com/questions/39137913/get-next-day-skip-weekends/39137972#39137972
   let weekDay = day.getDay();
@@ -117,7 +117,22 @@ export const endOfNextBusinessDay = (date: Date | number) => {
     add = 1;
   }
   day.setDate(day.getDate() + add);
-  return endOfDay(dayjs(day));
+  return day;
+};
+
+export const prevBusinessDay = (date: Date | number): Date => {
+  const day = typeof date === 'number' ? new Date(date) : date;
+  let weekDay = day.getDay();
+  let sub;
+  if (weekDay === 1) {
+    sub = 3;
+  } else if (weekDay === 7) {
+    sub = 2;
+  } else {
+    sub = 1;
+  }
+  day.setDate(day.getDate() - sub);
+  return day;
 };
 
 export const isValidDate = (date: Dayjs) => !isNaN(date.toDate().getTime());
