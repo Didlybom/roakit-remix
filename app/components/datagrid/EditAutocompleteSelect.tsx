@@ -7,7 +7,7 @@ import {
 import { useCallback } from 'react';
 import type { SelectOption } from '../../utils/jsxUtils';
 
-export default function AutocompleteSelect(
+export default function EditAutocompleteSelect(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: GridRenderEditCellParams<any, string> & { options: SelectOption[] }
 ) {
@@ -29,7 +29,7 @@ export default function AutocompleteSelect(
 
   return (
     <Autocomplete<SelectOption, false, true /* disableClearable */, false>
-      componentsProps={{ popper: { style: { width: 'fit-content' } } }}
+      componentsProps={{ popper: { style: { minWidth: '250px', width: 'fit-content' } } }}
       noOptionsText={<Box fontSize="small">no match</Box>}
       size="small"
       value={optionValue}

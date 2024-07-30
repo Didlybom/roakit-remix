@@ -1,5 +1,4 @@
 import {
-  Add as AddIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
   KeyboardArrowRight as ArrowRightIcon,
   Check as CheckIcon,
@@ -65,7 +64,6 @@ import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
-import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import {
   actionColDef,
   actorColDef,
@@ -77,6 +75,7 @@ import {
 } from '../components/datagrid/dataGridCommon';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditableCellField from '../components/datagrid/EditableCellField';
+import AutocompleteSelect from '../components/datagrid/EditAutocompleteSelect';
 import HelperText from '../components/HelperText';
 import SelectField from '../components/SelectField';
 import SmallAvatarChip from '../components/SmallAvatarChip';
@@ -98,7 +97,14 @@ import {
   type Phase,
 } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
-import { formatYYYYMMDD, isToday, isValidDate, isYesterday } from '../utils/dateUtils';
+import {
+  formatYYYYMMDD,
+  isToday,
+  isValidDate,
+  isYesterday,
+  nextBusinessDay,
+  prevBusinessDay,
+} from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import {
@@ -342,7 +348,7 @@ export default function Status() {
   const [error, setError] = useState('');
 
   const previousDay = () => {
-    const prevDay = selectedDay.subtract(1, 'day');
+    const prevDay = dayjs(prevBusinessDay(selectedDay.valueOf()));
     setSelectedDay(prevDay);
     setSearchParams(prev => {
       prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(prevDay));
@@ -350,7 +356,7 @@ export default function Status() {
     });
   };
   const nextDay = () => {
-    const nextDay = selectedDay.add(1, 'day');
+    const nextDay = dayjs(nextBusinessDay(selectedDay.valueOf()));
     setSelectedDay(nextDay);
     setSearchParams(prev => {
       prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(nextDay));
@@ -360,7 +366,7 @@ export default function Status() {
 
   useHotkeys('n', () => setShowNewDialog(true));
   useHotkeys('[', previousDay);
-  useHotkeys(']', nextDay, { enabled: !isTodaySelected });
+  useHotkeys(']', nextDay);
 
   useEffect(() => {
     // compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
@@ -590,7 +596,7 @@ export default function Status() {
             )}
             {params.value ?
               <CheckIcon fontSize="small" sx={{ opacity: 0.6 }} />
-            : <CloseIcon fontSize="small" sx={{ opacity: 0.6 }} />}
+            : <CloseIcon fontSize="small" sx={{ opacity: 0.2 }} />}
           </>
         ),
       },
@@ -815,7 +821,6 @@ export default function Status() {
             <Box sx={{ ml: 3, mr: 1, mb: 3 }}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  disableFuture={true}
                   slotProps={{ textField: { size: 'small', sx: { width: '160px' } } }}
                   value={selectedDay}
                   format={datePickerFormat}
@@ -833,7 +838,7 @@ export default function Status() {
             </Box>
             <Stack spacing={1} sx={{ ml: 3 }}>
               <Typography fontSize="small" fontWeight={500}>
-                Activities for…
+                Activities for
               </Typography>
               <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
                 <SmallAvatarChip name={loaderData.userDisplayName} />
@@ -864,7 +869,7 @@ export default function Status() {
               <IconButton onClick={previousDay} title="Previous day">
                 <ArrowLeftIcon />
               </IconButton>
-              <IconButton disabled={isTodaySelected} onClick={nextDay} title="Next day">
+              <IconButton onClick={nextDay} title="Next day">
                 <ArrowRightIcon />
               </IconButton>
               <Box flex={1} />
@@ -873,11 +878,10 @@ export default function Status() {
                   setNewActivity(emptyActivity);
                   setShowNewDialog(true);
                 }}
-                startIcon={<AddIcon />}
                 variant="contained"
                 sx={{ borderRadius: 28, textTransform: 'none' }}
               >
-                Post Custom Activity
+                Post custom activity
               </Button>
             </Stack>
             <StyledMuiError>

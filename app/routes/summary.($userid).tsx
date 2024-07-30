@@ -345,7 +345,7 @@ export default function Summary() {
             </LocalizationProvider>
             <Stack spacing={1} sx={{ ml: 3 }}>
               <Typography fontSize="small" fontWeight={500}>
-                Activities for…
+                Activities for
               </Typography>
               <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
                 <SmallAvatarChip name={loaderData.userDisplayName} />

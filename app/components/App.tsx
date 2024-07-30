@@ -65,7 +65,7 @@ export default function App({
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box display="flex">
       <Header
         isLoggedIn={isLoggedIn}
         identityId={identityId}

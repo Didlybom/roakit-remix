@@ -24,7 +24,7 @@ export const verticalStickyBarSx: SxProps = {
 export const linkSx: SxProps = {
   cursor: 'pointer',
   textDecoration: 'none',
-  '&:hover': { borderBottom: 'dotted 1px' },
+  '&:hover': { textDecoration: 'underline' },
   ...ellipsisSx,
 };
 

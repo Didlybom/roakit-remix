@@ -251,7 +251,7 @@ export default function LaunchItems() {
       renderEditCell: params => <EditColor {...params} />,
     },
 
-    { field: 'label', headerName: 'Label', editable: true },
+    { field: 'label', headerName: 'Label', flex: 1, editable: true },
     {
       field: 'activityMapper',
       headerName: 'Activity Mapper',

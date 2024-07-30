@@ -65,6 +65,11 @@ export default function Header({
   navbarOpen?: boolean;
   onNavBarOpen: () => void;
 }) {
+  const showDateRangePicker = dateRange && onDateRangeSelect;
+  const showDateRangeRefresh =
+    (dateRange && isToday(dateRange.endDay) && onDateRangeRefresh) ||
+    (!dateRange && onDateRangeRefresh);
+
   return (
     <NavBar
       position="fixed"
@@ -83,21 +88,24 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Box title="Roakit" mr={2} sx={desktopDisplaySx}>
+        <Box
+          title="Roakit"
+          mr={2}
+          sx={view !== View.Login && view !== View.Logout ? desktopDisplaySx : undefined}
+        >
           <RoakitIcon width="51px" height="20px" />
         </Box>
         {view !== View.Login && view !== View.Logout && (
           <>
             <Stack direction="row" flex={1} mr={2}>
-              {dateRange && onDateRangeSelect && (
+              {showDateRangePicker && (
                 <DateRangePicker
                   dateRange={dateRange.dateRange}
                   endDay={dayjs(dateRange.endDay)}
                   onSelect={onDateRangeSelect}
                 />
               )}
-              {((dateRange && isToday(dayjs(dateRange.endDay)) && onDateRangeRefresh) ||
-                (!dateRange && onDateRangeRefresh)) && (
+              {showDateRangeRefresh && (
                 <IconButton
                   color="inherit"
                   onClick={onDateRangeRefresh}
@@ -134,7 +142,7 @@ export default function Header({
                     name={userName}
                     href={`/feed/${encodeURI(identityId)}`}
                     size={24}
-                    fontSize={12}
+                    fontSize={13}
                     sx={{ ml: 1, ...desktopDisplaySx }}
                   />
                 )}

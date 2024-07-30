@@ -36,8 +36,8 @@ import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
-import AutocompleteSelect from '../components/datagrid/AutocompleteSelect';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import AutocompleteSelect from '../components/datagrid/EditAutocompleteSelect';
 import {
   actionColDef,
   actorColDef,
@@ -200,7 +200,7 @@ export default function ActivityReview() {
 
   useEffect(() => {
     setError('');
-    let query = `/fetcher/activities/page?limit=${paginationModel.pageSize}`;
+    let query = `/fetcher/activities/page?limit=${paginationModel.pageSize}&withTotal=true&includeFuture=true`;
     if (activityFilter) {
       query += `&withInitiatives=${activityFilter == 'withInitiatives' ? true : false}`;
     }
