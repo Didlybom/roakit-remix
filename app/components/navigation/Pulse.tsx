@@ -51,7 +51,7 @@ const Pulse = styled('div')(({ theme }) => ({
     display: 'block',
     width: '100%',
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: theme.palette.common.white,
     borderRadius: '15px',
     boxShadow: '0 0 8px rgba(0,0,0,.3)',
     animation: `${pulseDot} 3s cubic-bezier(0.455, 0.03, 0.515, 0.955) -.4s infinite`,

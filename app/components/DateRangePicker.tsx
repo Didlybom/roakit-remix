@@ -33,6 +33,7 @@ import {
   type DateRangeEnding,
 } from '../utils/dateUtils';
 import { postJson } from '../utils/httpUtils';
+import theme from '../utils/theme';
 
 const icons: Record<DateRange, JSX.Element> = {
   [DateRange.TwoWeeks]: <LargeDateRangeIcon fontSize="small" />,
@@ -46,7 +47,7 @@ export default function DateRangePicker({
   endDay = dayjs(),
   onSelect,
   prevAndNextButtons = true,
-  color = 'white',
+  color = theme.palette.common.white,
 }: {
   dateRange: DateRange;
   endDay: Dayjs;
