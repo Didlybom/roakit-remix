@@ -40,4 +40,7 @@ const theme = createTheme({
   },
 });
 
+export const getThemeContrastText = (color?: string | null) =>
+  color ? theme.palette.getContrastText(color) : undefined;
+
 export default theme;

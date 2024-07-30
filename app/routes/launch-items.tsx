@@ -34,7 +34,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-r
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
-import { GithubPicker as ColorPicker, type ColorResult } from 'react-color';
+import { SwatchesPicker as ColorPicker, type ColorResult } from 'react-color';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
@@ -68,6 +68,9 @@ const areRowsEqual = (a: LaunchItemRow, b: LaunchItemRow) =>
 export const meta = () => [{ title: 'Launch Items Admin | ROAKIT' }];
 
 const VIEW = View.LaunchItems;
+
+const DEFAULT_COLOR = '#607d8b';
+const KEY_REGEXP = new RegExp(/^[A-Z][A-Z_]*[A-Z]$/);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
@@ -161,7 +164,7 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
       {anchorEl && (
         <Popper open={showPicker} anchorEl={anchorEl} placement="bottom-start">
           <ClickAwayListener onClickAway={() => setShowPicker(false)}>
-            <ColorPicker width="212" color={valueState} onChange={handleChange} />
+            <ColorPicker color={valueState} onChange={handleChange} />
           </ClickAwayListener>
         </Popper>
       )}
@@ -173,7 +176,6 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
 }
 
 export default function LaunchItems() {
-  const DEFAULT_COLOR = '#d4c4fb';
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -188,6 +190,7 @@ export default function LaunchItems() {
   const [newLabel, setNewLabel] = useState('');
   const [newActivityMapper, setNewActivityMapper] = useState('');
   const [newActivityMapperError, setNewActivityMapperError] = useState(false);
+  const [newKeyError, setNewKeyError] = useState(false);
 
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
@@ -235,7 +238,7 @@ export default function LaunchItems() {
       editable: true,
       preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
         ...params.props,
-        error: !params.props.value?.trim(),
+        error: !params.props.value?.trim() || !KEY_REGEXP.exec(params.props.value.trim()),
       }),
     },
     {
@@ -308,15 +311,14 @@ export default function LaunchItems() {
 
   useEffect(() => {
     try {
-      if (newActivityMapper) {
-        compileExpression(newActivityMapper);
-      }
+      if (newActivityMapper) compileExpression(newActivityMapper);
     } catch (e) {
-      setNewActivityMapperError(true);
-      return;
+      return setNewActivityMapperError(true);
     }
     setNewActivityMapperError(false);
   }, [newActivityMapper]);
+
+  useEffect(() => setNewKeyError(!!newKey && !KEY_REGEXP.exec(newKey)), [newKey]);
 
   return (
     <App
@@ -353,6 +355,7 @@ export default function LaunchItems() {
                 size="small"
                 fullWidth
                 onChange={e => setNewKey(e.target.value)}
+                error={newKeyError}
               />
               <Box title="Color Picker" onClick={e => setColorPickerAnchor(e.currentTarget)}>
                 <ColorValue color={newColor} />
@@ -361,12 +364,10 @@ export default function LaunchItems() {
                 open={!!colorPickerAnchor}
                 anchorEl={colorPickerAnchor}
                 onClose={() => setColorPickerAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
               >
                 <ColorPicker
                   color={newColor}
-                  triangle="hide"
-                  width="212"
                   onChange={color => {
                     setNewColor(color.hex);
                     setColorPickerAnchor(null);

@@ -62,7 +62,12 @@ import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '..
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
-import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  getSearchParam,
+  loaderErrorResponse,
+  loginWithRedirectUrl,
+} from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
@@ -334,10 +339,9 @@ export default function Summary() {
                 onChange={day => {
                   if (day) {
                     setSelectedDay(day);
-                    setSearchParams(prev => {
-                      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(day));
-                      return prev;
-                    });
+                    setSearchParams(prev =>
+                      getSearchParam(prev, SEARCH_PARAM_DAY, formatYYYYMMDD(day))
+                    );
                   }
                 }}
                 onMonthChange={setSelectedMonth}

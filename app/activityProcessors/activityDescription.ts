@@ -81,7 +81,7 @@ const codeActionString = (
   if (codeAction === 'reopened') return 'reopened';
   if (codeAction === 'created' && metadata.pullRequestComment) {
     return options?.format === 'Feed' ?
-        `commented:\n\n${metadata.pullRequestComment.body}`
+        `commented: ${metadata.pullRequestComment.body}`
       : 'commented';
   }
   if (codeAction === 'created') return 'created';
@@ -193,13 +193,13 @@ export const getActivityActionDescription = (
         if (changeLog.field === 'Story Points' && !changeLog.oldValue && changeLog.newValue) {
           actions.push('Story Points: ' + changeLog.newValue);
         }
-        if (changeLog.field === 'summary') {
-          actions.push('Set summary');
+        if (changeLog.field === 'summary' && changeLog.oldValue) {
+          actions.push('Updated summary');
         }
         if (changeLog.field === 'description') {
           actions.push(
             options?.format === 'Feed' ?
-              `Description:\n\n${convertEmojis(changeLog.newValue)}`
+              `Description: ${convertEmojis(changeLog.newValue)}`
             : 'Set description'
           );
         }

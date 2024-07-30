@@ -20,7 +20,13 @@ import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.s
 import {} from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
-import { errorAlert, linkSx, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
+import {
+  errorAlert,
+  getSearchParam,
+  linkSx,
+  loaderErrorResponse,
+  loginWithRedirectUrl,
+} from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { caseInsensitiveCompare } from '../utils/stringUtils';
@@ -187,10 +193,9 @@ export default function Dashboard() {
               onChange={day => {
                 if (day) {
                   setSelectedDay(day);
-                  setSearchParams(prev => {
-                    prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(day));
-                    return prev;
-                  });
+                  setSearchParams(prev =>
+                    getSearchParam(prev, SEARCH_PARAM_DAY, formatYYYYMMDD(day))
+                  );
                 }
               }}
             />
@@ -202,10 +207,7 @@ export default function Dashboard() {
             <Link
               onClick={() => {
                 setSelectedDay(dayjs('20240418'));
-                setSearchParams(prev => {
-                  prev.set(SEARCH_PARAM_DAY, '20240418');
-                  return prev;
-                });
+                setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_DAY, '20240418'));
               }}
               sx={linkSx}
             >

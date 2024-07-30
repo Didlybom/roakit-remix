@@ -94,6 +94,7 @@ import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
   desktopDisplaySx,
   errorAlert,
+  getSearchParam,
   linkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
@@ -418,10 +419,7 @@ export default function UserActivity() {
                       reset();
                       setGroupBy(GroupBy.Launch);
                       setSearchParams(
-                        prev => {
-                          prev.set(SEARCH_PARAM_GROUPBY, GroupBy.Launch);
-                          return prev;
-                        },
+                        prev => getSearchParam(prev, SEARCH_PARAM_GROUPBY, GroupBy.Launch),
                         { preventScrollReset: true }
                       );
                       setTimeout(() => setScrollToGroup(activity.launchItemId), 0);
@@ -882,14 +880,7 @@ export default function UserActivity() {
               onChange={value => {
                 reset();
                 setGroupBy((value as GroupBy) || null); // will trigger effect to re-set activities
-                setSearchParams(prev => {
-                  if (value === '') {
-                    prev.delete(SEARCH_PARAM_GROUPBY);
-                  } else {
-                    prev.set(SEARCH_PARAM_GROUPBY, value as string);
-                  }
-                  return prev;
-                });
+                setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_GROUPBY, value));
               }}
             />
           </Grid>
@@ -906,14 +897,7 @@ export default function UserActivity() {
               ]}
               onChange={values => {
                 setActionFilter(values as string[]);
-                setSearchParams(prev => {
-                  if (values.length) {
-                    prev.set(SEARCH_PARAM_ACTION, (values as string[]).join(','));
-                  } else {
-                    prev.delete(SEARCH_PARAM_ACTION);
-                  }
-                  return prev;
-                });
+                setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_ACTION, values));
               }}
             />
           </Grid>

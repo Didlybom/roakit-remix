@@ -9,6 +9,24 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "artifact",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdTimestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actorAccountId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "createdTimestamp",
           "order": "ASCENDING"
         }
@@ -20,6 +38,20 @@
       "fields": [
         {
           "fieldPath": "actorAccountId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdTimestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "artifact",
           "order": "ASCENDING"
         },
         {

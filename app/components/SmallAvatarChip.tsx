@@ -1,8 +1,8 @@
 import { Avatar, Box, Chip } from '@mui/material';
 import { nameInitials, stringColor } from '../utils/stringUtils';
-import theme from '../utils/theme';
+import { getThemeContrastText } from '../utils/theme';
 
-export default function smallAvatarChip({ name }: { name: string | undefined }) {
+export default function SmallAvatarChip({ name }: { name: string | undefined }) {
   const bgcolor = stringColor(name);
   return (
     <Chip
@@ -11,9 +11,7 @@ export default function smallAvatarChip({ name }: { name: string | undefined }) 
       title={name}
       avatar={
         <Avatar sx={{ bgcolor }}>
-          <Box color={bgcolor ? theme.palette.getContrastText(bgcolor) : undefined}>
-            {nameInitials(name)}
-          </Box>
+          <Box color={getThemeContrastText(bgcolor)}>{nameInitials(name)}</Box>
         </Avatar>
       }
       sx={{ maxWidth: 160 }}

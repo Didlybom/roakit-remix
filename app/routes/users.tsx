@@ -262,8 +262,8 @@ export default function Users() {
         renderCell: (params: GridRenderCellParams<Identity, string>) => (
           <Link
             tabIndex={params.tabIndex}
-            href={`/activity/${encodeURI(params.row.id)}`}
-            title="View activity"
+            href={`/feed/${encodeURI(params.row.id)}`}
+            title="View feed"
             sx={linkSx}
           >
             {params.value}
@@ -406,8 +406,8 @@ export default function Users() {
         renderCell: (params: GridRenderCellParams<Account, string>) => (
           <Link
             tabIndex={params.tabIndex}
-            href={`/activity/${encodeURI(params.row.id)}`}
-            title="View activity"
+            href={`/feed/${encodeURI(params.row.id)}`}
+            title="View feed"
             sx={linkSx}
           >
             {params.value}

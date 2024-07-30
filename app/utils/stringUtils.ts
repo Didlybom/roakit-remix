@@ -9,15 +9,17 @@ export const caseInsensitiveSort = (data: string[]): string[] =>
 export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
-export const JIRA_TICKET_REGEXP = /([A-Z]+-[0-9]+)/; // /([A-Z][A-Z0-9]+-[0-9]+)/;
-export const JIRA_FAKE_TICKET_REGEXP = /([A-Z]+)-0+$/;
-const JIRA_PROJECT_REGEXP_G = /([A-Z]+)(?=-[0-9]+)/g;
-export const JIRA_TICKET_REGEXP_G = /([A-Z]+-[0-9]+)/g;
+export const JIRA_TICKET_REGEXP = new RegExp(/([A-Z]+-[0-9]+)/); // /([A-Z][A-Z0-9]+-[0-9]+)/;
+export const JIRA_FAKE_TICKET_REGEXP = new RegExp(/([A-Z]+)-0+$/);
+const JIRA_PROJECT_REGEXP_G = new RegExp(/([A-Z]+)(?=-[0-9]+)/g);
+export const JIRA_TICKET_REGEXP_G = new RegExp(/([A-Z]+-[0-9]+)/g);
 
-export const JIRA_ACCOUNT_REGEXP_G = /(?:[[]~accountid:)(.+?)(?:[\]])/g;
-export const JIRA_IMAGE_REGEXP_G = /!(.+?)!/g;
-export const MENTION_REGEXP_G = /\B@([\w-]+)/g;
-export const IMG_TAG_REGEXP_G = /(<img.+?>)/g;
+export const JIRA_ACCOUNT_REGEXP_G = new RegExp(/(?:[[]~accountid:)(.+?)(?:[\]])/g);
+export const JIRA_IMAGE_REGEXP_G = new RegExp(/!(.+?)!/g);
+export const MENTION_REGEXP_G = new RegExp(/\B@([\w-]+)/g);
+export const IMG_TAG_REGEXP_G = new RegExp(/(<img.+?>)/g);
+
+export const LABEL_REGEXP = new RegExp(/^([A-Za-z ]+): /);
 
 export const findJiraProjects = (data?: string): string[] => {
   if (!data) {

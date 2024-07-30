@@ -109,6 +109,7 @@ import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import {
   errorAlert,
+  getSearchParam,
   loaderErrorResponse,
   loginWithRedirectUrl,
   type SelectOption,
@@ -350,18 +351,12 @@ export default function Status() {
   const previousDay = () => {
     const prevDay = dayjs(prevBusinessDay(selectedDay.valueOf()));
     setSelectedDay(prevDay);
-    setSearchParams(prev => {
-      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(prevDay));
-      return prev;
-    });
+    setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_DAY, formatYYYYMMDD(prevDay)));
   };
   const nextDay = () => {
     const nextDay = dayjs(nextBusinessDay(selectedDay.valueOf()));
     setSelectedDay(nextDay);
-    setSearchParams(prev => {
-      prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(nextDay));
-      return prev;
-    });
+    setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_DAY, formatYYYYMMDD(nextDay)));
   };
 
   useHotkeys('n', () => setShowNewDialog(true));
@@ -827,10 +822,9 @@ export default function Status() {
                   onChange={day => {
                     if (day) {
                       setSelectedDay(day);
-                      setSearchParams(prev => {
-                        prev.set(SEARCH_PARAM_DAY, formatYYYYMMDD(day));
-                        return prev;
-                      });
+                      setSearchParams(prev =>
+                        getSearchParam(prev, SEARCH_PARAM_DAY, formatYYYYMMDD(day))
+                      );
                     }
                   }}
                 />

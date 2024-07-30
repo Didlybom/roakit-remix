@@ -42,17 +42,21 @@ export default function EditAutocompleteSelect(
       fullWidth
       disableClearable
       isOptionEqualToValue={(option, value) => option.value === value.value}
-      renderOption={(optionProps, option: SelectOption) => (
-        <Box
-          component="li"
-          fontSize="small"
-          color={option.color ?? undefined}
-          {...optionProps}
-          sx={{ textWrap: 'nowrap' }}
-        >
-          {option.label}
-        </Box>
-      )}
+      renderOption={(props, option: SelectOption) => {
+        const { key, ...optionProps } = props;
+        return (
+          <Box
+            component="li"
+            key={key}
+            fontSize="small"
+            color={option.color ?? undefined}
+            {...optionProps}
+            sx={{ textWrap: 'nowrap' }}
+          >
+            {option.label}
+          </Box>
+        );
+      }}
       renderInput={params => (
         <InputBase
           autoFocus

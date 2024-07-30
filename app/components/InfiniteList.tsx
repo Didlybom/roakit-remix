@@ -11,14 +11,13 @@ const DEFAULT_REFRESH_INTERVAL_MS = 15 * 1000;
 
 interface InfiniteListProps {
   height: string;
-  margin?: number;
   minimumBatchSize?: number;
   threshold?: number;
   refreshIntervalMs?: number;
   head: JSX.Element;
   itemCount: number;
   isItemLoaded: (index: number) => boolean;
-  rowElement: ({ index, style }: { index: number; style: CSSProperties }) => JSX.Element;
+  rowElement: (index: number) => JSX.Element;
   loadMoreItems: () => void;
   loadNewItems: () => void;
   setRef: (ref: VariableSizeList | null) => void;
@@ -29,7 +28,6 @@ interface InfiniteListProps {
 
 export default function InfiniteList({
   height,
-  margin,
   minimumBatchSize = DEFAULT_PAGE_SIZE,
   threshold = DEFAULT_THRESHOLD,
   refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS,
@@ -73,7 +71,7 @@ export default function InfiniteList({
     setHeights([]);
   }, [itemCount, setHeights]);
 
-  const Row = ({ index, style }: { index: number; style: CSSProperties }) => {
+  function Row({ index, style }: { index: number; style: CSSProperties }) {
     const ref = useRef<Element>();
 
     useEffect(() => {
@@ -85,16 +83,16 @@ export default function InfiniteList({
     }, []);
 
     return (
-      <Box style={style} pr={margin}>
+      <Box style={style} pr={3}>
         <Box ref={ref} pb={2}>
-          {rowElement({ index, style })}
+          {rowElement(index)}
         </Box>
       </Box>
     );
-  };
+  }
 
   return (
-    <Box ref={rootRef} height={height} my={margin} ml={margin}>
+    <Box ref={rootRef} height={height}>
       {head}
       <AutoSizer disableWidth>
         {({ height }) => (
@@ -107,6 +105,7 @@ export default function InfiniteList({
           >
             {({ onItemsRendered, ref }) => (
               <VariableSizeList
+                estimatedItemSize={100}
                 itemSize={i => heights[i] ?? 100}
                 height={height}
                 width="100%"

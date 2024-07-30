@@ -9,7 +9,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Paper,
   Stack,
   Typography,
 } from '@mui/material';
@@ -29,14 +28,17 @@ import {
   type Activity,
   type ActorRecord,
 } from '../types/types';
+import { jira2md } from '../utils/jira2md';
 import { ellipsisSx, linkSx } from '../utils/jsxUtils';
 import {
   convertEmojis,
   IMG_TAG_REGEXP_G,
   JIRA_IMAGE_REGEXP_G,
+  LABEL_REGEXP,
   pluralizeMemo,
 } from '../utils/stringUtils';
 import theme from '../utils/theme';
+import LabeledBox from './LabeledBox';
 import {
   linkifyGitHubAccount,
   linkifyJiraAccount,
@@ -44,7 +46,6 @@ import {
   LinkifyJiraTicket,
 } from './Linkify';
 import MarkdownText from './MarkdownText';
-const j2m = require('jira2md');
 
 // see https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=all
 const cleanupJiraMarkup = (content: string) =>
@@ -65,14 +66,21 @@ const SubCard = ({
   meta?: { actors: ActorRecord; accountMap: AccountToIdentityRecord; ticketBaseUrl?: string };
 }) => {
   let linkifiedContent;
+  let label;
   let contentNode;
   if (typeof content === 'string') {
+    let description = content;
+    const labelMatch = LABEL_REGEXP.exec(content);
+    if (labelMatch) {
+      label = labelMatch[1];
+      description = content.slice(labelMatch[0].length);
+    }
     if (eventType === 'jira' && meta) {
-      linkifiedContent = linkifyJiraAccount(content, meta);
+      linkifiedContent = linkifyJiraAccount(description, meta);
     } else if (eventType === 'github' && meta) {
-      linkifiedContent = linkifyGitHubAccount(content, meta);
+      linkifiedContent = linkifyGitHubAccount(description, meta);
     } else {
-      linkifiedContent = content;
+      linkifiedContent = description;
     }
     if (meta?.ticketBaseUrl && linkifiedContent.indexOf('http') === -1) {
       linkifiedContent = linkifyJiraTicket(linkifiedContent, { ticketBaseUrl: meta.ticketBaseUrl });
@@ -82,18 +90,16 @@ const SubCard = ({
     }
     linkifiedContent = cleanupMarkup(linkifiedContent);
     if (eventType === 'jira') {
-      linkifiedContent = j2m.to_markdown(linkifiedContent);
+      linkifiedContent = jira2md(linkifiedContent);
     }
     contentNode = <MarkdownText text={linkifiedContent} />;
   } else {
     contentNode = content;
   }
   return (
-    <Paper variant="outlined" square={false} sx={{ p: 1, wordBreak: 'break-word' }}>
-      <Box color={theme.palette.grey[500]}>
-        <LinkItUrl>{contentNode}</LinkItUrl>
-      </Box>
-    </Paper>
+    <LabeledBox label={label} sx={{ color: theme.palette.grey[500], wordBreak: 'break-word' }}>
+      <LinkItUrl>{contentNode}</LinkItUrl>
+    </LabeledBox>
   );
 };
 
@@ -121,13 +127,12 @@ export default function ActivityCard({
     if (activity.metadata?.comments?.some(c => c.body)) {
       comment = (
         <Stack spacing={1}>
-          <Box>Commented</Box>
           {activity.metadata.comments
             .filter(c => c.body)
             .map((comment, i) => (
               <SubCard
                 key={i}
-                content={convertEmojis(comment.body)}
+                content={`Comment: ${convertEmojis(comment.body)}`}
                 eventType={activity.eventType}
                 meta={{ actors, accountMap, ticketBaseUrl }}
               />
@@ -137,9 +142,8 @@ export default function ActivityCard({
     } else if (activity.metadata?.comment?.body) {
       comment = (
         <Stack spacing={1}>
-          <Box>Commented</Box>
           <SubCard
-            content={convertEmojis(activity.metadata.comment.body)}
+            content={`Comment: ${convertEmojis(activity.metadata.comment.body)}`}
             eventType={activity.eventType}
             meta={{ actors, accountMap, ticketBaseUrl }}
           />
@@ -213,7 +217,7 @@ export default function ActivityCard({
             fontSize={format === 'Grid' ? 'small' : undefined}
             lineHeight={1.2}
             mb={format === 'Feed' ? '2px' : undefined}
-            sx={format === 'Grid' ? ellipsisSx : undefined}
+            sx={{ wordBreak: 'break-word', ...(format === 'Grid' && ellipsisSx) }}
           >
             {ticketBaseUrl ?
               <LinkifyJiraTicket content={description} baseUrl={ticketBaseUrl} />
@@ -247,7 +251,7 @@ export default function ActivityCard({
               component="div"
               fontSize={format === 'Grid' ? 'smaller' : 'small'}
               color={theme.palette.grey[500]}
-              sx={format === 'Grid' ? ellipsisSx : undefined}
+              sx={{ wordBreak: 'break-word', ...(format === 'Grid' && ellipsisSx) }}
             >
               {comment}
             </Typography>
@@ -261,9 +265,9 @@ export default function ActivityCard({
                     e.currentTarget,
                     <List dense={true} disablePadding>
                       {commits?.map((commit, i) => (
-                        <ListItem key={i} sx={{ alignContent: 'top' }}>
+                        <ListItem key={i} sx={{ alignItems: 'start' }}>
                           <Link href={commit.url} target="_blank">
-                            <ListItemIcon sx={{ minWidth: '28px' }}>
+                            <ListItemIcon sx={{ mt: '3px', minWidth: '28px' }}>
                               <GitHubIcon fontSize="small" color="primary" />
                             </ListItemIcon>
                           </Link>
@@ -296,7 +300,7 @@ export default function ActivityCard({
           title={format === 'Grid' ? description : undefined}
           pl={icon ? undefined : missingIconPadding}
           mb={format === 'Feed' ? '2px' : undefined}
-          sx={format === 'Grid' ? ellipsisSx : undefined}
+          sx={{ wordBreak: 'break-word', ...(format === 'Grid' && ellipsisSx) }}
         >
           {ticketBaseUrl ?
             <LinkifyJiraTicket content={description} baseUrl={ticketBaseUrl} />

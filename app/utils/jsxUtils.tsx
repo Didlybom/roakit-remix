@@ -13,11 +13,13 @@ export const ellipsisSx: SxProps = {
   whiteSpace: 'nowrap',
 };
 
+export const HEADER_HEIGHT = 51;
+
 export const verticalStickyBarSx: SxProps = {
   textWrap: 'nowrap',
   position: 'sticky',
-  top: 60, // depends on header height
-  maxHeight: 'calc(100vh - 75px)', // depends on header height
+  top: HEADER_HEIGHT + 9,
+  maxHeight: `calc(100vh - ${HEADER_HEIGHT + 24}px)`,
   overflowY: 'auto',
 };
 
@@ -52,3 +54,20 @@ export const loaderErrorResponse = (e: unknown) =>
 
 export const loginWithRedirectUrl = () =>
   `/login?redirect=${encodeURI(location.pathname + location.search)}`;
+
+export const getSearchParam = (prev: URLSearchParams, param: string, values: string | string[]) => {
+  if (Array.isArray(values)) {
+    if (values.length) {
+      prev.set(param, values.join(','));
+    } else {
+      prev.delete(param);
+    }
+  } else {
+    if (values) {
+      prev.set(param, values);
+    } else {
+      prev.delete(param);
+    }
+  }
+  return prev;
+};

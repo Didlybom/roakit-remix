@@ -88,11 +88,7 @@ export default function Header({
             <MenuIcon />
           </IconButton>
         )}
-        <Box
-          title="Roakit"
-          mr={2}
-          sx={view !== View.Login && view !== View.Logout ? desktopDisplaySx : undefined}
-        >
+        <Box title="Roakit" mr={2} sx={showDateRangePicker ? desktopDisplaySx : undefined}>
           <RoakitIcon width="51px" height="20px" />
         </Box>
         {view !== View.Login && view !== View.Logout && (

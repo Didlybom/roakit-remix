@@ -206,6 +206,36 @@ export const fetchInitiatives = async (customerId: number): Promise<Initiative[]
   return initiatives.sort((a, b) => a.key.localeCompare(b.key));
 };
 
+const makeLaunchItemsCacheKey = (customerId: number) => `${customerId};launchItems`;
+const launchItemsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
+
+export const fetchLaunchItemsWithCache = async (customerId: number): Promise<InitiativeRecord> => {
+  const cacheKey = makeLaunchItemsCacheKey(customerId);
+  const cache: InitiativeRecord | undefined = launchItemsCache.get(cacheKey);
+  if (cache != null) {
+    return cache;
+  }
+  const launchItems: InitiativeRecord = {};
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/launchItems`).get(),
+      retryProps('Retrying fetchLaunchItemMappers...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.InitiativeType>(
+      schemas.initiativeSchema,
+      doc.data(),
+      'launch item ' + doc.id
+    );
+    launchItems[doc.id] = {
+      key: data.key ?? doc.id,
+      activityMapper: data.activityMapper,
+    };
+  });
+  launchItemsCache.set(cacheKey, launchItems);
+  return launchItems;
+};
+
 export const fetchLaunchItemMap = async (customerId: number): Promise<InitiativeRecord> => {
   const launchItems: InitiativeRecord = {};
   (
@@ -593,19 +623,23 @@ export const fetchActivitiesPage = async ({
   startAfter,
   endBefore,
   userIds,
+  artifacts,
   limit,
   combine,
   withInitiatives,
-  withTotal = true,
+  withTotal = false,
+  includeFuture = false,
 }: {
   customerId: number;
   startAfter?: number;
   endBefore?: number;
   userIds?: string[];
+  artifacts?: string[];
   limit: number;
   combine?: boolean;
   withInitiatives?: boolean;
   withTotal?: boolean;
+  includeFuture?: boolean;
 }) => {
   if (startAfter != null && endBefore != null) {
     throw Error('startAfter and endBefore are mutually exclusive params.');
@@ -620,6 +654,9 @@ export const fetchActivitiesPage = async ({
   if (userIds?.length) {
     activityQuery = activityQuery.where('actorAccountId', 'in', userIds);
   }
+  if (artifacts?.length) {
+    activityQuery = activityQuery.where('artifact', 'in', artifacts);
+  }
   let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
   if (startAfter != null) {
     activityPageQuery = activityPageQuery.startAfter(startAfter).limit(limit);
@@ -633,7 +670,7 @@ export const fetchActivitiesPage = async ({
     logger.debug(await explainQuery(activityPageQuery));
   }
 
-  const [activityPage, activityTotal] = await Promise.all([
+  let [activityPage, activityTotal] = await Promise.all([
     retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
     withTotal ? fetchActivityTotalWithCache(customerId, withInitiatives) : undefined,
   ]);
@@ -642,12 +679,20 @@ export const fetchActivitiesPage = async ({
   const ticketPrioritiesToFetch = new Set<string>();
   const activityTickets = new Map<string, string>();
 
+  const now = Date.now();
+
   activityPage.forEach(doc => {
     const data = parse<schemas.ActivityType>(
       schemas.activitySchema,
       doc.data(),
       `activity ${doc.id}`
     );
+    if (!includeFuture && data.createdTimestamp > now) {
+      if (activityTotal != null) {
+        activityTotal--;
+      }
+      return;
+    }
     const priority = data.priority;
     if (!priority || priority === -1) {
       // will find priority from metadata for activities missing one

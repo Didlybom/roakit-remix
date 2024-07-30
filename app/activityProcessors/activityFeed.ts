@@ -26,6 +26,15 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['doc-updated', { sortOrder: 15, label: 'Doc updated' }],
 ]);
 
+export const artifacts = new Map<string, { label: string }>([
+  ['task', { label: 'Task' }],
+  ['taskOrg', { label: 'Task Org.' }],
+  ['code', { label: 'Code' }],
+  ['codeOrg', { label: 'Code Org.' }],
+  ['doc', { label: 'Doc.' }],
+  ['docOrg', { label: 'Doc. Org.' }],
+]);
+
 // return the first ticket referenced from metadata fields
 export const findTicket = (metadata?: ActivityMetadata) => {
   if (!metadata) {
