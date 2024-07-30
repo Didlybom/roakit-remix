@@ -1,5 +1,5 @@
 import { Google as GoogleIcon } from '@mui/icons-material';
-import { Alert, Box, Button, Divider, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { redirect } from '@remix-run/node';
 import { Form, useActionData, useFetcher, useNavigation, useSubmit } from '@remix-run/react';
@@ -21,10 +21,13 @@ import { errMsg } from '../utils/errorUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
+import theme from '../utils/theme';
 
 export const meta = () => [{ title: 'Login | ROAKIT' }];
 
 const VIEW = View.Login;
+
+const ENABLE_LOGIN_WITH_PASSWORD = false;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
@@ -117,7 +120,7 @@ export default function Login() {
     }
   }, [refreshedToken, submit]);
 
-  async function handleSignInWithGoogle(e: SyntheticEvent) {
+  const handleSignInWithGoogle = async (e: SyntheticEvent) => {
     e.preventDefault();
     setLoginError('');
     setGoogleError('');
@@ -136,9 +139,9 @@ export default function Login() {
       // https://firebase.google.com/docs/reference/js/v8/firebase.auth.Auth#signinwithpopup
       setGoogleError(errMsg(e, 'Error signing in'));
     }
-  }
+  };
 
-  async function handleLogin(e: SyntheticEvent) {
+  const handleLoginWithPassword = async (e: SyntheticEvent) => {
     e.preventDefault();
     setLoginError('');
     setGoogleError('');
@@ -157,44 +160,59 @@ export default function Login() {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
       setLoginError(errMsg(e, 'Error signing in'));
     }
-  }
+  };
 
   return (
-    <Stack display="flex" minHeight="100vh">
+    <Stack display="flex" minHeight="100vh" bgcolor={theme.palette.grey[100]}>
       <App view={VIEW} isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
         <Box display="flex" justifyContent="center" mt={10}>
-          <Stack spacing={2} width={300} mb={5}>
-            <Form method="post" onSubmit={handleLogin}>
-              <Stack spacing={2}>
-                <TextField id="email" label="Email" type="email" autoComplete="on" fullWidth />
-                <TextField
-                  id="password"
-                  label="Password"
-                  type="password"
-                  autoComplete="off"
-                  fullWidth
-                  error={!!loginError}
-                  helperText={loginError}
-                  onChange={() => setLoginError('')}
-                />
-                <Button variant="contained" type="submit">
-                  Login
-                </Button>
-              </Stack>
-            </Form>
-            <Divider sx={{ py: 3 }}>or</Divider>
-            <Box position="relative">
+          <Stack spacing={2} width={360}>
+            <Typography variant="h3" fontWeight={600} textAlign="center">
+              Roakit
+            </Typography>
+            <Typography variant="h5" textAlign="center" px={3} pb={3}>
+              Roakit makes the work speak for itself.
+            </Typography>
+            {ENABLE_LOGIN_WITH_PASSWORD && (
+              <>
+                <Form method="post" onSubmit={handleLoginWithPassword}>
+                  <Stack spacing={2}>
+                    <TextField id="email" label="Email" type="email" autoComplete="on" fullWidth />
+                    <TextField
+                      id="password"
+                      label="Password"
+                      type="password"
+                      autoComplete="off"
+                      fullWidth
+                      error={!!loginError}
+                      helperText={loginError}
+                      onChange={() => setLoginError('')}
+                    />
+                    <Button variant="contained" type="submit">
+                      Login
+                    </Button>
+                  </Stack>
+                </Form>
+                <Divider sx={{ py: 3 }}>or</Divider>
+              </>
+            )}
+            <Paper sx={{ p: 3 }}>
               <Button
-                variant="outlined"
+                size="large"
+                variant="contained"
+                color="secondary"
                 startIcon={<GoogleIcon />}
-                sx={{ width: '100%' }}
+                sx={{ mt: 1, mb: 2, width: '100%' }}
                 onClick={handleSignInWithGoogle}
                 disabled={navigation.state !== 'idle'}
               >
                 Sign in with Google
               </Button>
-            </Box>
-            {!!googleError && <Alert severity="error">{googleError}</Alert>}
+              {!!googleError && <Alert severity="error">{googleError}</Alert>}
+              <Typography variant="caption" color={theme.palette.grey[400]}>
+                <b>No account?</b> Please contact your Roakit administrator to register.
+              </Typography>
+            </Paper>
           </Stack>
         </Box>
       </App>
