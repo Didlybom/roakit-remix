@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import type { GroupedActivities } from '../activityProcessors/activityGrouper';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
-import ActiveContributors from '../components/dashboard/ActiveContributors.';
+// import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ArtifactsByInitiative from '../components/dashboard/ArtifactsByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
 import EffortByInitiative from '../components/dashboard/EffortByInitiative';
@@ -146,7 +146,7 @@ export default function Dashboard() {
         <Accordion
           variant="outlined"
           disableGutters
-          defaultExpanded={false}
+          defaultExpanded={true}
           sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -188,7 +188,7 @@ export default function Dashboard() {
           </AccordionDetails>
         </Accordion>
       )}
-      {groupedActivitiesResponse?.topActors &&
+      {/* {groupedActivitiesResponse?.topActors &&
         Object.keys(groupedActivitiesResponse.topActors).length > 0 && (
           <Accordion
             variant="outlined"
@@ -207,7 +207,7 @@ export default function Dashboard() {
               </Grid>
             </AccordionDetails>
           </Accordion>
-        )}
+        )} */}
     </Stack>
   );
 
