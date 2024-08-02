@@ -119,7 +119,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       if (actorId !== undefined) {
         launchItem.actorIds!.add(actorId); // the set dedupes
       }
-      launchItem.effort = activity.effort ?? 0;
+      launchItem.effort += activity.effort ?? 0;
     }
   });
 
