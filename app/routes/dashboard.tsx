@@ -22,10 +22,8 @@ import Priorities from '../components/dashboard/Priorities';
 import {
   fetchAccountMap,
   fetchIdentities,
-  fetchInitiativeMap,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
-import { updateInitiativeCounters } from '../firestore.server/updaters.server';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
@@ -43,18 +41,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
     // retrieve initiatives and users
-    const [fetchedInitiatives, launchItems, accounts, identities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId!),
+    const [launchItems, accounts, identities] = await Promise.all([
+      // fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
 
     // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
-    const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
+    // const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
 
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    return { ...sessionData, actors, initiatives, launchItems };
+    return { ...sessionData, actors, launchItems };
   } catch (e) {
     getLogger('route:dashboard').error(e);
     throw loaderErrorResponse(e);
@@ -105,12 +103,12 @@ export default function Dashboard() {
           groupedActivities={groupedActivitiesResponse}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
-        <ContributorsByInitiative
+        {/* <ContributorsByInitiative
           type="initiatives"
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
-        />
+        /> */}
         <ContributorsByInitiative
           type="launchItems"
           groupedActivities={groupedActivitiesResponse}
@@ -118,7 +116,7 @@ export default function Dashboard() {
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
       </Grid>
-      {!!groupedActivitiesResponse?.initiatives?.length && (
+      {/* {!!groupedActivitiesResponse?.initiatives?.length && (
         <Accordion
           variant="outlined"
           disableGutters
@@ -140,7 +138,7 @@ export default function Dashboard() {
             </Grid>
           </AccordionDetails>
         </Accordion>
-      )}
+      )} */}
 
       {!!groupedActivitiesResponse?.launchItems?.length && (
         <Accordion

@@ -11,7 +11,6 @@ import {
 import {
   fetchActivities,
   fetchIdentities,
-  fetchInitiativeMap,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
@@ -60,8 +59,8 @@ export const loader = async ({
       return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
     }
 
-    const [initiatives, launchItems, identities, activities] = await Promise.all([
-      fetchInitiativeMap(sessionData.customerId!),
+    const [launchItems, identities, activities] = await Promise.all([
+      // fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
       fetchActivities({
@@ -72,16 +71,16 @@ export const loader = async ({
       }),
     ]);
 
-    compileActivityMappers(MapperType.Initiative, initiatives);
+    // compileActivityMappers(MapperType.Initiative, initiatives);
     compileActivityMappers(MapperType.LaunchItem, launchItems);
     activities.forEach(activity => {
       let mapping;
-      if (!activity.initiativeId || !activity.launchItemId) {
+      if (/*!activity.initiativeId ||*/ !activity.launchItemId) {
         mapping = mapActivity(activity);
       }
-      if (!activity.initiativeId) {
-        activity.initiativeId = mapping?.initiatives[0] ?? '';
-      }
+      // if (!activity.initiativeId) {
+      //   activity.initiativeId = mapping?.initiatives[0] ?? '';
+      // }
       if (!activity.launchItemId) {
         activity.launchItemId = mapping?.launchItems[0] ?? '';
       }
