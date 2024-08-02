@@ -47,7 +47,7 @@ export default function Impersonation() {
 
   return (
     <App view={VIEW} isLoggedIn={true} role={loaderData.role} isNavOpen={loaderData.isNavOpen}>
-      <Alert severity="info" icon={<ScienceIcon />}>
+      <Alert severity="info" icon={<ScienceIcon />} sx={{ m: 3 }}>
         This page is for experimenting by letting admins impersonate contributors. Logged-in
         contributors will land directly on their{' '}
         <SmallButton href="/status/" label="Status" icon={<StatusIcon fontSize="small" />} /> or{' '}
@@ -78,7 +78,7 @@ export default function Impersonation() {
         {loaderData.identities.list.map((identity, i) => (
           <ListItem key={i}>
             <ListItemText>
-              <Link href={`/${ route }/${ encodeURI(identity.id) }`} fontSize="small">
+              <Link href={`/${route}/${encodeURI(identity.id)}`} fontSize="small">
                 {identity.displayName}
               </Link>
             </ListItemText>

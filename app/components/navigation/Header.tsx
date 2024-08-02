@@ -107,7 +107,7 @@ export default function Header({
                   onClick={onDateRangeRefresh}
                   title="Fetch new activities"
                 >
-                  <RefreshIcon fontSize="small" />
+                  <RefreshIcon />
                 </IconButton>
               )}
             </Stack>
