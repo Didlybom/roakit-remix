@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.4.2",
-    "@remix-run/node": "^2.10.3",
+    "@remix-run/node": "^2.11.0",
     "compression": "^1.7.4",
     "firebase-admin": "^12.3.0",
     "firebase-functions": "^5.0.1"
