@@ -126,8 +126,7 @@ const feedStyles = (
         fontFamily: 'Roboto Mono, monospace',
         fontSize: '11px',
         backgroundColor: theme.palette.grey[50],
-        border: '1px solid',
-        borderColor: theme.palette.grey[200],
+        border: '1px solid divider',
         borderRadius: '5px',
         padding: '1px 4px',
         textWrap: 'wrap',
@@ -139,8 +138,7 @@ const feedStyles = (
         borderCollapse: 'collapse',
       },
       'th, td': {
-        border: '0.5px solid',
-        borderColor: theme.palette.grey[200],
+        border: '0.5px solid divider',
         padding: '4px',
       },
       th: {
@@ -458,8 +456,7 @@ export default function Feed() {
           <Box
             fontSize="14px"
             sx={{
-              border: 1,
-              borderColor: theme.palette.grey[200],
+              border: `1px solid ${theme.palette.grey[200]}`,
               borderRadius: '6px',
               p: 1,
               minHeight: '45px',
@@ -598,10 +595,18 @@ export default function Feed() {
         onClose={(_, reason) => (reason === 'clickaway' ? null : setSnackMessage(''))}
         message={snackMessage}
       />
-      <Stack direction="row" ml={{ xs: 2, sm: 3 }} mt={3}>
-        <Box width="100%" sx={{ opacity: showFiltersForMobile ? 0.2 : undefined }}>
+      <Stack direction="row" ml={{ xs: 2, sm: 3 }}>
+        <Box
+          width="100%"
+          minWidth={300}
+          pt={3}
+          sx={{
+            opacity: showFiltersForMobile ? 0.2 : undefined,
+            borderRight: { xs: undefined, sm: `1px solid ${theme.palette.grey[200]}` },
+          }}
+        >
           <InfiniteList
-            height="calc(100vh - 90px)"
+            height={`calc(100vh - ${HEADER_HEIGHT + 22}px)`}
             head={feedStyles}
             itemCount={activities.length + 2} /* +1 helper text, +1 'loading more' */
             isItemLoaded={index => isActivityRowLoaded(index - 1)}
@@ -614,7 +619,7 @@ export default function Feed() {
             setRowHeights={heights => (heightsRef.current = heights)}
           />
         </Box>
-        <Stack ml={{ xs: 0, sm: 3 }} mr={{ xs: 2, sm: 3 }}>
+        <Stack mt={3} ml={{ xs: 0, sm: 3 }} mr={{ xs: 2, sm: 3 }}>
           {listScrollOffset === 0 && (
             <ToggleButton
               value="checked"

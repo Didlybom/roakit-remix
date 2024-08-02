@@ -161,8 +161,7 @@ export default function NavDrawer({
       <Box
         p={1}
         sx={{ backgroundColor: theme.palette.grey[50] }}
-        borderTop="solid 1px"
-        borderColor={theme.palette.grey[200]}
+        border={`solid 1px ${theme.palette.grey[200]}`}
       >
         <Typography variant="body2" color="text.secondary" pl={1}>
           {'© Roakit'} {new Date().getFullYear()}.

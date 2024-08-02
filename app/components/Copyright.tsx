@@ -10,8 +10,7 @@ export default function Copyright() {
         py: 1,
         textWrap: 'nowrap',
         backgroundColor: theme.palette.grey[50],
-        borderTop: 'solid 1px',
-        borderColor: theme.palette.grey[200],
+        borderTop: `solid 1px ${theme.palette.grey[200]}`,
       }}
     >
       <Grid>
