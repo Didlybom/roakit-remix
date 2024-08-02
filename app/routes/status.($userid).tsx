@@ -54,6 +54,10 @@ import { isMobile } from 'react-device-detect';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { getActivityDescription } from '../activityProcessors/activityDescription';
 import { findTicket } from '../activityProcessors/activityFeed';
+import {
+  groupActorActivities,
+  type GroupedActorActivities,
+} from '../activityProcessors/activityGrouper';
 import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import {
   compileActivityMappers,
@@ -109,6 +113,7 @@ import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import {
   errorAlert,
+  formatJson,
   getSearchParam,
   loaderErrorResponse,
   loginWithRedirectUrl,
@@ -329,6 +334,7 @@ export default function Status() {
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [groupedActivities, setGroupedActivities] = useState<GroupedActorActivities | null>(null);
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
@@ -405,6 +411,9 @@ export default function Status() {
       });
     });
     setActivities(activityRows);
+    if (!loaderData.reportIds?.length) {
+      setGroupedActivities(groupActorActivities(activities));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedActivities?.activities]); // loaderData must be omitted
 
@@ -924,11 +933,13 @@ export default function Status() {
                     updatedRow.effort !== oldRow.effort ||
                     updatedRow.ongoing != oldRow.ongoing
                   ) {
-                    setActivities(
-                      activities.map(activity =>
-                        activity.id === updatedRow.id ? { ...updatedRow } : activity
-                      )
+                    const updatedActivities = activities.map(activity =>
+                      activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
+                    setActivities(updatedActivities);
+                    if (!loaderData.reportIds?.length) {
+                      setGroupedActivities(groupActorActivities(updatedActivities));
+                    }
                     submit(
                       {
                         day: formatYYYYMMDD(selectedDay),
@@ -962,6 +973,11 @@ export default function Status() {
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
                 to go to previous/next day.
               </HelperText>
+            )}
+            {false && (
+              <Typography component="pre" fontSize="11px" fontFamily="Roboto Mono, monospace">
+                {formatJson(groupedActivities)}
+              </Typography>
             )}
           </Stack>
         </Grid>

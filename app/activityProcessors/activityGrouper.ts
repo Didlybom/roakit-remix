@@ -1,5 +1,5 @@
 import type { Activity, ArtifactCount, PhaseCount } from '../types/types';
-import { buildArtifactActionKey } from './activityFeed';
+import { buildArtifactActionKey, findTicket } from './activityFeed';
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
@@ -14,28 +14,35 @@ type Priority = {
   count: number;
 };
 
-type Initiative = {
+type InitiativeWithCounts = {
   id: string;
   key: string;
   artifactCount: ArtifactCount;
   phaseCount: PhaseCount;
-  actorIds?: Set<string>; // will be removed before returning for serialization
+  actorIds?: Set<string>;
   actorCount: number;
+  effort: number;
+};
+
+type InitiativeWithTickets = {
+  id: string;
+  key: string;
+  tickets: string[];
   effort: number;
 };
 
 export type GroupedActivities = {
   topActors?: TopActorsMap;
   priorities?: Priority[];
-  initiatives?: Initiative[];
-  launchItems?: Initiative[];
+  initiatives?: InitiativeWithCounts[];
+  launchItems?: InitiativeWithCounts[];
 };
 
 export const groupActivities = (activities: Activity[]): GroupedActivities => {
   const topActors: TopActorsMap = {};
   const priorities: Priority[] = [];
-  let initiatives: Initiative[] = [];
-  let launchItems: Initiative[] = [];
+  let initiatives: InitiativeWithCounts[] = [];
+  let launchItems: InitiativeWithCounts[] = [];
 
   activities.forEach(activity => {
     const {
@@ -49,23 +56,23 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
     } = activity;
 
     // top actors
-    if (actorId !== undefined) {
+    if (actorId != null) {
       const topActorKey = buildArtifactActionKey(artifact, action);
-      if (topActors[topActorKey] === undefined) {
+      if (topActors[topActorKey] == null) {
         topActors[topActorKey] = [];
       }
       let topActor = topActors[topActorKey].find(a => a.id === actorId);
-      if (topActor === undefined) {
+      if (topActor == null) {
         topActor = { id: actorId, count: 0 };
         topActors[topActorKey].push(topActor);
       }
       topActor.count++;
     }
 
-    if (priorityId !== undefined && priorityId !== -1) {
-      // priorities
+    // priorities
+    if (priorityId != null && priorityId !== -1) {
       let priority = priorities.find(p => p.id === priorityId);
-      if (priority === undefined) {
+      if (priority == null) {
         priority = { id: priorityId, count: 0 };
         priorities.push(priority);
       }
@@ -77,7 +84,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
     let initiative;
     if (initiativeId) {
       initiative = initiatives.find(i => i.id === initiativeId);
-      if (initiative === undefined) {
+      if (initiative == null) {
         initiative = {
           id: initiativeId,
           key: '',
@@ -90,7 +97,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
         initiatives.push(initiative);
       }
       initiative.artifactCount[artifact]++;
-      if (actorId !== undefined) {
+      if (actorId != null) {
         initiative.actorIds!.add(actorId); // the set dedupes
       }
       initiative.effort += activity.effort ?? 0;
@@ -100,7 +107,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
     let launchItem;
     if (launchItemId) {
       launchItem = launchItems.find(i => i.id === launchItemId);
-      if (launchItem === undefined) {
+      if (launchItem == null) {
         launchItem = {
           id: launchItemId,
           key: '',
@@ -112,34 +119,26 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
         };
         launchItems.push(launchItem);
       }
-      launchItem.artifactCount[artifact]++;
+      launchItem.artifactCount![artifact]++;
       if (phase) {
-        launchItem.phaseCount[phase]++;
+        launchItem.phaseCount![phase]++;
       }
-      if (actorId !== undefined) {
+      if (actorId != null) {
         launchItem.actorIds!.add(actorId); // the set dedupes
       }
       launchItem.effort += activity.effort ?? 0;
     }
   });
 
-  initiatives = initiatives.map(i => ({
-    id: i.id,
-    key: i.key,
-    artifactCount: i.artifactCount,
-    phaseCount: i.phaseCount,
-    actorCount: i.actorIds!.size,
-    effort: i.effort,
-  }));
+  initiatives = initiatives.map(initiative => {
+    const { actorIds, ...initiativeFields } = initiative;
+    return { ...initiativeFields, actorCount: actorIds?.size ?? 0 };
+  });
 
-  launchItems = launchItems.map(i => ({
-    id: i.id,
-    key: i.key,
-    artifactCount: i.artifactCount,
-    phaseCount: i.phaseCount,
-    actorCount: i.actorIds!.size,
-    effort: i.effort,
-  }));
+  launchItems = launchItems.map(launchItem => {
+    const { actorIds, ...launchItemFields } = launchItem;
+    return { ...launchItemFields, actorCount: actorIds?.size ?? 0 };
+  });
 
   Object.keys(topActors).forEach(action => {
     const actors = topActors[action];
@@ -158,4 +157,56 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   });
 
   return { topActors, priorities, initiatives, launchItems };
+};
+
+export type GroupedActorActivities = {
+  priorities?: Priority[];
+  launchItems?: InitiativeWithTickets[];
+  tickets: string[];
+  ongoingCount: number;
+};
+
+export const groupActorActivities = (activities: Activity[]): GroupedActorActivities => {
+  let launchItems: InitiativeWithTickets[] = [];
+  let tickets: string[] = [];
+  let ongoingCount = 0;
+
+  activities.forEach(activity => {
+    const { launchItemId, ongoing } = activity;
+
+    if (ongoing) {
+      ongoingCount++;
+    }
+    // tickets
+    const ticket = findTicket(activity.metadata);
+    if (ticket && !tickets.includes(ticket)) {
+      tickets.push(ticket);
+    }
+
+    // launch items
+    let launchItem;
+    if (launchItemId) {
+      launchItem = launchItems.find(i => i.id === launchItemId);
+      if (launchItem == null) {
+        launchItem = {
+          id: launchItemId,
+          key: '',
+          tickets: [],
+          effort: 0,
+        };
+        launchItems.push(launchItem);
+      }
+      if (ticket && !launchItem.tickets.includes(ticket)) {
+        launchItem.tickets!.push(ticket);
+      }
+      launchItem.effort += activity.effort ?? 0;
+    }
+  });
+
+  launchItems = launchItems.map(launchItem => {
+    const { tickets, ...launchItemFields } = launchItem;
+    return { ...launchItemFields, tickets: [...tickets] };
+  });
+
+  return { launchItems, tickets, ongoingCount };
 };

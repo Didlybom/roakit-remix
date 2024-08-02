@@ -22,7 +22,7 @@ export const getAllPossibleActivityUserIds = (
     .filter(identity => identity.id === identityId)
     .flatMap(identity => identity.accounts)
     .map(account => account.id)
-    .filter(accountId => accountId !== undefined)
+    .filter(accountId => accountId != null)
     .forEach(accountId => userIds.add(accountId));
 
   return [...userIds];

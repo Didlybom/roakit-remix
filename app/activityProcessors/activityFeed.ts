@@ -37,23 +37,18 @@ export const artifacts = new Map<string, { label: string }>([
 
 // return the first ticket referenced from metadata fields
 export const findTicket = (metadata?: ActivityMetadata) => {
-  if (!metadata) {
-    return undefined;
-  }
+  if (!metadata) return undefined;
+  if (metadata?.issue?.key) return metadata.issue.key;
   const pullRequestRef = metadata.pullRequest?.ref;
   if (pullRequestRef) {
     const tickets = findJiraTickets(pullRequestRef);
-    if (tickets) {
-      return tickets[0];
-    }
+    if (tickets) return tickets[0];
   }
   const commits = metadata.commits;
   if (commits) {
     for (const commit of commits) {
       const tickets = findJiraTickets(commit.message);
-      if (tickets) {
-        return tickets[0];
-      }
+      if (tickets) return tickets[0];
     }
   }
   return undefined;
@@ -61,9 +56,7 @@ export const findTicket = (metadata?: ActivityMetadata) => {
 
 export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata) => {
   const ticket = findTicket(metadata);
-  if (!ticket) {
-    return -1;
-  }
+  if (!ticket) return -1;
   return tickets[ticket] ?? -1;
 };
 
