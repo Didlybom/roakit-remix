@@ -318,10 +318,9 @@ export default function Feed() {
     [launchFilter, loaderData.accountMap, loaderData.launchItems]
   );
 
-  const reload = () => {
+  const clear = () => {
     setActivities([]);
     setIsLoading(true);
-    loadNewRows();
     listRef.current?.scrollToItem(0);
   };
 
@@ -659,34 +658,43 @@ export default function Feed() {
                   const keys = options.map(option => option.key);
                   setLaunchFilter(keys);
                   setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_LAUNCH, keys));
-                  reload();
+                  clear();
+                  loadNewRows();
                 }}
-                renderOption={(optionProps, option, { selected }) => (
-                  <Stack
-                    direction="row"
-                    component="li"
-                    ml="-12px"
-                    fontSize="small"
-                    {...optionProps}
-                  >
-                    <Checkbox
-                      checked={selected}
-                      size="small"
-                      // hard to align checkboxes, see https://github.com/mui/material-ui/issues/39798
-                      sx={{ mt: -2, color: option.color, '&.Mui-checked': { color: option.color } }}
-                    />
-                    <Tooltip title={option.label}>
-                      <Stack minWidth={0}>
-                        <Box fontWeight={500} color={option.color ?? undefined}>
-                          {option.key}
-                        </Box>
-                        <Box fontSize="smaller" sx={ellipsisSx}>
-                          {option.label}
-                        </Box>
-                      </Stack>
-                    </Tooltip>
-                  </Stack>
-                )}
+                renderOption={(options, option, { selected }) => {
+                  const { key, ...optionProps } = options;
+                  return (
+                    <Stack
+                      key={key}
+                      direction="row"
+                      component="li"
+                      ml="-12px"
+                      fontSize="small"
+                      {...optionProps}
+                    >
+                      <Checkbox
+                        checked={selected}
+                        size="small"
+                        // hard to align checkboxes, see https://github.com/mui/material-ui/issues/39798
+                        sx={{
+                          mt: -2,
+                          color: option.color,
+                          '&.Mui-checked': { color: option.color },
+                        }}
+                      />
+                      <Tooltip title={option.label}>
+                        <Stack minWidth={0}>
+                          <Box fontWeight={500} color={option.color ?? undefined}>
+                            {option.key}
+                          </Box>
+                          <Box fontSize="smaller" sx={ellipsisSx}>
+                            {option.label}
+                          </Box>
+                        </Stack>
+                      </Tooltip>
+                    </Stack>
+                  );
+                }}
                 renderInput={params => (
                   <TextField
                     {...params}
@@ -734,7 +742,7 @@ export default function Feed() {
                 onChange={values => {
                   setArtifactFilter(values as string[]);
                   setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_ARTIFACT, values));
-                  reload();
+                  clear();
                 }}
               />
               <Autocomplete
@@ -759,7 +767,10 @@ export default function Feed() {
                   window.open(
                     '/feed/' +
                       (option != null ? `${option.value}/` : '') +
-                      (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : ''),
+                      (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
+                      (artifactFilter.length ?
+                        `?artifact=${encodeURI(artifactFilter.join(','))}`
+                      : ''),
                     '_self'
                   );
                 }}
