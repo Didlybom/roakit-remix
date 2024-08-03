@@ -130,25 +130,21 @@ export const nameInitials = (name: string | undefined) => {
   return initials;
 };
 
-// see https://mui.com/material-ui/react-avatar/#system-BackgroundLetterAvatars.tsx
+const normalizeHash = (hash: number, min: number, max: number) =>
+  Math.floor((hash % (max - min)) + min);
+
+// see https://dev.to/admitkard/auto-generate-avatar-colors-randomly-138j
 export const stringColor = (string: string | undefined) => {
   if (!string) return undefined;
-
   let hash = 0;
-  let i;
-
-  for (i = 0; i < string.length; i += 1) {
+  for (let i = 0; i < string.length; i++) {
     hash = string.charCodeAt(i) + ((hash << 5) - hash);
   }
-
-  let color = '#';
-
-  for (i = 0; i < 3; i += 1) {
-    const value = (hash >> (i * 8)) & 0xff;
-    color += `00${value.toString(16)}`.slice(-2);
-  }
-
-  return color;
+  hash = Math.abs(hash);
+  const h = normalizeHash(hash, 0, 360);
+  const s = normalizeHash(hash, 55, 75);
+  const l = normalizeHash(hash, 35, 55);
+  return `hsl(${h}, ${s}%, ${l}%)`;
 };
 
 const emojiConvertor = new EmojiConvertor();

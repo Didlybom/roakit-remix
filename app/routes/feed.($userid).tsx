@@ -703,7 +703,7 @@ export default function Feed() {
                       ...params.InputProps,
                       ...(launchFilter.length === 0 && {
                         startAdornment: (
-                          <InputAdornment position="start" sx={{ ml: '4px', mr: 0 }}>
+                          <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
                             <FilterIcon fontSize="small" />
                           </InputAdornment>
                         ),
@@ -714,13 +714,14 @@ export default function Feed() {
                 renderTags={(tags, getTagProps) =>
                   tags.map((option, index) => {
                     const { key, ...tagProps } = getTagProps({ index });
+                    const color = getThemeContrastText(option.color);
                     return (
                       <Tooltip key={index} title={option.label}>
                         <Chip
                           {...tagProps}
                           size="small"
                           label={option.key}
-                          sx={{ color: getThemeContrastText(option.color), bgcolor: option.color }}
+                          sx={{ color, bgcolor: option.color, '& .MuiChip-deleteIcon': { color } }}
                         />
                       </Tooltip>
                     );
@@ -778,7 +779,7 @@ export default function Feed() {
                   const { key, ...optionProps } = props;
                   return (
                     <Box key={key} component="li" fontSize="small" {...optionProps}>
-                      <ClickableAvatar size={18} fontSize={10} name={option.label} sx={{ mr: 1 }} />
+                      <ClickableAvatar size={18} fontSize={9} name={option.label} sx={{ mr: 1 }} />
                       <Box sx={ellipsisSx}>{option.label}</Box>
                     </Box>
                   );
@@ -794,7 +795,7 @@ export default function Feed() {
                           {loaderData.userId ?
                             <ClickableAvatar
                               size={20}
-                              fontSize={11}
+                              fontSize={9}
                               name={loaderData.actors[loaderData.userId].name}
                             />
                           : <OpenInNewIcon fontSize="small" />}

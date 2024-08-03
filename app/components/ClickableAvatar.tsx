@@ -1,6 +1,5 @@
 import { Avatar, type SxProps } from '@mui/material';
 import { nameInitials, stringColor } from '../utils/stringUtils';
-import { getThemeContrastText } from '../utils/theme';
 
 export default function ClickableAvatar({
   name,
@@ -17,7 +16,6 @@ export default function ClickableAvatar({
   fontSize?: number;
   sx?: SxProps;
 }) {
-  const bgcolor = stringColor(name);
   return (
     <Avatar
       component={href ? 'a' : 'div'}
@@ -25,7 +23,6 @@ export default function ClickableAvatar({
       href={href}
       sx={{
         bgcolor: stringColor(name),
-        color: getThemeContrastText(bgcolor),
         width: size,
         height: size,
         fontSize,
