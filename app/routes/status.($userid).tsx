@@ -205,6 +205,7 @@ interface ActionRequest {
   priority: number;
   effort: number;
   ongoing: boolean;
+  actorId: string;
 
   // field only used for next ongoing
   eventType: string;
@@ -264,10 +265,20 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
       .update(activity);
     if (actionRequest.ongoing) {
+      if (actionRequest.actorId !== identityId) {
+        // not creating an ongoing activity for self
+        // enforce it's for a report
+        const activityIdentity = await queryIdentity(sessionData.customerId!, {
+          identityId: actionRequest.actorId,
+        });
+        if (activityIdentity.managerId !== identityId) {
+          return { error: 'Invalid contributor for ongoing activity' };
+        }
+      }
       const added = await upsertNextOngoingActivity(sessionData.customerId!, {
         id: actionRequest.activityId,
         ...activity,
-        actorId: identityId,
+        actorId: actionRequest.actorId,
         action: actionRequest.action,
         artifact: actionRequest.artifact as Artifact,
         createdTimestamp: actionRequest.createdTimestamp,
@@ -424,6 +435,10 @@ export default function Status() {
       setConfirmation(actionData?.status?.message);
     }
   }, [actionData?.status]);
+
+  useEffect(() => {
+    setError(actionData?.error ?? '');
+  }, [actionData?.error]);
 
   useEffect(() => {
     if (fetchedActivities?.error?.status === 401) {
@@ -619,7 +634,10 @@ export default function Status() {
                   try {
                     await confirm({
                       title: 'Confirm Deletion',
-                      description: `Delete the activity "${params.row.description}"?`,
+                      description:
+                        params.row.description ?
+                          `Delete the activity "${params.row.description}"?`
+                        : 'Delete the activity?',
                     });
                     handleDeleteClick(params.id);
                   } catch {
@@ -950,6 +968,7 @@ export default function Status() {
                         phase: updatedRow.phase ?? null,
                         effort: updatedRow.effort ?? null,
                         ongoing: updatedRow.ongoing ?? null,
+                        actorId: updatedRow.actorId ?? null,
                         ...(updatedRow.ongoing && {
                           eventType: updatedRow.eventType,
                           action: updatedRow.action,

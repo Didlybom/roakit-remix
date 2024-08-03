@@ -64,10 +64,11 @@ export const loader = async ({
 
       if (includeTeam) {
         const teamIdentities = await queryTeamIdentities(sessionData.customerId!, identity.id);
+        teamIdentities.forEach(identity => userIdSet.add(identity.id));
         teamIdentities
-          .flatMap(i => i.accounts)
-          .filter(a => a.id)
-          .forEach(a => userIdSet.add(a.id));
+          .flatMap(identity => identity.accounts)
+          .filter(account => account.id)
+          .forEach(account => userIdSet.add(account.id));
       }
       userIds = [...userIdSet];
     }
