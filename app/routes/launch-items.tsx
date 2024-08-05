@@ -33,7 +33,7 @@ import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-r
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { SwatchesPicker as ColorPicker, type ColorResult } from 'react-color';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
@@ -212,6 +212,21 @@ export default function LaunchItems() {
     }
   }, [actionData?.status]);
 
+  useEffect(() => {
+    try {
+      if (newActivityMapper) compileExpression(newActivityMapper);
+    } catch (e) {
+      return setNewActivityMapperError(true);
+    }
+    setNewActivityMapperError(false);
+  }, [newActivityMapper]);
+
+  useEffect(
+    () =>
+      setNewKeyError((!!newKey && !KEY_REGEXP.exec(newKey)) || rows.some(r => r.key === newKey)),
+    [newKey, rows]
+  );
+
   const handleRowEditStop: GridEventListener<'rowEditStop'> = (params, event) => {
     if (params.reason === GridRowEditStopReasons.rowFocusOut) {
       event.defaultMuiPrevented = true;
@@ -226,99 +241,97 @@ export default function LaunchItems() {
     }
   };
 
-  const handleDeleteClick = (launchItemId: GridRowId) => {
-    setRows(rows.filter(row => row.id !== launchItemId));
-    submit({ launchItemId }, deleteJsonOptions);
-  };
-
-  const columns: GridColDef[] = [
-    {
-      field: 'key',
-      headerName: 'Key',
-      editable: true,
-      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
-        ...params.props,
-        error: !params.props.value?.trim() || !KEY_REGEXP.exec(params.props.value.trim()),
-      }),
+  const handleDeleteClick = useCallback(
+    (launchItemId: GridRowId) => {
+      setRows(rows.filter(row => row.id !== launchItemId));
+      submit({ launchItemId }, deleteJsonOptions);
     },
-    {
-      field: 'color',
-      headerName: 'Color',
-      editable: true,
-      sortable: false,
-      renderCell: params => (
-        <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
-          <ColorValue color={params.value as string} />
-        </Box>
-      ),
-      renderEditCell: params => <EditColor {...params} />,
-    },
+    [rows, submit]
+  );
 
-    { field: 'label', headerName: 'Label', flex: 1, editable: true },
-    {
-      field: 'activityMapper',
-      headerName: 'Activity Mapper',
-      flex: 1,
-      editable: true,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<LaunchItemRow, string>) => (
-        <Box
-          tabIndex={params.tabIndex}
-          title={params.value}
-          fontFamily="Roboto Mono, monospace"
-          fontSize="11px"
-          sx={ellipsisSx}
-        >
-          {params.value || '⋯'}
-        </Box>
-      ),
-      renderEditCell: params => <EditTextarea {...params} />,
-      preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => {
-        try {
-          if (params.props.value) {
-            compileExpression(params.props.value);
-          }
-          return { ...params.props, error: false };
-        } catch (e) {
-          return { ...params.props, error: true };
-        }
+  const columns = useMemo<GridColDef[]>(
+    () => [
+      {
+        field: 'key',
+        headerName: 'Key',
+        editable: true,
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
+          ...params.props,
+          error:
+            !params.props.value?.trim() ||
+            !KEY_REGEXP.exec(params.props.value.trim()) ||
+            rows.some(r => r.key === params.props.value),
+        }),
       },
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      cellClassName: 'actions',
-      getActions: (params: GridRowParams<LaunchItemRow>) => [
-        <GridActionsCellItem
-          key={1}
-          icon={<DeleteIcon />}
-          label="Delete"
-          onClick={async () => {
-            try {
-              await confirm({
-                title: 'Confirm Deletion',
-                description: `Delete the launch item "${params.row.label || params.row.key}"?`,
-              });
-              handleDeleteClick(params.row.id);
-            } catch {
-              /* user cancelled */
+      {
+        field: 'color',
+        headerName: 'Color',
+        editable: true,
+        sortable: false,
+        renderCell: params => (
+          <Box tabIndex={params.tabIndex} display="flex" height="100%" alignItems="center">
+            <ColorValue color={params.value as string} />
+          </Box>
+        ),
+        renderEditCell: params => <EditColor {...params} />,
+      },
+
+      { field: 'label', headerName: 'Label', flex: 1, editable: true },
+      {
+        field: 'activityMapper',
+        headerName: 'Activity Mapper',
+        flex: 1,
+        editable: true,
+        sortable: false,
+        renderCell: (params: GridRenderCellParams<LaunchItemRow, string>) => (
+          <Box
+            tabIndex={params.tabIndex}
+            title={params.value}
+            fontFamily="Roboto Mono, monospace"
+            fontSize="11px"
+            sx={ellipsisSx}
+          >
+            {params.value || '⋯'}
+          </Box>
+        ),
+        renderEditCell: params => <EditTextarea {...params} />,
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => {
+          try {
+            if (params.props.value) {
+              compileExpression(params.props.value);
             }
-          }}
-        />,
-      ],
-    },
-  ];
-
-  useEffect(() => {
-    try {
-      if (newActivityMapper) compileExpression(newActivityMapper);
-    } catch (e) {
-      return setNewActivityMapperError(true);
-    }
-    setNewActivityMapperError(false);
-  }, [newActivityMapper]);
-
-  useEffect(() => setNewKeyError(!!newKey && !KEY_REGEXP.exec(newKey)), [newKey]);
+            return { ...params.props, error: false };
+          } catch (e) {
+            return { ...params.props, error: true };
+          }
+        },
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        cellClassName: 'actions',
+        getActions: (params: GridRowParams<LaunchItemRow>) => [
+          <GridActionsCellItem
+            key={1}
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={async () => {
+              try {
+                await confirm({
+                  title: 'Confirm Deletion',
+                  description: `Delete the launch item "${params.row.label || params.row.key}"?`,
+                });
+                handleDeleteClick(params.row.id);
+              } catch {
+                /* user cancelled */
+              }
+            }}
+          />,
+        ],
+      },
+    ],
+    [confirm, handleDeleteClick, rows]
+  );
 
   return (
     <App
@@ -454,12 +467,8 @@ export default function LaunchItems() {
             }}
             onRowEditStop={handleRowEditStop}
             processRowUpdate={(newRow: LaunchItemRow, oldRow: LaunchItemRow) => {
-              if (!newRow.key) {
-                return newRow;
-              }
-              if (rows.find(r => r.key === newRow.key && r.id !== newRow.id)) {
-                return { ...newRow, key: '' };
-              }
+              if (!newRow.key) return newRow;
+              if (rows.find(r => r.key === newRow.key)) return { ...newRow, key: '' };
               const updatedRow = { ...newRow, isNew: false };
               if (areRowsEqual(newRow, oldRow)) {
                 return updatedRow;
