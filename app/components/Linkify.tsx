@@ -34,14 +34,14 @@ export function LinkifyJiraTicket({ content, baseUrl }: { content: string; baseU
   );
 }
 
-export const linkifyJiraTicket = (content: string, meta: { ticketBaseUrl: string }) => {
+export const mdLinkifyJiraTicket = (content: string, meta: { ticketBaseUrl: string }) => {
   return content.replace(JIRA_TICKET_REGEXP_G, (_, ticket: string) => {
     const key = ticket.replace(JIRA_FAKE_TICKET_REGEXP, '$1');
-    return `<a href="${meta.ticketBaseUrl}${key}" target="_blank">${ticket}</a>`;
+    return `[${ticket}](${meta.ticketBaseUrl}${key})`;
   });
 };
 
-export const linkifyJiraAccount = (
+export const mdLinkifyJiraAccount = (
   content: string,
   meta: { actors: ActorRecord; accountMap: AccountToIdentityRecord }
 ) => {
@@ -50,11 +50,11 @@ export const linkifyJiraAccount = (
     if (!identityId) {
       return match;
     }
-    return `<a href="/feed/${identityId}">${meta.actors[identityId]?.name || 'Unknown'}</a>`;
+    return `[${meta.actors[identityId]?.name || 'Unknown'}](/feed/${identityId})`;
   });
 };
 
-export const linkifyGitHubAccount = (
+export const mdLinkifyGitHubAccount = (
   content: string,
   meta: { actors: ActorRecord; accountMap: AccountToIdentityRecord }
 ) => {
@@ -63,6 +63,6 @@ export const linkifyGitHubAccount = (
     if (!identityId) {
       return match;
     }
-    return `<a href="/feed/${identityId}">${meta.actors[identityId]?.name || 'Unknown'}</a>`;
+    return `[${meta.actors[identityId]?.name || 'Unknown'}](/feed/${identityId})`;
   });
 };

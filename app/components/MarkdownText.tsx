@@ -10,6 +10,7 @@ export default function MarkdownText({
   return (
     <MarkdownToJSX
       options={{
+        disableParsingRawHTML: true,
         ...(ignoreLinks && { overrides: { a: { component: 'span' } } }),
       }}
     >

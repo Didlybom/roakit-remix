@@ -111,7 +111,7 @@ export type ActivityChangeLog = {
 
 export type ActivityMetadata = {
   codeAction?: string | string[];
-  issue?: { key: string; summary?: string; uri?: string; project?: { id: string } };
+  issue?: { key: string; summary?: string; type?: string; uri?: string; project?: { id: string } };
   attachment?: { filename: string; mimeType?: string; uri?: string };
   attachments?: {
     files: { filename: string; uri?: string }[];

@@ -40,10 +40,10 @@ import {
 import theme from '../utils/theme';
 import LabeledBox from './LabeledBox';
 import {
-  linkifyGitHubAccount,
-  linkifyJiraAccount,
-  linkifyJiraTicket,
   LinkifyJiraTicket,
+  mdLinkifyGitHubAccount,
+  mdLinkifyJiraAccount,
+  mdLinkifyJiraTicket,
 } from './Linkify';
 import MarkdownText from './MarkdownText';
 
@@ -52,7 +52,8 @@ const cleanupJiraMarkup = (content: string) =>
   content
     .replaceAll('|smart-link', '')
     .replace(JIRA_IMAGE_REGEXP_G, '(image)')
-    .replaceAll('(/)', '✅');
+    .replaceAll('(/)', '✅')
+    .replaceAll('(flag)', '🚩');
 
 const cleanupMarkup = (content: string) => content.replaceAll(IMG_TAG_REGEXP_G, '(image)');
 
@@ -65,7 +66,6 @@ const SubCard = ({
   eventType?: string;
   meta?: { actors: ActorRecord; accountMap: AccountToIdentityRecord; ticketBaseUrl?: string };
 }) => {
-  let linkifiedContent;
   let label;
   let contentNode;
   if (typeof content === 'string') {
@@ -75,27 +75,28 @@ const SubCard = ({
       label = labelMatch[1];
       description = content.slice(labelMatch[0].length);
     }
+    if (eventType === 'jira') {
+      description = cleanupJiraMarkup(description);
+    }
+    description = cleanupMarkup(description);
+    if (eventType === 'jira') {
+      description = jira2md(description);
+    }
     if (eventType === 'jira' && meta) {
-      linkifiedContent = linkifyJiraAccount(description, meta);
+      description = mdLinkifyJiraAccount(description, meta);
     } else if (eventType === 'github' && meta) {
-      linkifiedContent = linkifyGitHubAccount(description, meta);
-    } else {
-      linkifiedContent = description;
+      description = mdLinkifyGitHubAccount(description, meta);
     }
-    if (meta?.ticketBaseUrl && linkifiedContent.indexOf('http') === -1) {
-      linkifiedContent = linkifyJiraTicket(linkifiedContent, { ticketBaseUrl: meta.ticketBaseUrl });
+    if (meta?.ticketBaseUrl && description.indexOf('http') === -1) {
+      description = mdLinkifyJiraTicket(description, {
+        ticketBaseUrl: meta.ticketBaseUrl,
+      });
     }
-    if (eventType === 'jira') {
-      linkifiedContent = cleanupJiraMarkup(linkifiedContent);
-    }
-    linkifiedContent = cleanupMarkup(linkifiedContent);
-    if (eventType === 'jira') {
-      linkifiedContent = jira2md(linkifiedContent);
-    }
-    contentNode = <MarkdownText text={linkifiedContent} />;
+    contentNode = <MarkdownText text={description} />;
   } else {
     contentNode = content;
   }
+
   return (
     <LabeledBox label={label} sx={{ color: theme.palette.grey[500], wordBreak: 'break-word' }}>
       <LinkItUrl>{contentNode}</LinkItUrl>
@@ -122,7 +123,11 @@ export default function ActivityCard({
 }) {
   const description = getActivityDescription(activity, { format });
   let comment: ReactNode | string | null =
-    activity.metadata?.comment || activity.metadata?.comments ? 'Commented' : null;
+    activity.metadata?.comment || activity.metadata?.comments ?
+      activity.event === 'comment_deleted' ?
+        'Deleted comment'
+      : 'Commented'
+    : null;
   if (format === 'Feed' && comment) {
     if (activity.metadata?.comments?.some(c => c.body)) {
       comment = (
@@ -143,7 +148,9 @@ export default function ActivityCard({
       comment = (
         <Stack spacing={1}>
           <SubCard
-            content={`Comment: ${convertEmojis(activity.metadata.comment.body)}`}
+            content={`${
+              activity.event === 'comment_deleted' ? 'Comment deleted' : 'Comment deleted'
+            }: ${convertEmojis(activity.metadata.comment.body)}`}
             eventType={activity.eventType}
             meta={{ actors, accountMap, ticketBaseUrl }}
           />

@@ -199,7 +199,7 @@ export const getActivityActionDescription = (
         if (changeLog.field === 'description') {
           actions.push(
             options?.format === 'Feed' ?
-              `Description: ${convertEmojis(changeLog.newValue)}`
+              `Description: ${metadata.issue?.type === 'Email request' ? '(Email request)' : convertEmojis(changeLog.newValue)}`
             : 'Set description'
           );
         }
@@ -213,7 +213,7 @@ export const getActivityActionDescription = (
       return options.format === 'Feed' ?
           [
             metadata.attachment.uri ?
-              `<a href="${metadata.attachment.uri}" target="_blank">${metadata.attachment.filename}</a>`
+              `[${metadata.attachment.filename}](${metadata.attachment.uri})`
             : metadata.attachment.filename,
           ]
         : [];
@@ -222,9 +222,7 @@ export const getActivityActionDescription = (
       return options.format === 'Feed' ?
           [
             metadata.attachments.files
-              .map(f =>
-                f.uri ? `<a href="${f.uri}" target="_blank">${f.filename}</a>` : f.filename
-              )
+              .map(f => (f.uri ? `[${f.filename}]({f.uri})` : f.filename))
               .join(' • '),
           ]
         : [];
