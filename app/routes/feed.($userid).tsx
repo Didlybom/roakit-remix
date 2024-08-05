@@ -1,5 +1,4 @@
 import {
-  Close as CloseIcon,
   DataObject as DataObjectIcon,
   Timelapse as EffortIcon,
   FilterList as FilterIcon,
@@ -11,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import {
   Autocomplete,
+  Backdrop,
   Box,
   Button,
   Checkbox,
@@ -366,11 +366,29 @@ export default function Feed() {
   const rowElement = (index: number) => {
     if (index === 0) {
       return (
-        <HelperText sx={{ justifyContent: 'start', ml: '44px', mb: 1 }}>
-          This feed auto-refreshes when scrolled to the top. Click{' '}
-          <RefreshIcon sx={{ width: 16, height: 16, verticalAlign: 'middle' }} /> in the header to
-          scroll back to the top.
-        </HelperText>
+        <Box>
+          {!showFiltersForMobile && (
+            <ToggleButton
+              value="checked"
+              size="small"
+              onChange={() => setShowFiltersForMobile(!showFiltersForMobile)}
+              sx={{
+                width: 'fit-content',
+                ml: 2,
+                mb: 3,
+                float: 'right',
+                ...mobileDisplaySx,
+              }}
+            >
+              <FilterIcon />
+            </ToggleButton>
+          )}
+          <HelperText sx={{ justifyContent: 'start', ml: '44px', mb: 1 }}>
+            This feed auto-refreshes when scrolled to the top. Click{' '}
+            <RefreshIcon sx={{ width: 16, height: 16, verticalAlign: 'middle' }} /> in the header to
+            scroll back to the top.
+          </HelperText>
+        </Box>
       );
     }
 
@@ -555,6 +573,173 @@ export default function Feed() {
     );
   };
 
+  const filters = (
+    <Stack onClick={e => e.stopPropagation()}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack spacing={3}>
+          <Autocomplete
+            multiple
+            disableClearable
+            size="small"
+            sx={{ width: FILTER_WIDTH }}
+            value={launchFilter.map(key => launchItemsByKey.get(key)!)}
+            options={[...launchItemsByKey.values()]}
+            isOptionEqualToValue={(option, value) => option.key === value.key}
+            filterOptions={launchFilterOptions}
+            onChange={(_e, options) => {
+              const keys = options.map(option => option.key);
+              setLaunchFilter(keys);
+              setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_LAUNCH, keys));
+              clear();
+              loadNewRows();
+            }}
+            renderOption={(options, option, { selected }) => {
+              const { key, ...optionProps } = options;
+              return (
+                <Stack
+                  key={key}
+                  direction="row"
+                  component="li"
+                  ml="-12px"
+                  fontSize="small"
+                  {...optionProps}
+                >
+                  <Checkbox
+                    checked={selected}
+                    size="small"
+                    // hard to align checkboxes, see https://github.com/mui/material-ui/issues/39798
+                    sx={{
+                      mt: -2,
+                      color: option.color,
+                      '&.Mui-checked': { color: option.color },
+                    }}
+                  />
+                  <Tooltip title={option.label}>
+                    <Stack minWidth={0}>
+                      <Box fontWeight={500} color={option.color ?? undefined}>
+                        {option.key}
+                      </Box>
+                      <Box fontSize="smaller" sx={ellipsisSx}>
+                        {option.label}
+                      </Box>
+                    </Stack>
+                  </Tooltip>
+                </Stack>
+              );
+            }}
+            renderInput={params => (
+              <TextField
+                {...params}
+                placeholder={launchFilter.length === 0 ? 'Launch Items' : undefined}
+                InputProps={{
+                  ...params.InputProps,
+                  ...(launchFilter.length === 0 && {
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
+                        <FilterIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }),
+                }}
+              />
+            )}
+            renderTags={(tags, getTagProps) =>
+              tags.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                const color = getThemeContrastText(option.color);
+                return (
+                  <Tooltip key={index} title={option.label}>
+                    <Chip
+                      {...tagProps}
+                      size="small"
+                      label={option.key}
+                      sx={{ color, bgcolor: option.color, '& .MuiChip-deleteIcon': { color } }}
+                    />
+                  </Tooltip>
+                );
+              })
+            }
+          ></Autocomplete>
+          <FilterMenu
+            label="Artifacts"
+            multiple
+            chips={true}
+            sx={{ width: FILTER_WIDTH }}
+            selectedValue={artifactFilter}
+            items={[
+              ...[...artifacts].map(([key, artifact]) => ({
+                value: key,
+                label: artifact.label,
+              })),
+            ]}
+            onChange={values => {
+              setArtifactFilter(values as string[]);
+              setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_ARTIFACT, values));
+              clear();
+            }}
+          />
+          <Autocomplete
+            size="small"
+            sx={{ width: FILTER_WIDTH }}
+            value={
+              loaderData.userId ?
+                {
+                  value: loaderData.userId,
+                  label: loaderData.actors[loaderData.userId].name,
+                }
+              : null
+            }
+            options={loaderData.identities.map(identity => ({
+              value: identity.id,
+              label: identity.displayName,
+            }))}
+            disableClearable={loaderData.userId == null}
+            isOptionEqualToValue={(option, value) => option.value === value.value}
+            onChange={(_e, option) => {
+              setIsLoading(true);
+              window.open(
+                '/feed/' +
+                  (option != null ? `${option.value}/` : '') +
+                  (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
+                  (artifactFilter.length ? `?artifact=${encodeURI(artifactFilter.join(','))}` : ''),
+                '_self'
+              );
+            }}
+            renderOption={(props, option: SelectOption) => {
+              const { key, ...optionProps } = props;
+              return (
+                <Box key={key} component="li" fontSize="small" {...optionProps}>
+                  <ClickableAvatar size={18} fontSize={9} name={option.label} sx={{ mr: 1 }} />
+                  <Box sx={ellipsisSx}>{option.label}</Box>
+                </Box>
+              );
+            }}
+            renderInput={params => (
+              <TextField
+                {...params}
+                placeholder="Single Contributor"
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
+                      {loaderData.userId ?
+                        <ClickableAvatar
+                          size={20}
+                          fontSize={9}
+                          name={loaderData.actors[loaderData.userId].name}
+                        />
+                      : <OpenInNewIcon fontSize="small" />}
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
+          />
+        </Stack>
+      </Paper>
+    </Stack>
+  );
+
   return (
     <App
       view={VIEW}
@@ -606,6 +791,7 @@ export default function Feed() {
         >
           <InfiniteList
             height={`calc(100vh - ${HEADER_HEIGHT + 22}px)`}
+            rowSx={{ pr: { xs: 2, sm: 3 } }}
             head={feedStyles}
             itemCount={activities.length + 2} /* +1 helper text, +1 'loading more' */
             isItemLoaded={index => isActivityRowLoaded(index - 1)}
@@ -618,196 +804,14 @@ export default function Feed() {
             setRowHeights={heights => (heightsRef.current = heights)}
           />
         </Box>
-        <Stack mt={3} ml={{ xs: 0, sm: 3 }} mr={{ xs: 2, sm: 3 }}>
-          {listScrollOffset === 0 && (
-            <ToggleButton
-              value="checked"
-              size="small"
-              selected={showFiltersForMobile}
-              onChange={() => setShowFiltersForMobile(!showFiltersForMobile)}
-              sx={{ width: 'fit-content', mb: 3, ...mobileDisplaySx }}
-            >
-              {showFiltersForMobile ?
-                <CloseIcon />
-              : <FilterIcon />}
-            </ToggleButton>
-          )}
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              ...(!showFiltersForMobile && desktopDisplaySx),
-              ...(showFiltersForMobile && {
-                position: 'absolute',
-                top: HEADER_HEIGHT + 70,
-                right: 65,
-              }),
-            }}
-          >
-            <Stack spacing={3}>
-              <Autocomplete
-                multiple
-                disableClearable
-                size="small"
-                sx={{ width: FILTER_WIDTH }}
-                value={launchFilter.map(key => launchItemsByKey.get(key)!)}
-                options={[...launchItemsByKey.values()]}
-                isOptionEqualToValue={(option, value) => option.key === value.key}
-                filterOptions={launchFilterOptions}
-                onChange={(_e, options) => {
-                  const keys = options.map(option => option.key);
-                  setLaunchFilter(keys);
-                  setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_LAUNCH, keys));
-                  clear();
-                  loadNewRows();
-                }}
-                renderOption={(options, option, { selected }) => {
-                  const { key, ...optionProps } = options;
-                  return (
-                    <Stack
-                      key={key}
-                      direction="row"
-                      component="li"
-                      ml="-12px"
-                      fontSize="small"
-                      {...optionProps}
-                    >
-                      <Checkbox
-                        checked={selected}
-                        size="small"
-                        // hard to align checkboxes, see https://github.com/mui/material-ui/issues/39798
-                        sx={{
-                          mt: -2,
-                          color: option.color,
-                          '&.Mui-checked': { color: option.color },
-                        }}
-                      />
-                      <Tooltip title={option.label}>
-                        <Stack minWidth={0}>
-                          <Box fontWeight={500} color={option.color ?? undefined}>
-                            {option.key}
-                          </Box>
-                          <Box fontSize="smaller" sx={ellipsisSx}>
-                            {option.label}
-                          </Box>
-                        </Stack>
-                      </Tooltip>
-                    </Stack>
-                  );
-                }}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder={launchFilter.length === 0 ? 'Launch Items' : undefined}
-                    InputProps={{
-                      ...params.InputProps,
-                      ...(launchFilter.length === 0 && {
-                        startAdornment: (
-                          <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
-                            <FilterIcon fontSize="small" />
-                          </InputAdornment>
-                        ),
-                      }),
-                    }}
-                  />
-                )}
-                renderTags={(tags, getTagProps) =>
-                  tags.map((option, index) => {
-                    const { key, ...tagProps } = getTagProps({ index });
-                    const color = getThemeContrastText(option.color);
-                    return (
-                      <Tooltip key={index} title={option.label}>
-                        <Chip
-                          {...tagProps}
-                          size="small"
-                          label={option.key}
-                          sx={{ color, bgcolor: option.color, '& .MuiChip-deleteIcon': { color } }}
-                        />
-                      </Tooltip>
-                    );
-                  })
-                }
-              ></Autocomplete>
-              <FilterMenu
-                label="Artifacts"
-                multiple
-                chips={true}
-                sx={{ width: FILTER_WIDTH }}
-                selectedValue={artifactFilter}
-                items={[
-                  ...[...artifacts].map(([key, artifact]) => ({
-                    value: key,
-                    label: artifact.label,
-                  })),
-                ]}
-                onChange={values => {
-                  setArtifactFilter(values as string[]);
-                  setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_ARTIFACT, values));
-                  clear();
-                }}
-              />
-              <Autocomplete
-                size="small"
-                sx={{ width: FILTER_WIDTH }}
-                value={
-                  loaderData.userId ?
-                    {
-                      value: loaderData.userId,
-                      label: loaderData.actors[loaderData.userId].name,
-                    }
-                  : null
-                }
-                options={loaderData.identities.map(identity => ({
-                  value: identity.id,
-                  label: identity.displayName,
-                }))}
-                disableClearable={loaderData.userId == null}
-                isOptionEqualToValue={(option, value) => option.value === value.value}
-                onChange={(_e, option) => {
-                  setIsLoading(true);
-                  window.open(
-                    '/feed/' +
-                      (option != null ? `${option.value}/` : '') +
-                      (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
-                      (artifactFilter.length ?
-                        `?artifact=${encodeURI(artifactFilter.join(','))}`
-                      : ''),
-                    '_self'
-                  );
-                }}
-                renderOption={(props, option: SelectOption) => {
-                  const { key, ...optionProps } = props;
-                  return (
-                    <Box key={key} component="li" fontSize="small" {...optionProps}>
-                      <ClickableAvatar size={18} fontSize={9} name={option.label} sx={{ mr: 1 }} />
-                      <Box sx={ellipsisSx}>{option.label}</Box>
-                    </Box>
-                  );
-                }}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    placeholder="Single Contributor"
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
-                          {loaderData.userId ?
-                            <ClickableAvatar
-                              size={20}
-                              fontSize={9}
-                              name={loaderData.actors[loaderData.userId].name}
-                            />
-                          : <OpenInNewIcon fontSize="small" />}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                )}
-              />
-            </Stack>
-          </Paper>
-        </Stack>
+        {showFiltersForMobile ?
+          <Backdrop open onClick={() => setShowFiltersForMobile(false)}>
+            {filters}
+          </Backdrop>
+        : <Box m={3} sx={desktopDisplaySx}>
+            {filters}
+          </Box>
+        }
       </Stack>
     </App>
   );

@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, type SxProps } from '@mui/material';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useResizeDetector } from 'react-resize-detector';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -11,6 +11,7 @@ const DEFAULT_REFRESH_INTERVAL_MS = 15 * 1000;
 
 interface InfiniteListProps {
   height: string;
+  rowSx?: SxProps;
   minimumBatchSize?: number;
   threshold?: number;
   refreshIntervalMs?: number;
@@ -28,6 +29,7 @@ interface InfiniteListProps {
 
 export default function InfiniteList({
   height,
+  rowSx,
   minimumBatchSize = DEFAULT_PAGE_SIZE,
   threshold = DEFAULT_THRESHOLD,
   refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS,
@@ -83,7 +85,7 @@ export default function InfiniteList({
     }, []);
 
     return (
-      <Box style={style} pr={3}>
+      <Box style={style} sx={rowSx}>
         <Box ref={ref} pb={2}>
           {rowElement(index)}
         </Box>
@@ -94,8 +96,8 @@ export default function InfiniteList({
   return (
     <Box ref={rootRef} height={height}>
       {head}
-      <AutoSizer disableWidth>
-        {({ height }) => (
+      <AutoSizer>
+        {({ height, width }) => (
           <InfiniteLoader
             isItemLoaded={isItemLoaded}
             itemCount={itemCount}
@@ -108,7 +110,7 @@ export default function InfiniteList({
                 estimatedItemSize={100}
                 itemSize={i => heights[i] ?? 100}
                 height={height}
-                width="100%"
+                width={width}
                 itemCount={itemCount}
                 ref={elem => {
                   ref(elem);
