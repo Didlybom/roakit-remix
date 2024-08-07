@@ -25,12 +25,6 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import pluralize from 'pluralize';
 import { useEffect, useMemo, useState } from 'react';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
-import {
-  MapperType,
-  compileActivityMappers,
-  mapActivity,
-} from '../activityProcessors/activityMapper';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
@@ -56,7 +50,9 @@ import {
 } from '../firestore.server/fetchers.server';
 import { incrementInitiativeCounters } from '../firestore.server/updaters.server';
 import { usePrevious } from '../hooks/usePrevious';
-import type { Account, Activity, Artifact, ArtifactCount } from '../types/types';
+import { identifyAccounts } from '../processors/activityIdentifier';
+import { MapperType, compileActivityMappers, mapActivity } from '../processors/activityMapper';
+import type { Account, Activity, Artifact, ArtifactCounts } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -135,7 +131,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!activities) {
       return null;
     }
-    const counters: ArtifactCount = { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 };
+    const counters: ArtifactCounts = {
+      code: 0,
+      codeOrg: 0,
+      task: 0,
+      taskOrg: 0,
+      doc: 0,
+      docOrg: 0,
+    };
     const batch = firestore.batch();
     activities.forEach(activity => {
       if (

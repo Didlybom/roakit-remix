@@ -1,10 +1,7 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
-import { artifactActions } from '../../activityProcessors/activityFeed';
-import {
-  TOP_ACTORS_OTHERS_ID,
-  type GroupedActivities,
-} from '../../activityProcessors/activityGrouper';
+import { artifactActions } from '../../processors/activityFeed';
+import { TOP_ACTORS_OTHERS_ID, type GroupedActivities } from '../../processors/activityGrouper';
 import type { ActorRecord } from '../../types/types';
 import { windowOpen } from '../../utils/jsxUtils';
 import { pluralizeMemo } from '../../utils/stringUtils';

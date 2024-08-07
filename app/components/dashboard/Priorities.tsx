@@ -1,6 +1,6 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, type PieValueType } from '@mui/x-charts';
-import type { GroupedActivities } from '../../activityProcessors/activityGrouper';
+import type { GroupedActivities } from '../../processors/activityGrouper';
 import { pluralizeMemo } from '../../utils/stringUtils';
 import { priorityColors, priorityLabels } from '../../utils/theme';
 import { commonPaperSx, widgetSize, widgetTitle } from './common';

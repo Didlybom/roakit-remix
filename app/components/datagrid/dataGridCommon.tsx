@@ -8,8 +8,8 @@ import type {
   GridSortDirection,
 } from '@mui/x-data-grid';
 import { GridActionsCellItem, gridStringOrNumberComparator } from '@mui/x-data-grid';
-import { getActivityDescription } from '../../activityProcessors/activityDescription';
-import { findTicket } from '../../activityProcessors/activityFeed';
+import { getActivityDescription } from '../../processors/activityDescription';
+import { findFirstTicket } from '../../processors/activityFeed';
 import {
   type Account,
   type AccountToIdentityRecord,
@@ -181,7 +181,8 @@ export const descriptionColDef = (
     minWidth: 300,
     flex: 1,
     valueGetter: (_, row: Activity) =>
-      findTicket(row.metadata) ?? getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
+      findFirstTicket(row.metadata, row.description) ??
+      getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
     renderCell: (params: GridRenderCellParams<Activity, number>) => (
       <ActivityCard
         format="Grid"

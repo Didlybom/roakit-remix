@@ -9,27 +9,35 @@ import {
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import type { GroupedActivities } from '../activityProcessors/activityGrouper';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
+import { useEffect, useState, type ReactNode } from 'react';
 import App from '../components/App';
+import type { GroupedActivities } from '../processors/activityGrouper';
+import { identifyAccounts } from '../processors/activityIdentifier';
 // import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ArtifactsByInitiative from '../components/dashboard/ArtifactsByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
 import EffortByInitiative from '../components/dashboard/EffortByInitiative';
 import PhasesByInitiative from '../components/dashboard/PhasesByInitiative';
 import Priorities from '../components/dashboard/Priorities';
+import TicketsByInitiative from '../components/dashboard/TicketsByInitiative';
 import {
   fetchAccountMap,
   fetchIdentities,
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
+import type { GroupedLaunchStats } from '../processors/initiativeGrouper';
 import { loadSession } from '../utils/authUtils.server';
-import { DateRange, dateRangeLabels, formatYYYYMMDD } from '../utils/dateUtils';
+import {
+  dateFilterToStartDate,
+  DateRange,
+  dateRangeLabels,
+  formatYYYYMMDD,
+} from '../utils/dateUtils';
 import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import type { GroupedActivitiesResponse } from './fetcher.grouped-activities';
+import type { GroupedLaunchStatsResponse } from './fetcher.launch-stats';
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
@@ -59,30 +67,71 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+function AccordionBox({
+  title,
+  children,
+  expanded = true,
+}: {
+  title: string;
+  children: ReactNode;
+  expanded?: boolean;
+}) {
+  return (
+    <Accordion
+      variant="outlined"
+      disableGutters
+      defaultExpanded={expanded}
+      sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>{title}</AccordionSummary>
+      <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
+        <Grid container spacing={5}>
+          {children}
+        </Grid>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
 export default function Dashboard() {
   const navigation = useNavigation();
   const navigate = useNavigate();
   const loaderData = useLoaderData<typeof loader>();
   const groupedActivitiesFetcher = useFetcher<GroupedActivitiesResponse>();
   const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivities;
+  const launchStatsFetcher = useFetcher<GroupedLaunchStatsResponse>();
+  const launchStatsFetcherResponse = launchStatsFetcher.data as GroupedLaunchStats;
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
   const dateRangeLabel = dateRangeLabels[dateFilter.dateRange];
 
-  // load grouped activities
+  // load grouped activities and launch stats
   useEffect(() => {
     groupedActivitiesFetcher.load(
       `/fetcher/grouped-activities/?dateRange=${dateFilter.dateRange}&endDay=${dateFilter.endDay}`
     );
+    const startDay = dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay));
+    if (startDay) {
+      launchStatsFetcher.load(
+        `/fetcher/launch-stats/?start=${formatYYYYMMDD(startDay)}&end=${dateFilter.endDay}`
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
 
   useEffect(() => {
-    if (groupedActivitiesFetcher.data?.error?.status === 401) {
+    if (
+      groupedActivitiesFetcher.data?.error?.status === 401 ||
+      launchStatsFetcher.data?.error?.status === 401
+    ) {
       navigate(loginWithRedirectUrl());
     }
-  }, [groupedActivitiesFetcher.data?.error, navigate]);
+  }, [
+    groupedActivitiesFetcher.data?.error?.status,
+    launchStatsFetcher.data?.error?.status,
+    navigate,
+  ]);
 
   const charts = (
     <Stack spacing={3} m={3} onClick={e => e.stopPropagation()}>
@@ -117,94 +166,57 @@ export default function Dashboard() {
         />
       </Grid>
       {/* {!!groupedActivitiesResponse?.initiatives?.length && (
-        <Accordion
-          variant="outlined"
-          disableGutters
-          defaultExpanded={false}
-          sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activity Categories by Goal
-          </AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              <ArtifactsByInitiative
-                type="initiatives"
-                groupedActivities={groupedActivitiesResponse}
-                initiatives={loaderData.initiatives}
-                dateRangeLabel={dateRangeLabel}
-                isLoading={groupedActivitiesFetcher.state === 'loading'}
-              />
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
+      <AccordionBox title="Activity Categories by Goal">
+        <ArtifactsByInitiative
+          type="initiatives"
+          groupedActivities={groupedActivitiesResponse}
+          initiatives={loaderData.initiatives}
+          dateRangeLabel={dateRangeLabel}
+          isLoading={groupedActivitiesFetcher.state === 'loading'}
+        />
+      </AccordionBox>
       )} */}
-
-      {!!groupedActivitiesResponse?.launchItems?.length && (
-        <Accordion
-          variant="outlined"
-          disableGutters
-          defaultExpanded={true}
-          sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activity Categories by Launch
-          </AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              <ArtifactsByInitiative
-                type="launchItems"
-                groupedActivities={groupedActivitiesResponse}
-                initiatives={loaderData.launchItems}
-                dateRangeLabel={dateRangeLabel}
-                isLoading={groupedActivitiesFetcher.state === 'loading'}
-              />
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
+      {!!launchStatsFetcherResponse?.launches && (
+        <AccordionBox title="Ticket Status by Launch">
+          <TicketsByInitiative
+            stats={launchStatsFetcherResponse}
+            initiatives={loaderData.launchItems}
+            dateRangeLabel={dateRangeLabel}
+            isLoading={launchStatsFetcher.state === 'loading'}
+          />
+        </AccordionBox>
       )}
       {!!groupedActivitiesResponse?.launchItems?.length && (
-        <Accordion
-          variant="outlined"
-          disableGutters
-          defaultExpanded={false}
-          sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Activity Phases by Launch
-          </AccordionSummary>
-          <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-            <Grid container spacing={5}>
-              <PhasesByInitiative
-                type="launchItems"
-                groupedActivities={groupedActivitiesResponse}
-                initiatives={loaderData.launchItems}
-                dateRangeLabel={dateRangeLabel}
-                isLoading={groupedActivitiesFetcher.state === 'loading'}
-              />
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
+        <AccordionBox title="Activity Categories by Launch">
+          <ArtifactsByInitiative
+            type="launchItems"
+            groupedActivities={groupedActivitiesResponse}
+            initiatives={loaderData.launchItems}
+            dateRangeLabel={dateRangeLabel}
+            isLoading={groupedActivitiesFetcher.state === 'loading'}
+          />
+        </AccordionBox>
+      )}
+      {!!groupedActivitiesResponse?.launchItems?.length && (
+        <AccordionBox title=" Activity Phases by Launch">
+          <PhasesByInitiative
+            type="launchItems"
+            groupedActivities={groupedActivitiesResponse}
+            initiatives={loaderData.launchItems}
+            dateRangeLabel={dateRangeLabel}
+            isLoading={groupedActivitiesFetcher.state === 'loading'}
+          />
+        </AccordionBox>
       )}
       {/* {groupedActivitiesResponse?.topActors &&
         Object.keys(groupedActivitiesResponse.topActors).length > 0 && (
-          <Accordion
-            variant="outlined"
-            disableGutters
-            defaultExpanded
-            sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>Active Contributors</AccordionSummary>
-            <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-              <Grid container spacing={5}>
-                <ActiveContributors
-                  groupedActivities={groupedActivitiesResponse}
-                  actors={loaderData.actors}
-                  isLoading={groupedActivitiesFetcher.state === 'loading'}
-                />
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
+         <AccordionBox title="Active Contributors">
+            <ActiveContributors
+              groupedActivities={groupedActivitiesResponse}
+              actors={loaderData.actors}
+              isLoading={groupedActivitiesFetcher.state === 'loading'}
+            />
+        </AccordionBox>
         )} */}
     </Stack>
   );

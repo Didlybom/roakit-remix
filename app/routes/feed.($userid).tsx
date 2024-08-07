@@ -11,6 +11,7 @@ import {
 import {
   Autocomplete,
   Backdrop,
+  Badge,
   Box,
   Button,
   Checkbox,
@@ -38,14 +39,6 @@ import {
 } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VariableSizeList } from 'react-window';
-import { getActivityUrl } from '../activityProcessors/activityDescription';
-import { artifacts, reactionCount, reactionNames } from '../activityProcessors/activityFeed';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
-import {
-  compileActivityMappers,
-  mapActivity,
-  MapperType,
-} from '../activityProcessors/activityMapper';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import AutoRefreshingRelativeDate from '../components/AutoRefreshingRelativeData';
@@ -56,6 +49,7 @@ import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
 import HelperText from '../components/HelperText';
 import InfiniteList from '../components/InfiniteList';
+import Pulse from '../components/navigation/Pulse';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
@@ -65,6 +59,10 @@ import {
 } from '../firestore.server/fetchers.server';
 import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
+import { getActivityUrl } from '../processors/activityDescription';
+import { artifacts, reactionCount, reactionNames } from '../processors/activityFeed';
+import { identifyAccounts } from '../processors/activityIdentifier';
+import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
 import { type Activity, type Initiative } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatMonthDayTime } from '../utils/dateUtils';
@@ -231,6 +229,8 @@ export default function Feed() {
   const [artifactFilter, setArtifactFilter] = useState(
     searchParams.get(SEARCH_PARAM_ARTIFACT)?.split(',') ?? []
   );
+  const [actorFilter, setActorFilter] = useState(loaderData.userId);
+  const hasFilters = launchFilter.length || artifactFilter.length || actorFilter;
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
@@ -320,7 +320,6 @@ export default function Feed() {
 
   const clear = () => {
     setActivities([]);
-    setIsLoading(true);
     listRef.current?.scrollToItem(0);
   };
 
@@ -380,10 +379,12 @@ export default function Feed() {
                 ...mobileDisplaySx,
               }}
             >
-              <FilterIcon />
+              <Badge color="primary" variant="dot" invisible={!hasFilters}>
+                <FilterIcon />
+              </Badge>
             </ToggleButton>
           )}
-          <HelperText sx={{ justifyContent: 'start', ml: '44px', mb: 1 }}>
+          <HelperText sx={{ justifyContent: 'start', ml: '44px', mb: 2 }}>
             This feed auto-refreshes when scrolled to the top. Click{' '}
             <RefreshIcon sx={{ width: 16, height: 16, verticalAlign: 'middle' }} /> in the header to
             scroll back to the top.
@@ -573,10 +574,35 @@ export default function Feed() {
     );
   };
 
+  const realtimeIndicator = (live: boolean) => (
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Box fontWeight={600}>{live ? 'Realtime' : 'Latest Activity'}</Box>
+      <Stack direction="row">
+        {live && (
+          <Box mr="12px" mt="4px">
+            <Pulse />
+          </Box>
+        )}
+        <Box fontSize="small" color={theme.palette.grey[600]}>
+          {live ?
+            'Updating live'
+          : activities.length +
+            ' ' +
+            pluralizeMemo('activity', activities.length) +
+            (activities.length ?
+              ' since ' + formatMonthDayTime(activities[activities.length - 1].createdTimestamp)
+            : '')
+          }
+        </Box>
+      </Stack>
+    </Paper>
+  );
+
   const filters = (
     <Stack onClick={e => e.stopPropagation()}>
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={3}>
+          <Box fontWeight={600}>Filters</Box>
           <Autocomplete
             multiple
             disableClearable
@@ -667,10 +693,7 @@ export default function Feed() {
             sx={{ width: FILTER_WIDTH }}
             selectedValue={artifactFilter}
             items={[
-              ...[...artifacts].map(([key, artifact]) => ({
-                value: key,
-                label: artifact.label,
-              })),
+              ...[...artifacts].map(([key, artifact]) => ({ value: key, label: artifact.label })),
             ]}
             onChange={values => {
               setArtifactFilter(values as string[]);
@@ -682,21 +705,18 @@ export default function Feed() {
             size="small"
             sx={{ width: FILTER_WIDTH }}
             value={
-              loaderData.userId ?
-                {
-                  value: loaderData.userId,
-                  label: loaderData.actors[loaderData.userId].name,
-                }
+              actorFilter ?
+                { value: actorFilter, label: loaderData.actors[actorFilter].name }
               : null
             }
             options={loaderData.identities.map(identity => ({
               value: identity.id,
               label: identity.displayName,
             }))}
-            disableClearable={loaderData.userId == null}
+            disableClearable={actorFilter == null}
             isOptionEqualToValue={(option, value) => option.value === value.value}
             onChange={(_e, option) => {
-              setIsLoading(true);
+              setActorFilter(option?.value);
               window.open(
                 '/feed/' +
                   (option != null ? `${option.value}/` : '') +
@@ -722,11 +742,11 @@ export default function Feed() {
                   ...params.InputProps,
                   startAdornment: (
                     <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
-                      {loaderData.userId ?
+                      {actorFilter ?
                         <ClickableAvatar
                           size={20}
                           fontSize={9}
-                          name={loaderData.actors[loaderData.userId].name}
+                          name={loaderData.actors[actorFilter].name}
                         />
                       : <OpenInNewIcon fontSize="small" />}
                     </InputAdornment>
@@ -754,7 +774,6 @@ export default function Feed() {
         listRef.current?.scrollToItem(0);
       }}
       showProgress={isLoading}
-      showPulse={listScrollOffset === 0}
     >
       {errorAlert(moreFetchedActivities?.error?.message)}
       <CodePopover
@@ -784,10 +803,7 @@ export default function Feed() {
           width="100%"
           minWidth={300}
           pt={3}
-          sx={{
-            opacity: showFiltersForMobile ? 0.2 : undefined,
-            borderRight: { xs: undefined, sm: `1px solid ${theme.palette.grey[200]}` },
-          }}
+          sx={{ borderRight: { xs: undefined, sm: `1px solid ${theme.palette.grey[200]}` } }}
         >
           <InfiniteList
             height={`calc(100vh - ${HEADER_HEIGHT + 22}px)`}
@@ -808,9 +824,10 @@ export default function Feed() {
           <Backdrop open onClick={() => setShowFiltersForMobile(false)}>
             {filters}
           </Backdrop>
-        : <Box m={3} sx={desktopDisplaySx}>
+        : <Stack m={3} spacing={3} sx={desktopDisplaySx}>
+            {realtimeIndicator(listScrollOffset === 0)}
             {filters}
-          </Box>
+          </Stack>
         }
       </Stack>
     </App>

@@ -42,7 +42,6 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-r
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
-import { accountUrlToWeb } from '../activityProcessors/activityFeed';
 import App from '../components/App';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import SearchField from '../components/SearchField';
@@ -57,6 +56,7 @@ import {
 import { auth, firestore } from '../firebase.server';
 import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
+import { accountUrlToWeb } from '../processors/activityFeed';
 import {
   CONFLUENCE_FEED_TYPE,
   FEED_TYPES,

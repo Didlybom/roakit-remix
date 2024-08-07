@@ -3,7 +3,7 @@ import {
   clearActivityMapperCache,
   compileActivityMappers,
   mapActivity,
-} from '../../app/activityProcessors/activityMapper';
+} from '../../app/processors/activityMapper';
 import type { Activity } from '../../app/types/types';
 
 test('evalActivity', () => {

@@ -29,6 +29,7 @@ export enum View {
   FetcherGroupedActivities,
   FetcherStatuses,
   FetcherSummaries,
+  FetcherLaunchStats,
 
   Impersonation,
   AI,
@@ -64,6 +65,7 @@ export const checkAccess = (
     case View.ActivityUser:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
+    case View.FetcherLaunchStats:
     case View.Impersonation:
     case View.AI:
       throwIf(sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor);

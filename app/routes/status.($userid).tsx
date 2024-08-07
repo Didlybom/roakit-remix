@@ -52,18 +52,6 @@ import { useConfirm } from 'material-ui-confirm';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { getActivityDescription } from '../activityProcessors/activityDescription';
-import { findTicket } from '../activityProcessors/activityFeed';
-import {
-  groupActorActivities,
-  type GroupedActorActivities,
-} from '../activityProcessors/activityGrouper';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
-import {
-  compileActivityMappers,
-  mapActivity,
-  MapperType,
-} from '../activityProcessors/activityMapper';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
@@ -90,7 +78,15 @@ import {
   fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
-import { upsertNextOngoingActivity } from '../firestore.server/updaters.server';
+import {
+  upsertLaunchItemIndividualCounters,
+  upsertNextOngoingActivity,
+} from '../firestore.server/updaters.server';
+import { getActivityDescription } from '../processors/activityDescription';
+import { findFirstTicket } from '../processors/activityFeed';
+import { groupActorActivities, type GroupedActorActivities } from '../processors/activityGrouper';
+import { identifyAccounts } from '../processors/activityIdentifier';
+import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
 import {
   CUSTOM_EVENT,
   PHASES,
@@ -98,6 +94,7 @@ import {
   type Activity,
   type ActivityMetadata,
   type Artifact,
+  type InitiativeTicketStats,
   type Phase,
 } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
@@ -136,7 +133,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   try {
     const [launchItems, accounts, identities] = await Promise.all([
-      //  fetchInitiativeMap(sessionData.customerId!),
+      // fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!), // could be optimized if we fetch identity first, we don't need it for individual contributors
       fetchIdentities(sessionData.customerId!),
@@ -165,6 +162,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       launchItems,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       accountMap: identities.accountMap,
+      isLocal: request.headers.get('host') === 'localhost:3000',
     };
   } catch (e) {
     getLogger('route:status.user').error(e);
@@ -176,22 +174,22 @@ type NewActivity = {
   action: string;
   artifact: string;
   launchItemId: string;
-  phase: string;
+  phase: Phase | null;
   description: string;
   priority: number | null;
   effort: number | null;
-  eventTimestamp: number;
+  timestamp: number;
 };
 
 const emptyActivity: NewActivity = {
   action: '',
   artifact: '',
   launchItemId: '',
-  phase: '',
+  phase: null,
   description: '',
   priority: null,
   effort: null,
-  eventTimestamp: 0,
+  timestamp: 0,
 };
 
 interface ActionRequest {
@@ -206,6 +204,7 @@ interface ActionRequest {
   effort: number;
   ongoing: boolean;
   actorId: string;
+  metadata?: ActivityMetadata;
 
   // field only used for next ongoing
   eventType: string;
@@ -214,10 +213,13 @@ interface ActionRequest {
   createdTimestamp: number;
   timestamp: number;
   initiativeId: string;
-  metadata?: ActivityMetadata;
 
   // creation
   newActivity?: NewActivity;
+
+  // launch item stats
+  launchItemStats?: (InitiativeTicketStats & { launchItemId: string })[];
+  prevLaunchItemId?: string;
 }
 
 interface ActionResponse {
@@ -239,6 +241,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     throw 'Identity required';
   }
 
+  let response: ActionResponse = { status: undefined };
   // delete custom activity
   if (request.method === 'DELETE') {
     try {
@@ -272,10 +275,10 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
           identityId: actionRequest.actorId,
         });
         if (activityIdentity.managerId !== identityId) {
-          return { error: 'Invalid contributor for ongoing activity' };
+          return { error: 'Invalid contributor' };
         }
       }
-      const added = await upsertNextOngoingActivity(sessionData.customerId!, {
+      const ongoingAdded = await upsertNextOngoingActivity(sessionData.customerId!, {
         id: actionRequest.activityId,
         ...activity,
         actorId: actionRequest.actorId,
@@ -287,11 +290,11 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
         eventType: actionRequest.eventType,
         metadata: actionRequest.metadata,
       });
-      if (added) {
-        getLogger('route:status.user').info('Saved ongoing activity ' + added.id);
+      if (ongoingAdded) {
+        getLogger('route:status.user').info('Saved ongoing activity ' + ongoingAdded.id);
       }
     }
-    return { status: { code: 'updated', message: 'Activity updated' } };
+    response = { status: { code: 'updated', message: 'Activity updated' } };
   }
 
   // save new activity
@@ -302,14 +305,31 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       eventType: CUSTOM_EVENT,
       event: CUSTOM_EVENT,
       actorAccountId: identityId,
-      createdTimestamp: actionRequest.newActivity.eventTimestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
+      createdTimestamp: actionRequest.newActivity.timestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
       initiative: '',
     });
     getLogger('route:status.user').info('Saved custom activity ' + ref.id);
-    return { status: { code: 'created', message: 'Activity created' } };
+    response = { status: { code: 'created', message: 'Activity created' } };
   }
 
-  return { status: undefined };
+  // update launch item stats
+  if (actionRequest.launchItemStats) {
+    if (
+      !actionRequest.day ||
+      (actionRequest.activityId && actionRequest.launchItemStats.length > 1) // single activity update
+    ) {
+      return { error: 'Invalid stats update' };
+    }
+    await upsertLaunchItemIndividualCounters(
+      sessionData.customerId!,
+      identityId,
+      actionRequest.day!,
+      actionRequest.launchItemStats,
+      actionRequest.activityId ? actionRequest.prevLaunchItemId : '*'
+    );
+  }
+
+  return response;
 };
 const artifactOptions: SelectOption[] = [
   { value: 'task', label: 'Task' },
@@ -349,9 +369,7 @@ export default function Status() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
-    searchParams.get(SEARCH_PARAM_DAY) ?
-      dayjs(searchParams.get(SEARCH_PARAM_DAY))
-    : dayjs().subtract(1, 'days')
+    dayjs(searchParams.get(SEARCH_PARAM_DAY) ?? prevBusinessDay(new Date()))
   );
   const isTodaySelected = isToday(selectedDay);
   const [showTeam, setShowTeam] = useState(false);
@@ -379,6 +397,23 @@ export default function Status() {
   useHotkeys('n', () => setShowNewDialog(true));
   useHotkeys('[', previousDay);
   useHotkeys(']', nextDay);
+
+  const updateStats = useCallback(
+    (activities: Activity[]) => {
+      const groupedActivities = groupActorActivities(
+        activities.filter(a => a.actorId === loaderData.identityId)
+      );
+      setGroupedActivities(groupedActivities);
+      submit(
+        {
+          day: formatYYYYMMDD(selectedDay),
+          launchItemStats: groupedActivities.launchItems ?? null,
+        },
+        postJsonOptions
+      );
+    },
+    [loaderData.identityId, selectedDay, submit]
+  );
 
   useEffect(() => {
     // compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
@@ -415,6 +450,8 @@ export default function Status() {
       activityRows.push({
         ...activity,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
+        launchItemId:
+          activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
         actorId:
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
@@ -422,11 +459,8 @@ export default function Status() {
       });
     });
     setActivities(activityRows);
-    if (!loaderData.reportIds?.length) {
-      setGroupedActivities(groupActorActivities(activities));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedActivities?.activities]); // loaderData must be omitted
+    updateStats(activityRows);
+  }, [fetchedActivities?.activities, loaderData.accountMap, updateStats]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -493,7 +527,8 @@ export default function Status() {
         headerName: 'Description',
         flex: 1,
         valueGetter: (_, row: ActivityRow) =>
-          findTicket(row.metadata) ?? getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
+          findFirstTicket(row.metadata, row.description) ??
+          getActivityDescription(row, { format: 'Grid' }), // sort by ticket or description
         editable: true /* see isCellEditable below for granularity */,
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField
@@ -606,6 +641,7 @@ export default function Status() {
       {
         field: 'ongoing',
         headerName: 'Ongoing?',
+        description: 'Duplicate the activity for the next day',
         type: 'boolean',
         editable: true,
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
@@ -683,6 +719,8 @@ export default function Status() {
           ...newActivity,
           eventTimestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
         },
+        day: formatYYYYMMDD(selectedDay),
+        launchItemStats: groupActorActivities([newActivity]).launchItems ?? null,
       },
       postJsonOptions
     );
@@ -694,6 +732,123 @@ export default function Status() {
   } else if (isYesterday(selectedDay)) {
     datePickerFormat = 'Yesterday';
   }
+
+  const dialog = (
+    <Dialog
+      open={showNewDialog}
+      onClose={() => setShowNewDialog(false)}
+      fullWidth
+      disableRestoreFocus
+      PaperProps={{
+        component: 'form',
+        onSubmit: (e: FormEvent) => {
+          e.preventDefault();
+          handleSubmitNewActivity();
+        },
+      }}
+    >
+      <DialogTitle>New Activity</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} my={1}>
+          <Stack direction="row" spacing={3}>
+            <SelectField
+              required
+              autoFocus
+              value={newActivity.action}
+              onChange={newValue => setNewActivity({ ...newActivity, action: newValue })}
+              label="Action"
+              items={[
+                { value: 'created', label: 'Created' },
+                { value: 'updated', label: 'Updated' },
+                { value: 'deleted', label: 'Deleted' },
+              ]}
+            />
+            <SelectField
+              required
+              value={newActivity.artifact}
+              onChange={artifact => setNewActivity({ ...newActivity, artifact })}
+              label="Artifact"
+              items={artifactOptions}
+            />
+          </Stack>
+          <Box sx={{ ml: '-30px' }}>
+            <Grid container spacing={3}>
+              <Grid>
+                <SelectField
+                  value={newActivity.launchItemId}
+                  onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
+                  label="Launch"
+                  items={launchItemOptions}
+                />
+              </Grid>
+              <Grid>
+                <SelectField
+                  value={newActivity.phase ?? ''}
+                  onChange={phase => setNewActivity({ ...newActivity, phase: phase as Phase })}
+                  label="Phase"
+                  items={phaseOptions}
+                />
+              </Grid>
+              <Grid>
+                <SelectField
+                  value={`${newActivity.priority ?? ''}`}
+                  onChange={priority =>
+                    setNewActivity({ ...newActivity, priority: +priority ?? null })
+                  }
+                  label="Priority"
+                  items={priorityOptions}
+                />
+              </Grid>
+              <Grid>
+                <TextField
+                  autoComplete="off"
+                  label="Hours"
+                  type="number"
+                  helperText="0 to 24"
+                  size="small"
+                  sx={{ maxWidth: 90 }}
+                  onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
+                  error={
+                    newActivity.effort != null &&
+                    (newActivity.effort < 0 || newActivity.effort > 24)
+                  }
+                />
+              </Grid>
+            </Grid>
+          </Box>
+          <TextField
+            variant="standard"
+            required
+            autoComplete="off"
+            label="Description"
+            fullWidth
+            onChange={e => setNewActivity({ ...newActivity, description: e.target.value })}
+          />
+        </Stack>
+        <IconButton
+          onClick={() => setShowNewDialog(false)}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: theme => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        <DialogActions>
+          <Button
+            variant="contained"
+            sx={{ borderRadius: 28, textTransform: 'none' }}
+            type="submit"
+            disabled={!isActivitySubmittable()}
+          >
+            Post
+          </Button>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <App
@@ -722,120 +877,7 @@ export default function Status() {
           linkifyActivityId: loaderData.email?.endsWith('@roakit.com'),
         }}
       />
-      <Dialog
-        open={showNewDialog}
-        onClose={() => setShowNewDialog(false)}
-        fullWidth
-        disableRestoreFocus
-        PaperProps={{
-          component: 'form',
-          onSubmit: (e: FormEvent) => {
-            e.preventDefault();
-            handleSubmitNewActivity();
-          },
-        }}
-      >
-        <DialogTitle>New Activity</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} my={1}>
-            <Stack direction="row" spacing={3}>
-              <SelectField
-                required
-                autoFocus
-                value={newActivity.action}
-                onChange={newValue => setNewActivity({ ...newActivity, action: newValue })}
-                label="Action"
-                items={[
-                  { value: 'created', label: 'Created' },
-                  { value: 'updated', label: 'Updated' },
-                  { value: 'deleted', label: 'Deleted' },
-                ]}
-              />
-              <SelectField
-                required
-                value={newActivity.artifact}
-                onChange={artifact => setNewActivity({ ...newActivity, artifact })}
-                label="Artifact"
-                items={artifactOptions}
-              />
-            </Stack>
-            <Box sx={{ ml: '-30px' }}>
-              <Grid container spacing={3}>
-                <Grid>
-                  <SelectField
-                    value={newActivity.launchItemId}
-                    onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
-                    label="Launch"
-                    items={launchItemOptions}
-                  />
-                </Grid>
-                <Grid>
-                  <SelectField
-                    value={newActivity.phase}
-                    onChange={phase => setNewActivity({ ...newActivity, phase })}
-                    label="Phase"
-                    items={phaseOptions}
-                  />
-                </Grid>
-                <Grid>
-                  <SelectField
-                    value={newActivity.priority ? `${newActivity.priority}` : ''}
-                    onChange={priority =>
-                      setNewActivity({ ...newActivity, priority: +priority ?? null })
-                    }
-                    label="Priority"
-                    items={priorityOptions}
-                  />
-                </Grid>
-                <Grid>
-                  <TextField
-                    autoComplete="off"
-                    label="Hours"
-                    type="number"
-                    helperText="0 to 24"
-                    size="small"
-                    sx={{ maxWidth: 90 }}
-                    onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
-                    error={
-                      newActivity.effort != null &&
-                      (newActivity.effort < 0 || newActivity.effort > 24)
-                    }
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-            <TextField
-              variant="standard"
-              required
-              autoComplete="off"
-              label="Description"
-              fullWidth
-              onChange={e => setNewActivity({ ...newActivity, description: e.target.value })}
-            />
-          </Stack>
-          <IconButton
-            onClick={() => setShowNewDialog(false)}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: theme => theme.palette.grey[500],
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-          <DialogActions>
-            <Button
-              variant="contained"
-              sx={{ borderRadius: 28, textTransform: 'none' }}
-              type="submit"
-              disabled={!isActivitySubmittable()}
-            >
-              Post
-            </Button>
-          </DialogActions>
-        </DialogContent>
-      </Dialog>
+      {dialog}
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Grid container sx={{ m: 3, ml: 0 }}>
         <Grid>
@@ -917,18 +959,23 @@ export default function Status() {
                   row: {
                     onMouseEnter: e => {
                       const activityId = e.currentTarget.getAttribute('data-id');
-                      setActivities(
-                        activities.map(activity => ({
-                          ...activity,
-                          hovered: activity.id === activityId,
-                        }))
-                      );
+                      if (
+                        activities.find(a => a.id === activityId)?.actorId === loaderData.identityId
+                      ) {
+                        setActivities(
+                          activities.map(activity => ({
+                            ...activity,
+                            hovered: activity.id === activityId,
+                          }))
+                        );
+                      }
                     },
-                    onMouseLeave: e =>
+                    onMouseLeave: () =>
                       setActivities(activities.map(activity => ({ ...activity, hovered: false }))),
                   },
                 }}
                 isCellEditable={(params: GridCellParams<Activity>) => {
+                  if (params.row.actorId !== loaderData.identityId) return false;
                   if (
                     params.field === 'launchItemId' ||
                     params.field === 'phase' ||
@@ -955,12 +1002,13 @@ export default function Status() {
                       activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
                     setActivities(updatedActivities);
-                    if (!loaderData.reportIds?.length) {
-                      setGroupedActivities(groupActorActivities(updatedActivities));
-                    }
+                    setGroupedActivities(
+                      groupActorActivities(
+                        updatedActivities.filter(a => a.actorId === loaderData.identityId)
+                      )
+                    );
                     submit(
                       {
-                        day: formatYYYYMMDD(selectedDay),
                         activityId: updatedRow.id,
                         description: updatedRow.description ?? null,
                         priority: updatedRow.priority ? +updatedRow.priority : -1,
@@ -978,6 +1026,9 @@ export default function Status() {
                           initiativeId: updatedRow.initiativeId,
                           metadata: updatedRow.metadata,
                         }),
+                        day: formatYYYYMMDD(selectedDay),
+                        launchItemStats: groupActorActivities([updatedRow]).launchItems ?? null,
+                        prevLaunchItemId: oldRow.launchItemId ?? null,
                       },
                       postJsonOptions
                     );
@@ -993,11 +1044,15 @@ export default function Status() {
                 to go to previous/next day.
               </HelperText>
             )}
-            {false && (
-              <Typography component="pre" fontSize="11px" fontFamily="Roboto Mono, monospace">
+            {
+              /*loaderData.isLocal &&*/ <Typography
+                component="pre"
+                fontSize="10px"
+                fontFamily="Roboto Mono, monospace"
+              >
                 {formatJson(groupedActivities)}
               </Typography>
-            )}
+            }
           </Stack>
         </Grid>
       </Grid>

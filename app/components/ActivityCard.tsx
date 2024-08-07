@@ -15,13 +15,13 @@ import {
 import { GridActionsCellItem } from '@mui/x-data-grid';
 import type { ReactNode } from 'react';
 import { LinkItUrl } from 'react-linkify-it';
+import ConfluenceIcon from '../icons/Confluence';
+import JiraIcon from '../icons/Jira';
 import {
   getActivityActionDescription,
   getActivityDescription,
   getActivityUrl,
-} from '../activityProcessors/activityDescription';
-import ConfluenceIcon from '../icons/Confluence';
-import JiraIcon from '../icons/Jira';
+} from '../processors/activityDescription';
 import {
   CUSTOM_EVENT,
   type AccountToIdentityRecord,

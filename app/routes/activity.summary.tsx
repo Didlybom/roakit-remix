@@ -12,12 +12,12 @@ import {
 } from '@remix-run/react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
 import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import MarkdownText from '../components/MarkdownText';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
 import {} from '../firestore.server/updaters.server';
+import { identifyAccounts } from '../processors/activityIdentifier';
 import { loadSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import {

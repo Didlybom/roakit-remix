@@ -2,9 +2,9 @@ import retry from 'async-retry';
 import dayjs from 'dayjs';
 import { FieldPath } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
-import { combineAndPushActivity } from '../activityProcessors/activityCombiner';
-import { findTicket } from '../activityProcessors/activityFeed';
 import { firestore } from '../firebase.server';
+import { combineAndPushActivity } from '../processors/activityCombiner';
+import { findFirstTicket } from '../processors/activityFeed';
 import * as schemas from '../types/schemas';
 import { parse } from '../types/schemas';
 import {
@@ -21,6 +21,7 @@ import {
   type Identity,
   type Initiative,
   type InitiativeRecord,
+  type LaunchActorStats,
   type Phase,
   type Summary,
   type TicketRecord,
@@ -488,11 +489,11 @@ export const fetchActivities = async ({
     let query = firestore
       .collection(`customers/${customerId}/activities`)
       .orderBy('createdTimestamp')
-      .startAt(startDate)
-      .limit(20000); // FIXME limit
+      .startAt(startDate);
     if (endDate) {
       query = query.endAt(endDate);
     }
+    query = query.limit(20000); // FIXME limit
     if (EXPLAIN_QUERIES) {
       logger.debug(await explainQuery(query));
     }
@@ -505,11 +506,11 @@ export const fetchActivities = async ({
         .collection(`customers/${customerId}/activities`)
         .where('actorAccountId', 'in', [...batch])
         .orderBy('createdTimestamp')
-        .startAt(startDate)
-        .limit(20000); // FIXME limit
+        .startAt(startDate);
       if (endDate) {
         query = query.endAt(endDate);
       }
+      query = query.limit(20000); // FIXME limit
       if (EXPLAIN_QUERIES) {
         logger.debug(await explainQuery(query));
       }
@@ -538,7 +539,7 @@ export const fetchActivities = async ({
     const priority = data.priority;
     if ((!priority || priority === -1) && options?.findPriority) {
       // will find priority from metadata for activities missing one
-      const ticket = findTicket(data.metadata as ActivityMetadata);
+      const ticket = findFirstTicket(data.metadata as ActivityMetadata, data.description);
       if (ticket) {
         ticketPrioritiesToFetch.add(ticket);
         activityTickets.set(doc.id, ticket);
@@ -696,7 +697,7 @@ export const fetchActivitiesPage = async ({
     const priority = data.priority;
     if (!priority || priority === -1) {
       // will find priority from metadata for activities missing one
-      const ticket = findTicket(data.metadata as ActivityMetadata);
+      const ticket = findFirstTicket(data.metadata as ActivityMetadata, data.description);
       if (ticket) {
         ticketPrioritiesToFetch.add(ticket);
         activityTickets.set(doc.id, ticket);
@@ -814,4 +815,38 @@ export const fetchAllSummaries = async (
     });
   });
   return summaries;
+};
+
+export const fetchLaunchStats = async ({
+  customerId,
+  startDay /* YYYYMMDD */,
+  endDay,
+}: {
+  customerId: number;
+  startDay: number;
+  endDay?: number;
+}) => {
+  const stats: LaunchActorStats[] = [];
+
+  let query = firestore
+    .collection(`customers/${customerId}/launchItemCounters`)
+    .orderBy('day')
+    .startAt(startDay);
+  if (endDay) {
+    query = query.endAt(endDay);
+  }
+  query = query.limit(20000); // FIXME limit
+  const documents = await retry(
+    async () => await query.get(),
+    retryProps('Retrying fetchLaunchStats...')
+  );
+  documents.forEach(doc => {
+    const data = parse<schemas.LaunchStatsType>(
+      schemas.launchStatsSchema,
+      doc.data(),
+      'launch stats ' + doc.id
+    );
+    stats.push(data);
+  });
+  return stats;
 };

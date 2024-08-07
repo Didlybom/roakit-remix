@@ -19,7 +19,6 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node';
 import { Form, useActionData, useLoaderData, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { identifyAccounts, identifyActivities } from '../activityProcessors/activityIdentifier';
 import MarkdownText from '../components/MarkdownText';
 import {
   fetchAccountMap,
@@ -28,6 +27,7 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
+import { identifyAccounts, identifyActivities } from '../processors/activityIdentifier';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';

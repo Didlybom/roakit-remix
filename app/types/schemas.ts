@@ -125,6 +125,15 @@ export const summarySchema = z.object({
 });
 export type SummaryType = z.infer<typeof summarySchema>;
 
+export const launchStatsSchema = z.object({
+  launchItemId: z.string(),
+  identityId: z.string(),
+  day: z.number(),
+  effort: z.number(),
+  tickets: z.object({ key: z.string(), status: z.string().optional() }).array(),
+});
+export type LaunchStatsType = z.infer<typeof launchStatsSchema>;
+
 export const parse = <T>(
   schema: z.AnyZodObject,
   data: FirebaseFirestore.DocumentData,

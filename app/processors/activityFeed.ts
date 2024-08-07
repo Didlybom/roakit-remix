@@ -1,10 +1,10 @@
-import type {
-  Account,
-  Activity,
-  ActivityMetadata,
-  ActorRecord,
-  Reactions,
-  TicketRecord,
+import {
+  TicketStatus,
+  type Account,
+  type Activity,
+  type ActivityMetadata,
+  type ActorRecord,
+  type Reactions,
 } from '../types/types';
 import { findJiraTickets } from '../utils/stringUtils';
 
@@ -36,12 +36,17 @@ export const artifacts = new Map<string, { label: string }>([
 ]);
 
 // return the first ticket referenced from metadata fields
-export const findTicket = (metadata?: ActivityMetadata) => {
+export const findFirstTicket = (metadata?: ActivityMetadata, description?: string | null) => {
   if (!metadata) return undefined;
-  if (metadata?.issue?.key) return metadata.issue.key;
+  if (metadata?.issue?.key) return metadata.issue.key; // strong signal
   const pullRequestRef = metadata.pullRequest?.ref;
   if (pullRequestRef) {
     const tickets = findJiraTickets(pullRequestRef);
+    if (tickets) return tickets[0];
+  }
+  const pullRequestTitle = metadata.pullRequest?.title;
+  if (pullRequestTitle) {
+    const tickets = findJiraTickets(pullRequestTitle);
     if (tickets) return tickets[0];
   }
   const commits = metadata.commits;
@@ -51,13 +56,78 @@ export const findTicket = (metadata?: ActivityMetadata) => {
       if (tickets) return tickets[0];
     }
   }
+  if (description) {
+    const tickets = findJiraTickets(description);
+    if (tickets) return tickets[0];
+  }
   return undefined;
 };
 
-export const inferPriority = (tickets: TicketRecord, metadata: ActivityMetadata) => {
-  const ticket = findTicket(metadata);
-  if (!ticket) return -1;
-  return tickets[ticket] ?? -1;
+// return the tickets referenced from metadata fields
+export const findTickets = (metadata?: ActivityMetadata, description?: string | null) => {
+  if (!metadata && !description) return [];
+  const tickets = [];
+  if (metadata?.issue?.key) return [metadata.issue.key]; // strong signal
+  const pullRequestRef = metadata?.pullRequest?.ref;
+  if (pullRequestRef) {
+    tickets.push(...findJiraTickets(pullRequestRef));
+  }
+  const pullRequestTitle = metadata?.pullRequest?.title;
+  if (pullRequestTitle) {
+    tickets.push(...findJiraTickets(pullRequestTitle));
+  }
+  const commits = metadata?.commits;
+  if (commits) {
+    for (const commit of commits) {
+      tickets.push(...findJiraTickets(commit.message));
+    }
+  }
+  if (description) {
+    tickets.push(...findJiraTickets(description));
+  }
+  return tickets;
+};
+
+export const inferTicketStatus = (metadata?: ActivityMetadata) => {
+  if (!metadata) return undefined;
+  const statusName = metadata?.issue?.status?.name;
+  if (!statusName) {
+    if (metadata.commits || metadata.pullRequest || metadata.pullRequestComment) {
+      return TicketStatus.InProgress;
+    }
+    return undefined;
+  }
+  // FIXME ticket status inference should be configurable
+  if (statusName === 'To Do' || statusName === 'Backlog' || statusName === 'Development Backlog') {
+    return TicketStatus.New;
+  }
+  if (
+    statusName === 'Selected for Development' ||
+    statusName === 'In Development' ||
+    statusName === 'Code Review' ||
+    statusName === 'Work in progress' ||
+    statusName === 'Pending closure'
+  ) {
+    return TicketStatus.InProgress;
+  }
+  if (
+    statusName === 'Ready for Regression' ||
+    statusName === 'In Regression' ||
+    statusName === 'In QA' ||
+    statusName === 'Ready for Release'
+  ) {
+    return TicketStatus.InTesting;
+  }
+  if (
+    statusName === 'Blocked' ||
+    statusName === 'Waiting for support' ||
+    statusName === 'Pending Customer'
+  ) {
+    return TicketStatus.Blocked;
+  }
+  if (statusName === 'Closed' || statusName === 'Rejected') {
+    return TicketStatus.Completed;
+  }
 };
 
 export const buildArtifactActionKey = (artifact: string, action: string) => {

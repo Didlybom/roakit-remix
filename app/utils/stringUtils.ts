@@ -7,10 +7,10 @@ export const caseInsensitiveSort = (data: string[]): string[] =>
 export const caseInsensitiveCompare = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { sensitivity: 'base' });
 
-export const JIRA_TICKET_REGEXP = new RegExp(/([A-Za-z]+-[0-9]+)/); // /([A-Z][A-Z0-9]+-[0-9]+)/;
-export const JIRA_FAKE_TICKET_REGEXP = new RegExp(/([A-Za-z]+)-0+$/);
-const JIRA_PROJECT_REGEXP_G = new RegExp(/([A-Za-z]+)(?=-[0-9]+)/g);
-export const JIRA_TICKET_REGEXP_G = new RegExp(/([A-Za-z]+-[0-9]+)/g);
+export const JIRA_TICKET_REGEXP = new RegExp(/([A-Z]+-[0-9]+)/); // /([A-Z][A-Z0-9]+-[0-9]+)/;
+export const JIRA_FAKE_TICKET_REGEXP = new RegExp(/([A-Z]+)-0+$/);
+const JIRA_PROJECT_REGEXP_G = new RegExp(/([A-Z]+)(?=-[0-9]+)/g);
+export const JIRA_TICKET_REGEXP_G = new RegExp(/([A-Z]+-[0-9]+)/g);
 
 export const JIRA_ACCOUNT_REGEXP_G = new RegExp(/(?:\[~accountid:)(.+?)(?:\])/g);
 export const JIRA_IMAGE_REGEXP_G = new RegExp(/!(.+?)!/g);

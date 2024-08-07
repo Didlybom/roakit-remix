@@ -2,7 +2,7 @@ import type { GenerateContentResult } from '@google-cloud/vertexai';
 import {
   getActivityActionDescription,
   getActivityDescription,
-} from '../activityProcessors/activityDescription';
+} from '../processors/activityDescription';
 import {
   CUSTOM_EVENT,
   type Activity,

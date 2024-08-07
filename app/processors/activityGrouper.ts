@@ -1,5 +1,13 @@
-import type { Activity, ArtifactCount, PhaseCount } from '../types/types';
-import { buildArtifactActionKey, findTicket } from './activityFeed';
+import {
+  TicketStatus,
+  type Activity,
+  type ArtifactCounts,
+  type InitiativeTicketStats,
+  type PhaseCounts,
+  type Ticket,
+} from '../types/types';
+import { JIRA_FAKE_TICKET_REGEXP } from '../utils/stringUtils';
+import { buildArtifactActionKey, findTickets, inferTicketStatus } from './activityFeed';
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
@@ -16,20 +24,16 @@ type Priority = {
 
 type InitiativeWithCounts = {
   id: string;
-  key: string;
-  artifactCount: ArtifactCount;
-  phaseCount: PhaseCount;
-  actorIds?: Set<string>;
+  artifactCount: ArtifactCounts;
+  phaseCount: PhaseCounts;
+  actorIdSet?: Set<string>;
   actorCount: number;
   effort: number;
 };
 
-type InitiativeWithTickets = {
-  id: string;
-  key: string;
-  tickets: string[];
-  effort: number;
-};
+type LaunchItemWithTicketStats = {
+  launchItemId: string;
+} & InitiativeTicketStats;
 
 export type GroupedActivities = {
   topActors?: TopActorsMap;
@@ -87,10 +91,9 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       if (initiative == null) {
         initiative = {
           id: initiativeId,
-          key: '',
           artifactCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
           phaseCount: { design: 0, dev: 0, test: 0, deploy: 0, stabilize: 0, ops: 0 },
-          actorIds: new Set<string>(),
+          actorIdSet: new Set<string>(),
           actorCount: 0,
           effort: 0,
         };
@@ -98,7 +101,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       }
       initiative.artifactCount[artifact]++;
       if (actorId != null) {
-        initiative.actorIds!.add(actorId); // the set dedupes
+        initiative.actorIdSet!.add(actorId); // the set dedupes
       }
       initiative.effort += activity.effort ?? 0;
     }
@@ -110,10 +113,9 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
       if (launchItem == null) {
         launchItem = {
           id: launchItemId,
-          key: '',
           artifactCount: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 },
           phaseCount: { design: 0, dev: 0, test: 0, deploy: 0, stabilize: 0, ops: 0 },
-          actorIds: new Set<string>(),
+          actorIdSet: new Set<string>(),
           actorCount: 0,
           effort: 0,
         };
@@ -124,19 +126,19 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
         launchItem.phaseCount![phase]++;
       }
       if (actorId != null) {
-        launchItem.actorIds!.add(actorId); // the set dedupes
+        launchItem.actorIdSet!.add(actorId); // the set dedupes
       }
       launchItem.effort += activity.effort ?? 0;
     }
   });
 
   initiatives = initiatives.map(initiative => {
-    const { actorIds, ...initiativeFields } = initiative;
+    const { actorIdSet: actorIds, ...initiativeFields } = initiative;
     return { ...initiativeFields, actorCount: actorIds?.size ?? 0 };
   });
 
   launchItems = launchItems.map(launchItem => {
-    const { actorIds, ...launchItemFields } = launchItem;
+    const { actorIdSet: actorIds, ...launchItemFields } = launchItem;
     return { ...launchItemFields, actorCount: actorIds?.size ?? 0 };
   });
 
@@ -160,53 +162,60 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
 };
 
 export type GroupedActorActivities = {
-  priorities?: Priority[];
-  launchItems?: InitiativeWithTickets[];
-  tickets: string[];
-  ongoingCount: number;
+  launchItems?: LaunchItemWithTicketStats[];
+  tickets: Ticket[];
 };
 
-export const groupActorActivities = (activities: Activity[]): GroupedActorActivities => {
-  let launchItems: InitiativeWithTickets[] = [];
-  let tickets: string[] = [];
-  let ongoingCount = 0;
+export const groupActorActivities = (
+  activities: Omit<Activity, 'id' | 'createdTimestamp' | 'artifact' | 'action' | 'initiativeId'>[]
+): GroupedActorActivities => {
+  let launchItems: LaunchItemWithTicketStats[] = [];
+  let tickets: Ticket[] = [];
 
-  activities.forEach(activity => {
-    const { launchItemId, ongoing } = activity;
+  activities
+    .sort((a, b) => a.timestamp - b.timestamp) // oldest first
+    .forEach(activity => {
+      const { launchItemId } = activity;
 
-    if (ongoing) {
-      ongoingCount++;
-    }
-    // tickets
-    const ticket = findTicket(activity.metadata);
-    if (ticket && !tickets.includes(ticket)) {
-      tickets.push(ticket);
-    }
-
-    // launch items
-    let launchItem;
-    if (launchItemId) {
-      launchItem = launchItems.find(i => i.id === launchItemId);
-      if (launchItem == null) {
-        launchItem = {
-          id: launchItemId,
-          key: '',
-          tickets: [],
-          effort: 0,
-        };
-        launchItems.push(launchItem);
+      // tickets
+      const ticketKeys = findTickets(activity.metadata, activity.description).filter(
+        ticketKey => !JIRA_FAKE_TICKET_REGEXP.exec(ticketKey)
+      );
+      const ticketStatus =
+        activity.ongoing ? TicketStatus.InProgress : inferTicketStatus(activity.metadata);
+      for (const ticketKey of ticketKeys) {
+        let ticket = tickets.find(t => t.key === ticketKey);
+        if (!ticket) {
+          ticket = { key: ticketKey };
+          tickets.push(ticket);
+        }
+        ticket.status = ticketStatus; // if same ticket appears in multiple activities, latest status wins
       }
-      if (ticket && !launchItem.tickets.includes(ticket)) {
-        launchItem.tickets!.push(ticket);
+
+      // launch items
+      let launchItem;
+      if (launchItemId) {
+        launchItem = launchItems.find(i => i.launchItemId === launchItemId);
+        if (launchItem == null) {
+          launchItem = {
+            launchItemId,
+            tickets: [],
+            effort: 0,
+          };
+          launchItems.push(launchItem);
+        }
+
+        for (const ticketKey of ticketKeys) {
+          let ticket = launchItem.tickets.find(t => t.key === ticketKey);
+          if (!ticket) {
+            ticket = { key: ticketKey };
+            launchItem.tickets.push(ticket);
+          }
+          ticket.status = ticketStatus; // if same ticket appears in multiple activities, latest status wins
+        }
+        launchItem.effort += activity.effort ?? 0;
       }
-      launchItem.effort += activity.effort ?? 0;
-    }
-  });
+    });
 
-  launchItems = launchItems.map(launchItem => {
-    const { tickets, ...launchItemFields } = launchItem;
-    return { ...launchItemFields, tickets: [...tickets] };
-  });
-
-  return { launchItems, tickets, ongoingCount };
+  return { launchItems, tickets };
 };

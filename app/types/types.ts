@@ -46,7 +46,7 @@ export type Initiative = {
   url?: string;
   activityMapper?: string;
   counters?: {
-    activities: ArtifactCount;
+    activities: ArtifactCounts;
   };
   countersLastUpdated?: number;
 };
@@ -84,12 +84,21 @@ export type Actor = {
 };
 export type ActorRecord = Record<Actor['id'], Omit<Actor, 'id'>>;
 
+export enum TicketStatus {
+  New = 'New',
+  InProgress = 'In progress',
+  InTesting = 'In testing',
+  Blocked = 'Blocked',
+  Completed = 'Completed',
+}
+
 export type Ticket = {
   key: string;
   id?: string;
   summary?: string;
   uri?: string;
   priority?: number;
+  status?: TicketStatus | string;
   project?: {
     id?: string;
     key: string;
@@ -111,7 +120,14 @@ export type ActivityChangeLog = {
 
 export type ActivityMetadata = {
   codeAction?: string | string[];
-  issue?: { key: string; summary?: string; type?: string; uri?: string; project?: { id: string } };
+  issue?: {
+    key: string;
+    summary?: string;
+    type?: string;
+    uri?: string;
+    project?: { id: string };
+    status?: { name: string };
+  };
   attachment?: { filename: string; mimeType?: string; uri?: string };
   attachments?: {
     files: { filename: string; uri?: string }[];
@@ -166,7 +182,7 @@ export type Activity = {
   ongoing?: boolean | null;
   previousActivityId?: string;
   phase?: Phase | null;
-  priority?: number;
+  priority?: number | null;
   description?: string | null;
   metadata?: ActivityMetadata;
   reactions?: Reactions;
@@ -177,7 +193,7 @@ export type Activity = {
 
 export type ActivityRecord = Record<Activity['id'], Activity>;
 
-export type ArtifactCount = {
+export type ArtifactCounts = {
   code: number;
   codeOrg: number;
   task: number;
@@ -186,13 +202,18 @@ export type ArtifactCount = {
   docOrg: number;
 };
 
-export type PhaseCount = {
+export type PhaseCounts = {
   design: number;
   dev: number;
   test: number;
   deploy: number;
   stabilize: number;
   ops: number;
+};
+
+export type InitiativeTicketStats = {
+  effort: number;
+  tickets: Ticket[];
 };
 
 export type Settings = {
@@ -216,3 +237,11 @@ export type Summary = {
 };
 
 export type DaySummaries = Record<string, Summary>;
+
+export type LaunchActorStats = {
+  day: number;
+  launchItemId: string;
+  identityId: string;
+  effort: number;
+  tickets: Ticket[];
+};

@@ -37,19 +37,6 @@ import dayjs from 'dayjs';
 import pluralize from 'pluralize';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
-import { getActivityDescription } from '../activityProcessors/activityDescription';
-import {
-  accountUrlToWeb,
-  activitiesTotalEffort,
-  artifactActions,
-  buildArtifactActionKey,
-} from '../activityProcessors/activityFeed';
-import { identifyAccounts } from '../activityProcessors/activityIdentifier';
-import {
-  MapperType,
-  compileActivityMappers,
-  mapActivity,
-} from '../activityProcessors/activityMapper';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
@@ -75,6 +62,15 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
+import { getActivityDescription } from '../processors/activityDescription';
+import {
+  accountUrlToWeb,
+  activitiesTotalEffort,
+  artifactActions,
+  buildArtifactActionKey,
+} from '../processors/activityFeed';
+import { identifyAccounts } from '../processors/activityIdentifier';
+import { MapperType, compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import {
   PHASES,
   type Account,

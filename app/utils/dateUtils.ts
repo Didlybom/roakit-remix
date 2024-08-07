@@ -88,10 +88,11 @@ export const dateFilterToStartDate = (dateRange: DateRange, endDay: Dayjs) => {
 
 export const formatRelative = (date: Date) => dayjs().to(dayjs(date));
 
-export const formatDayLocal = (date: Dayjs) => date?.format('LL') ?? null;
+export const formatDayLocal = (date: Dayjs) => date.format('LL');
 
-export const formatYYYYMMDD = (date: Dayjs) => date?.format('YYYYMMDD') ?? null;
-export const formatYYYYMM = (date: Dayjs) => date?.format('YYYYMM') ?? null;
+export const formatYYYYMMDD = (date: Dayjs | number) =>
+  (typeof date === 'number' ? dayjs(date) : date).format('YYYYMMDD');
+export const formatYYYYMM = (date: Dayjs) => date.format('YYYYMM');
 
 /**
  * Returns the days in month, formatted as YYYYMMDD,

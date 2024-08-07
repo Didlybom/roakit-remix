@@ -1,14 +1,10 @@
 import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
 import {
-  compileActivityMappers,
-  mapActivity,
-  MapperType,
-} from '../activityProcessors/activityMapper';
-import {
   fetchActivitiesPage,
   fetchLaunchItemsWithCache,
 } from '../firestore.server/fetchers.server';
+import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg, RoakitError } from '../utils/errorUtils';

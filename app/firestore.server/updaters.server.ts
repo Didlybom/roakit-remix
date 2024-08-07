@@ -5,8 +5,9 @@ import {
   CUSTOM_EVENT,
   type Activity,
   type Artifact,
-  type ArtifactCount,
+  type ArtifactCounts,
   type InitiativeRecord,
+  type InitiativeTicketStats,
 } from '../types/types';
 import { endOfDay, nextBusinessDay, ONE_HOUR } from '../utils/dateUtils';
 
@@ -70,7 +71,7 @@ export const updateInitiativeCounters = async (
 export const incrementInitiativeCounters = async (
   customerId: number,
   initiativeId: string,
-  counters: ArtifactCount
+  counters: ArtifactCounts
 ) => {
   const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
   await initiativeDoc.set(
@@ -86,6 +87,28 @@ export const incrementInitiativeCounters = async (
     },
     { merge: true }
   );
+};
+
+export const upsertLaunchItemIndividualCounters = async (
+  customerId: number,
+  identityId: string,
+  day: string /* YYYYMMDD */,
+  counters: (InitiativeTicketStats & { launchItemId: string })[],
+  launchItemIdToDelete?: string
+) => {
+  const coll = firestore.collection(`customers/${customerId}/launchItemCounters`);
+  const batch = firestore.batch();
+  if (launchItemIdToDelete) {
+    let deleteQuery = coll.where('identityId', '==', identityId).where('day', '==', +day);
+    if (launchItemIdToDelete !== '*') {
+      deleteQuery = deleteQuery.where('launchItemId', '==', launchItemIdToDelete);
+    }
+    (await deleteQuery.get()).docs.forEach(async doc => batch.delete(doc.ref));
+  }
+  counters.forEach(async counter =>
+    batch.create(coll.doc(), { day: +day, identityId, ...counter })
+  );
+  await batch.commit();
 };
 
 export const upsertSummary = async (
