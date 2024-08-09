@@ -63,7 +63,7 @@ export const findFirstTicket = (metadata?: ActivityMetadata, description?: strin
   return undefined;
 };
 
-// return the tickets referenced from metadata fields
+// return the tickets referenced from metadata fields, the most significant first or alone
 export const findTickets = (metadata?: ActivityMetadata, description?: string | null) => {
   if (!metadata && !description) return [];
   const tickets = [];

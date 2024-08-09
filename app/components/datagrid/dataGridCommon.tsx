@@ -21,6 +21,7 @@ import { ellipsisSx, linkSx } from '../../utils/jsxUtils';
 import theme, { priorityColors, prioritySymbols } from '../../utils/theme';
 import ActivityCard from '../ActivityCard';
 import AutoRefreshingRelativeDate from '../AutoRefreshingRelativeData';
+import { ClickableAvatar } from '../Avatars';
 
 export const dataGridCommonProps = {
   autosizeOnMount: true,
@@ -96,7 +97,12 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
             </Link>
           : null;
       }
-      return account ? <Box title={account.name}>{account.name}</Box> : null;
+      return account ?
+          <Stack direction="row" spacing="4px" alignItems="center">
+            <ClickableAvatar name={account.name} size={18} fontSize={10} />
+            <Box title={account.name}>{account.name}</Box>
+          </Stack>
+        : null;
     },
     ...colDef,
   }) as GridColDef;

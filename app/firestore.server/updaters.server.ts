@@ -8,6 +8,7 @@ import {
   type ArtifactCounts,
   type InitiativeRecord,
   type InitiativeTicketStats,
+  type Ticket,
 } from '../types/types';
 import { endOfDay, nextBusinessDay, ONE_HOUR } from '../utils/dateUtils';
 
@@ -177,4 +178,17 @@ export const upsertNextOngoingActivity = async (customerId: number, previousActi
     priority: previousActivity.priority,
     ...(previousActivity.metadata && { metadata: previousActivity.metadata }),
   });
+};
+
+export const insertActivity = async (
+  customerId: number,
+  activity: Omit<Activity, 'id' | 'initiativeId'> & { actorAccountId: string; initiative: string }
+) => {
+  return (await firestore.collection(`customers/${customerId!}/activities`).add(activity)).id;
+};
+
+export const upsertTicket = async (customerId: number, ticket: Ticket) => {
+  const { key, ...ticketFields } = ticket;
+  const ticketDoc = firestore.doc(`customers/${customerId}/tickets/${key}`);
+  await ticketDoc.set(ticketFields, { merge: true });
 };

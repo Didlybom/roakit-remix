@@ -54,7 +54,11 @@ import {
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import { auth, firestore } from '../firebase.server';
-import { fetchAccountsToReview, fetchIdentities } from '../firestore.server/fetchers.server';
+import {
+  fetchAccountsToReview,
+  fetchGroups,
+  fetchIdentities,
+} from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
 import { accountUrlToWeb } from '../processors/activityFeed';
 import {
@@ -95,8 +99,9 @@ const VIEW = View.Users;
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
-    const [identities, fetchedAccountsToReview] = await Promise.all([
+    const [identities, groups, fetchedAccountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
+      fetchGroups(sessionData.customerId!),
       fetchAccountsToReview(sessionData.customerId!),
     ]);
     const accountsFromIdentities = Object.keys(identities.accountMap);
@@ -112,7 +117,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         accountsToReview.push(account);
       }
     });
-    return { ...sessionData, identities, accountsToReview };
+    return { ...sessionData, identities, groups, accountsToReview };
   } catch (e) {
     getLogger('route:users').error(e);
     throw loaderErrorResponse(e);
@@ -122,6 +127,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 interface ActionRequest {
   identityId?: string;
   managerId?: string;
+  groupId?: string;
   userId?: string;
   role?: Role;
   imports?: string;
@@ -138,14 +144,29 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   const actionRequest = (await request.json()) as ActionRequest;
 
   // update manager
-  if (actionRequest.identityId) {
+  if (actionRequest.managerId != null) {
     try {
       await firestore
         .doc(`customers/${sessionData.customerId!}/identities/${actionRequest.identityId}`)
         .update({
-          managerId: actionRequest.managerId ?? '',
+          managerId: actionRequest.managerId,
         });
       return { status: { code: 'userUpdated', message: "User's team updated" } };
+    } catch (e) {
+      return { error: errMsg(e, 'Failed to save user') };
+    }
+  }
+
+  // update groups
+  // FIXME multi group
+  if (actionRequest.groupId != null) {
+    try {
+      await firestore
+        .doc(`customers/${sessionData.customerId!}/identities/${actionRequest.identityId}`)
+        .update({
+          groups: actionRequest.groupId ? [actionRequest.groupId] : [],
+        });
+      return { status: { code: 'userUpdated', message: "User's groups updated" } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save user') };
     }
@@ -222,7 +243,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   return {};
 };
 
-type IdentityRow = Identity & { hovered?: boolean };
+type IdentityRow = Identity & { groupId?: string; hovered?: boolean }; // FIXME multi group
 
 export default function Users() {
   const loaderData = useLoaderData<typeof loader>();
@@ -230,7 +251,7 @@ export default function Users() {
   const submit = useSubmit();
   const navigation = useNavigation();
   const [tabValue, setTabValue] = useState(0);
-  const [identities, setIdentities] = useState<IdentityRow[]>(loaderData.identities.list);
+  const [identities, setIdentities] = useState<IdentityRow[]>([]);
   const [imports, setImports] = useState('');
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
@@ -240,7 +261,12 @@ export default function Users() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setIdentities(loaderData.identities.list);
+    setIdentities(
+      loaderData.identities.list.map(i => ({
+        ...i,
+        groupId: i.groups?.length ? i.groups[0] : undefined,
+      }))
+    );
   }, [loaderData.identities.list]);
 
   useEffect(() => {
@@ -255,6 +281,9 @@ export default function Users() {
   const identityCols = useMemo<GridColDef[]>(() => {
     const findManagerName = (identityId: string) =>
       loaderData.identities.list.find(i => i.id === identityId)?.displayName ?? 'unknown';
+    const findGroupName = (groupId: string) =>
+      loaderData.groups.find(i => i.id === groupId)?.name ?? 'unknown';
+
     return [
       {
         field: 'displayName',
@@ -338,6 +367,31 @@ export default function Users() {
           </Box>
         ),
       },
+      {
+        field: 'groupId',
+        headerName: 'Group',
+        description: 'Note: Multi group not supported yet',
+        type: 'singleSelect',
+        sortComparator: (a: string, b: string) => {
+          const aName = !a ? 'ZZZ' : findGroupName(a);
+          const bName = !b ? 'ZZZ' : findGroupName(b);
+          return aName.localeCompare(bName);
+        },
+        valueOptions: () => [
+          { value: '', label: '[unset]' },
+          ...loaderData.groups.map(group => ({ value: group.id, label: group.name })),
+        ],
+        editable: true,
+        renderCell: (params: GridRenderCellParams<IdentityRow, string>) => (
+          <Box height="100%" display="flex" alignItems="center">
+            <EditableCellField
+              layout="dropdown"
+              hovered={params.row.hovered}
+              label={params.value ? findGroupName(params.value) : null}
+            />
+          </Box>
+        ),
+      },
       { field: 'id', headerName: 'Roakit ID', minWidth: 150 },
       {
         field: 'firebaseId',
@@ -395,7 +449,7 @@ export default function Users() {
         setCodePopover({ element, content })
       ),
     ];
-  }, [loaderData.identities.list, submit]);
+  }, [loaderData.groups, loaderData.identities.list, submit]);
 
   const accountReviewCols = useMemo<GridColDef[]>(
     () => [
@@ -626,21 +680,16 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
               slotProps={{
                 row: {
                   onMouseEnter: e => {
-                    const identity = identities.find(
-                      a => a.id === e.currentTarget.getAttribute('data-id')
+                    const identityId = e.currentTarget.getAttribute('data-id');
+                    setIdentities(
+                      identities.map(identity => ({
+                        ...identity,
+                        hovered: identity.id === identityId,
+                      }))
                     );
-                    if (identity) {
-                      identity.hovered = true;
-                      setIdentities([...identities]);
-                    }
                   },
-                  onMouseLeave: e => {
-                    const identity = identities.find(a => a.hovered);
-                    if (identity) {
-                      identity.hovered = false;
-                      setIdentities([...identities]);
-                    }
-                  },
+                  onMouseLeave: () =>
+                    setIdentities(identities.map(identity => ({ ...identity, hovered: false }))),
                 },
               }}
               paginationModel={paginationModel}
@@ -649,7 +698,7 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                 pagination: { paginationModel: { pageSize: 25 } },
                 sorting: { sortModel: [{ field: 'name', sort: 'asc' as GridSortDirection }] },
               }}
-              processRowUpdate={(updatedRow: Identity, oldRow: Identity) => {
+              processRowUpdate={(updatedRow: IdentityRow, oldRow: IdentityRow) => {
                 if (updatedRow.managerId !== oldRow.managerId) {
                   setIdentities(
                     identities.map(identity =>
@@ -660,6 +709,18 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                   );
                   submit(
                     { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
+                    postJsonOptions
+                  );
+                } else if (updatedRow.groupId !== oldRow.groupId) {
+                  setIdentities(
+                    identities.map(identity =>
+                      identity.id === updatedRow.id ?
+                        { ...identity, groupId: updatedRow.groupId }
+                      : identity
+                    )
+                  );
+                  submit(
+                    { identityId: updatedRow.id, groupId: updatedRow.groupId ?? null },
                     postJsonOptions
                   );
                 } else if (updatedRow.user?.role && updatedRow.user.role !== oldRow.user?.role) {

@@ -42,8 +42,8 @@ import type { VariableSizeList } from 'react-window';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import AutoRefreshingRelativeDate from '../components/AutoRefreshingRelativeData';
+import { ClickableAvatar } from '../components/Avatars';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
-import ClickableAvatar from '../components/ClickableAvatar';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
 import FilterMenu from '../components/FilterMenu';
@@ -53,6 +53,7 @@ import Pulse from '../components/navigation/Pulse';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
+  fetchGroups,
   fetchIdentities,
   fetchLaunchItemMap,
   queryIdentity,
@@ -66,6 +67,7 @@ import { compileActivityMappers, mapActivity, MapperType } from '../processors/a
 import { type Activity, type Initiative } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatMonthDayTime } from '../utils/dateUtils';
+import { RoakitError } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
@@ -153,37 +155,63 @@ const launchFilterOptions = createFilterOptions({
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
   try {
-    const [launchItems, accounts, identities] = await Promise.all([
+    const [launchItems, accounts, identities, groups] = await Promise.all([
       //  fetchInitiativeMap(sessionData.customerId!),
       fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
+      fetchGroups(sessionData.customerId!),
     ]);
 
     const userIdentity = identities.list.find(identity => identity.email === sessionData.email);
     if (!userIdentity) {
-      throw new Response('Identity not found', { status: 500 });
+      throw new RoakitError('Identity not found', { httpStatus: 500 });
     }
 
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
 
-    const activityUserIds =
-      params.userid ?
-        getAllPossibleActivityUserIds(params.userid, identities.list, identities.accountMap)
-      : [];
+    let userId;
+    let groupId;
+    let activityUserIds: string[] = [];
+    if (params.userid && !params.userid?.startsWith('group:')) {
+      userId = params.userid;
+      activityUserIds = getAllPossibleActivityUserIds(
+        [params.userid],
+        identities.list,
+        identities.accountMap
+      );
+    }
+    if (params.userid && params.userid?.startsWith('group:')) {
+      groupId = params.userid.slice(6);
+      activityUserIds = getAllPossibleActivityUserIds(
+        identities.groupMap[groupId],
+        identities.list,
+        identities.accountMap
+      );
+    }
+
+    if (userId && !actors[userId]) {
+      throw new RoakitError('Contributor not found', { httpStatus: 404 });
+    }
+
+    if (groupId && !groups.find(g => g.id === groupId)) {
+      throw new RoakitError('Group not found', { httpStatus: 404 });
+    }
 
     return {
       ...sessionData,
-      userId: params.userid,
+      userId,
+      groupId,
       identityId: userIdentity.id,
       activityUserIds,
       launchItems,
       actors,
       accountMap: identities.accountMap,
       identities: identities.list,
+      groups,
     };
   } catch (e) {
-    getLogger('route:activities').error(e);
+    getLogger('route:feed').error(e);
     throw loaderErrorResponse(e);
   }
 };
@@ -229,6 +257,7 @@ export default function Feed() {
   const [artifactFilter, setArtifactFilter] = useState(
     searchParams.get(SEARCH_PARAM_ARTIFACT)?.split(',') ?? []
   );
+  const [groupFilter, setGroupFilter] = useState(loaderData.groupId);
   const [actorFilter, setActorFilter] = useState(loaderData.userId);
   const hasFilters = launchFilter.length || artifactFilter.length || actorFilter;
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
@@ -701,12 +730,35 @@ export default function Feed() {
               clear();
             }}
           />
+          <FilterMenu
+            label="User Group"
+            icon={<OpenInNewIcon fontSize="small" />}
+            chips={true}
+            sx={{ width: FILTER_WIDTH }}
+            selectedValue={groupFilter ?? ''}
+            items={[
+              { value: '', label: 'None', color: theme.palette.grey[500] },
+              ...loaderData.groups.map(group => ({ value: group.id, label: group.name })),
+            ]}
+            onChange={value => {
+              setGroupFilter(value as string);
+              window.open(
+                '/feed/' +
+                  (value ? `group:${value}/` : '') +
+                  (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
+                  (launchFilter.length && artifactFilter.length ? '&' : '') +
+                  (!launchFilter.length && artifactFilter.length ? '?' : '') +
+                  (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
+                '_self'
+              );
+            }}
+          />
           <Autocomplete
             size="small"
             sx={{ width: FILTER_WIDTH }}
             value={
               actorFilter ?
-                { value: actorFilter, label: loaderData.actors[actorFilter].name }
+                { value: actorFilter, label: loaderData.actors[actorFilter]?.name }
               : null
             }
             options={loaderData.identities.map(identity => ({
@@ -721,7 +773,9 @@ export default function Feed() {
                 '/feed/' +
                   (option != null ? `${option.value}/` : '') +
                   (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
-                  (artifactFilter.length ? `?artifact=${encodeURI(artifactFilter.join(','))}` : ''),
+                  (launchFilter.length && artifactFilter.length ? '&' : '') +
+                  (!launchFilter.length && artifactFilter.length ? '?' : '') +
+                  (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
                 '_self'
               );
             }}

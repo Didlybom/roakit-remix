@@ -58,6 +58,7 @@ export const identitySchema = z.object({
   email: z.string().optional(),
   displayName: z.string().optional(),
   managerId: z.string().optional(),
+  groups: z.string().array().optional(),
   accounts: z
     .object({
       feedId: z.number(),
@@ -71,6 +72,11 @@ export const identitySchema = z.object({
   lastLastUpdatedTimestamp: z.number().optional(),
 });
 export type IdentityType = z.infer<typeof identitySchema>;
+
+export const groupSchema = z.object({
+  name: z.string(),
+});
+export type GroupType = z.infer<typeof groupSchema>;
 
 export const ticketSchema = z.object({
   id: z.string(),
@@ -101,6 +107,7 @@ export const activitySchema = z.object({
   initiative: z.string(),
   launchItemId: z.string().nullable().optional(),
   phase: z.string().nullable().optional(),
+  effortPlan: z.number().nullable().optional(),
   effort: z.number().nullable().optional(),
   ongoing: z.boolean().nullable().optional(),
   previousActivityId: z.string().optional(),

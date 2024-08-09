@@ -18,6 +18,8 @@ import {
   type Artifact,
   type CustomerSettings,
   type DaySummaries,
+  type Group,
+  type GroupToIdentitiesRecord,
   type Identity,
   type Initiative,
   type InitiativeRecord,
@@ -146,6 +148,7 @@ export const queryIdentity = async (
     displayName: data.displayName,
     managerId: data.managerId,
     accounts: data.accounts ?? [],
+    groups: data.groups,
   };
 };
 
@@ -169,7 +172,7 @@ export const queryTeamIdentities = async (
       doc.data(),
       'identity ' + doc.id
     );
-    identities.push({ id: doc.id, accounts: data.accounts ?? [] });
+    identities.push({ id: doc.id, groups: data.groups, accounts: data.accounts ?? [] });
   });
   return identities;
 };
@@ -276,9 +279,14 @@ const findIdentity = (identities: Identity[], id: string) => identities.find(i =
 
 export const fetchIdentities = async (
   customerId: number
-): Promise<{ list: Identity[]; accountMap: AccountToIdentityRecord }> => {
+): Promise<{
+  list: Identity[];
+  accountMap: AccountToIdentityRecord;
+  groupMap: GroupToIdentitiesRecord;
+}> => {
   const identities: Identity[] = [];
   const accountMap: AccountToIdentityRecord = {};
+  const groupMap: GroupToIdentitiesRecord = {};
 
   const usersByEmail: Record<string, { id: string; role: Role }> = {};
   (
@@ -303,6 +311,7 @@ export const fetchIdentities = async (
       email: data.email,
       displayName: data.displayName,
       managerId: data.managerId,
+      groups: data.groups,
       user: usersByEmail[data.email ?? ''] ?? { role: DEFAULT_ROLE },
       accounts: data.accounts ?? [],
     });
@@ -313,6 +322,11 @@ export const fetchIdentities = async (
       } else if (account.name) {
         accountMap[account.name] = doc.id;
       }
+    });
+    // map groups to identities
+    data.groups?.forEach(group => {
+      if (!groupMap[group]) groupMap[group] = [];
+      groupMap[group].push(doc.id);
     });
   });
   // add the report member ids
@@ -330,6 +344,7 @@ export const fetchIdentities = async (
   return {
     list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
     accountMap,
+    groupMap,
   };
 };
 
@@ -433,6 +448,20 @@ export const fetchAccountMap = async (customerId: number): Promise<AccountMap> =
     });
   });
   return accounts;
+};
+
+export const fetchGroups = async (customerId: number): Promise<Group[]> => {
+  const groups: Group[] = [];
+  (
+    await retry(
+      async () => firestore.collection(`customers/${customerId}/groups`).get(),
+      retryProps('Retrying fetchGroups...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.GroupType>(schemas.groupSchema, doc.data(), 'group ' + doc.id);
+    groups.push({ id: doc.id, name: data.name });
+  });
+  return groups;
 };
 
 export const fetchAccountsToReview = async (customerId: number): Promise<Account[]> => {

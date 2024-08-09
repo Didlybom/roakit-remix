@@ -33,6 +33,7 @@ import { ellipsisSx, linkSx } from '../utils/jsxUtils';
 import {
   convertEmojis,
   IMG_TAG_REGEXP_G,
+  JIRA_IMAGE2_REGEXP_G,
   JIRA_IMAGE_REGEXP_G,
   LABEL_REGEXP,
   pluralizeMemo,
@@ -52,6 +53,7 @@ const cleanupJiraMarkup = (content: string) =>
   content
     .replaceAll('|smart-link', '')
     .replace(JIRA_IMAGE_REGEXP_G, '(image)')
+    .replace(JIRA_IMAGE2_REGEXP_G, '(image)')
     .replaceAll('(/)', '✅')
     .replaceAll('(flag)', '🚩');
 
@@ -149,7 +151,7 @@ export default function ActivityCard({
         <Stack spacing={1}>
           <SubCard
             content={`${
-              activity.event === 'comment_deleted' ? 'Comment deleted' : 'Comment deleted'
+              activity.event === 'comment_deleted' ? 'Comment deleted' : 'Comment '
             }: ${convertEmojis(activity.metadata.comment.body)}`}
             eventType={activity.eventType}
             meta={{ actors, accountMap, ticketBaseUrl }}

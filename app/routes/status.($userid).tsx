@@ -54,6 +54,7 @@ import { isMobile } from 'react-device-detect';
 import { useHotkeys } from 'react-hotkeys-hook';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
+import { SmallAvatarChip } from '../components/Avatars';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import {
@@ -68,19 +69,22 @@ import {
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditableCellField from '../components/datagrid/EditableCellField';
 import AutocompleteSelect from '../components/datagrid/EditAutocompleteSelect';
+import FilterMenu from '../components/FilterMenu';
 import HelperText from '../components/HelperText';
 import SelectField from '../components/SelectField';
-import SmallAvatarChip from '../components/SmallAvatarChip';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
+  fetchGroups,
   fetchIdentities,
   fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import {
+  insertActivity,
   upsertLaunchItemIndividualCounters,
   upsertNextOngoingActivity,
+  upsertTicket,
 } from '../firestore.server/updaters.server';
 import { getActivityDescription } from '../processors/activityDescription';
 import { findFirstTicket } from '../processors/activityFeed';
@@ -96,6 +100,7 @@ import {
   type Artifact,
   type InitiativeTicketStats,
   type Phase,
+  type Ticket,
 } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import {
@@ -106,7 +111,7 @@ import {
   nextBusinessDay,
   prevBusinessDay,
 } from '../utils/dateUtils';
-import { errMsg } from '../utils/errorUtils';
+import { errMsg, RoakitError } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import {
   errorAlert,
@@ -118,7 +123,7 @@ import {
 } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
-import { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
+import theme, { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
 
 export const meta = () => [{ title: 'Status Form | ROAKIT' }];
@@ -149,7 +154,14 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       }
     });
     if (!userIdentity) {
-      throw new Response('Identity not found', { status: 500 });
+      throw new RoakitError('Identity not found', { httpStatus: 500 });
+    }
+
+    let groups;
+    if (userIdentity.reportIds?.length && userIdentity.groups?.length) {
+      groups = (await fetchGroups(sessionData.customerId!)).filter(g =>
+        userIdentity.groups!.includes(g.id)
+      );
     }
 
     return {
@@ -158,10 +170,14 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       identityId: userIdentity.id,
       userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
+      groups,
       // initiatives,
       launchItems,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       accountMap: identities.accountMap,
+      identities: identities.list.filter(
+        i => i.id === userIdentity.id || userIdentity.reportIds?.includes(i.id)
+      ),
       isLocal: request.headers.get('host') === 'localhost:3000',
     };
   } catch (e) {
@@ -172,7 +188,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
 type NewActivity = {
   action: string;
-  artifact: string;
+  artifact: Artifact;
   launchItemId: string;
   phase: Phase | null;
   description: string;
@@ -183,7 +199,7 @@ type NewActivity = {
 
 const emptyActivity: NewActivity = {
   action: '',
-  artifact: '',
+  artifact: '' as Artifact,
   launchItemId: '',
   phase: null,
   description: '',
@@ -193,7 +209,7 @@ const emptyActivity: NewActivity = {
 };
 
 interface ActionRequest {
-  day?: string;
+  day: string;
 
   // update
   activityId: string;
@@ -204,12 +220,13 @@ interface ActionRequest {
   effort: number;
   ongoing: boolean;
   actorId: string;
+  ticket?: Ticket;
   metadata?: ActivityMetadata;
 
   // field only used for next ongoing
   eventType: string;
   action: string;
-  artifact: string;
+  artifact: Artifact;
   createdTimestamp: number;
   timestamp: number;
   initiativeId: string;
@@ -299,31 +316,41 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   // save new activity
   if (actionRequest.newActivity) {
-    const ref = await firestore.collection(`customers/${sessionData.customerId!}/activities`).add({
+    const newActivityId = await insertActivity(sessionData.customerId!, {
       ...actionRequest.newActivity,
       priority: actionRequest.newActivity.priority ?? -1,
       eventType: CUSTOM_EVENT,
       event: CUSTOM_EVENT,
       actorAccountId: identityId,
+      identityId,
       createdTimestamp: actionRequest.newActivity.timestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
       initiative: '',
     });
-    getLogger('route:status.user').info('Saved custom activity ' + ref.id);
+    getLogger('route:status.user').info('Saved custom activity ' + newActivityId);
     response = { status: { code: 'created', message: 'Activity created' } };
+  }
+
+  // update tickets
+  if (actionRequest.ticket) {
+    await upsertTicket(sessionData.customerId!, {
+      ...actionRequest.ticket,
+      effort: { [actionRequest.day]: actionRequest.effort },
+    });
+    getLogger('route:status.user').info('Updated ticket ' + actionRequest.ticket.key);
   }
 
   // update launch item stats
   if (actionRequest.launchItemStats) {
     if (
-      !actionRequest.day ||
-      (actionRequest.activityId && actionRequest.launchItemStats.length > 1) // single activity update
+      actionRequest.activityId &&
+      actionRequest.launchItemStats.length > 1 // single activity update
     ) {
       return { error: 'Invalid stats update' };
     }
     await upsertLaunchItemIndividualCounters(
       sessionData.customerId!,
       identityId,
-      actionRequest.day!,
+      actionRequest.day,
       actionRequest.launchItemStats,
       actionRequest.activityId ? actionRequest.prevLaunchItemId : '*'
     );
@@ -373,6 +400,7 @@ export default function Status() {
   );
   const isTodaySelected = isToday(selectedDay);
   const [showTeam, setShowTeam] = useState(false);
+  const [groupFilter, setGroupFilter] = useState('');
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const gridApiRef = useGridApiRef();
@@ -430,10 +458,10 @@ export default function Status() {
       return;
     }
     activitiesFetcher.load(
-      `/fetcher/activities/${loaderData.userId ?? ''}?${showTeam ? 'includeTeam=true&' : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
+      `/fetcher/activities/${loaderData.userId ?? ''}?${showTeam ? 'includeTeam=true&' : ''}${groupFilter ? `group=${groupFilter}&` : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDay, showTeam, actionData?.status]); // activitiesFetcher and loaderData must be omitted
+  }, [selectedDay, showTeam, groupFilter, actionData?.status]); // activitiesFetcher and loaderData must be omitted
 
   // handle fetched activities
   useEffect(() => {
@@ -717,7 +745,7 @@ export default function Status() {
       {
         newActivity: {
           ...newActivity,
-          eventTimestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
+          timestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
         },
         day: formatYYYYMMDD(selectedDay),
         launchItemStats: groupActorActivities([newActivity]).launchItems ?? null,
@@ -766,7 +794,9 @@ export default function Status() {
             <SelectField
               required
               value={newActivity.artifact}
-              onChange={artifact => setNewActivity({ ...newActivity, artifact })}
+              onChange={artifact =>
+                setNewActivity({ ...newActivity, artifact: artifact as Artifact })
+              }
               label="Artifact"
               items={artifactOptions}
             />
@@ -899,11 +929,11 @@ export default function Status() {
                 />
               </LocalizationProvider>
             </Box>
-            <Stack spacing={1} sx={{ ml: 3 }}>
+            <Stack spacing={1} useFlexGap sx={{ ml: 3 }}>
               <Typography fontSize="small" fontWeight={500}>
                 Activities for
               </Typography>
-              <Box sx={{ opacity: showTeam ? 0.3 : undefined }}>
+              <Box>
                 <SmallAvatarChip name={loaderData.userDisplayName} />
               </Box>
               {!!loaderData.reportIds?.length && (
@@ -918,11 +948,30 @@ export default function Status() {
                   }
                 />
               )}
-              {loaderData.reportIds?.map(reportId => (
-                <Box key={reportId} sx={{ opacity: showTeam ? undefined : 0.3 }}>
-                  <SmallAvatarChip name={loaderData.actors[reportId]?.name} />
-                </Box>
-              ))}
+              {loaderData.reportIds
+                ?.filter(
+                  actorId =>
+                    !groupFilter ||
+                    loaderData.identities.find(i => i.id === actorId)?.groups?.includes(groupFilter)
+                )
+                .map(reportId => (
+                  <Box key={reportId} sx={{ opacity: showTeam ? undefined : 0.3 }}>
+                    <SmallAvatarChip name={loaderData.actors[reportId]?.name} />
+                  </Box>
+                ))}
+              {loaderData.groups?.length && (
+                <FilterMenu
+                  label="User Group"
+                  chips={true}
+                  sx={{ width: 160, mt: 3 }}
+                  selectedValue={groupFilter}
+                  items={[
+                    { value: '', label: 'None', color: theme.palette.grey[500] },
+                    ...loaderData.groups.map(group => ({ value: group.id, label: group.name })),
+                  ]}
+                  onChange={value => setGroupFilter(value as string)}
+                />
+              )}
             </Stack>
           </Stack>
         </Grid>
@@ -942,7 +991,8 @@ export default function Status() {
                   setShowNewDialog(true);
                 }}
                 variant="contained"
-                sx={{ borderRadius: 28, textTransform: 'none' }}
+                size="small"
+                sx={{ borderRadius: 8, px: 2, textTransform: 'none' }}
               >
                 Post custom activity
               </Button>
@@ -1007,6 +1057,7 @@ export default function Status() {
                         updatedActivities.filter(a => a.actorId === loaderData.identityId)
                       )
                     );
+                    const activityStats = groupActorActivities([updatedRow]);
                     submit(
                       {
                         activityId: updatedRow.id,
@@ -1027,7 +1078,14 @@ export default function Status() {
                           metadata: updatedRow.metadata,
                         }),
                         day: formatYYYYMMDD(selectedDay),
-                        launchItemStats: groupActorActivities([updatedRow]).launchItems ?? null,
+                        launchItemStats: activityStats.launchItems ?? null,
+                        ticket:
+                          activityStats.tickets.length ?
+                            {
+                              ...activityStats.tickets[0],
+                              launchItemId: updatedRow.launchItemId ?? null,
+                            }
+                          : null,
                         prevLaunchItemId: oldRow.launchItemId ?? null,
                       },
                       postJsonOptions

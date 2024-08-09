@@ -14,6 +14,7 @@ export const JIRA_TICKET_REGEXP_G = new RegExp(/([A-Z]+-[0-9]+)/g);
 
 export const JIRA_ACCOUNT_REGEXP_G = new RegExp(/(?:\[~accountid:)(.+?)(?:\])/g);
 export const JIRA_IMAGE_REGEXP_G = new RegExp(/!(.+?)!/g);
+export const JIRA_IMAGE2_REGEXP_G = new RegExp(/\[\^(.+?)\]/g);
 export const MENTION_REGEXP_G = new RegExp(/\B@([\w-]+)/g);
 export const IMG_TAG_REGEXP_G = new RegExp(/(<img.+?>)/g);
 
@@ -146,4 +147,9 @@ export const stringColor = (string: string | undefined) => {
 };
 
 export const convertEmojis = (string: string | undefined) =>
-  string?.replaceAll('(/)', '✅').replaceAll('(flag)', '🚩').replaceAll(':santa:', '🎅');
+  string
+    ?.replaceAll('(/)', '✅')
+    .replaceAll('(x)', '❌')
+    .replaceAll('(flag)', '🚩')
+    .replaceAll(':santa:', '🎅')
+    .replaceAll(':slightly_smiling_face:', '🙂');

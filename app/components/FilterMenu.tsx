@@ -11,6 +11,7 @@ import {
   Select,
 } from '@mui/material';
 import type { ReactElement } from 'react';
+import { ellipsisSx } from '../utils/jsxUtils';
 
 export default function FilterMenu({
   multiple = false,
@@ -57,14 +58,18 @@ export default function FilterMenu({
                     <Chip key={i} size="small" label={items.find(i => i.value === v)?.label} />
                   ))}
                 </Box>
-              : <Box fontSize="small">
+              : <Box fontSize="small" sx={ellipsisSx}>
                   {(selectedValues as string[])
                     .slice(0, 2)
                     .map(v => items.find(i => i.value === v)?.label)
                     .join(', ') +
                     (selectedValues.length > 2 ? `, and ${selectedValues.length - 2} more` : '')}
                 </Box>
-          : value => <Box fontSize="small">{items.find(i => i.value === value)?.label}</Box>
+          : value => (
+              <Box fontSize="small" sx={ellipsisSx}>
+                {items.find(i => i.value === value)?.label}
+              </Box>
+            )
         }
         onChange={(event: SelectChangeEvent<string | string[]>) => {
           const value = event.target.value;

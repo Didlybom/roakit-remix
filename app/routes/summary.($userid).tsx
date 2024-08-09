@@ -40,9 +40,9 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import ActivityPickersDay, { type PickerDayWithHighlights } from '../components/ActivityPickersDay';
 import App from '../components/App';
+import { SmallAvatarChip } from '../components/Avatars';
 import IconIndicator from '../components/IconIndicator';
 import MarkdownText from '../components/MarkdownText';
-import SmallAvatarChip from '../components/SmallAvatarChip';
 import {
   fetchAccountMap,
   fetchIdentities,

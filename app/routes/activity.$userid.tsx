@@ -86,6 +86,7 @@ import {
   formatYYYYMMDD,
   type DateRangeEnding,
 } from '../utils/dateUtils';
+import { RoakitError } from '../utils/errorUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
   desktopDisplaySx,
@@ -188,13 +189,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     const userIdentity = identities.list.find(identity => identity.email === sessionData.email);
     if (!userIdentity) {
-      throw new Response('Identity not found', { status: 500 });
+      throw new RoakitError('Identity not found', { httpStatus: 500 });
     }
 
     const userId = params.userid;
     const activityUserIds =
       userId && userId !== ALL ?
-        getAllPossibleActivityUserIds(userId, identities.list, identities.accountMap)
+        getAllPossibleActivityUserIds([userId], identities.list, identities.accountMap)
       : [];
 
     return {

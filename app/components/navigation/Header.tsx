@@ -12,7 +12,7 @@ import RoakitIcon from '../../icons/Roakit';
 import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
 import { desktopDisplaySx } from '../../utils/jsxUtils';
 import { Role, View } from '../../utils/rbac';
-import ClickableAvatar from '../ClickableAvatar';
+import { ClickableAvatar } from '../Avatars';
 import DateRangePicker from '../DateRangePicker';
 
 interface NavBarProps extends AppBarProps {

@@ -69,12 +69,19 @@ export interface Identity {
   managerId?: string;
   reportIds?: string[];
   user?: { id: string; role?: Role };
+  groups?: string[];
   accounts: { feedId: number; type: string; id: Account['id']; name?: string; url?: string }[];
 }
 
 export const displayName = (id: Identity) => id.displayName || id.email || id.id;
 
 export type AccountToIdentityRecord = Record<Account['id'], Identity['id']>;
+export type GroupToIdentitiesRecord = Record<Group['id'], Identity['id'][]>;
+
+export type Group = {
+  id: string;
+  name: string;
+};
 
 export type Actor = {
   id: string;
@@ -105,6 +112,8 @@ export type Ticket = {
     name?: string;
     uri?: string;
   };
+  launchItem?: string;
+  effort?: Record<string /* YYYYMMDD */, number | null>;
   lastUpdatedTimestamp?: number;
 };
 
@@ -173,6 +182,8 @@ export type Activity = {
   eventType?: string;
   event?: string;
   actorId?: string;
+  identityId?: string;
+  groups?: string[];
   artifact: Artifact;
   createdTimestamp: number;
   timestamp: number;

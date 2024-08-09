@@ -50,7 +50,9 @@ export const errorAlert = (message?: string | null) =>
   );
 
 export const loaderErrorResponse = (e: unknown) =>
-  new Response(`Failed to load data. ${errMsg(e)}`, { status: 500 });
+  new Response(errMsg(e, 'Failed to load data.'), {
+    status: (e as any).httpStatus ?? (e as any).status ?? 500,
+  });
 
 export const loginWithRedirectUrl = () =>
   `/login?redirect=${encodeURI(location.pathname + location.search)}`;

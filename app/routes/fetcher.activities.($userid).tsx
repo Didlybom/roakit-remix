@@ -36,6 +36,7 @@ export const loader = async ({
   try {
     const { searchParams } = new URL(request.url);
     const includeTeam = searchParams.get('includeTeam') === 'true';
+    const group = searchParams.get('group');
     const startDate = searchParams.get('start') ? +searchParams.get('start')! : undefined;
     if (!startDate) {
       return errorJsonResponse('Fetching activities failed. Invalid params.', 400);
@@ -63,7 +64,9 @@ export const loader = async ({
       identity.accounts.filter(a => a.id).forEach(a => userIdSet.add(a.id));
 
       if (includeTeam) {
-        const teamIdentities = await queryTeamIdentities(sessionData.customerId!, identity.id);
+        const teamIdentities = (
+          await queryTeamIdentities(sessionData.customerId!, identity.id)
+        ).filter(identity => !group || identity.groups?.includes(group));
         teamIdentities.forEach(identity => userIdSet.add(identity.id));
         teamIdentities
           .flatMap(identity => identity.accounts)
