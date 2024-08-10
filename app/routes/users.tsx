@@ -313,11 +313,7 @@ export default function Users() {
                 if (account.type === 'github') {
                   icon = <GitHubIcon sx={{ color, fontSize: '12px' }} />;
                 } else if (account.type === 'jira') {
-                  icon = (
-                    <Box component="span" sx={{ fontSize: '10px' }}>
-                      <JiraIcon color={color} />
-                    </Box>
-                  );
+                  icon = <JiraIcon sx={{ color, fontSize: '12px' }} />;
                 } else {
                   icon = <AccountIcon sx={{ fontSize: '12px' }}></AccountIcon>;
                 }

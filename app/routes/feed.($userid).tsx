@@ -458,10 +458,10 @@ export default function Feed() {
     let sourceTitle;
     if (activityUrl) {
       if (activityUrl.type === 'jira') {
-        sourceIcon = <JiraIcon width={16} height={16} />;
+        sourceIcon = <JiraIcon sx={{ width: 15, height: 15 }} />;
         sourceTitle = jiraSourceName(activity.metadata);
       } else if (activityUrl.type === 'confluence') {
-        sourceIcon = <ConfluenceIcon width={14} height={14} />;
+        sourceIcon = <ConfluenceIcon sx={{ width: 14, height: 14 }} />;
         sourceTitle = confluenceSourceName(activity.metadata);
       } else if (activityUrl.type === 'github') {
         sourceIcon = <GitHubIcon sx={{ width: 16, height: 16 }} />;

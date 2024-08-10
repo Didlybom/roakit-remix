@@ -168,27 +168,27 @@ export default function ActivityCard({
     if (url.type === 'jira') {
       icon = (
         <Box mr="2px">
-          <JiraIcon fontSize="small" color={theme.palette.primary.main} />
+          <JiraIcon color="primary" sx={{ width: 16, height: 16 }} />
         </Box>
       );
       urlTitle = jiraSourceName(activity.metadata);
     } else if (url.type === 'confluence') {
       icon = (
         <Box mr="2px">
-          <ConfluenceIcon fontSize="small" color={theme.palette.primary.main} />
+          <ConfluenceIcon color="primary" sx={{ width: 15, height: 15 }} />
         </Box>
       );
       urlTitle = confluenceSourceName(activity.metadata);
     } else if (url.type === 'github') {
       icon = (
         <Box>
-          <GitHubIcon fontSize="small" color="primary" />
+          <GitHubIcon color="primary" sx={{ width: 18, height: 18 }} />
         </Box>
       );
       urlTitle = gitHubSourceName(activity.metadata);
     }
   } else if (activity.event === CUSTOM_EVENT && format === 'Grid') {
-    icon = <CustomEventIcon fontSize="small" sx={{ color: theme.palette.grey[400], mr: '2px' }} />;
+    icon = <CustomEventIcon sx={{ width: 20, height: 20, color: theme.palette.grey[400] }} />;
   }
   const link =
     url && icon ?
