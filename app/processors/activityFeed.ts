@@ -153,6 +153,15 @@ export const accountUrlToWeb = (account: Account) =>
 export const issueUrlToWeb = (url: string, key: string) =>
   url.indexOf('rest') > -1 ? `${url.split('rest')[0]}browse/${key}` : url;
 
+export const jiraSourceName = (metadata: ActivityMetadata | undefined) =>
+  metadata?.issue?.project?.name ?? 'Jira';
+
+export const gitHubSourceName = (metadata: ActivityMetadata | undefined) =>
+  metadata?.repository ?? 'GitHub';
+
+export const confluenceSourceName = (metadata: ActivityMetadata | undefined) =>
+  metadata?.space?.title ?? metadata?.page?.spaceKey ?? 'Confluence';
+
 export const reactionCount = (reactions: Reactions) => ({
   like: Object.entries(reactions.like).filter(([, v]) => v).length,
 });

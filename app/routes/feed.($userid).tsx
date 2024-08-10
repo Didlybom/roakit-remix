@@ -61,7 +61,14 @@ import {
 import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
 import { getActivityUrl } from '../processors/activityDescription';
-import { artifacts, reactionCount, reactionNames } from '../processors/activityFeed';
+import {
+  artifacts,
+  confluenceSourceName,
+  gitHubSourceName,
+  jiraSourceName,
+  reactionCount,
+  reactionNames,
+} from '../processors/activityFeed';
 import { identifyAccounts } from '../processors/activityIdentifier';
 import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
 import { type Activity, type Initiative } from '../types/types';
@@ -259,7 +266,7 @@ export default function Feed() {
   );
   const [groupFilter, setGroupFilter] = useState(loaderData.groupId);
   const [actorFilter, setActorFilter] = useState(loaderData.userId);
-  const hasFilters = launchFilter.length || artifactFilter.length || actorFilter;
+  const hasFilters = launchFilter.length || artifactFilter.length || groupFilter || actorFilter;
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
@@ -452,13 +459,13 @@ export default function Feed() {
     if (activityUrl) {
       if (activityUrl.type === 'jira') {
         sourceIcon = <JiraIcon width={16} height={16} />;
-        sourceTitle = 'Jira';
+        sourceTitle = jiraSourceName(activity.metadata);
       } else if (activityUrl.type === 'confluence') {
         sourceIcon = <ConfluenceIcon width={14} height={14} />;
-        sourceTitle = 'Confluence';
+        sourceTitle = confluenceSourceName(activity.metadata);
       } else if (activityUrl.type === 'github') {
         sourceIcon = <GitHubIcon sx={{ width: 16, height: 16 }} />;
-        sourceTitle = 'GitHub';
+        sourceTitle = gitHubSourceName(activity.metadata);
       }
     }
 
@@ -560,7 +567,7 @@ export default function Feed() {
                   startIcon={sourceIcon}
                   sx={{ textTransform: 'none', fontWeight: 400, py: 0, px: '4px', minWidth: 0 }}
                 >
-                  <Box fontSize="12px" sx={{ visibility: { xs: 'hidden', sm: 'visible' } }}>
+                  <Box fontSize="12px" sx={ellipsisSx}>
                     {sourceTitle}
                   </Box>
                 </Button>

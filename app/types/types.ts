@@ -134,7 +134,7 @@ export type ActivityMetadata = {
     summary?: string;
     type?: string;
     uri?: string;
-    project?: { id: string };
+    project?: { id: string; name?: string };
     status?: { name: string };
   };
   attachment?: { filename: string; mimeType?: string; uri?: string };
@@ -145,12 +145,13 @@ export type ActivityMetadata = {
   sprint?: { name: string; state: string };
   worklog?: any;
   space?: { title: string; uri?: string };
-  page?: { id: string; title: string; version?: string; uri?: string };
+  page?: { id: string; title: string; spaceKey?: string; version?: string; uri?: string };
   oldParent?: { id: string; title: string };
   newParent?: { id: string; title: string };
   pullRequest?: { ref: string; codeAction: string; title: string; uri?: string };
   pullRequestComment?: { body: string; uri?: string };
   pullRequestIssue?: { title: string; uri?: string };
+  repository?: string;
   commits?: { message: string; url?: string }[];
   comment?: {
     id: string;

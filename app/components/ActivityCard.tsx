@@ -22,6 +22,7 @@ import {
   getActivityDescription,
   getActivityUrl,
 } from '../processors/activityDescription';
+import { confluenceSourceName, gitHubSourceName, jiraSourceName } from '../processors/activityFeed';
 import {
   CUSTOM_EVENT,
   type AccountToIdentityRecord,
@@ -170,21 +171,21 @@ export default function ActivityCard({
           <JiraIcon fontSize="small" color={theme.palette.primary.main} />
         </Box>
       );
-      urlTitle = 'Go to Jira page';
+      urlTitle = jiraSourceName(activity.metadata);
     } else if (url.type === 'confluence') {
       icon = (
         <Box mr="2px">
           <ConfluenceIcon fontSize="small" color={theme.palette.primary.main} />
         </Box>
       );
-      urlTitle = 'Go to Confluence page';
+      urlTitle = confluenceSourceName(activity.metadata);
     } else if (url.type === 'github') {
       icon = (
         <Box>
           <GitHubIcon fontSize="small" color="primary" />
         </Box>
       );
-      urlTitle = 'Go to Github page';
+      urlTitle = gitHubSourceName(activity.metadata);
     }
   } else if (activity.event === CUSTOM_EVENT && format === 'Grid') {
     icon = <CustomEventIcon fontSize="small" sx={{ color: theme.palette.grey[400], mr: '2px' }} />;
