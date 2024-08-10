@@ -525,10 +525,10 @@ export default function Status() {
 
   const handleDeleteClick = useCallback(
     (activityId: GridRowId) => {
-      setActivities(activities.filter(row => row.id !== activityId));
+      setActivities(activities => activities.filter(row => row.id !== activityId));
       submit({ activityId }, deleteJsonOptions);
     },
-    [activities, submit]
+    [submit]
   );
 
   const columns = useMemo<GridColDef[]>(
