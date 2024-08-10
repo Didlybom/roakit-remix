@@ -47,6 +47,7 @@ import CodePopover, { type CodePopoverContent } from '../components/CodePopover'
 import SearchField from '../components/SearchField';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import EditMultipleSelect from '../components/datagrid/EditMultipleSelect';
 import EditableCellField from '../components/datagrid/EditableCellField';
 import {
   dataGridCommonProps,
@@ -74,6 +75,7 @@ import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, linkSx, loaderErrorResponse } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
+import { areArrayEqual } from '../utils/mapUtils';
 import { Role, View } from '../utils/rbac';
 import theme from '../utils/theme';
 
@@ -127,7 +129,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 interface ActionRequest {
   identityId?: string;
   managerId?: string;
-  groupId?: string;
+  groups?: string[];
   userId?: string;
   role?: Role;
   imports?: string;
@@ -158,14 +160,11 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   }
 
   // update groups
-  // FIXME multi group
-  if (actionRequest.groupId != null) {
+  if (actionRequest.groups != null) {
     try {
       await firestore
         .doc(`customers/${sessionData.customerId!}/identities/${actionRequest.identityId}`)
-        .update({
-          groups: actionRequest.groupId ? [actionRequest.groupId] : [],
-        });
+        .update({ groups: actionRequest.groups ?? [] });
       return { status: { code: 'userUpdated', message: "User's groups updated" } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to save user') };
@@ -243,7 +242,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   return {};
 };
 
-type IdentityRow = Identity & { groupId?: string; hovered?: boolean }; // FIXME multi group
+type IdentityRow = Identity & { hovered?: boolean };
 
 export default function Users() {
   const loaderData = useLoaderData<typeof loader>();
@@ -288,6 +287,7 @@ export default function Users() {
       {
         field: 'displayName',
         headerName: 'Name',
+        flex: 1,
         renderCell: (params: GridRenderCellParams<Identity, string>) => (
           <Link
             tabIndex={params.tabIndex}
@@ -299,7 +299,7 @@ export default function Users() {
           </Link>
         ),
       },
-      { field: 'email', headerName: 'Email' },
+      { field: 'email', headerName: 'Email', flex: 1 },
       {
         field: 'accounts',
         headerName: 'Accounts',
@@ -315,7 +315,7 @@ export default function Users() {
                 } else if (account.type === 'jira') {
                   icon = <JiraIcon sx={{ color, fontSize: '12px' }} />;
                 } else {
-                  icon = <AccountIcon sx={{ fontSize: '12px' }}></AccountIcon>;
+                  icon = <AccountIcon sx={{ fontSize: '12px' }} />;
                 }
                 return (
                   <Tooltip
@@ -341,6 +341,7 @@ export default function Users() {
         field: 'managerId',
         headerName: 'Team',
         type: 'singleSelect',
+        flex: 1,
         sortComparator: (a: string, b: string) => {
           const aName = !a ? 'ZZZ' : findManagerName(a);
           const bName = !b ? 'ZZZ' : findManagerName(b);
@@ -364,10 +365,10 @@ export default function Users() {
         ),
       },
       {
-        field: 'groupId',
+        field: 'groups',
         headerName: 'Group',
-        description: 'Note: Multi group not supported yet',
-        type: 'singleSelect',
+        type: 'singleSelect', // actually multiple
+        flex: 1,
         sortComparator: (a: string, b: string) => {
           const aName = !a ? 'ZZZ' : findGroupName(a);
           const bName = !b ? 'ZZZ' : findGroupName(b);
@@ -378,12 +379,20 @@ export default function Users() {
           ...loaderData.groups.map(group => ({ value: group.id, label: group.name })),
         ],
         editable: true,
-        renderCell: (params: GridRenderCellParams<IdentityRow, string>) => (
+        renderEditCell: params => (
+          <EditMultipleSelect
+            {...params}
+            options={loaderData.groups.map(group => ({ value: group.id, label: group.name }))}
+          />
+        ),
+        renderCell: (params: GridRenderCellParams<IdentityRow, string[]>) => (
           <Box height="100%" display="flex" alignItems="center">
             <EditableCellField
               layout="dropdown"
               hovered={params.row.hovered}
-              label={params.value ? findGroupName(params.value) : null}
+              label={
+                params.value ? params.value.map(value => findGroupName(value)).join(', ') : null
+              }
             />
           </Box>
         ),
@@ -707,16 +716,16 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                     { identityId: updatedRow.id, managerId: updatedRow.managerId ?? null },
                     postJsonOptions
                   );
-                } else if (updatedRow.groupId !== oldRow.groupId) {
+                } else if (!areArrayEqual(updatedRow.groups, oldRow.groups)) {
                   setIdentities(
                     identities.map(identity =>
                       identity.id === updatedRow.id ?
-                        { ...identity, groupId: updatedRow.groupId }
+                        { ...identity, groups: updatedRow.groups }
                       : identity
                     )
                   );
                   submit(
-                    { identityId: updatedRow.id, groupId: updatedRow.groupId ?? null },
+                    { identityId: updatedRow.id, groups: updatedRow.groups ?? null },
                     postJsonOptions
                   );
                 } else if (updatedRow.user?.role && updatedRow.user.role !== oldRow.user?.role) {

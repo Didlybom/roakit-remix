@@ -4,6 +4,15 @@ export const cloneArray = <T>(array: T[]) => {
   return cloned;
 };
 
+export const areArrayEqual = <T>(arr1: T[] | undefined, arr2: T[] | undefined) => {
+  if (!arr1 || !arr2) return false;
+  if (arr1.length != arr2.length) return false;
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) return false;
+  }
+  return true;
+};
+
 export const areRecordsEqual = <T>(rec1: Record<string, T>, rec2: Record<string, T>) =>
   JSON.stringify(rec1, Object.keys(rec1).sort()) === JSON.stringify(rec2, Object.keys(rec2).sort());
 
