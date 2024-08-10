@@ -166,25 +166,13 @@ export default function ActivityCard({
   let urlTitle = '';
   if (url) {
     if (url.type === 'jira') {
-      icon = (
-        <Box mr="2px">
-          <JiraIcon color="primary" sx={{ width: 16, height: 16 }} />
-        </Box>
-      );
+      icon = <JiraIcon color="primary" sx={{ width: 16, height: 16 }} />;
       urlTitle = jiraSourceName(activity.metadata);
     } else if (url.type === 'confluence') {
-      icon = (
-        <Box mr="2px">
-          <ConfluenceIcon color="primary" sx={{ width: 15, height: 15 }} />
-        </Box>
-      );
+      icon = <ConfluenceIcon color="primary" sx={{ width: 15, height: 15 }} />;
       urlTitle = confluenceSourceName(activity.metadata);
     } else if (url.type === 'github') {
-      icon = (
-        <Box>
-          <GitHubIcon color="primary" sx={{ width: 18, height: 18 }} />
-        </Box>
-      );
+      icon = <GitHubIcon color="primary" sx={{ width: 18, height: 18 }} />;
       urlTitle = gitHubSourceName(activity.metadata);
     }
   } else if (activity.event === CUSTOM_EVENT && format === 'Grid') {
@@ -192,7 +180,7 @@ export default function ActivityCard({
   }
   const link =
     url && icon ?
-      <Box display="flex" alignItems={'center'} mr="4px">
+      <Box display="flex" alignItems="center" mr="4px" ml="-4px">
         <GridActionsCellItem
           tabIndex={tabIndex}
           icon={icon}
@@ -210,13 +198,13 @@ export default function ActivityCard({
 
   const commits = activity.metadata?.commits;
 
-  const missingIconPadding = format === 'Grid' ? '32px' : undefined;
+  const missingIconPadding = format === 'Grid' ? '28px' : undefined;
 
   return (
     <Stack direction="row" width="100%">
       {link}
       {!link && icon && (
-        <Box display="flex" alignItems="center" ml="4px" mr="7px">
+        <Box display="flex" alignItems="center" mr="7px">
           {icon}
         </Box>
       )}

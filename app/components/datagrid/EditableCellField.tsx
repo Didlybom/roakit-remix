@@ -22,11 +22,11 @@ export default function EditableCellField({
           endIcon={
             layout === 'dropdown' ?
               <ArrowDropDownIcon />
-            : <EditIcon style={{ width: '12px', height: '12px' }} />
+            : <EditIcon style={{ width: 12, height: 12 }} />
           }
           sx={{
             p: 0,
-            pr: 1,
+            px: '4px',
             fontWeight: 'inherit',
             textTransform: 'none',
             letterSpacing: 'normal',
@@ -43,6 +43,7 @@ export default function EditableCellField({
         alignItems="center"
         textAlign="start"
         letterSpacing="normal"
+        px="4px"
       >
         {label || '⋯'}
       </Box>;
