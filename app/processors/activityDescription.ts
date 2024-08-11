@@ -298,3 +298,12 @@ export const getActivityUrl = (activity: Activity): { url: string; type: FeedTyp
 
   return null;
 };
+
+export const getActivityAction = (activity: Activity) => {
+  const { action, artifact } = activity;
+  if (artifact === 'code') {
+    if (action === 'created') return 'code';
+    if (action === 'updated') return 'code review';
+  }
+  return `${artifact} ${action}`;
+};

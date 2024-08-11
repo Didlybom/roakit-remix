@@ -60,7 +60,7 @@ import {
 } from '../firestore.server/fetchers.server';
 import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
-import { getActivityUrl } from '../processors/activityDescription';
+import { getActivityAction, getActivityUrl } from '../processors/activityDescription';
 import {
   artifacts,
   confluenceSourceName,
@@ -294,7 +294,8 @@ export default function Feed() {
     // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
     // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
     if (activities.length) {
-      query += `&startAfter=${activities[activities.length - 1].createdTimestamp}`;
+      const oldestActivity = activities[activities.length - 1];
+      query += `&startAfter=${oldestActivity.combined?.length ? oldestActivity.combined[0].timestamp : oldestActivity.createdTimestamp}`;
     }
     if (loaderData.activityUserIds?.length) {
       query += `&userIds=${loaderData.activityUserIds.join(',')}`;
@@ -432,11 +433,11 @@ export default function Feed() {
     const activityIndex = index - 1;
 
     if (!isActivityRowLoaded(activityIndex)) {
-      return (
-        <Box display="flex" justifyContent="center" pr={3}>
-          <CircularProgress size={30} />
-        </Box>
-      );
+      return moreActivitiesFetcher.state === 'loading' ?
+          <Box display="flex" justifyContent="center" pr={3}>
+            <CircularProgress size={30} />
+          </Box>
+        : <></>;
     }
 
     const activity = activities[activityIndex];
@@ -496,7 +497,7 @@ export default function Feed() {
             <Box flexGrow={1} />
             <Tooltip title={`{ ${event} }`}>
               <Box fontSize="12px" color={theme.palette.grey[500]} sx={{ whiteSpace: 'nowrap' }}>
-                {activity.artifact} {activity.action}
+                {getActivityAction(activity)}
               </Box>
             </Tooltip>
             <IconButton
@@ -863,7 +864,7 @@ export default function Feed() {
         <Box
           width="100%"
           minWidth={300}
-          pt={3}
+          pt={2}
           sx={{ borderRight: { xs: undefined, sm: `1px solid ${theme.palette.grey[200]}` } }}
         >
           <InfiniteList
