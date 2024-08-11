@@ -7,8 +7,11 @@ const combineToNewActivity = (
   oldActivity: Activity,
   newActivity: Activity
 ) => {
-  newActivity.combinedIds = oldActivity.combinedIds ?? [];
-  newActivity.combinedIds.push(oldActivity.id);
+  newActivity.combined = oldActivity.combined ?? [];
+  newActivity.combined.push({
+    activityId: oldActivity.id,
+    timestamp: oldActivity.createdTimestamp,
+  });
   activities.splice(oldActivityIndex, 1);
   activities.push(newActivity);
 };
@@ -151,7 +154,9 @@ export const combineAndPushActivity = (newActivity: Activity, sortedActivities: 
 
   // Jira and Confluence consecutive comments
   else if (newActivity.event?.startsWith('comment') && newActivity.metadata?.comment) {
-    const indexPageActivity = sortedActivities.findLastIndex(a => isMatching(a, newActivity));
+    const indexPageActivity = sortedActivities.findLastIndex(
+      a => isMatching(a, newActivity) && newActivity.metadata?.issue?.key === a.metadata?.issue?.key
+    );
     if (indexPageActivity >= 0) {
       const foundActivity = sortedActivities[indexPageActivity];
       if (foundActivity.metadata!.comments) {

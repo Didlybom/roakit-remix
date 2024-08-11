@@ -200,7 +200,7 @@ export type Activity = {
   reactions?: Reactions;
   note?: string;
   objectId?: string; // for debugging
-  combinedIds?: string[];
+  combined?: { activityId: string; timestamp: number }[];
 };
 
 export type ActivityRecord = Record<Activity['id'], Activity>;

@@ -8,7 +8,7 @@ import type {
   GridSortDirection,
 } from '@mui/x-data-grid';
 import { GridActionsCellItem, gridStringOrNumberComparator } from '@mui/x-data-grid';
-import { getActivityDescription } from '../../processors/activityDescription';
+import { getActivityAction, getActivityDescription } from '../../processors/activityDescription';
 import { findFirstTicket } from '../../processors/activityFeed';
 import {
   type Account,
@@ -110,7 +110,7 @@ export const actorColDef = (colDef?: GridColDef, showActivityLink = false) =>
 export const actionColDef = (colDef?: GridColDef) =>
   ({
     headerName: 'Action',
-    valueGetter: (value, row: Activity) => `${row.artifact} ${value as string}`,
+    valueGetter: (_, row: Activity) => getActivityAction(row),
     renderCell: (params: GridRenderCellParams<Activity, string>) => {
       const action = params.value;
       const activity = params.row;
