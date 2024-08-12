@@ -79,13 +79,16 @@ export const groupSchema = z.object({
 export type GroupType = z.infer<typeof groupSchema>;
 
 export const ticketSchema = z.object({
-  id: z.string(),
-  summary: z.string(),
+  id: z.string().optional(),
+  summary: z.string().optional(),
   priority: z.number().optional(),
   uri: z.string().optional(),
   project: z
     .object({ id: z.string(), key: z.string(), name: z.string(), uri: z.string().optional() })
     .optional(),
+  plannedHours: z.number().optional(),
+  launchItemId: z.string().optional(),
+  effort: z.record(z.string(), z.record(z.string(), z.number().nullable()).nullable()).optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });
 export type TicketType = z.infer<typeof ticketSchema>;
@@ -107,7 +110,6 @@ export const activitySchema = z.object({
   initiative: z.string(),
   launchItemId: z.string().nullable().optional(),
   phase: z.string().nullable().optional(),
-  effortPlan: z.number().nullable().optional(),
   effort: z.number().nullable().optional(),
   ongoing: z.boolean().nullable().optional(),
   previousActivityId: z.string().optional(),

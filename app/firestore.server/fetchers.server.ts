@@ -26,6 +26,7 @@ import {
   type LaunchActorStats,
   type Phase,
   type Summary,
+  type Ticket,
   type TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
@@ -414,6 +415,25 @@ export const fetchTicketPrioritiesWithCache = async (
   // add to the cache freshly found tickets
   ticketsCache.set(cacheKey, { tickets: { ...cache?.tickets, ...tickets } });
   return { ...tickets, ...fromCache };
+};
+
+export const fetchTickets = async (customerId: number): Promise<Ticket[]> => {
+  const tickets: Ticket[] = [];
+  (
+    await retry(
+      async () =>
+        await firestore
+          .collection(`customers/${customerId}/tickets/`)
+          .orderBy('lastUpdatedTimestamp', 'desc')
+          .limit(1000) // FIXME limit
+          .get(),
+      retryProps('Retrying fetchTickets...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.TicketType>(schemas.ticketSchema, doc.data(), 'ticket ' + doc.id);
+    tickets.push({ ...data, key: doc.id });
+  });
+  return tickets;
 };
 
 export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {

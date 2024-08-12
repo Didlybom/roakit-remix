@@ -112,8 +112,9 @@ export type Ticket = {
     name?: string;
     uri?: string;
   };
-  launchItem?: string;
-  effort?: Record<string /* YYYYMMDD */, number | null>;
+  launchItemId?: string;
+  plannedHours?: number;
+  effort?: Record<string /* YYYYMMDD */, Record<Identity['id'], number | null> | null>;
   lastUpdatedTimestamp?: number;
 };
 

@@ -8,10 +8,11 @@ import {
   Menu as MenuIcon,
   PeopleOutline as PeopleIcon,
   Science as ScienceIcon,
-  PlaylistAddCheck as StatusIcon,
+  EditCalendar as StatusIcon,
   Subject as SubjectIcon,
   ShortText as SummariesIcon,
   EditNote as SummaryIcon,
+  WorkHistory as TicketIcon,
 } from '@mui/icons-material';
 import type { SvgIconTypeMap } from '@mui/material';
 import {
@@ -129,34 +130,25 @@ export default function NavDrawer({
           </List>
         </>
       )}
-      {(role === Role.Admin || role === Role.Monitor) && (
-        <>
-          <Divider />
-          <List>
-            <ListSubheader
-              sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
-            >
-              Experimental
-            </ListSubheader>
-            {(role === Role.Admin || role === Role.Monitor) &&
-              item(
-                View.ActivitySummary,
-                '/activity/summary',
-                SummariesIcon,
-                'Activity Summary',
-                view
-              )}
-            {item(View.Summary, '/summary', SummaryIcon, 'My Summary', view)}
-            <Divider />
-            <ListSubheader
-              sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
-            >
-              Lab
-            </ListSubheader>
-            {item(null, '/ai', ScienceIcon, 'AI Playground', view)}
-          </List>
-        </>
-      )}
+      <Divider />
+      <List>
+        <ListSubheader
+          sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
+        >
+          Experimental
+        </ListSubheader>
+        {item(View.Tickets, '/tickets', TicketIcon, 'Tickets', view)}
+        {(role === Role.Admin || role === Role.Monitor) &&
+          item(View.ActivitySummary, '/activity/summary', SummariesIcon, 'Activity Summary', view)}
+        {item(View.Summary, '/summary', SummaryIcon, 'My Summary', view)}
+        <Divider />
+        <ListSubheader
+          sx={{ fontSize: 'small', lineHeight: '36px', color: theme.palette.grey[400] }}
+        >
+          Lab
+        </ListSubheader>
+        {item(null, '/ai', ScienceIcon, 'AI Playground', view)}
+      </List>
       <Box flexGrow={1} />
       <Box
         p={1}

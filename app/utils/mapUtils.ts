@@ -37,7 +37,7 @@ export const groupByArray = <T>(
   }
   return array.reduce(
     (acc, value) => {
-      const recordKey = value[key] as string;
+      const recordKey = (value[key] as string) ?? '';
       const recordValue = value;
       delete recordValue[key];
       const record = acc.find(a => a.key === recordKey);

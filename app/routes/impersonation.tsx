@@ -1,6 +1,6 @@
 import {
   Science as ScienceIcon,
-  PlaylistAddCheck as StatusIcon,
+  EditCalendar as StatusIcon,
   EditNote as SummaryIcon,
 } from '@mui/icons-material';
 import {

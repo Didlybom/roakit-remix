@@ -237,6 +237,9 @@ interface ActionRequest {
   // launch item stats
   launchItemStats?: (InitiativeTicketStats & { launchItemId: string })[];
   prevLaunchItemId?: string;
+
+  // ticket stats
+  totalTicketEffort: number | null;
 }
 
 interface ActionResponse {
@@ -334,7 +337,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   if (actionRequest.ticket) {
     await upsertTicket(sessionData.customerId!, {
       ...actionRequest.ticket,
-      effort: { [actionRequest.day]: actionRequest.effort },
+      effort: { [actionRequest.day]: { [identityId]: actionRequest.totalTicketEffort } },
     });
     getLogger('route:status.user').info('Updated ticket ' + actionRequest.ticket.key);
   }
@@ -381,7 +384,7 @@ const priorityOptions: SelectOption[] = [
   })),
 ];
 
-type ActivityRow = Activity & { hovered?: boolean };
+type ActivityRow = Activity & { ticketKey?: string; hovered?: boolean };
 
 export default function Status() {
   const navigation = useNavigation();
@@ -468,13 +471,14 @@ export default function Status() {
     if (!fetchedActivities?.activities) {
       return;
     }
-    const activityRows: Activity[] = [];
+    const activityRows: ActivityRow[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
       let mapping;
       if (!activity.initiativeId || activity.launchItemId == null) {
         mapping = mapActivity(activity);
       }
+      const activityStats = groupActorActivities([activity]);
       activityRows.push({
         ...activity,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
@@ -484,6 +488,7 @@ export default function Status() {
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
+        ticketKey: activityStats.tickets[0].key,
       });
     });
     setActivities(activityRows);
@@ -829,7 +834,7 @@ export default function Status() {
                   items={priorityOptions}
                 />
               </Grid>
-              <Grid>
+              {/* <Grid>
                 <TextField
                   autoComplete="off"
                   label="Hours"
@@ -843,7 +848,7 @@ export default function Status() {
                     (newActivity.effort < 0 || newActivity.effort > 24)
                   }
                 />
-              </Grid>
+              </Grid> */}
             </Grid>
           </Box>
           <TextField
@@ -994,7 +999,7 @@ export default function Status() {
                 size="small"
                 sx={{ borderRadius: 8, px: 2, textTransform: 'none' }}
               >
-                Post custom activity
+                Post a custom activity
               </Button>
             </Stack>
             <StyledMuiError>
@@ -1039,7 +1044,7 @@ export default function Status() {
                     params.row.eventType === CUSTOM_EVENT
                   );
                 }}
-                processRowUpdate={(updatedRow: Activity, oldRow: Activity) => {
+                processRowUpdate={(updatedRow: ActivityRow, oldRow: ActivityRow) => {
                   if (
                     updatedRow.description !== oldRow.description ||
                     updatedRow.priority != oldRow.priority ||
@@ -1048,6 +1053,8 @@ export default function Status() {
                     updatedRow.effort !== oldRow.effort ||
                     updatedRow.ongoing != oldRow.ongoing
                   ) {
+                    const activityStats = groupActorActivities([updatedRow]);
+                    updatedRow.ticketKey = activityStats.tickets[0].key;
                     const updatedActivities = activities.map(activity =>
                       activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
@@ -1057,7 +1064,15 @@ export default function Status() {
                         updatedActivities.filter(a => a.actorId === loaderData.identityId)
                       )
                     );
-                    const activityStats = groupActorActivities([updatedRow]);
+                    let totalTicketEffort = null;
+                    if (updatedRow.effort != null && updatedRow.ticketKey) {
+                      totalTicketEffort = activities
+                        .filter(a => a.id !== updatedRow.id && a.ticketKey === updatedRow.ticketKey)
+                        .reduce(
+                          (totalEffort, activity) => totalEffort + (activity.effort ?? 0),
+                          updatedRow.effort
+                        );
+                    }
                     submit(
                       {
                         activityId: updatedRow.id,
@@ -1086,6 +1101,7 @@ export default function Status() {
                               launchItemId: updatedRow.launchItemId ?? null,
                             }
                           : null,
+                        totalTicketEffort,
                         prevLaunchItemId: oldRow.launchItemId ?? null,
                       },
                       postJsonOptions
@@ -1097,7 +1113,9 @@ export default function Status() {
             </StyledMuiError>
             {!isMobile && (
               <HelperText>
-                {activities.length > 0 ? 'Some cells editable by clicking on them. ' : ''}
+                {activities.length > 0 ?
+                  'Some cells editable by clicking on them. Hours will be aggregated by ticket. '
+                : ''}
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
                 to go to previous/next day.
               </HelperText>

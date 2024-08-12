@@ -190,5 +190,5 @@ export const insertActivity = async (
 export const upsertTicket = async (customerId: number, ticket: Ticket) => {
   const { key, ...ticketFields } = ticket;
   const ticketDoc = firestore.doc(`customers/${customerId}/tickets/${key}`);
-  await ticketDoc.set(ticketFields, { merge: true });
+  await ticketDoc.set({ ...ticketFields, lastUpdatedTimestamp: Date.now() }, { merge: true });
 };

@@ -89,6 +89,7 @@ import {
 import { RoakitError } from '../utils/errorUtils';
 import { getAllPossibleActivityUserIds } from '../utils/identityUtils.server';
 import {
+  HEADER_HEIGHT,
   desktopDisplaySx,
   errorAlert,
   getSearchParam,
@@ -287,6 +288,8 @@ export default function UserActivity() {
                 return caseInsensitiveCompare(getLabelForKey(a.key), getLabelForKey(b.key));
               }
               if (sortActors === SortActorsBy.Total) {
+                if (!a.key) return 1;
+                if (!b.key) return -1;
                 return b.values.length - a.values.length;
               }
               if (sortActors === SortActorsBy.Effort) {
@@ -325,7 +328,7 @@ export default function UserActivity() {
   // load activities
   useEffect(() => {
     fetchActivities(dateFilter);
-  }, [dateFilter, fetchActivities]); // activitiesFetcher must be omitted
+  }, [dateFilter, fetchActivities]);
 
   useEffect(() => {
     if (fetchedActivity?.error?.status === 401) {
@@ -371,7 +374,7 @@ export default function UserActivity() {
         setTimeout(
           () =>
             window.scrollTo({
-              top: element.getBoundingClientRect().top + window.scrollY - 54,
+              top: element.getBoundingClientRect().top + window.scrollY - HEADER_HEIGHT - 3,
               behavior: 'smooth',
             }),
           0
@@ -829,7 +832,7 @@ export default function UserActivity() {
     : null;
 
   const filterBar = (
-    <Grid container columns={loaderData.userId !== ALL ? 4 : 3} spacing={2} alignItems="center">
+    <Grid container spacing={2} alignItems="center">
       {loaderData.userId !== ALL && <Grid>{actorHeader(loaderData.userId!)}</Grid>}
       <Grid flex={1} />
       <Grid>
@@ -949,16 +952,15 @@ export default function UserActivity() {
         }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
-      <Stack m={3}>
-        <Stack direction="row">
-          {navBar}
-          <Stack flex={1} minWidth={0}>
-            {filterBar}
-            {totalIndicator}
-            {gridsByContributor}
-            {gridsByLaunch}
-            {gridsUngrouped}
-          </Stack>
+
+      <Stack m={3} direction="row">
+        {navBar}
+        <Stack flex={1} minWidth={0}>
+          {filterBar}
+          {totalIndicator}
+          {gridsByContributor}
+          {gridsByLaunch}
+          {gridsUngrouped}
         </Stack>
       </Stack>
     </App>
