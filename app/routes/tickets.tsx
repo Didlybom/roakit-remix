@@ -1,13 +1,22 @@
+import { ZoomIn as ZoomInIcon } from '@mui/icons-material';
 import {
   Box,
   Divider,
   Unstable_Grid2 as Grid,
+  IconButton,
   Link,
   Snackbar,
   Stack,
+  Table,
+  TableCell,
+  TableRow,
   Typography,
 } from '@mui/material';
-import { type GridColDef, type GridSortDirection } from '@mui/x-data-grid';
+import {
+  type GridColDef,
+  type GridRenderCellParams,
+  type GridSortDirection,
+} from '@mui/x-data-grid';
 import {
   useActionData,
   useFetcher,
@@ -19,12 +28,16 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-r
 import { useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import App from '../components/App';
+import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
+import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import SearchField from '../components/SearchField';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
   dataGridCommonProps,
   dateColDef,
+  priorityColDef,
   StyledMuiError,
+  viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
 import {
@@ -35,6 +48,7 @@ import {
 import { identifyAccounts } from '../processors/activityIdentifier';
 import type { Ticket } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
+import { formatDayLocal } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import {
@@ -121,6 +135,8 @@ export default function LaunchItems() {
   const [scrollToGroup, setScrollToGroup] = useState<string | null | undefined>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [searchTerm] = useDebounce(searchFilter.trim().toLowerCase(), 50);
+  const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
+  const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
 
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
@@ -135,22 +151,22 @@ export default function LaunchItems() {
 
   useEffect(() => {
     if (fetchedTickets?.tickets) {
-      const tickets = fetchedTickets.tickets.map(t => ({
-        ...t,
-        spentHours:
-          t.effort ?
-            Object.values(t.effort)
-              .map(actors =>
-                actors ?
-                  Object.values(actors).reduce(
-                    (totalHours, hours) => (totalHours ?? 0) + (hours ?? 0),
-                    0
-                  )
-                : null
-              )
-              .reduce((totalHours, hours) => (totalHours ?? 0) + (hours ?? 0))
-          : null,
-      }));
+      const tickets = fetchedTickets.tickets.map(t => {
+        if (t.effort == null) return t;
+        const allActorHours = Object.values(t.effort)
+          .map(actors => {
+            if (!actors) return null;
+            const actorHours = Object.values(actors).filter(h => h != null);
+            if (actorHours.length === 0) return null;
+            return actorHours.reduce((totalHours, hours) => totalHours + hours, 0);
+          })
+          .filter(h => h != null);
+        if (allActorHours.length === 0) return t;
+        return {
+          ...t,
+          spentHours: allActorHours.reduce((totalHours, hours) => totalHours + hours, 0),
+        };
+      });
       const groupedTickets = groupByArray(tickets, 'launchItemId');
       setTickets(
         sortMap(groupedTickets, (a, b) => {
@@ -188,12 +204,85 @@ export default function LaunchItems() {
         minWidth: 100,
         valueGetter: value => (value ? new Date(value) : value),
       }),
-      { field: 'key', headerName: 'Key' },
+      {
+        field: 'key',
+        headerName: 'Key',
+        renderCell: (params: GridRenderCellParams<Ticket, string>) =>
+          loaderData.customerSettings?.ticketBaseUrl ?
+            <Link
+              tabIndex={params.tabIndex}
+              fontSize="small"
+              href={`${loaderData.customerSettings.ticketBaseUrl}${params.value}`}
+              target="_blank"
+              title="View ticket source"
+              sx={linkSx}
+            >
+              {params.value}
+            </Link>
+          : params.value,
+      },
       { field: 'summary', headerName: 'Summary', flex: 1 },
+      priorityColDef({ field: 'priority' }),
+      { field: 'status', headerName: 'Status' },
       { field: 'plannedHours', headerName: 'Planned Hours', editable: true },
-      { field: 'spentHours', headerName: 'Spent Hours' },
+      {
+        field: 'spentHours',
+        headerName: 'Spent Hours',
+        renderCell: (params: GridRenderCellParams<Ticket, number>) => {
+          const link =
+            params.value ?
+              <IconButton
+                onClick={
+                  params.row.effort ?
+                    e =>
+                      setPopover?.({
+                        element: e.currentTarget,
+                        content: (
+                          <Stack fontSize="small">
+                            {Object.entries(params.row.effort!).map(([date, actors]) =>
+                              actors ?
+                                <>
+                                  {<Box fontWeight={600}>{formatDayLocal(date)}</Box>}
+                                  {
+                                    <Table size="small" sx={{ mb: 2 }}>
+                                      {Object.entries(actors).map(([actorId, hours], i) => (
+                                        <TableRow
+                                          key={i}
+                                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                        >
+                                          <TableCell>
+                                            {loaderData.actors[actorId]?.name ?? 'Unknown'}
+                                          </TableCell>
+                                          <TableCell align="right">{hours}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </Table>
+                                  }
+                                </>
+                              : null
+                            )}
+                          </Stack>
+                        ),
+                      })
+                  : undefined
+                }
+              >
+                <ZoomInIcon fontSize="small" />
+              </IconButton>
+            : null;
+          return (
+            <Box alignItems="center">
+              {params.value}
+              {link}
+            </Box>
+          );
+        },
+      },
+      viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
+        setCodePopover({ element, content })
+      ),
     ],
-    []
+    [loaderData.actors, loaderData.customerSettings?.ticketBaseUrl]
   );
 
   const launchList = useMemo(() => {
@@ -352,6 +441,15 @@ export default function LaunchItems() {
         onClose={(_, reason) => (reason === 'clickaway' ? null : setConfirmation(''))}
         message={confirmation}
       />
+      <CodePopover
+        popover={codePopover}
+        onClose={() => setCodePopover(null)}
+        customerId={loaderData.customerId}
+        options={{
+          linkifyTicketKey: loaderData.email?.endsWith('@roakit.com'),
+        }}
+      />
+      <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
       <Stack m={3} direction="row">
         {navBar}
         <Stack flex={1} minWidth={0}>

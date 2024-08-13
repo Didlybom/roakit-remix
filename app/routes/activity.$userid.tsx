@@ -126,8 +126,7 @@ const userActivityRows = (
   accountMap: AccountToIdentityRecord
 ): Activity[] => {
   const rows: Activity[] = [];
-  Object.keys(snapshot).forEach(activityId => {
-    const activity = snapshot[activityId];
+  Object.entries(snapshot).forEach(([activityId, activity]) => {
     const row: Activity = {
       ...activity,
       actorId:
@@ -948,11 +947,10 @@ export default function UserActivity() {
         customerId={loaderData.customerId}
         options={{
           linkifyObjectId: true,
-          linkifyActivityId: loaderData.email?.endsWith('@roakit.com'),
+          linkifyActivityId: !!loaderData.email?.endsWith('@roakit.com'),
         }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
-
       <Stack m={3} direction="row">
         {navBar}
         <Stack flex={1} minWidth={0}>

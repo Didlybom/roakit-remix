@@ -1,13 +1,15 @@
 import { Close as CloseIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import { IconButton, Link, Popover, Stack, Typography, type PopoverReference } from '@mui/material';
 import { Link as RemixLink } from '@remix-run/react';
+import type { ReactNode } from 'react';
 import { LinkIt } from 'react-linkify-it';
-import type { Activity, Identity } from '../types/types';
+import type { Activity, Identity, Ticket } from '../types/types';
 import { formatJson, linkSx } from '../utils/jsxUtils';
 import theme from '../utils/theme';
 
 const ACTIVITYID_REGEXP = /(?<="activityId": ")(.*)(?=")/;
 const IDENTITYID_REGEXP = /(?<="identityId": ")(.*)(?=")/;
+const TICKETKEY_REGEXP = /(?<="ticketKey": ")(.*)(?=")/;
 const OBJECTID_REGEXP = /(?<="objectId": ")(.*)(?=")/;
 
 export interface CodePopoverContent {
@@ -25,11 +27,21 @@ export default function CodePopover({
   popover: CodePopoverContent | null;
   onClose: () => void;
   customerId?: number;
-  options?: { linkifyObjectId?: boolean; linkifyActivityId?: boolean; linkifyIdentityId?: boolean };
+  options?: {
+    linkifyObjectId?: boolean;
+    linkifyActivityId?: boolean;
+    linkifyIdentityId?: boolean;
+    linkifyTicketKey?: boolean;
+  };
   anchorReference?: PopoverReference;
 }) {
-  if (options?.linkifyActivityId && options?.linkifyIdentityId) {
-    throw Error('linkifyActivityId and linkifyIdentityId are mutually exclusive.');
+  if (
+    +(options?.linkifyActivityId ?? false) +
+      +(options?.linkifyIdentityId ?? false) +
+      +(options?.linkifyTicketKey ?? false) >
+    1
+  ) {
+    throw Error('linkify options are mutually exclusive.');
   }
   if (!popover?.content) {
     return null;
@@ -43,6 +55,9 @@ export default function CodePopover({
   } else if (options?.linkifyIdentityId) {
     const { id, hovered, ...content } = popover.content as Identity & { hovered: boolean };
     formattedContent = formatJson({ ...content, identityId: id });
+  } else if (options?.linkifyTicketKey) {
+    const { key, hovered, ...content } = popover.content as Ticket & { hovered: boolean };
+    formattedContent = formatJson({ ...content, ticketKey: key });
   } else {
     formattedContent = formatJson(popover.content);
   }
@@ -67,42 +82,56 @@ export default function CodePopover({
       </LinkIt>
     : formattedContent;
 
+  function LinkifyId({
+    url,
+    regex,
+    children,
+  }: {
+    url: string;
+    regex: RegExp;
+    children: ReactNode;
+  }) {
+    return (
+      <LinkIt
+        component={(firebaseId: string, key: number) => (
+          <Link key={key} sx={linkSx} href={`${url}/${firebaseId}`} target="_blank">
+            {firebaseId}
+          </Link>
+        )}
+        regex={regex}
+      >
+        {children}
+      </LinkIt>
+    );
+  }
+
   let formattedContentWithLinks;
   if (options?.linkifyActivityId) {
     formattedContentWithLinks = (
-      <LinkIt
-        component={(firebaseId: string, key: number) => (
-          <Link
-            key={key}
-            sx={linkSx}
-            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/${firebaseId}`}
-            target="_blank"
-          >
-            {firebaseId}
-          </Link>
-        )}
+      <LinkifyId
+        url={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/activities/`}
         regex={ACTIVITYID_REGEXP}
       >
         {formattedContentWithObjectIdLink}
-      </LinkIt>
+      </LinkifyId>
     );
   } else if (options?.linkifyIdentityId) {
     formattedContentWithLinks = (
-      <LinkIt
-        component={(firebaseId: string, key: number) => (
-          <Link
-            key={key}
-            sx={linkSx}
-            href={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/identities/${firebaseId}`}
-            target="_blank"
-          >
-            {firebaseId}
-          </Link>
-        )}
+      <LinkifyId
+        url={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/identities/`}
         regex={IDENTITYID_REGEXP}
       >
         {formattedContentWithObjectIdLink}
-      </LinkIt>
+      </LinkifyId>
+    );
+  } else if (options?.linkifyTicketKey) {
+    formattedContentWithLinks = (
+      <LinkifyId
+        url={`https://console.cloud.google.com/firestore/databases/-default-/data/panel/customers/${customerId}/tickets/`}
+        regex={TICKETKEY_REGEXP}
+      >
+        {formattedContentWithObjectIdLink}
+      </LinkifyId>
     );
   } else {
     formattedContentWithLinks = formattedContentWithObjectIdLink;

@@ -142,8 +142,7 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
     return { ...launchItemFields, actorCount: actorIds?.size ?? 0 };
   });
 
-  Object.keys(topActors).forEach(action => {
-    const actors = topActors[action];
+  Object.entries(topActors).forEach(([action, actors]) => {
     // sort top actors
     actors.sort((a, b) => (a.count < b.count ? 1 : -1));
     // keep top 10
@@ -197,11 +196,7 @@ export const groupActorActivities = (
       if (launchItemId) {
         launchItem = launchItems.find(i => i.launchItemId === launchItemId);
         if (launchItem == null) {
-          launchItem = {
-            launchItemId,
-            tickets: [],
-            effort: 0,
-          };
+          launchItem = { launchItemId, tickets: [], effort: 0 };
           launchItems.push(launchItem);
         }
 

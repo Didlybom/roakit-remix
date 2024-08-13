@@ -268,69 +268,69 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       await firestore
         .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
         .delete();
-      return { status: { code: 'deleted', message: 'Activity deleted' } };
+      response = { status: { code: 'deleted', message: 'Activity deleted' } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to delete activity') };
     }
-  }
-
-  // update activity
-  if (actionRequest.activityId) {
-    const activity = {
-      launchItemId: actionRequest.launchItemId,
-      phase: actionRequest.phase as Phase,
-      description: actionRequest.description,
-      priority: actionRequest.priority,
-      effort: actionRequest.effort,
-      ongoing: actionRequest.ongoing,
-    };
-    await firestore
-      .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
-      .update(activity);
-    if (actionRequest.ongoing) {
-      if (actionRequest.actorId !== identityId) {
-        // not creating an ongoing activity for self
-        // enforce it's for a report
-        const activityIdentity = await queryIdentity(sessionData.customerId!, {
-          identityId: actionRequest.actorId,
+  } else {
+    // update activity
+    if (actionRequest.activityId) {
+      const activity = {
+        launchItemId: actionRequest.launchItemId,
+        phase: actionRequest.phase as Phase,
+        description: actionRequest.description,
+        priority: actionRequest.priority,
+        effort: actionRequest.effort,
+        ongoing: actionRequest.ongoing,
+      };
+      await firestore
+        .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
+        .update(activity);
+      if (actionRequest.ongoing) {
+        if (actionRequest.actorId !== identityId) {
+          // not creating an ongoing activity for self
+          // enforce it's for a report
+          const activityIdentity = await queryIdentity(sessionData.customerId!, {
+            identityId: actionRequest.actorId,
+          });
+          if (activityIdentity.managerId !== identityId) {
+            return { error: 'Invalid contributor' };
+          }
+        }
+        const ongoingAdded = await upsertNextOngoingActivity(sessionData.customerId!, {
+          id: actionRequest.activityId,
+          ...activity,
+          actorId: actionRequest.actorId,
+          action: actionRequest.action,
+          artifact: actionRequest.artifact as Artifact,
+          createdTimestamp: actionRequest.createdTimestamp,
+          timestamp: actionRequest.createdTimestamp,
+          initiativeId: actionRequest.initiativeId,
+          eventType: actionRequest.eventType,
+          metadata: actionRequest.metadata,
         });
-        if (activityIdentity.managerId !== identityId) {
-          return { error: 'Invalid contributor' };
+        if (ongoingAdded) {
+          getLogger('route:status.user').info('Saved ongoing activity ' + ongoingAdded.id);
         }
       }
-      const ongoingAdded = await upsertNextOngoingActivity(sessionData.customerId!, {
-        id: actionRequest.activityId,
-        ...activity,
-        actorId: actionRequest.actorId,
-        action: actionRequest.action,
-        artifact: actionRequest.artifact as Artifact,
-        createdTimestamp: actionRequest.createdTimestamp,
-        timestamp: actionRequest.createdTimestamp,
-        initiativeId: actionRequest.initiativeId,
-        eventType: actionRequest.eventType,
-        metadata: actionRequest.metadata,
-      });
-      if (ongoingAdded) {
-        getLogger('route:status.user').info('Saved ongoing activity ' + ongoingAdded.id);
-      }
+      response = { status: { code: 'updated', message: 'Activity updated' } };
     }
-    response = { status: { code: 'updated', message: 'Activity updated' } };
-  }
 
-  // save new activity
-  if (actionRequest.newActivity) {
-    const newActivityId = await insertActivity(sessionData.customerId!, {
-      ...actionRequest.newActivity,
-      priority: actionRequest.newActivity.priority ?? -1,
-      eventType: CUSTOM_EVENT,
-      event: CUSTOM_EVENT,
-      actorAccountId: identityId,
-      identityId,
-      createdTimestamp: actionRequest.newActivity.timestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
-      initiative: '',
-    });
-    getLogger('route:status.user').info('Saved custom activity ' + newActivityId);
-    response = { status: { code: 'created', message: 'Activity created' } };
+    // save new activity
+    if (actionRequest.newActivity) {
+      const newActivityId = await insertActivity(sessionData.customerId!, {
+        ...actionRequest.newActivity,
+        priority: actionRequest.newActivity.priority ?? -1,
+        eventType: CUSTOM_EVENT,
+        event: CUSTOM_EVENT,
+        actorAccountId: identityId,
+        identityId,
+        createdTimestamp: actionRequest.newActivity.timestamp, // for now we filter fetch activities by created date, not event date (see fetchers.server.ts#fetchActivities)
+        initiative: '',
+      });
+      getLogger('route:status.user').info('Saved custom activity ' + newActivityId);
+      response = { status: { code: 'created', message: 'Activity created' } };
+    }
   }
 
   // update tickets
@@ -344,18 +344,12 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   // update launch item stats
   if (actionRequest.launchItemStats) {
-    if (
-      actionRequest.activityId &&
-      actionRequest.launchItemStats.length > 1 // single activity update
-    ) {
-      return { error: 'Invalid stats update' };
-    }
     await upsertLaunchItemIndividualCounters(
       sessionData.customerId!,
       identityId,
       actionRequest.day,
       actionRequest.launchItemStats,
-      actionRequest.activityId ? actionRequest.prevLaunchItemId : '*'
+      '*'
     );
   }
 
@@ -488,7 +482,7 @@ export default function Status() {
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
-        ticketKey: activityStats.tickets[0].key,
+        ticketKey: activityStats.tickets[0]?.key,
       });
     });
     setActivities(activityRows);
@@ -516,14 +510,11 @@ export default function Status() {
   const launchItemOptions = useMemo<SelectOption[]>(
     () => [
       { value: '', label: '[unset]' },
-      ...Object.keys(loaderData.launchItems).map(launchId => {
-        const launchItem = loaderData.launchItems[launchId];
-        return {
-          value: launchId,
-          label: `[${launchItem.key}] ${launchItem.label}`,
-          color: launchItem.color,
-        };
-      }),
+      ...Object.entries(loaderData.launchItems).map(([launchId, launchItem]) => ({
+        value: launchId,
+        label: `[${launchItem.key}] ${launchItem.label}`,
+        color: launchItem.color,
+      })),
     ],
     [loaderData.launchItems]
   );
@@ -531,9 +522,20 @@ export default function Status() {
   const handleDeleteClick = useCallback(
     (activityId: GridRowId) => {
       setActivities(activities => activities.filter(row => row.id !== activityId));
-      submit({ activityId }, deleteJsonOptions);
+      // FIXME update ticket effort when deleting activity
+      submit(
+        {
+          activityId,
+          day: formatYYYYMMDD(selectedDay),
+          launchItemStats:
+            groupActorActivities(
+              activities.filter(a => a.actorId === loaderData.identityId && a.id !== activityId)
+            ).launchItems ?? null,
+        },
+        deleteJsonOptions
+      );
     },
-    [submit]
+    [activities, loaderData.identityId, selectedDay, submit]
   );
 
   const columns = useMemo<GridColDef[]>(
@@ -619,6 +621,18 @@ export default function Status() {
             paramB
           ),
         editable: true,
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps<string>) => ({
+          ...params.props,
+          error:
+            params.props.value &&
+            activities.some(
+              a =>
+                a.id !== params.id &&
+                a.ticketKey === params.row.ticketKey &&
+                a.launchItemId &&
+                a.launchItemId !== params.props.value
+            ),
+        }),
         renderCell: params => (
           <Box height="100%" display="flex" alignItems="center">
             <EditableCellField
@@ -728,6 +742,7 @@ export default function Status() {
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.accountMap,
       loaderData.launchItems,
+      activities,
       confirm,
       handleDeleteClick,
     ]
@@ -753,11 +768,15 @@ export default function Status() {
           timestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
         },
         day: formatYYYYMMDD(selectedDay),
-        launchItemStats: groupActorActivities([newActivity]).launchItems ?? null,
+        launchItemStats:
+          groupActorActivities([
+            newActivity,
+            ...activities.filter(a => a.actorId === loaderData.identityId),
+          ]).launchItems ?? null,
       },
       postJsonOptions
     );
-  }, [isActivitySubmittable, newActivity, selectedDay, submit]);
+  }, [activities, isActivitySubmittable, loaderData.identityId, newActivity, selectedDay, submit]);
 
   let datePickerFormat = 'MMM Do';
   if (isTodaySelected) {
@@ -834,7 +853,7 @@ export default function Status() {
                   items={priorityOptions}
                 />
               </Grid>
-              {/* <Grid>
+              <Grid>
                 <TextField
                   autoComplete="off"
                   label="Hours"
@@ -848,7 +867,7 @@ export default function Status() {
                     (newActivity.effort < 0 || newActivity.effort > 24)
                   }
                 />
-              </Grid> */}
+              </Grid>
             </Grid>
           </Box>
           <TextField
@@ -1059,19 +1078,51 @@ export default function Status() {
                       activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
                     setActivities(updatedActivities);
-                    setGroupedActivities(
-                      groupActorActivities(
-                        updatedActivities.filter(a => a.actorId === loaderData.identityId)
-                      )
+                    const activitiesStats = groupActorActivities(
+                      updatedActivities.filter(a => a.actorId === loaderData.identityId)
                     );
+                    setGroupedActivities(activitiesStats);
                     let totalTicketEffort = null;
                     if (updatedRow.effort != null && updatedRow.ticketKey) {
                       totalTicketEffort = activities
-                        .filter(a => a.id !== updatedRow.id && a.ticketKey === updatedRow.ticketKey)
+                        .filter(
+                          a =>
+                            a.id !== updatedRow.id &&
+                            a.ticketKey === updatedRow.ticketKey &&
+                            a.effort != null
+                        )
                         .reduce(
-                          (totalEffort, activity) => totalEffort + (activity.effort ?? 0),
+                          (totalEffort, activity) => totalEffort + activity.effort!,
                           updatedRow.effort
                         );
+                    }
+                    if (updatedRow.effort == null && oldRow.effort != null) {
+                      const activityEfforts = activities.filter(
+                        a =>
+                          a.id !== updatedRow.id &&
+                          a.ticketKey === updatedRow.ticketKey &&
+                          a.effort != null
+                      );
+                      if (activityEfforts.length > 0) {
+                        totalTicketEffort = activityEfforts.reduce(
+                          (totalEffort, activity) => totalEffort + activity.effort!,
+                          0
+                        );
+                      }
+                    }
+                    let ticketLaunchItemId = updatedRow.launchItemId;
+                    if (!ticketLaunchItemId && oldRow.launchItemId != null) {
+                      // the ticket might still have the launch item in other activities (FIXME multiple launches per activity/ticket)
+                      if (
+                        activities.some(
+                          a =>
+                            a.id !== updatedRow.id &&
+                            a.launchItemId === oldRow.launchItemId &&
+                            a.ticketKey === updatedRow.ticketKey
+                        )
+                      ) {
+                        ticketLaunchItemId = oldRow.launchItemId;
+                      }
                     }
                     submit(
                       {
@@ -1093,12 +1144,12 @@ export default function Status() {
                           metadata: updatedRow.metadata,
                         }),
                         day: formatYYYYMMDD(selectedDay),
-                        launchItemStats: activityStats.launchItems ?? null,
+                        launchItemStats: activitiesStats.launchItems ?? null,
                         ticket:
                           activityStats.tickets.length ?
                             {
                               ...activityStats.tickets[0],
-                              launchItemId: updatedRow.launchItemId ?? null,
+                              launchItemId: ticketLaunchItemId ?? null,
                             }
                           : null,
                         totalTicketEffort,
@@ -1114,21 +1165,17 @@ export default function Status() {
             {!isMobile && (
               <HelperText>
                 {activities.length > 0 ?
-                  'Some cells editable by clicking on them. Hours will be aggregated by ticket. '
+                  'Some cells editable by clicking on them. Hours will be aggregated by ticket. Limited to one single launch item per ticket.'
                 : ''}
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
                 to go to previous/next day.
               </HelperText>
             )}
-            {
-              /*loaderData.isLocal &&*/ <Typography
-                component="pre"
-                fontSize="10px"
-                fontFamily="Roboto Mono, monospace"
-              >
+            {loaderData.isLocal && (
+              <Typography component="pre" fontSize="10px" fontFamily="Roboto Mono, monospace">
                 {formatJson(groupedActivities)}
               </Typography>
-            }
+            )}
           </Stack>
         </Grid>
       </Grid>

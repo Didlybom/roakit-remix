@@ -270,13 +270,10 @@ export default function ActivityReview() {
   const initiativeOptions = useMemo<SelectOption[]>(
     () => [
       { value: '', label: '[unset]' },
-      ...Object.keys(loaderData.initiatives).map(initiativeId => {
-        const initiative = loaderData.initiatives[initiativeId];
-        return {
-          value: initiativeId,
-          label: `[${initiative.key}] ${initiative.label}`,
-        };
-      }),
+      ...Object.entries(loaderData.initiatives).map(([initiativeId, initiative]) => ({
+        value: initiativeId,
+        label: `[${initiative.key}] ${initiative.label}`,
+      })),
     ],
     [loaderData.initiatives]
   );
@@ -411,9 +408,9 @@ export default function ActivityReview() {
                 onChange={e => setBulkInitiative(e.target.value)}
                 sx={{ minWidth: '250px' }}
               >
-                {Object.keys(loaderData.initiatives).map(initiativeId => (
+                {Object.entries(loaderData.initiatives).map(([initiativeId, initiative]) => (
                   <MenuItem key={initiativeId} value={initiativeId}>
-                    {`[${loaderData.initiatives[initiativeId].key}] ${loaderData.initiatives[initiativeId].label}`}
+                    {`[${initiative.key}] ${initiative.label}`}
                   </MenuItem>
                 ))}
               </Select>

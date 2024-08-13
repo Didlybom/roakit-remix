@@ -23,8 +23,7 @@ export const updateInitiativeCounters = async (
     artifact: Artifact;
     lastUpdated: number;
   }[] = [];
-  Object.keys(initiatives).forEach(initiativeId => {
-    const initiative = initiatives[initiativeId];
+  Object.entries(initiatives).forEach(([initiativeId, initiative]) => {
     if (initiative.countersLastUpdated! >= oneHourAgo) {
       return;
     }
@@ -57,8 +56,7 @@ export const updateInitiativeCounters = async (
     initiative.counters!.activities[flatCount.artifact] += flatCount.count;
   });
   void Promise.all(
-    Object.keys(initiatives).map(initiativeId => () => {
-      const initiative = initiatives[initiativeId];
+    Object.entries(initiatives).map(([initiativeId, initiative]) => () => {
       const initiativeDoc = firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`);
       void initiativeDoc.set(
         { counters: initiative.counters, countersLastUpdated: now },

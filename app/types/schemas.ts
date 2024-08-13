@@ -82,6 +82,7 @@ export const ticketSchema = z.object({
   id: z.string().optional(),
   summary: z.string().optional(),
   priority: z.number().optional(),
+  status: z.string().optional(),
   uri: z.string().optional(),
   project: z
     .object({ id: z.string(), key: z.string(), name: z.string(), uri: z.string().optional() })

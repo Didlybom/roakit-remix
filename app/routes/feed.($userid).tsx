@@ -278,9 +278,9 @@ export default function Feed() {
   const heightsRef = useRef<number[]>([]);
 
   let launchItemsByKey = new Map<string, Initiative>();
-  Object.keys(loaderData.launchItems).forEach(id => {
-    launchItemsByKey.set(loaderData.launchItems[id].key, { id, ...loaderData.launchItems[id] });
-  });
+  Object.entries(loaderData.launchItems).forEach(([id, launchItem]) =>
+    launchItemsByKey.set(launchItem.key, { id, ...launchItem })
+  );
   launchItemsByKey = new Map([...launchItemsByKey.entries()].sort());
 
   const loadMoreRows = () => {

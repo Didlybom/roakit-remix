@@ -4,6 +4,7 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
+  IconButton,
   Link,
   List,
   ListItem,
@@ -12,7 +13,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { GridActionsCellItem } from '@mui/x-data-grid';
 import type { ReactNode } from 'react';
 import { LinkItUrl } from 'react-linkify-it';
 import ConfluenceIcon from '../icons/Confluence';
@@ -180,16 +180,10 @@ export default function ActivityCard({
   }
   const link =
     url && icon ?
-      <Box display="flex" alignItems="center" mr="4px" ml="-4px">
-        <GridActionsCellItem
-          tabIndex={tabIndex}
-          icon={icon}
-          label={urlTitle}
-          // @ts-expect-error weird compile error with href
-          href={url.url}
-          title={urlTitle}
-          target="_blank"
-        />
+      <Box display="flex" alignItems="center" ml="-4px">
+        <IconButton tabIndex={tabIndex} href={url.url} title={urlTitle} target="_blank">
+          {icon}
+        </IconButton>
       </Box>
     : null;
 
@@ -204,7 +198,7 @@ export default function ActivityCard({
     <Stack direction="row" width="100%">
       {link}
       {!link && icon && (
-        <Box display="flex" alignItems="center" mr="7px">
+        <Box display="flex" alignItems="center" mr="4px" ml="3px">
           {icon}
         </Box>
       )}
@@ -258,7 +252,7 @@ export default function ActivityCard({
             <Box>
               <Link
                 fontSize={format === 'Grid' ? 'smaller' : 'small'}
-                onClick={e => {
+                onClick={e =>
                   setPopover?.(
                     e.currentTarget,
                     <List dense={true} disablePadding>
@@ -273,8 +267,8 @@ export default function ActivityCard({
                         </ListItem>
                       ))}
                     </List>
-                  );
-                }}
+                  )
+                }
                 sx={{ lineHeight: 1.5, ...linkSx }}
               >
                 {`and ${commits.length - 1} more ${pluralizeMemo('commit', commits.length - 1)}`}

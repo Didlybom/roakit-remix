@@ -86,10 +86,10 @@ export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) 
     return compiledExpressions;
   }
   compiledExpressions[type] = {};
-  Object.keys(map).forEach(initiativeId => {
-    if (map[initiativeId].activityMapper) {
+  Object.entries(map).forEach(([initiativeId, initiative]) => {
+    if (initiative.activityMapper) {
       compiledExpressions[type][initiativeId] = compileExpression(
-        map[initiativeId].activityMapper,
+        initiative.activityMapper,
         // @ts-expect-error no need to overwrite all Operators
         options
       );
@@ -104,13 +104,13 @@ export const mapActivity = (activity: Activity | Omit<Activity, 'id'>) => {
 
   // Note: Filtrex returns an error as a string (so, not === true) when something goes wrong.
   //       It doesn't throw.
-  Object.keys(compiledExpressions[MapperType.Initiative]).forEach(id => {
-    if (compiledExpressions[MapperType.Initiative][id](activity) === true) {
+  Object.entries(compiledExpressions[MapperType.Initiative]).forEach(([id, compiledExpression]) => {
+    if (compiledExpression(activity) === true) {
       initiatives.push(id);
     }
   });
-  Object.keys(compiledExpressions[MapperType.LaunchItem]).forEach(id => {
-    if (compiledExpressions[MapperType.LaunchItem][id](activity) === true) {
+  Object.entries(compiledExpressions[MapperType.LaunchItem]).forEach(([id, compiledExpression]) => {
+    if (compiledExpression(activity) === true) {
       launchItems.push(id);
     }
   });

@@ -207,7 +207,9 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
 export const fetchInitiatives = async (customerId: number): Promise<Initiative[]> => {
   const initiatives: Initiative[] = [];
   const initiativeMap = await fetchInitiativeMap(customerId);
-  Object.keys(initiativeMap).forEach(id => initiatives.push({ ...initiativeMap[id], id }));
+  Object.entries(initiativeMap).forEach(([id, initiative]) =>
+    initiatives.push({ ...initiative, id })
+  );
   return initiatives.sort((a, b) => a.key.localeCompare(b.key));
 };
 
@@ -272,7 +274,9 @@ export const fetchLaunchItemMap = async (customerId: number): Promise<Initiative
 export const fetchLaunchItems = async (customerId: number): Promise<Initiative[]> => {
   const launchItems: Initiative[] = [];
   const launchItemMap = await fetchLaunchItemMap(customerId);
-  Object.keys(launchItemMap).forEach(id => launchItems.push({ ...launchItemMap[id], id }));
+  Object.entries(launchItemMap).forEach(([id, launchItem]) =>
+    launchItems.push({ ...launchItem, id })
+  );
   return launchItems.sort((a, b) => a.key.localeCompare(b.key));
 };
 

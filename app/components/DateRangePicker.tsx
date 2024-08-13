@@ -104,15 +104,15 @@ export default function DateRangePicker({
         {dateRangeLabels[dateRange]}
       </Button>
       <Menu open={!!menuEl} anchorEl={menuEl} onClose={() => setMenuEl(null)} sx={{ color }}>
-        {(Object.keys(dateRangeLabels) as DateRange[]).map((rangeOption, i) => (
+        {Object.entries(dateRangeLabels).map(([rangeOption, rangeLabel], i) => (
           <MenuItem
             key={i}
             value={rangeOption}
             selected={rangeOption === range}
-            onClick={() => handleDateRangeClick(rangeOption)}
+            onClick={() => handleDateRangeClick(rangeOption as DateRange)}
           >
-            <ListItemIcon>{icons[rangeOption]}</ListItemIcon>
-            <ListItemText>{dateRangeLabels[rangeOption]}</ListItemText>
+            <ListItemIcon>{icons[rangeOption as DateRange]}</ListItemIcon>
+            <ListItemText>{rangeLabel}</ListItemText>
           </MenuItem>
         ))}
       </Menu>

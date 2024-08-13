@@ -21,45 +21,37 @@ export default function TicketsByInitiative({
   if (!initiatives || !stats.launches) {
     return null;
   }
-  return Object.keys(stats.launches).map(initiativeId => {
-    const initiative = stats.launches![initiativeId];
-    return (
-      <Grid key={initiativeId}>
-        <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle(initiatives[initiativeId]?.label ?? 'Unknown')}
-          <BarChart
-            series={[
-              {
-                id: `${initiativeId} tickets`,
-                data: [
-                  initiative.new,
-                  initiative.ongoing,
-                  initiative.blocked,
-                  initiative.completed,
-                ],
-                valueFormatter: value => `${value} ${pluralizeMemo('ticket', value ?? 0)}`,
-                label: dateRangeLabel,
-                stack: 'stack',
-                color: initiatives[initiativeId]?.color || undefined,
-              },
-            ]}
-            xAxis={[
-              {
-                data: ['New', 'In progress', 'Blocked', 'Completed'],
-                scaleType: 'band',
-                tickLabelStyle: { angle: -45, textAnchor: 'end' },
-                tickMinStep: 1,
-                tickMaxStep: 1,
-              },
-            ]}
-            yAxis={[{ tickMinStep: 1 }]}
-            {...widgetSize}
-            margin={{ bottom: 60 }}
-            slotProps={{ legend: { hidden: true } }}
-            colors={pastelColors}
-          />
-        </Paper>
-      </Grid>
-    );
-  });
+  return Object.entries(stats.launches).map(([initiativeId, initiative]) => (
+    <Grid key={initiativeId}>
+      <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
+        {widgetTitle(initiatives[initiativeId]?.label ?? 'Unknown')}
+        <BarChart
+          series={[
+            {
+              id: `${initiativeId} tickets`,
+              data: [initiative.new, initiative.ongoing, initiative.blocked, initiative.completed],
+              valueFormatter: value => `${value} ${pluralizeMemo('ticket', value ?? 0)}`,
+              label: dateRangeLabel,
+              stack: 'stack',
+              color: initiatives[initiativeId]?.color || undefined,
+            },
+          ]}
+          xAxis={[
+            {
+              data: ['New', 'In progress', 'Blocked', 'Completed'],
+              scaleType: 'band',
+              tickLabelStyle: { angle: -45, textAnchor: 'end' },
+              tickMinStep: 1,
+              tickMaxStep: 1,
+            },
+          ]}
+          yAxis={[{ tickMinStep: 1 }]}
+          {...widgetSize}
+          margin={{ bottom: 60 }}
+          slotProps={{ legend: { hidden: true } }}
+          colors={pastelColors}
+        />
+      </Paper>
+    </Grid>
+  ));
 }
