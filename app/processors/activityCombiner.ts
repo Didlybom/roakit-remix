@@ -203,7 +203,10 @@ export const combineAndPushActivity = (newActivity: Activity, sortedActivities: 
       a =>
         isMatching(a, newActivity) &&
         a.metadata?.page &&
-        a.metadata.page.id === newActivity.metadata?.page?.id
+        a.metadata.page.spaceKey === newActivity.metadata?.page?.spaceKey &&
+        (a.metadata.page.id === newActivity.metadata?.page?.id ||
+          a.metadata.page.title === newActivity.metadata?.page?.title)
+      // when editing a draft, the id changes
     );
     if (indexPageActivity >= 0) {
       const foundActivity = sortedActivities[indexPageActivity];
