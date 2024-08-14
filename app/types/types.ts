@@ -225,7 +225,7 @@ export type PhaseCounts = {
 };
 
 export type InitiativeTicketStats = {
-  effort: number;
+  effort?: number;
   tickets: Ticket[];
 };
 

@@ -31,7 +31,7 @@ type InitiativeWithCounts = {
   effort: number;
 };
 
-type LaunchItemWithTicketStats = {
+export type LaunchItemWithTicketStats = {
   launchItemId: string;
 } & InitiativeTicketStats;
 
@@ -196,7 +196,7 @@ export const groupActorActivities = (
       if (launchItemId) {
         launchItem = launchItems.find(i => i.launchItemId === launchItemId);
         if (launchItem == null) {
-          launchItem = { launchItemId, tickets: [], effort: 0 };
+          launchItem = { launchItemId, tickets: [] };
           launchItems.push(launchItem);
         }
 
@@ -208,7 +208,10 @@ export const groupActorActivities = (
           }
           ticket.status = ticketStatus; // if same ticket appears in multiple activities, latest status wins
         }
-        launchItem.effort += activity.effort ?? 0;
+        if (activity.effort != null) {
+          if (launchItem.effort == null) launchItem.effort = 0;
+          launchItem.effort += activity.effort;
+        }
       }
     });
 

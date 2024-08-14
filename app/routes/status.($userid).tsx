@@ -88,7 +88,11 @@ import {
 } from '../firestore.server/updaters.server';
 import { getActivityDescription } from '../processors/activityDescription';
 import { findFirstTicket } from '../processors/activityFeed';
-import { groupActorActivities, type GroupedActorActivities } from '../processors/activityGrouper';
+import {
+  groupActorActivities,
+  type GroupedActorActivities,
+  type LaunchItemWithTicketStats,
+} from '../processors/activityGrouper';
 import { identifyAccounts } from '../processors/activityIdentifier';
 import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
 import {
@@ -98,7 +102,7 @@ import {
   type Activity,
   type ActivityMetadata,
   type Artifact,
-  type InitiativeTicketStats,
+  type Identity,
   type Phase,
   type Ticket,
 } from '../types/types';
@@ -235,8 +239,7 @@ interface ActionRequest {
   newActivity?: NewActivity;
 
   // launch item stats
-  launchItemStats?: (InitiativeTicketStats & { launchItemId: string })[];
-  prevLaunchItemId?: string;
+  launchItemStats?: Record<Identity['id'], LaunchItemWithTicketStats[]>;
 
   // ticket stats
   totalTicketEffort: number | null;
@@ -344,17 +347,23 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   // update launch item stats
   if (actionRequest.launchItemStats) {
-    await upsertLaunchItemIndividualCounters(
-      sessionData.customerId!,
-      identityId,
-      actionRequest.day,
-      actionRequest.launchItemStats,
-      '*'
+    // FIXME ensure users are legit owner or reports
+    await Promise.all(
+      Object.entries(actionRequest.launchItemStats).map(([identityId, launchItemStats]) =>
+        upsertLaunchItemIndividualCounters(
+          sessionData.customerId!,
+          identityId,
+          actionRequest.day,
+          launchItemStats,
+          '*'
+        )
+      )
     );
   }
 
   return response;
 };
+
 const artifactOptions: SelectOption[] = [
   { value: 'task', label: 'Task' },
   { value: 'taskOrg', label: 'Task Organization' },
@@ -365,12 +374,12 @@ const artifactOptions: SelectOption[] = [
 ];
 
 const phaseOptions: SelectOption[] = [
-  { value: '', label: '[unset]' },
+  { value: '', label: 'None', color: theme.palette.grey[500] },
   ...[...PHASES.entries()].map(([phaseId, phase]) => ({ value: phaseId, label: phase.label })),
 ];
 
 const priorityOptions: SelectOption[] = [
-  { value: '-1', label: '[unset]' },
+  { value: '', label: 'None', color: theme.palette.grey[500] },
   ...[1, 2, 3, 4, 5].map(i => ({
     value: `${i}`,
     label: priorityLabels[i],
@@ -389,7 +398,10 @@ export default function Status() {
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
-  const [groupedActivities, setGroupedActivities] = useState<GroupedActorActivities | null>(null);
+  const [groupedActivities, setGroupedActivities] = useState<Record<
+    Identity['id'],
+    GroupedActorActivities
+  > | null>(null);
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [selectedDay, setSelectedDay] = useState<Dayjs>(
@@ -423,31 +435,29 @@ export default function Status() {
   useHotkeys('[', previousDay);
   useHotkeys(']', nextDay);
 
-  const updateStats = useCallback(
-    (activities: Activity[]) => {
-      const groupedActivities = groupActorActivities(
-        activities.filter(a => a.actorId === loaderData.identityId)
+  const updateStats = useCallback((activities: Activity[]) => {
+    const groupedActivities: Record<Identity['id'], GroupedActorActivities> = {};
+    const launchItemStats: Record<Identity['id'], LaunchItemWithTicketStats[]> = {};
+    [...new Set(activities.map(a => a.actorId))].forEach(identityId => {
+      groupedActivities[identityId!] = groupActorActivities(
+        activities.filter(a => a.actorId === identityId)
       );
-      setGroupedActivities(groupedActivities);
-      submit(
-        {
-          day: formatYYYYMMDD(selectedDay),
-          launchItemStats: groupedActivities.launchItems ?? null,
-        },
-        postJsonOptions
-      );
-    },
-    [loaderData.identityId, selectedDay, submit]
-  );
+      if (identityId && groupedActivities[identityId].launchItems) {
+        launchItemStats[identityId] = groupedActivities[identityId].launchItems;
+      }
+    });
+    setGroupedActivities(groupedActivities);
+    return launchItemStats;
+  }, []);
 
   useEffect(() => {
     // compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
     compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
   }, [loaderData.launchItems]);
 
-  // load activities for the selected day
+  // (re)load activities for the selected day
   useEffect(() => {
-    if (actionData?.status?.code === 'updated' || actionData?.status?.code === 'deleted') {
+    if (actionData?.status?.code === 'deleted' || actionData?.status?.code === 'updated') {
       return;
     }
     if (!isValidDate(selectedDay)) {
@@ -461,6 +471,7 @@ export default function Status() {
   }, [selectedDay, showTeam, groupFilter, actionData?.status]); // activitiesFetcher and loaderData must be omitted
 
   // handle fetched activities
+  // note that posting/editing/deleting relies on this to run after action.status comes back changed (see activitiesFetcher effect above)
   useEffect(() => {
     if (!fetchedActivities?.activities) {
       return;
@@ -486,8 +497,15 @@ export default function Status() {
       });
     });
     setActivities(activityRows);
-    updateStats(activityRows);
-  }, [fetchedActivities?.activities, loaderData.accountMap, updateStats]);
+    const launchItemStats = updateStats(activityRows);
+    submit(
+      {
+        day: formatYYYYMMDD(selectedDay),
+        launchItemStats: launchItemStats ?? null,
+      },
+      postJsonOptions
+    );
+  }, [fetchedActivities?.activities, loaderData.accountMap, selectedDay, submit, updateStats]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -509,7 +527,7 @@ export default function Status() {
 
   const launchItemOptions = useMemo<SelectOption[]>(
     () => [
-      { value: '', label: '[unset]' },
+      { value: '', label: 'None', color: theme.palette.grey[500] },
       ...Object.entries(loaderData.launchItems).map(([launchId, launchItem]) => ({
         value: launchId,
         label: `[${launchItem.key}] ${launchItem.label}`,
@@ -519,23 +537,50 @@ export default function Status() {
     [loaderData.launchItems]
   );
 
+  const isActivitySubmittable = useCallback(
+    () =>
+      newActivity.action &&
+      newActivity.artifact &&
+      newActivity.description.trim() &&
+      (newActivity.effort ?? 0) <= 24 &&
+      (newActivity.effort ?? 0) >= 0,
+    [newActivity.action, newActivity.artifact, newActivity.description, newActivity.effort]
+  );
+
+  const handleSubmitNewActivity = useCallback(() => {
+    if (!isActivitySubmittable) return;
+    const timestamp = isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf();
+    const activity = {
+      ...newActivity,
+      timestamp,
+      createdTimestamp: timestamp,
+      id: '',
+      initiativeId: '',
+    };
+    const launchItemStats = updateStats([activity, ...activities]);
+    setShowNewDialog(false);
+    submit(
+      { newActivity: activity, day: formatYYYYMMDD(selectedDay), launchItemStats },
+      postJsonOptions
+    );
+  }, [activities, isActivitySubmittable, newActivity, selectedDay, submit, updateStats]);
+
   const handleDeleteClick = useCallback(
-    (activityId: GridRowId) => {
-      setActivities(activities => activities.filter(row => row.id !== activityId));
+    (activityId: GridRowId, activities: Activity[]) => {
+      const updatedActivities = activities.filter(row => row.id !== activityId);
+      const launchItemStats = updateStats(updatedActivities);
+      setActivities(updatedActivities);
       // FIXME update ticket effort when deleting activity
       submit(
         {
           activityId,
           day: formatYYYYMMDD(selectedDay),
-          launchItemStats:
-            groupActorActivities(
-              activities.filter(a => a.actorId === loaderData.identityId && a.id !== activityId)
-            ).launchItems ?? null,
+          launchItemStats,
         },
         deleteJsonOptions
       );
     },
-    [activities, loaderData.identityId, selectedDay, submit]
+    [selectedDay, submit, updateStats]
   );
 
   const columns = useMemo<GridColDef[]>(
@@ -625,13 +670,16 @@ export default function Status() {
           ...params.props,
           error:
             params.props.value &&
-            activities.some(
-              a =>
-                a.id !== params.id &&
-                a.ticketKey === params.row.ticketKey &&
-                a.launchItemId &&
-                a.launchItemId !== params.props.value
-            ),
+            params.row.ticketKey &&
+            gridApiRef.current
+              .getSortedRows()
+              .some(
+                a =>
+                  a.id !== params.row.id &&
+                  a.ticketKey === params.row.ticketKey &&
+                  a.launchItemId &&
+                  a.launchItemId !== params.props.value
+              ),
         }),
         renderCell: params => (
           <Box height="100%" display="flex" alignItems="center">
@@ -722,7 +770,7 @@ export default function Status() {
                           `Delete the activity "${params.row.description}"?`
                         : 'Delete the activity?',
                     });
-                    handleDeleteClick(params.id);
+                    handleDeleteClick(params.id, gridApiRef.current.getSortedRows() as Activity[]);
                   } catch {
                     /* user cancelled */
                   }
@@ -742,41 +790,11 @@ export default function Status() {
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.accountMap,
       loaderData.launchItems,
-      activities,
+      gridApiRef,
       confirm,
       handleDeleteClick,
     ]
   );
-
-  const isActivitySubmittable = useCallback(
-    () =>
-      newActivity.action &&
-      newActivity.artifact &&
-      newActivity.description.trim() &&
-      (newActivity.effort ?? 0) <= 24 &&
-      (newActivity.effort ?? 0) >= 0,
-    [newActivity.action, newActivity.artifact, newActivity.description, newActivity.effort]
-  );
-
-  const handleSubmitNewActivity = useCallback(() => {
-    if (!isActivitySubmittable) return;
-    setShowNewDialog(false);
-    submit(
-      {
-        newActivity: {
-          ...newActivity,
-          timestamp: isToday(selectedDay) ? Date.now() : selectedDay.endOf('day').valueOf(),
-        },
-        day: formatYYYYMMDD(selectedDay),
-        launchItemStats:
-          groupActorActivities([
-            newActivity,
-            ...activities.filter(a => a.actorId === loaderData.identityId),
-          ]).launchItems ?? null,
-      },
-      postJsonOptions
-    );
-  }, [activities, isActivitySubmittable, loaderData.identityId, newActivity, selectedDay, submit]);
 
   let datePickerFormat = 'MMM Do';
   if (isTodaySelected) {
@@ -845,9 +863,9 @@ export default function Status() {
               </Grid>
               <Grid>
                 <SelectField
-                  value={`${newActivity.priority ?? ''}`}
+                  value={`${!newActivity.priority || newActivity.priority == -1 ? '' : newActivity.priority}`}
                   onChange={priority =>
-                    setNewActivity({ ...newActivity, priority: +priority ?? null })
+                    setNewActivity({ ...newActivity, priority: +priority ?? -1 })
                   }
                   label="Priority"
                   items={priorityOptions}
@@ -1031,25 +1049,18 @@ export default function Status() {
                 rowHeight={50}
                 slotProps={{
                   row: {
-                    onMouseEnter: e => {
-                      const activityId = e.currentTarget.getAttribute('data-id');
-                      if (
-                        activities.find(a => a.id === activityId)?.actorId === loaderData.identityId
-                      ) {
-                        setActivities(
-                          activities.map(activity => ({
-                            ...activity,
-                            hovered: activity.id === activityId,
-                          }))
-                        );
-                      }
-                    },
+                    onMouseEnter: e =>
+                      setActivities(
+                        activities.map(activity => ({
+                          ...activity,
+                          hovered: activity.id === e.currentTarget.getAttribute('data-id'),
+                        }))
+                      ),
                     onMouseLeave: () =>
                       setActivities(activities.map(activity => ({ ...activity, hovered: false }))),
                   },
                 }}
                 isCellEditable={(params: GridCellParams<Activity>) => {
-                  if (params.row.actorId !== loaderData.identityId) return false;
                   if (
                     params.field === 'launchItemId' ||
                     params.field === 'phase' ||
@@ -1073,15 +1084,12 @@ export default function Status() {
                     updatedRow.ongoing != oldRow.ongoing
                   ) {
                     const activityStats = groupActorActivities([updatedRow]);
-                    updatedRow.ticketKey = activityStats.tickets[0].key;
+                    updatedRow.ticketKey = activityStats.tickets[0]?.key;
                     const updatedActivities = activities.map(activity =>
                       activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
                     setActivities(updatedActivities);
-                    const activitiesStats = groupActorActivities(
-                      updatedActivities.filter(a => a.actorId === loaderData.identityId)
-                    );
-                    setGroupedActivities(activitiesStats);
+                    const launchItemStats = updateStats(updatedActivities);
                     let totalTicketEffort = null;
                     if (updatedRow.effort != null && updatedRow.ticketKey) {
                       totalTicketEffort = activities
@@ -1144,7 +1152,7 @@ export default function Status() {
                           metadata: updatedRow.metadata,
                         }),
                         day: formatYYYYMMDD(selectedDay),
-                        launchItemStats: activitiesStats.launchItems ?? null,
+                        launchItemStats,
                         ticket:
                           activityStats.tickets.length ?
                             {
@@ -1153,19 +1161,24 @@ export default function Status() {
                             }
                           : null,
                         totalTicketEffort,
-                        prevLaunchItemId: oldRow.launchItemId ?? null,
                       },
                       postJsonOptions
                     );
                   }
                   return updatedRow;
                 }}
+                onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save status'))}
               />
             </StyledMuiError>
             {!isMobile && (
               <HelperText>
                 {activities.length > 0 ?
-                  'Some cells editable by clicking on them. Hours will be aggregated by ticket. Limited to one single launch item per ticket.'
+                  <>
+                    {
+                      'Some cells editable by clicking on them. Hours will be aggregated by ticket. Limited to one single launch item per ticket.'
+                    }
+                    <br />
+                  </>
                 : ''}
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
                 to go to previous/next day.
