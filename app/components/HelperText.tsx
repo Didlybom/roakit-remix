@@ -1,4 +1,5 @@
-import { Box, Typography, type SxProps } from '@mui/material';
+import { Info as InfoIcon } from '@mui/icons-material';
+import { Box, Stack, Typography, type SxProps } from '@mui/material';
 import type { ReactNode } from 'react';
 import theme from '../utils/theme';
 
@@ -8,7 +9,6 @@ export default function HelperText({ children, sx }: { children: ReactNode; sx?:
       variant="caption"
       fontStyle="italic"
       display="flex"
-      justifyContent="center"
       color={theme.palette.grey[400]}
       sx={{
         code: {
@@ -20,11 +20,13 @@ export default function HelperText({ children, sx }: { children: ReactNode; sx?:
           mt: '-2px',
           mx: '1px',
         },
-        justifyContent: 'center',
         ...sx,
       }}
     >
-      <Box>{children}</Box>
+      <Stack direction="row" spacing="4px">
+        <InfoIcon sx={{ width: 18, height: 18 }} />
+        <Box>{children}</Box>
+      </Stack>
     </Typography>
   );
 }

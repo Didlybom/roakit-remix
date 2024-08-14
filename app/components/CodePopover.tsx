@@ -153,10 +153,10 @@ export default function CodePopover({
     >
       <Stack direction="row" mr={1} mt={1} mb={-3} display="flex" justifyContent="end">
         <IconButton onClick={() => void navigator.clipboard.writeText(formattedContent)}>
-          <CopyIcon />
+          <CopyIcon fontSize="small" />
         </IconButton>
         <IconButton onClick={onClose}>
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </Stack>
       <Typography

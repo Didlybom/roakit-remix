@@ -40,7 +40,7 @@ export default function BoxPopover({
         {showClose && (
           <Box mr={1} mt={1} mb={-2} display="flex" justifyContent="end">
             <IconButton onClick={onClose}>
-              <CloseIcon />
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         )}

@@ -31,7 +31,7 @@ export default function SelectField({
           <MenuItem
             key={i}
             value={item.value}
-            sx={{ color: item.value ? item.color : theme.palette.grey[400] }}
+            sx={{ fontSize: 'small', color: item.value ? item.color : theme.palette.grey[400] }}
           >
             {item.label}
           </MenuItem>

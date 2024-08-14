@@ -30,6 +30,7 @@ import { useDebounce } from 'use-debounce';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
+import HelperText from '../components/HelperText';
 import SearchField from '../components/SearchField';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
@@ -46,7 +47,7 @@ import {
   fetchLaunchItemMap,
 } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import type { Ticket } from '../types/types';
+import type { ActorRecord, Ticket } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
@@ -62,7 +63,6 @@ import {
 import { getLogger } from '../utils/loggerUtils.server';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
-import { removeSpaces } from '../utils/stringUtils';
 import theme from '../utils/theme';
 import type { TicketsResponse } from './fetcher.tickets';
 
@@ -124,6 +124,32 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   }
 };
 
+function SpentHours({ effort, actorMap }: { effort: Ticket['effort']; actorMap: ActorRecord }) {
+  if (!effort) return null;
+  return (
+    <Stack fontSize="small" mt={2}>
+      {Object.entries(effort)
+        .filter(([, actors]) => actors)
+        .sort(([date1], [date2]) => +date2 - +date1)
+        .map(([date, actors]) => (
+          <>
+            <Box fontWeight={600}>{formatDayLocal(date)}</Box>
+            <Table size="small" sx={{ mb: 2 }}>
+              {Object.entries(actors!)
+                .sort(([, hours1], [, hours2]) => (hours2 ?? 0) - (hours1 ?? 0))
+                .map(([actorId, hours], i) => (
+                  <TableRow key={i} sx={{ '&:last-child td': { border: 0 } }}>
+                    <TableCell>{actorMap[actorId]?.name ?? 'Unknown'}</TableCell>
+                    <TableCell align="right">{hours}</TableCell>
+                  </TableRow>
+                ))}
+            </Table>
+          </>
+        ))}
+    </Stack>
+  );
+}
+
 export default function LaunchItems() {
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
@@ -141,7 +167,7 @@ export default function LaunchItems() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
 
-  const groupElementId = (id: string) => `GROUP-${id ? removeSpaces(id) : id}`;
+  const launchElementId = (id: string) => `LAUNCH-${id}`;
 
   // load tickets
   useEffect(() => {
@@ -181,7 +207,7 @@ export default function LaunchItems() {
   // Auto scrollers
   useEffect(() => {
     if (scrollToGroup != null) {
-      const element = document.getElementById(groupElementId(scrollToGroup));
+      const element = document.getElementById(launchElementId(scrollToGroup));
       setScrollToGroup(null);
       if (element) {
         setTimeout(
@@ -224,59 +250,34 @@ export default function LaunchItems() {
       { field: 'summary', headerName: 'Summary', flex: 1 },
       priorityColDef({ field: 'priority' }),
       { field: 'status', headerName: 'Status' },
-      { field: 'plannedHours', headerName: 'Planned Hours', editable: true },
+      {
+        field: 'plannedHours',
+        headerName: 'Planned Hours',
+        editable: true,
+        renderCell: params => <Box sx={{ cursor: 'pointer' }}>{params.value ?? '…'}</Box>,
+      },
       {
         field: 'spentHours',
         headerName: 'Spent Hours',
-        renderCell: (params: GridRenderCellParams<Ticket, number>) => {
-          const link =
-            params.value ?
+        renderCell: (params: GridRenderCellParams<Ticket, number>) => (
+          <Box alignItems="center">
+            {params.value}
+            {params.value && params.row.effort && (
               <IconButton
-                onClick={
-                  params.row.effort ?
-                    e =>
-                      setPopover?.({
-                        element: e.currentTarget,
-                        content: (
-                          <Stack fontSize="small">
-                            {Object.entries(params.row.effort!).map(([date, actors]) =>
-                              actors ?
-                                <>
-                                  {<Box fontWeight={600}>{formatDayLocal(date)}</Box>}
-                                  {
-                                    <Table size="small" sx={{ mb: 2 }}>
-                                      {Object.entries(actors).map(([actorId, hours], i) => (
-                                        <TableRow
-                                          key={i}
-                                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                        >
-                                          <TableCell>
-                                            {loaderData.actors[actorId]?.name ?? 'Unknown'}
-                                          </TableCell>
-                                          <TableCell align="right">{hours}</TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </Table>
-                                  }
-                                </>
-                              : null
-                            )}
-                          </Stack>
-                        ),
-                      })
-                  : undefined
+                onClick={e =>
+                  setPopover?.({
+                    element: e.currentTarget,
+                    content: (
+                      <SpentHours effort={params.row.effort!} actorMap={loaderData.actors!} />
+                    ),
+                  })
                 }
               >
                 <ZoomInIcon fontSize="small" />
               </IconButton>
-            : null;
-          return (
-            <Box alignItems="center">
-              {params.value}
-              {link}
-            </Box>
-          );
-        },
+            )}
+          </Box>
+        ),
       },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
         setCodePopover({ element, content })
@@ -318,7 +319,7 @@ export default function LaunchItems() {
   }, [loaderData.launchItems, tickets]);
 
   const navBar = (
-    <Box mr={2} sx={desktopDisplaySx}>
+    <Box mr={3} sx={desktopDisplaySx}>
       <Box sx={{ position: 'relative' }}>
         <Box fontSize="small" color={theme.palette.grey[700]} sx={verticalStickyBarSx}>
           {launchList}
@@ -328,7 +329,12 @@ export default function LaunchItems() {
   );
 
   const filterBar = (
-    <Grid container spacing={2} alignItems="center">
+    <Grid container spacing={2} alignItems="center" mb={1}>
+      <Grid>
+        <HelperText>
+          You can use this page to fill out <b>Planned Hours</b>.
+        </HelperText>
+      </Grid>
       <Grid flex={1} />
       <Grid>
         <Grid container spacing={3}>
@@ -368,7 +374,7 @@ export default function LaunchItems() {
         : rows;
       return !filteredRows?.length || launchId == null ?
           null
-        : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
+        : <Stack id={launchElementId(launchId)} key={i} sx={{ mb: 3 }}>
             <Stack
               direction="row"
               spacing={1}
