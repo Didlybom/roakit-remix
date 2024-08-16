@@ -58,7 +58,7 @@ export default function PhasesByInitiatives({
               ]}
               xAxis={[
                 {
-                  data: ['Design', 'Code', 'Test', 'Deploy', 'Stabilize', 'Operate'],
+                  data: ['Design', 'Code', 'Test', 'Deploy', 'Stabilize'],
                   scaleType: 'band',
                   tickLabelStyle: { angle: -45, textAnchor: 'end' },
                   tickMinStep: 1,

@@ -26,7 +26,6 @@ export const PHASES = new Map<string, { sortOrder: number; label: string }>([
   ['test', { sortOrder: 3, label: 'Test' }],
   ['deploy', { sortOrder: 4, label: 'Deploy' }],
   ['stabilize', { sortOrder: 5, label: 'Stabilize' }],
-  ['ops', { sortOrder: 6, label: 'Operate' }],
 ]);
 
 export const CUSTOM_EVENT = 'custom';
