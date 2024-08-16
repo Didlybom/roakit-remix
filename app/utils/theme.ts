@@ -4,7 +4,7 @@ import { createTheme } from '@mui/material/styles';
 export const prioritySymbols: Record<number, string> = {
   1: '!!',
   2: '!',
-  3: '–',
+  3: '＝',
   4: '↓',
   5: '↓↓',
 };

@@ -252,13 +252,13 @@ export default function LaunchItems() {
       { field: 'status', headerName: 'Status' },
       {
         field: 'plannedHours',
-        headerName: 'Planned Hours',
+        headerName: 'Planned hours',
         editable: true,
         renderCell: params => <Box sx={{ cursor: 'pointer' }}>{params.value ?? '…'}</Box>,
       },
       {
         field: 'spentHours',
-        headerName: 'Spent Hours',
+        headerName: 'Spent hours',
         renderCell: (params: GridRenderCellParams<Ticket, number>) => (
           <Box alignItems="center">
             {params.value}
@@ -331,7 +331,7 @@ export default function LaunchItems() {
   const filterBar = (
     <Grid container spacing={2} alignItems="center" mb={1}>
       <Grid>
-        <HelperText>
+        <HelperText infoIcon>
           You can use this page to fill out <b>Planned Hours</b>.
         </HelperText>
       </Grid>

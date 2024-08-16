@@ -3,7 +3,15 @@ import { Box, Stack, Typography, type SxProps } from '@mui/material';
 import type { ReactNode } from 'react';
 import theme from '../utils/theme';
 
-export default function HelperText({ children, sx }: { children: ReactNode; sx?: SxProps }) {
+export default function HelperText({
+  children,
+  infoIcon,
+  sx,
+}: {
+  children: ReactNode;
+  infoIcon?: boolean;
+  sx?: SxProps;
+}) {
   return (
     <Typography
       variant="caption"
@@ -24,7 +32,7 @@ export default function HelperText({ children, sx }: { children: ReactNode; sx?:
       }}
     >
       <Stack direction="row" spacing="4px">
-        <InfoIcon sx={{ width: 18, height: 18 }} />
+        {infoIcon && <InfoIcon sx={{ width: 18, height: 18 }} />}
         <Box>{children}</Box>
       </Stack>
     </Typography>

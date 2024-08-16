@@ -5,6 +5,7 @@ import {
   Close as CloseIcon,
   DeleteOutlined as DeleteIcon,
   Redo as OngoingIcon,
+  WorkHistory as TicketIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -72,6 +73,7 @@ import AutocompleteSelect from '../components/datagrid/EditAutocompleteSelect';
 import FilterMenu from '../components/FilterMenu';
 import HelperText from '../components/HelperText';
 import SelectField from '../components/SelectField';
+import SmallButton from '../components/SmallButton';
 import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
@@ -87,7 +89,7 @@ import {
   upsertTicket,
 } from '../firestore.server/updaters.server';
 import { getActivityDescription } from '../processors/activityDescription';
-import { findFirstTicket } from '../processors/activityFeed';
+import { findFirstTicket, inferTicketStatus } from '../processors/activityFeed';
 import {
   groupActorActivities,
   type GroupedActorActivities,
@@ -129,6 +131,7 @@ import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import theme, { priorityColors, priorityLabels, prioritySymbols } from '../utils/theme';
 import type { ActivityResponse } from './fetcher.activities.($userid)';
+import type { TicketsResponse } from './fetcher.tickets';
 
 export const meta = () => [{ title: 'Status Form | ROAKIT' }];
 
@@ -397,6 +400,8 @@ export default function Status() {
   const confirm = useConfirm();
   const activitiesFetcher = useFetcher();
   const fetchedActivities = activitiesFetcher.data as ActivityResponse;
+  const ticketsFetcher = useFetcher();
+  const fetchedTickets = ticketsFetcher.data as TicketsResponse;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [groupedActivities, setGroupedActivities] = useState<Record<
     Identity['id'],
@@ -465,7 +470,7 @@ export default function Status() {
       return;
     }
     activitiesFetcher.load(
-      `/fetcher/activities/${loaderData.userId ?? ''}?${showTeam ? 'includeTeam=true&' : ''}${groupFilter ? `group=${groupFilter}&` : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
+      `/fetcher/activities/${loaderData.identityId ?? ''}?useIdentityId=true&${showTeam ? 'includeTeam=true&' : ''}${groupFilter ? `group=${groupFilter}&` : ''}start=${selectedDay.startOf('day').valueOf()}&end=${selectedDay.endOf('day').valueOf()}`
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDay, showTeam, groupFilter, actionData?.status]); // activitiesFetcher and loaderData must be omitted
@@ -477,6 +482,7 @@ export default function Status() {
       return;
     }
     const activityRows: ActivityRow[] = [];
+    const ticketKeys: string[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
       let mapping;
@@ -484,6 +490,7 @@ export default function Status() {
         mapping = mapActivity(activity);
       }
       const activityStats = groupActorActivities([activity]);
+      const ticketKey = activityStats.tickets[0]?.key;
       activityRows.push({
         ...activity,
         initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
@@ -493,9 +500,14 @@ export default function Status() {
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
           : undefined,
-        ticketKey: activityStats.tickets[0]?.key,
+        ticketKey,
       });
+      if (!ticketKeys.includes(ticketKey)) ticketKeys.push(ticketKey);
     });
+    if (ticketKeys.length) {
+      ticketsFetcher.load(`/fetcher/tickets?keys=${ticketKeys.join(',')}`);
+    }
+
     setActivities(activityRows);
     const launchItemStats = updateStats(activityRows);
     submit(
@@ -505,7 +517,8 @@ export default function Status() {
       },
       postJsonOptions
     );
-  }, [fetchedActivities?.activities, loaderData.accountMap, selectedDay, submit, updateStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedActivities?.activities, loaderData.accountMap, selectedDay, submit, updateStats]); // ticketsFetcher must be omitted
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -719,11 +732,22 @@ export default function Status() {
         renderEditCell: params => <AutocompleteSelect {...params} options={phaseOptions} />,
       },
       {
-        field: 'effort',
-        headerName: 'Hours',
+        field: 'plannedHours',
+        headerName: 'Planned hours',
         headerAlign: 'left',
         type: 'number',
-        minWidth: 80,
+        renderCell: (params: GridRenderCellParams<ActivityRow, number>) => {
+          if (!fetchedTickets?.tickets || fetchedTickets.tickets.length === 0) return null;
+          const ticket = fetchedTickets.tickets.find(t => t.key === params.row.ticketKey);
+          if (!ticket) return null;
+          return <Box>{ticket.plannedHours}</Box>;
+        },
+      },
+      {
+        field: 'effort',
+        headerName: 'Spent hours',
+        headerAlign: 'left',
+        type: 'number',
         editable: true,
         preProcessEditCellProps: (params: GridPreProcessEditCellProps<number>) => ({
           ...params.props,
@@ -732,6 +756,13 @@ export default function Status() {
         renderCell: (params: GridRenderCellParams<ActivityRow, number>) => (
           <EditableCellField layout="text" hovered={params.row.hovered} label={params.value} />
         ),
+      },
+      {
+        field: 'status',
+        headerName: 'Status',
+        type: 'string',
+        minWidth: 80,
+        valueGetter: (_, row: ActivityRow) => inferTicketStatus(row.metadata),
       },
       {
         field: 'ongoing',
@@ -793,6 +824,7 @@ export default function Status() {
       gridApiRef,
       confirm,
       handleDeleteClick,
+      fetchedTickets?.tickets,
     ]
   );
 
@@ -1174,10 +1206,16 @@ export default function Status() {
               <HelperText>
                 {activities.length > 0 ?
                   <>
-                    {
-                      'Some cells editable by clicking on them. Hours will be aggregated by ticket. Limited to one single launch item per ticket.'
-                    }
+                    Some cells editable by clicking on them. Hours will be aggregated by ticket.
+                    Limited to one single launch item per ticket.
                     <br />
+                    Use the{' '}
+                    <SmallButton
+                      href="/tickets/"
+                      label="Tickets"
+                      icon={<TicketIcon fontSize="small" />}
+                    />{' '}
+                    page to set and adjust <b>Planned Hours</b>.{' '}
                   </>
                 : ''}
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
