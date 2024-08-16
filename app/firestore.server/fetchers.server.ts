@@ -31,6 +31,7 @@ import {
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
 import { getLogger } from '../utils/loggerUtils.server';
+import { forEachRight } from '../utils/mapUtils';
 import type { Role } from '../utils/rbac';
 import { DEFAULT_ROLE } from '../utils/rbac';
 import { withMetricsAsync } from '../utils/withMetrics.server';
@@ -421,19 +422,44 @@ export const fetchTicketPrioritiesWithCache = async (
   return { ...tickets, ...fromCache };
 };
 
-export const fetchTickets = async (customerId: number): Promise<Ticket[]> => {
-  const tickets: Ticket[] = [];
-  (
-    await retry(
-      async () =>
-        await firestore
-          .collection(`customers/${customerId}/tickets/`)
-          .orderBy('lastUpdatedTimestamp', 'desc')
-          .limit(1000) // FIXME limit
-          .get(),
-      retryProps('Retrying fetchTickets...')
+export const fetchTickets = async (
+  customerId: number,
+  ticketKeys?: string[]
+): Promise<Ticket[]> => {
+  const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+  if (!ticketKeys) {
+    let query = firestore
+      .collection(`customers/${customerId}/tickets`)
+      .orderBy('lastUpdatedTimestamp', 'desc')
+      .limit(1000); // FIXME limit
+    if (EXPLAIN_QUERIES) {
+      logger.debug(await explainQuery(query));
+    }
+    batches.push(query.get());
+  } else {
+    while (ticketKeys.length) {
+      // firestore supports up to 30 IN comparisons at a time
+      const batch = ticketKeys.splice(0, 30);
+      let query = firestore
+        .collection(`customers/${customerId}/tickets`)
+        .where(FieldPath.documentId(), 'in', [...batch])
+        .orderBy('lastUpdatedTimestamp', 'desc');
+      if (EXPLAIN_QUERIES) {
+        logger.debug(await explainQuery(query));
+      }
+      batches.push(query.get());
+    }
+  }
+
+  const ticketDocs = (
+    await withMetricsAsync(
+      () => retry(async () => await Promise.all(batches), retryProps('Retrying fetchTickets...')),
+      { metricsName: 'fetchTickets' }
     )
-  ).forEach(doc => {
+  ).flatMap(t => t.docs);
+
+  const tickets: Ticket[] = [];
+  ticketDocs.forEach(doc => {
     const data = parse<schemas.TicketType>(schemas.ticketSchema, doc.data(), 'ticket ' + doc.id);
     tickets.push({ ...data, key: doc.id });
   });
@@ -535,16 +561,21 @@ export const fetchActivities = async ({
   startDate: number;
   endDate?: number;
   userIds?: string[];
-  options?: { includeMetadata?: boolean; findPriority?: boolean; combine?: boolean };
+  options?: {
+    includeMetadata?: boolean;
+    findPriority?: boolean;
+    combine?: boolean;
+    useIdentityId?: boolean;
+  };
 }) => {
   const batches: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
   if (!userIds) {
     let query = firestore
       .collection(`customers/${customerId}/activities`)
-      .orderBy('createdTimestamp')
-      .startAt(startDate);
+      .orderBy('createdTimestamp', 'desc')
+      .endAt(startDate);
     if (endDate) {
-      query = query.endAt(endDate);
+      query = query.startAt(endDate);
     }
     query = query.limit(20000); // FIXME limit
     if (EXPLAIN_QUERIES) {
@@ -557,11 +588,11 @@ export const fetchActivities = async ({
       const batch = userIds.splice(0, 30);
       let query = firestore
         .collection(`customers/${customerId}/activities`)
-        .where('actorAccountId', 'in', [...batch])
-        .orderBy('createdTimestamp')
-        .startAt(startDate);
+        .where(options?.useIdentityId ? 'identityId' : 'actorAccountId', 'in', [...batch])
+        .orderBy('createdTimestamp', 'desc')
+        .endAt(startDate);
       if (endDate) {
-        query = query.endAt(endDate);
+        query = query.startAt(endDate);
       }
       query = query.limit(20000); // FIXME limit
       if (EXPLAIN_QUERIES) {
@@ -574,8 +605,8 @@ export const fetchActivities = async ({
   const activityDocs = (
     await withMetricsAsync(
       () =>
-        retry(async () => await Promise.all(batches), retryProps('Retrying queryActivities...')),
-      { metricsName: 'queryActivities' }
+        retry(async () => await Promise.all(batches), retryProps('Retrying fetchActivities...')),
+      { metricsName: 'fetchActivities' }
     )
   ).flatMap(a => a.docs);
 
@@ -583,7 +614,7 @@ export const fetchActivities = async ({
   const ticketPrioritiesToFetch = new Set<string>();
   const activityTickets = new Map<string, string>();
 
-  activityDocs.forEach(doc => {
+  forEachRight(activityDocs, doc => {
     const data = parse<schemas.ActivityType>(
       schemas.activitySchema,
       doc.data(),
@@ -682,6 +713,7 @@ export const fetchActivitiesPage = async ({
   combine,
   withInitiatives,
   withTotal = false,
+  useIdentityId = false,
   includeFuture = false,
 }: {
   customerId: number;
@@ -693,6 +725,7 @@ export const fetchActivitiesPage = async ({
   combine?: boolean;
   withInitiatives?: boolean;
   withTotal?: boolean;
+  useIdentityId?: boolean;
   includeFuture?: boolean;
 }) => {
   if (startAfter != null && endBefore != null) {
@@ -706,7 +739,11 @@ export const fetchActivitiesPage = async ({
     activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
   }
   if (userIds?.length) {
-    activityQuery = activityQuery.where('actorAccountId', 'in', userIds);
+    activityQuery = activityQuery.where(
+      useIdentityId ? 'identityId' : 'actorAccountId',
+      'in',
+      userIds
+    );
   }
   if (artifacts?.length) {
     activityQuery = activityQuery.where('artifact', 'in', artifacts);

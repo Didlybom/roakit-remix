@@ -43,6 +43,7 @@ export const loader = async ({
     }
     const endDate = searchParams.get('end') ? +searchParams.get('end')! : undefined;
     const isUserList = searchParams.get('userList') === 'true';
+    const useIdentityId = searchParams.get('useIdentityId') === 'true';
     let userIds;
     if (params.userid === ALL) {
       userIds = undefined;
@@ -61,17 +62,20 @@ export const loader = async ({
         email: sessionData.email,
       });
       userIdSet.add(identity.id);
-      identity.accounts.filter(a => a.id).forEach(a => userIdSet.add(a.id));
-
+      if (!useIdentityId) {
+        identity.accounts.filter(a => a.id).forEach(a => userIdSet.add(a.id));
+      }
       if (includeTeam) {
         const teamIdentities = (
           await queryTeamIdentities(sessionData.customerId!, identity.id)
         ).filter(identity => !group || identity.groups?.includes(group));
         teamIdentities.forEach(identity => userIdSet.add(identity.id));
-        teamIdentities
-          .flatMap(identity => identity.accounts)
-          .filter(account => account.id)
-          .forEach(account => userIdSet.add(account.id));
+        if (!useIdentityId) {
+          teamIdentities
+            .flatMap(identity => identity.accounts)
+            .filter(account => account.id)
+            .forEach(account => userIdSet.add(account.id));
+        }
       }
       userIds = [...userIdSet];
     }
@@ -80,7 +84,7 @@ export const loader = async ({
       startDate,
       endDate,
       userIds,
-      options: { includeMetadata: true, findPriority: true, combine: true },
+      options: { includeMetadata: true, findPriority: true, combine: true, useIdentityId },
     });
     const activityRecord: ActivityRecord = {};
     activities.forEach(activity => (activityRecord[activity.id] = activity));

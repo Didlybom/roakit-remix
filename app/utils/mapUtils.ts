@@ -28,6 +28,17 @@ export const groupBy = <T>(array: T[], key: keyof T): Record<string, T[]> =>
     {} as Record<string, T[]>
   );
 
+export const forEachRight = <T>(
+  array: T[],
+  fn: (element: T, index: number, array: T[]) => void
+) => {
+  for (let index = array.length - 1; index >= 0; --index) {
+    if (index in array) {
+      fn(array[index], index, array);
+    }
+  }
+};
+
 export const groupByArray = <T>(
   array: T[],
   key: keyof T | null

@@ -65,6 +65,7 @@ import {
   artifacts,
   confluenceSourceName,
   gitHubSourceName,
+  inferTicketStatus,
   jiraSourceName,
   reactionCount,
   reactionNames,
@@ -190,11 +191,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
     if (params.userid && params.userid?.startsWith('group:')) {
       groupId = params.userid.slice(6);
-      activityUserIds = getAllPossibleActivityUserIds(
-        identities.groupMap[groupId],
-        identities.list,
-        identities.accountMap
-      );
+      activityUserIds = identities.groupMap[groupId];
     }
 
     if (userId && !actors[userId]) {
@@ -284,7 +281,7 @@ export default function Feed() {
   launchItemsByKey = new Map([...launchItemsByKey.entries()].sort());
 
   const loadMoreRows = () => {
-    let query = `/fetcher/activities/page?limit=${PAGE_SIZE}&combine=true&withTotal=false`;
+    let query = `/fetcher/activities/page?limit=${PAGE_SIZE}&combine=true`;
     if (launchFilter.length) {
       query += `&launchIds=${launchFilter.map(k => launchItemsByKey.get(k)!.id).join(',')}`;
     }
@@ -297,25 +294,21 @@ export default function Feed() {
       const oldestActivity = activities[activities.length - 1];
       query += `&startAfter=${oldestActivity.combined?.length ? oldestActivity.combined[0].timestamp : oldestActivity.createdTimestamp}`;
     }
-    if (loaderData.activityUserIds?.length) {
+    if (loaderData.activityUserIds?.length)
       query += `&userIds=${loaderData.activityUserIds.join(',')}`;
-    }
+    if (loaderData.groupId) query += '&useIdentityId=true';
     moreActivitiesFetcher.load(query);
   };
 
   const loadNewRows = () => {
     if (newActivitiesFetcher.state !== 'idle') return;
 
-    let query = `/fetcher/activities/page?limit=1000&combine=true&withTotal=false`; // if there are more than 1000 activities between now and activity[0] we'll miss some
-    if (artifactFilter.length) {
-      query += `&artifacts=${artifactFilter.join(',')}`;
-    }
-    if (activities.length) {
-      query += `&endBefore=${activities[0].createdTimestamp}`;
-    }
-    if (loaderData.activityUserIds?.length) {
-      query += `&userIds=${loaderData.activityUserIds}`;
-    }
+    let query = `/fetcher/activities/page?limit=1000&combine=true`; // if there are more than 1000 activities between now and activity[0] we'll miss some
+    if (artifactFilter.length) query += `&artifacts=${artifactFilter.join(',')}`;
+    if (activities.length) query += `&endBefore=${activities[0].createdTimestamp}`;
+    if (loaderData.activityUserIds?.length) query += `&userIds=${loaderData.activityUserIds}`;
+    if (loaderData.groupId) query += '&useIdentityId=true';
+
     newActivitiesFetcher.load(query); // FIXME this causes rerendering even when there are no new activities
   };
 
@@ -469,6 +462,7 @@ export default function Feed() {
         sourceTitle = gitHubSourceName(activity.metadata);
       }
     }
+    const status = inferTicketStatus(activity.metadata);
 
     return (
       <Stack direction="row" mb={2}>
@@ -583,18 +577,16 @@ export default function Feed() {
               </Tooltip>
             )}
             {activity.priority != null && (
-              <>
-                <Box color={priorityColors[activity.priority]} sx={desktopDisplaySx}>
-                  {priorityLabels[activity.priority]}
-                </Box>
-                <Box
-                  fontWeight={600}
-                  color={priorityColors[activity.priority]}
-                  sx={mobileDisplaySx}
-                >
+              <Tooltip title={`${priorityLabels[activity.priority]} priority`}>
+                <Box fontWeight={600} color={priorityColors[activity.priority]}>
                   {prioritySymbols[activity.priority]}
                 </Box>
-              </>
+              </Tooltip>
+            )}
+            {status && (
+              <Box color={theme.palette.grey[500]} sx={ellipsisSx}>
+                {status}
+              </Box>
             )}
             {activity.phase && <Box>{activity.phase}</Box>}
             {activity.effort && (

@@ -48,6 +48,8 @@ export const loader = async ({
     searchParams.get('withTotal') ? searchParams.get('withTotal') === 'true' : undefined;
   const includeFuture =
     searchParams.get('includeFuture') ? searchParams.get('includeFuture') === 'true' : undefined;
+  const useIdentityId =
+    searchParams.get('useIdentityId') ? searchParams.get('useIdentityId') === 'true' : undefined;
   const combine = searchParams.get('combine') ? searchParams.get('combine') === 'true' : undefined;
   if (!limit) {
     return errorJsonResponse('Fetching activities page failed. Invalid params.', 400);
@@ -63,6 +65,7 @@ export const loader = async ({
         limit,
         withInitiatives,
         withTotal,
+        useIdentityId,
         includeFuture,
         combine,
       });
@@ -80,6 +83,7 @@ export const loader = async ({
           userIds,
           artifacts,
           limit,
+          useIdentityId,
           includeFuture,
           combine,
         });

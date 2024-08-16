@@ -25,8 +25,10 @@ export const loader = async ({
   } catch (e) {
     return errorJsonResponse('Fetching tickets failed. Invalid session.', 401);
   }
+  const { searchParams } = new URL(request.url);
+  const ticketKeys = searchParams.get('keys')?.split(',') ?? undefined;
   try {
-    const tickets = await fetchTickets(sessionData.customerId!);
+    const tickets = await fetchTickets(sessionData.customerId!, ticketKeys);
     return json({ tickets });
   } catch (e) {
     getLogger('route:fetcher.tickets').error(e);
