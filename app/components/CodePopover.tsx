@@ -94,7 +94,7 @@ export default function CodePopover({
     return (
       <LinkIt
         component={(firebaseId: string, key: number) => (
-          <Link key={key} sx={linkSx} href={`${url}/${firebaseId}`} target="_blank">
+          <Link key={key} sx={linkSx} href={`${url}${firebaseId}`} target="_blank">
             {firebaseId}
           </Link>
         )}
