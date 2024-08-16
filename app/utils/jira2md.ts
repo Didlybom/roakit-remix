@@ -8,7 +8,7 @@ const BOLD = new RegExp(/\b\*(\S.*?)\*\b/g);
 const ITALIC = new RegExp(/\b_(\S.*?)_\b/g);
 const MONOSPACED = new RegExp(/\{\{([^}]+)\}\}/g);
 const QUOTE = new RegExp(/{quote}(\S.*?){quote}/g);
-//const INSERT = new RegExp(/\+([^+]*?)\+/g);
+const INSERT = new RegExp(/\+([^+]*?)\+/g);
 //const SUPERSCRIPT = new RegExp(/\^([^^]*?)\^/g);
 //const SUBSCRIPT = new RegExp(/~([^~]*?)~/g);
 const STRIKETHROUGH = new RegExp(/(\s+)-(\S+.*?\S)-(\s+)/g);
@@ -44,7 +44,7 @@ export const jira2md = (str: string) =>
     // Citations (buggy)
     // .replace(/\?\?((?:.[^?]|[^?].)+)\?\?/g, '<cite>$1</cite>')
     // Inserts
-    //.replace(INSERT, '<ins>$1</ins>') // breaks links
+    .replace(INSERT, '$1') //.replace(INSERT, '<ins>$1</ins>') // breaks links
     // Superscript
     //.replace(SUPERSCRIPT, '<sup>$1</sup>')
     // Subscript
