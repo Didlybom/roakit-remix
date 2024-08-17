@@ -70,6 +70,20 @@
         },
         {
           "fieldPath": "createdTimestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "identityId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdTimestamp",
           "order": "DESCENDING"
         }
       ]
