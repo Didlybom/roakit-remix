@@ -28,6 +28,20 @@
         },
         {
           "fieldPath": "createdTimestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actorAccountId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdTimestamp",
           "order": "DESCENDING"
         }
       ]
