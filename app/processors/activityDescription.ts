@@ -204,7 +204,7 @@ export const getActivityActionDescription = (
           );
         }
       });
-      if (activity.action === 'created') {
+      if (activity.action === 'created' && !activity.metadata?.comment) {
         actions.push('Issue created');
       }
       return actions;
