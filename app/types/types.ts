@@ -119,6 +119,11 @@ export type Ticket = {
 
 export type TicketRecord = Record<Ticket['key'], Ticket['priority']>;
 
+export type TicketPlanHistory = {
+  ticketKey: string;
+  planHistory: { timestamp: number; identityId: string; plannedHours: number; comment?: string }[];
+};
+
 export type ActivityChangeLog = {
   field: string;
   oldValue?: string;

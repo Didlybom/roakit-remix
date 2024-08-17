@@ -1,4 +1,5 @@
 import {
+  AddCircle as AddIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
   KeyboardArrowRight as ArrowRightIcon,
   Check as CheckIcon,
@@ -17,10 +18,12 @@ import {
   FormControlLabel,
   Unstable_Grid2 as Grid,
   IconButton,
+  Link,
   Snackbar,
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -123,6 +126,7 @@ import {
   errorAlert,
   formatJson,
   getSearchParam,
+  linkSx,
   loaderErrorResponse,
   loginWithRedirectUrl,
   type SelectOption,
@@ -243,9 +247,6 @@ interface ActionRequest {
 
   // launch item stats
   launchItemStats?: Record<Identity['id'], LaunchItemWithTicketStats[]>;
-
-  // ticket stats
-  totalTicketEffort: number | null;
 }
 
 interface ActionResponse {
@@ -264,7 +265,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     identityId = identity.id;
   }
   if (!identityId) {
-    throw 'Identity required';
+    throw Error('Identity required');
   }
 
   let response: ActionResponse = { status: undefined };
@@ -300,7 +301,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
             identityId: actionRequest.actorId,
           });
           if (activityIdentity.managerId !== identityId) {
-            return { error: 'Invalid contributor' };
+            throw Error('Invalid contributor');
           }
         }
         const ongoingAdded = await upsertNextOngoingActivity(sessionData.customerId!, {
@@ -341,25 +342,32 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   // update tickets
   if (actionRequest.ticket) {
-    await upsertTicket(sessionData.customerId!, {
-      ...actionRequest.ticket,
-      effort: { [actionRequest.day]: { [identityId]: actionRequest.totalTicketEffort } },
-    });
+    await upsertTicket(sessionData.customerId!, actionRequest.ticket);
     getLogger('route:status.user').info('Updated ticket ' + actionRequest.ticket.key);
   }
 
   // update launch item stats
   if (actionRequest.launchItemStats) {
-    // FIXME ensure users are legit owner or reports
     await Promise.all(
-      Object.entries(actionRequest.launchItemStats).map(([identityId, launchItemStats]) =>
-        upsertLaunchItemIndividualCounters(
-          sessionData.customerId!,
-          identityId,
-          actionRequest.day,
-          launchItemStats,
-          '*'
-        )
+      Object.entries(actionRequest.launchItemStats).map(
+        async ([statIdentityId, launchItemStats]) => {
+          // ensure users are legit owner or reports
+          if (identityId !== statIdentityId) {
+            if (
+              (await queryIdentity(sessionData.customerId!, { identityId })).managerId !==
+              identityId
+            ) {
+              throw Error('Invalid contributor');
+            }
+          }
+          await upsertLaunchItemIndividualCounters(
+            sessionData.customerId!,
+            statIdentityId,
+            actionRequest.day,
+            launchItemStats,
+            '*'
+          );
+        }
       )
     );
   }
@@ -533,10 +541,10 @@ export default function Status() {
   }, [actionData?.error]);
 
   useEffect(() => {
-    if (fetchedActivities?.error?.status === 401) {
+    if (fetchedActivities?.error?.status === 401 || fetchedTickets?.error?.status === 401) {
       navigate(loginWithRedirectUrl());
     }
-  }, [fetchedActivities?.error, navigate]);
+  }, [fetchedActivities?.error, fetchedTickets?.error, navigate]);
 
   const launchItemOptions = useMemo<SelectOption[]>(
     () => [
@@ -740,7 +748,21 @@ export default function Status() {
           if (!fetchedTickets?.tickets || fetchedTickets.tickets.length === 0) return null;
           const ticket = fetchedTickets.tickets.find(t => t.key === params.row.ticketKey);
           if (!ticket) return null;
-          return <Box>{ticket.plannedHours}</Box>;
+          return (
+            <Box display="flex" height="100%" alignItems="center">
+              <Tooltip
+                title={
+                  ticket.plannedHours == null ?
+                    `Set planned hours for ${ticket.key} in the Tickets page`
+                  : `Adjust planned hours for ${ticket.key} in the Tickets page`
+                }
+              >
+                <Link href={`/tickets?q=${encodeURI(ticket.key)}`} target="_blank" sx={linkSx}>
+                  {ticket.plannedHours ?? <AddIcon sx={{ width: 16, height: 16 }} />}
+                </Link>
+              </Tooltip>
+            </Box>
+          );
         },
       },
       {
@@ -1164,6 +1186,7 @@ export default function Status() {
                         ticketLaunchItemId = oldRow.launchItemId;
                       }
                     }
+                    const day = formatYYYYMMDD(selectedDay);
                     submit(
                       {
                         activityId: updatedRow.id,
@@ -1183,13 +1206,15 @@ export default function Status() {
                           initiativeId: updatedRow.initiativeId,
                           metadata: updatedRow.metadata,
                         }),
-                        day: formatYYYYMMDD(selectedDay),
+                        day,
                         launchItemStats,
                         ticket:
                           activityStats.tickets.length ?
                             {
                               ...activityStats.tickets[0],
                               launchItemId: ticketLaunchItemId ?? null,
+                              // FIXME different actors for one ticket
+                              effort: { [day]: { [updatedRow.actorId!]: totalTicketEffort } },
                             }
                           : null,
                         totalTicketEffort,
@@ -1215,9 +1240,10 @@ export default function Status() {
                       label="Tickets"
                       icon={<TicketIcon fontSize="small" />}
                     />{' '}
-                    page to set and adjust <b>Planned Hours</b>.{' '}
+                    page to set and adjust <b>planned hours</b>.{' '}
                   </>
                 : ''}
+                <br />
                 Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
                 to go to previous/next day.
               </HelperText>

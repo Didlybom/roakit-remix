@@ -32,6 +32,7 @@ export enum View {
   FetcherSummaries,
   FetcherLaunchStats,
   FetcherTickets,
+  FetcherTicketPlanHistory,
 
   Impersonation,
   AI,
@@ -79,6 +80,7 @@ export const checkAccess = (
     case View.FetcherSummaries:
     case View.FetcherActivities:
     case View.FetcherTickets:
+    case View.FetcherTicketPlanHistory:
       throwIf(!params);
       // userid param not allowed for non admins
       throwIf(

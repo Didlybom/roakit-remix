@@ -154,7 +154,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     }
 
     if (!identityId) {
-      throw 'Identity required';
+      throw Error('Identity required');
     }
     await upsertSummary(sessionData.customerId!, actionRequest.day, {
       identityId,

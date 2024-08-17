@@ -1,6 +1,12 @@
-import { ZoomIn as ZoomInIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Edit as EditIcon, ZoomIn as ZoomInIcon } from '@mui/icons-material';
 import {
   Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Unstable_Grid2 as Grid,
   IconButton,
@@ -8,8 +14,10 @@ import {
   Snackbar,
   Stack,
   Table,
+  TableBody,
   TableCell,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import {
@@ -21,12 +29,13 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
+  useNavigate,
   useNavigation,
+  useSearchParams,
   useSubmit,
 } from '@remix-run/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
-import { useEffect, useMemo, useState } from 'react';
-import { useDebounce } from 'use-debounce';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import App from '../components/App';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
@@ -37,7 +46,6 @@ import {
   dataGridCommonProps,
   dateColDef,
   priorityColDef,
-  StyledMuiError,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
@@ -45,9 +53,10 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchLaunchItemMap,
+  queryIdentity,
 } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import type { ActorRecord, Ticket } from '../types/types';
+import type { ActorRecord, Ticket, TicketPlanHistory } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
@@ -55,15 +64,18 @@ import { postJsonOptions } from '../utils/httpUtils';
 import {
   desktopDisplaySx,
   errorAlert,
+  getSearchParam,
   HEADER_HEIGHT,
   linkSx,
   loaderErrorResponse,
+  loginWithRedirectUrl,
   verticalStickyBarSx,
 } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
+import type { TicketPlanHistoryResponse } from './fetcher.ticket.$ticketkey.plan-history';
 import type { TicketsResponse } from './fetcher.tickets';
 
 export const meta = () => [{ title: 'Tickets | ROAKIT' }];
@@ -71,6 +83,8 @@ export const meta = () => [{ title: 'Tickets | ROAKIT' }];
 export const shouldRevalidate = () => false;
 
 const VIEW = View.Tickets;
+
+const SEARCH_PARAM_QUERY = 'q';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
@@ -96,6 +110,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 interface ActionRequest {
   key: string;
   plannedHours: number;
+  comment: string;
 }
 
 interface ActionResponse {
@@ -110,14 +125,27 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   if (!actionRequest.key) {
     return { error: 'Invalid ticket update request' };
   }
-  try {
-    await firestore
-      .doc(`customers/${sessionData.customerId!}/tickets/${actionRequest.key}`)
-      .set(
-        { plannedHours: actionRequest.plannedHours != null ? +actionRequest.plannedHours : null },
-        { merge: true }
-      );
 
+  const { id: identityId } = await queryIdentity(sessionData.customerId!, {
+    email: sessionData.email,
+  });
+  if (!identityId) {
+    throw Error('Identity required');
+  }
+
+  try {
+    const plannedHours = actionRequest.plannedHours != null ? +actionRequest.plannedHours : null;
+    const comment = actionRequest.comment;
+    await Promise.all([
+      firestore
+        .doc(`customers/${sessionData.customerId!}/tickets/${actionRequest.key}`)
+        .set({ plannedHours }, { merge: true }),
+      firestore
+        .collection(
+          `customers/${sessionData.customerId!}/tickets/${actionRequest.key}/planHistory/`
+        )
+        .add({ identityId, timestamp: Date.now(), plannedHours, comment }),
+    ]);
     return { status: { code: 'saved', message: 'Ticket saved' } };
   } catch (e) {
     return { error: errMsg(e, 'Failed to save ticket') };
@@ -131,49 +159,112 @@ function SpentHours({ effort, actorMap }: { effort: Ticket['effort']; actorMap: 
       {Object.entries(effort)
         .filter(([, actors]) => actors)
         .sort(([date1], [date2]) => +date2 - +date1)
-        .map(([date, actors]) => (
-          <>
+        .map(([date, actors], i) => (
+          <Box key={i}>
             <Box fontWeight={600}>{formatDayLocal(date)}</Box>
             <Table size="small" sx={{ mb: 2 }}>
-              {Object.entries(actors!)
-                .sort(([, hours1], [, hours2]) => (hours2 ?? 0) - (hours1 ?? 0))
-                .map(([actorId, hours], i) => (
-                  <TableRow key={i} sx={{ '&:last-child td': { border: 0 } }}>
-                    <TableCell>{actorMap[actorId]?.name ?? 'Unknown'}</TableCell>
-                    <TableCell align="right">{hours}</TableCell>
-                  </TableRow>
-                ))}
+              <TableBody>
+                {Object.entries(actors!)
+                  .sort(([, hours1], [, hours2]) => (hours2 ?? 0) - (hours1 ?? 0))
+                  .map(([actorId, hours], i) => (
+                    <TableRow key={i} sx={{ '&:last-child td': { border: 0 } }}>
+                      <TableCell>{actorMap[actorId]?.name ?? 'Unknown'}</TableCell>
+                      <TableCell align="right">{hours}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
             </Table>
-          </>
+          </Box>
         ))}
     </Stack>
   );
 }
 
+function PlannedHours({
+  ticketKey,
+  actorMap,
+  cache,
+  cacheAdd,
+}: {
+  ticketKey: string;
+  actorMap: ActorRecord;
+  cache: TicketPlanHistory[];
+  cacheAdd: (planHistory: TicketPlanHistory) => void;
+}) {
+  const navigate = useNavigate();
+  const ticketPlanHistoryFetcher = useFetcher<TicketPlanHistoryResponse>();
+  const fetchedTicketPlanHistory = ticketPlanHistoryFetcher.data;
+  const [ticketPlanHistory, setTicketPlanHistory] = useState<
+    TicketPlanHistory['planHistory'] | undefined
+  >(cache.find(p => p.ticketKey === ticketKey)?.planHistory);
+
+  useEffect(() => {
+    if (!ticketPlanHistory) {
+      ticketPlanHistoryFetcher.load(`/fetcher/ticket/${ticketKey}/plan-history`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketKey, ticketPlanHistory]); // ticketPlanHistoryFetcher must be omitted
+
+  useEffect(() => {
+    const fetchedTicketKey = fetchedTicketPlanHistory?.planHistory?.ticketKey;
+    if (fetchedTicketKey && fetchedTicketPlanHistory?.planHistory?.planHistory) {
+      setTicketPlanHistory(fetchedTicketPlanHistory.planHistory.planHistory);
+      cacheAdd(fetchedTicketPlanHistory.planHistory);
+    }
+  }, [cacheAdd, fetchedTicketPlanHistory?.planHistory]);
+
+  useEffect(() => {
+    if (fetchedTicketPlanHistory?.error?.status === 401) {
+      navigate(loginWithRedirectUrl());
+    }
+  }, [fetchedTicketPlanHistory?.error, navigate]);
+
+  return ticketPlanHistory ?
+      <Box>
+        {ticketKey} {JSON.stringify(ticketPlanHistory)}
+      </Box>
+    : <Box display="flex" justifyContent="center" mx={10} my={6}>
+        <CircularProgress size={30} />
+      </Box>;
+}
+
 export default function LaunchItems() {
   const navigation = useNavigation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const ticketsFetcher = useFetcher<TicketsResponse>();
   const fetchedTickets = ticketsFetcher.data;
   const [tickets, setTickets] = useState<Map<string | null, Ticket[]>>(new Map());
+  const ticketPlanHistoryCache = useRef<TicketPlanHistory[]>([]);
   const [scrollToGroup, setScrollToGroup] = useState<string | null | undefined>(null);
-  const [searchFilter, setSearchFilter] = useState('');
-  const [searchTerm] = useDebounce(searchFilter.trim().toLowerCase(), 50);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get(SEARCH_PARAM_QUERY) ?? '');
+  const [showDialogForTicket, setShowDialogForTicket] = useState<Ticket['key'] | null>(null);
+  const [updatingPlannedHours, setUpdatingPlannedHours] = useState<{
+    hours?: number;
+    comment?: string;
+  } | null>(null);
+
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
 
   const [confirmation, setConfirmation] = useState('');
-  const [error, setError] = useState('');
+  const [error] = useState('');
 
   const launchElementId = (id: string) => `LAUNCH-${id}`;
 
   // load tickets
   useEffect(() => {
+    if (!actionData?.status) {
+      setConfirmation('');
+    } else if (actionData?.status?.message) {
+      setConfirmation(actionData?.status?.message);
+    }
     ticketsFetcher.load(`/fetcher/tickets`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [actionData?.status]); // reload when a ticket has been updated
 
   useEffect(() => {
     if (fetchedTickets?.tickets) {
@@ -203,6 +294,12 @@ export default function LaunchItems() {
       );
     }
   }, [fetchedTickets?.tickets]);
+
+  useEffect(() => {
+    if (fetchedTickets?.error?.status === 401) {
+      navigate(loginWithRedirectUrl());
+    }
+  }, [fetchedTickets?.error, navigate]);
 
   // Auto scrollers
   useEffect(() => {
@@ -253,8 +350,47 @@ export default function LaunchItems() {
       {
         field: 'plannedHours',
         headerName: 'Planned hours',
-        editable: true,
-        renderCell: params => <Box sx={{ cursor: 'pointer' }}>{params.value ?? '…'}</Box>,
+        renderCell: (params: GridRenderCellParams<Ticket, number>) => {
+          return (
+            <Stack direction="row" display="flex" height="100%" alignItems="center">
+              <Button
+                tabIndex={params.tabIndex}
+                size="small"
+                endIcon={<EditIcon style={{ width: 12, height: 12 }} />}
+                onClick={() => {
+                  setUpdatingPlannedHours({ hours: params.row.plannedHours });
+                  setShowDialogForTicket(params.row.key);
+                }}
+              >
+                {params.value || '⋯'}
+              </Button>
+              <IconButton
+                onClick={e => {
+                  const ticketKey = params.row.key;
+                  // if (!ticketPlanHistory[ticketKey]) {
+                  //   console.log('go fetch');
+                  //   ticketPlanHistoryFetcher.load(`/fetcher/ticket/${ticketKey}/plan-history`);
+                  // }
+                  setPopover?.({
+                    element: e.currentTarget,
+                    content: (
+                      <PlannedHours
+                        ticketKey={ticketKey}
+                        cache={ticketPlanHistoryCache.current}
+                        cacheAdd={ticketPlanHistory =>
+                          ticketPlanHistoryCache.current.push(ticketPlanHistory)
+                        }
+                        actorMap={loaderData.actors!}
+                      />
+                    ),
+                  });
+                }}
+              >
+                <ZoomInIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+          );
+        },
       },
       {
         field: 'spentHours',
@@ -283,40 +419,43 @@ export default function LaunchItems() {
         setCodePopover({ element, content })
       ),
     ],
-    [loaderData.actors, loaderData.customerSettings?.ticketBaseUrl]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loaderData.actors, loaderData.customerSettings?.ticketBaseUrl] // ticketPlanHistoryFetcher must be omitted
   );
 
-  const launchList = useMemo(() => {
-    const launchList = [...tickets.keys()].map((launchId, i) => {
-      let label;
-      if (!launchId) {
-        label = 'No launch item';
-      } else {
-        label = loaderData.launchItems[launchId]?.label || 'Unknown launch item';
-      }
-      return (
-        <Box
-          key={i}
-          mt={launchId ? undefined : 2}
-          color={launchId ? undefined : theme.palette.grey[500]}
-        >
-          <Link
-            sx={{
-              ...linkSx,
-              '&:hover': {
-                color: launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
-              },
-            }}
+  const launchList = useMemo(
+    () =>
+      [...tickets.keys()].map((launchId, i) => {
+        let label;
+        if (!launchId) {
+          label = 'No launch item';
+        } else {
+          label = loaderData.launchItems[launchId]?.label || 'Unknown launch item';
+        }
+        return (
+          <Box
+            key={i}
+            mt={launchId ? undefined : 2}
             color={launchId ? undefined : theme.palette.grey[500]}
-            onClick={() => setScrollToGroup(launchId)}
           >
-            {label}
-          </Link>
-        </Box>
-      );
-    });
-    return launchList;
-  }, [loaderData.launchItems, tickets]);
+            <Link
+              sx={{
+                ...linkSx,
+                '&:hover': {
+                  color:
+                    launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
+                },
+              }}
+              color={launchId ? undefined : theme.palette.grey[500]}
+              onClick={() => setScrollToGroup(launchId)}
+            >
+              {label}
+            </Link>
+          </Box>
+        );
+      }),
+    [loaderData.launchItems, tickets]
+  );
 
   const navBar = (
     <Box mr={3} sx={desktopDisplaySx}>
@@ -332,7 +471,7 @@ export default function LaunchItems() {
     <Grid container spacing={2} alignItems="center" mb={1}>
       <Grid>
         <HelperText infoIcon>
-          You can use this page to fill out <b>Planned Hours</b>.
+          You can use this page to fill out <b>planned hours</b>.
         </HelperText>
       </Grid>
       <Grid flex={1} />
@@ -341,14 +480,103 @@ export default function LaunchItems() {
           <Grid>
             <SearchField
               title="Search tickets"
-              value={searchFilter}
-              setValue={setSearchFilter}
+              value={searchTerm}
+              setValue={q => {
+                setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_QUERY, q));
+                setSearchTerm(q);
+              }}
               sx={{ width: { xs: '11ch', sm: '12ch' }, minWidth: { xs: '100px', sm: '160px' } }}
             />
           </Grid>
         </Grid>
       </Grid>
     </Grid>
+  );
+
+  const handleSubmitPlannedHours = useCallback(
+    (ticketKey: string) => {
+      setShowDialogForTicket(null);
+      ticketPlanHistoryCache.current = ticketPlanHistoryCache.current.filter(
+        p => p.ticketKey !== ticketKey
+      );
+      submit(
+        {
+          key: ticketKey,
+          plannedHours: updatingPlannedHours?.hours ?? null,
+          comment: updatingPlannedHours?.comment ?? null,
+        },
+        postJsonOptions
+      );
+    },
+    [submit, updatingPlannedHours]
+  );
+
+  const plannedHoursDialog = (
+    <Dialog
+      open={!!showDialogForTicket}
+      onClose={() => setShowDialogForTicket(null)}
+      fullWidth
+      disableRestoreFocus
+      PaperProps={{
+        component: 'form',
+        onSubmit: (e: FormEvent) => {
+          e.preventDefault();
+          handleSubmitPlannedHours(showDialogForTicket!);
+        },
+      }}
+    >
+      <DialogTitle>{showDialogForTicket}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} my={1}>
+          <TextField
+            autoComplete="off"
+            label="Planned hours"
+            type="number"
+            size="small"
+            required
+            sx={{ maxWidth: 160 }}
+            value={updatingPlannedHours?.hours}
+            onChange={e =>
+              setUpdatingPlannedHours({ ...updatingPlannedHours, hours: +e.target.value })
+            }
+          />
+          <TextField
+            autoComplete="off"
+            label="Comment"
+            size="small"
+            fullWidth
+            required
+            value={updatingPlannedHours?.comment}
+            onChange={e =>
+              setUpdatingPlannedHours({ ...updatingPlannedHours, comment: e.target.value.trim() })
+            }
+          />
+        </Stack>
+        <IconButton
+          onClick={() => setShowDialogForTicket(null)}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: theme => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        <DialogActions sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            sx={{ borderRadius: 28, textTransform: 'none' }}
+            disabled={
+              !updatingPlannedHours || !updatingPlannedHours.hours || !updatingPlannedHours.comment
+            }
+            type="submit"
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
   );
 
   const grids = useMemo(() => {
@@ -362,11 +590,12 @@ export default function LaunchItems() {
         launchKey = loaderData.launchItems[launchId]?.key ?? '';
         launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
       }
+      const search = searchTerm.trim().toLowerCase();
       const filteredRows =
         searchTerm ?
           rows.filter(ticket => {
-            if (ticket.key.toLowerCase().indexOf(searchTerm) >= 0) return true;
-            if (ticket.summary && ticket.summary.toLowerCase().indexOf(searchTerm) >= 0) {
+            if (ticket.key.toLowerCase().indexOf(search) >= 0) return true;
+            if (ticket.summary && ticket.summary.toLowerCase().indexOf(search) >= 0) {
               return true;
             }
             return false;
@@ -397,39 +626,22 @@ export default function LaunchItems() {
                 {launchLabel}
               </Typography>
             </Stack>
-            <StyledMuiError>
-              <DataGridWithSingleClickEditing
-                columns={columns}
-                rows={filteredRows}
-                getRowId={row => row.key}
-                {...dataGridCommonProps}
-                rowHeight={50}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 25 } },
-                  sorting: {
-                    sortModel: [
-                      { field: 'lastUpdatedTimestamp', sort: 'desc' as GridSortDirection },
-                    ],
-                  },
-                }}
-                processRowUpdate={(updatedRow: Ticket, oldRow: Ticket) => {
-                  if (updatedRow.plannedHours !== oldRow.plannedHours) {
-                    submit(
-                      {
-                        key: updatedRow.key,
-                        plannedHours: updatedRow.plannedHours ?? null,
-                      },
-                      postJsonOptions
-                    );
-                  }
-                  return updatedRow;
-                }}
-                onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save ticket'))}
-              />
-            </StyledMuiError>
+            <DataGridWithSingleClickEditing
+              columns={columns}
+              rows={filteredRows}
+              getRowId={row => row.key}
+              {...dataGridCommonProps}
+              rowHeight={50}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 25 } },
+                sorting: {
+                  sortModel: [{ field: 'lastUpdatedTimestamp', sort: 'desc' as GridSortDirection }],
+                },
+              }}
+            />
           </Stack>;
     });
-  }, [tickets, searchTerm, loaderData.launchItems, columns, submit]);
+  }, [tickets, searchTerm, loaderData.launchItems, columns]);
 
   return (
     <App
@@ -456,6 +668,7 @@ export default function LaunchItems() {
         }}
       />
       <BoxPopover popover={popover} onClose={() => setPopover(null)} showClose={true} />
+      {showDialogForTicket && plannedHoursDialog}
       <Stack m={3} direction="row">
         {navBar}
         <Stack flex={1} minWidth={0}>

@@ -94,6 +94,14 @@ export const ticketSchema = z.object({
 });
 export type TicketType = z.infer<typeof ticketSchema>;
 
+export const ticketPlanHistorySchema = z.object({
+  timestamp: z.number(),
+  identityId: z.string(),
+  plannedHours: z.number(),
+  comment: z.string().optional(),
+});
+export type TicketPlanHistoryType = z.infer<typeof ticketPlanHistorySchema>;
+
 // this needs to be updated and deployed before ingestion adds new artifacts
 export const ARTIFACTS = ['code', 'codeOrg', 'task', 'taskOrg', 'doc', 'docOrg'] as const;
 

@@ -27,6 +27,7 @@ import {
   type Phase,
   type Summary,
   type Ticket,
+  type TicketPlanHistory,
   type TicketRecord,
 } from '../types/types';
 import { daysInMonth } from '../utils/dateUtils';
@@ -464,6 +465,31 @@ export const fetchTickets = async (
     tickets.push({ ...data, key: doc.id });
   });
   return tickets;
+};
+
+export const fetchTicketPlanHistory = async (
+  customerId: number,
+  ticketKey: string
+): Promise<TicketPlanHistory> => {
+  const planHistory: TicketPlanHistory['planHistory'] = [];
+  (
+    await retry(
+      async () =>
+        firestore
+          .collection(`customers/${customerId}/tickets/${ticketKey}/planHistory`)
+          .orderBy('timestamp', 'desc')
+          .get(),
+      retryProps('Retrying fetchTicketPlanHistory...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.TicketPlanHistoryType>(
+      schemas.ticketPlanHistorySchema,
+      doc.data(),
+      'ticket plan history ' + doc.id
+    );
+    planHistory.push(data);
+  });
+  return { ticketKey, planHistory };
 };
 
 export const fetchAccountMap = async (customerId: number): Promise<AccountMap> => {
