@@ -5,29 +5,23 @@ import type { InitiativeRecord } from '../../types/types';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
-  type: 'initiatives' | 'launchItems';
   groupedActivities?: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
 };
 
-export default function InitiativeEffort({
-  type,
-  groupedActivities,
-  initiatives,
-  isLoading,
-}: Props) {
+export default function InitiativeEffort({ groupedActivities, initiatives, isLoading }: Props) {
   return (
     !!initiatives &&
-    !!groupedActivities?.[type]?.length && (
+    !!groupedActivities?.initiatives?.length && (
       <Grid>
         <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-          {widgetTitle(type === 'initiatives' ? 'Hours by Goal' : 'Hours by Launch')}
+          {widgetTitle('Hours by Initiative')}
           <PieChart
             series={[
               {
-                id: `effort-by-${type}`,
-                data: groupedActivities[type]
+                id: `effort-by-initiative`,
+                data: groupedActivities.initiatives
                   .filter(initiative => initiative.effort)
                   .map(initiative => ({
                     id: initiatives[initiative.id].key,

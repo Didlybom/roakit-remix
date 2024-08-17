@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
-import { fetchLaunchStats } from '../firestore.server/fetchers.server';
-import { groupLaunchStats, type GroupedLaunchStats } from '../processors/initiativeGrouper';
+import { fetchInitiativeStats } from '../firestore.server/fetchers.server';
+import { groupInitiativeStats, type GroupedInitiativeStats } from '../processors/initiativeGrouper';
 import { loadSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
@@ -9,39 +9,39 @@ import { errorJsonResponse } from '../utils/httpUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 
-export type GroupedLaunchStatsResponse = { error?: ErrorField } & GroupedLaunchStats;
+export type GroupedInitiativeStatsResponse = { error?: ErrorField } & GroupedInitiativeStats;
 
 export const shouldRevalidate = () => false;
 
-const VIEW = View.FetcherLaunchStats;
+const VIEW = View.FetcherInitiativeStats;
 
 export const loader = async ({
   params,
   request,
-}: LoaderFunctionArgs): Promise<TypedResponse<GroupedLaunchStatsResponse>> => {
+}: LoaderFunctionArgs): Promise<TypedResponse<GroupedInitiativeStatsResponse>> => {
   let sessionData;
   try {
     sessionData = await loadSession(request, VIEW, params);
   } catch (e) {
-    return errorJsonResponse('Fetching launch stats failed. Invalid session.', 401);
+    return errorJsonResponse('Fetching initiative stats failed. Invalid session.', 401);
   }
   try {
     const { searchParams } = new URL(request.url);
     const startDay = searchParams.get('start') ? +searchParams.get('start')! : undefined;
     if (!startDay) {
-      return errorJsonResponse('Fetching launch stats failed. Invalid params.', 400);
+      return errorJsonResponse('Fetching initiative stats failed. Invalid params.', 400);
     }
     const endDay = searchParams.get('end') ? +searchParams.get('end')! : undefined;
-    const stats = await fetchLaunchStats({
+    const stats = await fetchInitiativeStats({
       customerId: sessionData.customerId!,
       startDay,
       endDay,
     });
-    return json(groupLaunchStats(stats));
+    return json(groupInitiativeStats(stats));
   } catch (e) {
-    getLogger('route:fetcher.launch-stats').error(e);
+    getLogger('route:fetcher.initiative-stats').error(e);
     return errorJsonResponse(
-      errMsg(e, 'Fetching launch stats failed'),
+      errMsg(e, 'Fetching initiative stats failed'),
       e instanceof RoakitError && e.httpStatus ? e.httpStatus : 500
     );
   }

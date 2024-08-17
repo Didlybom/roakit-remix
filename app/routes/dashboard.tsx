@@ -23,9 +23,9 @@ import TicketsByInitiative from '../components/dashboard/TicketsByInitiative';
 import {
   fetchAccountMap,
   fetchIdentities,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
-import type { GroupedLaunchStats } from '../processors/initiativeGrouper';
+import type { GroupedInitiativeStats } from '../processors/initiativeGrouper';
 import { loadSession } from '../utils/authUtils.server';
 import {
   dateFilterToStartDate,
@@ -37,7 +37,7 @@ import { errorAlert, loaderErrorResponse, loginWithRedirectUrl } from '../utils/
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import type { GroupedActivitiesResponse } from './fetcher.grouped-activities';
-import type { GroupedLaunchStatsResponse } from './fetcher.launch-stats';
+import type { GroupedInitiativeStatsResponse } from './fetcher.initiative-stats';
 
 export const meta = () => [{ title: 'Dashboard | ROAKIT' }];
 
@@ -49,18 +49,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
     // retrieve initiatives and users
-    const [launchItems, accounts, identities] = await Promise.all([
-      // fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
-
-    // update initiative counters every hour at most [this could be done at ingestion time or triggered in a cloud function]
-    // const initiatives = await updateInitiativeCounters(sessionData.customerId!, fetchedInitiatives);
-
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
-    return { ...sessionData, actors, launchItems };
+    return { ...sessionData, actors, initiatives };
   } catch (e) {
     getLogger('route:dashboard').error(e);
     throw loaderErrorResponse(e);
@@ -99,22 +94,22 @@ export default function Dashboard() {
   const loaderData = useLoaderData<typeof loader>();
   const groupedActivitiesFetcher = useFetcher<GroupedActivitiesResponse>();
   const groupedActivitiesResponse = groupedActivitiesFetcher.data as GroupedActivities;
-  const launchStatsFetcher = useFetcher<GroupedLaunchStatsResponse>();
-  const launchStatsFetcherResponse = launchStatsFetcher.data as GroupedLaunchStats;
+  const initiativeStatsFetcher = useFetcher<GroupedInitiativeStatsResponse>();
+  const initiativeStatsResponse = initiativeStatsFetcher.data as GroupedInitiativeStats;
   const [dateFilter, setDateFilter] = useState(
     loaderData.dateFilter ?? { dateRange: DateRange.OneDay, endDay: formatYYYYMMDD(dayjs()) }
   );
   const dateRangeLabel = dateRangeLabels[dateFilter.dateRange];
 
-  // load grouped activities and launch stats
+  // load grouped activities and initiative stats
   useEffect(() => {
     groupedActivitiesFetcher.load(
       `/fetcher/grouped-activities/?dateRange=${dateFilter.dateRange}&endDay=${dateFilter.endDay}`
     );
     const startDay = dateFilterToStartDate(dateFilter.dateRange, dayjs(dateFilter.endDay));
     if (startDay) {
-      launchStatsFetcher.load(
-        `/fetcher/launch-stats/?start=${formatYYYYMMDD(startDay)}&end=${dateFilter.endDay}`
+      initiativeStatsFetcher.load(
+        `/fetcher/initiative-stats/?start=${formatYYYYMMDD(startDay)}&end=${dateFilter.endDay}`
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,52 +118,37 @@ export default function Dashboard() {
   useEffect(() => {
     if (
       groupedActivitiesFetcher.data?.error?.status === 401 ||
-      launchStatsFetcher.data?.error?.status === 401
+      initiativeStatsFetcher.data?.error?.status === 401
     ) {
       navigate(loginWithRedirectUrl());
     }
   }, [
     groupedActivitiesFetcher.data?.error?.status,
-    launchStatsFetcher.data?.error?.status,
+    initiativeStatsFetcher.data?.error?.status,
     navigate,
   ]);
 
   const charts = (
     <Stack spacing={3} m={3} onClick={e => e.stopPropagation()}>
       <Grid container spacing={5}>
-        {/* <EffortByInitiative
-          type="initiatives"
+        <EffortByInitiative
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
-          isLoading={groupedActivitiesFetcher.state === 'loading'}
-        /> */}
-        <EffortByInitiative
-          type="launchItems"
-          groupedActivities={groupedActivitiesResponse}
-          initiatives={loaderData.launchItems}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
         <Priorities
           groupedActivities={groupedActivitiesResponse}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
-        {/* <ContributorsByInitiative
-          type="initiatives"
+        <ContributorsByInitiative
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
-          isLoading={groupedActivitiesFetcher.state === 'loading'}
-        /> */}
-        <ContributorsByInitiative
-          type="launchItems"
-          groupedActivities={groupedActivitiesResponse}
-          initiatives={loaderData.launchItems}
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
       </Grid>
       {/* {!!groupedActivitiesResponse?.initiatives?.length && (
-      <AccordionBox title="Activity Categories by Goal">
+      <AccordionBox title="Activity Categories by Initiative">
         <ArtifactsByInitiative
-          type="initiatives"
           groupedActivities={groupedActivitiesResponse}
           initiatives={loaderData.initiatives}
           dateRangeLabel={dateRangeLabel}
@@ -176,33 +156,31 @@ export default function Dashboard() {
         />
       </AccordionBox>
       )} */}
-      {!!launchStatsFetcherResponse?.launches && (
-        <AccordionBox title="Ticket Status by Launch">
+      {!!initiativeStatsResponse?.initiatives && (
+        <AccordionBox title="Ticket Status by Initiative">
           <TicketsByInitiative
-            stats={launchStatsFetcherResponse}
-            initiatives={loaderData.launchItems}
+            stats={initiativeStatsResponse}
+            initiatives={loaderData.initiatives}
             dateRangeLabel={dateRangeLabel}
-            isLoading={launchStatsFetcher.state === 'loading'}
+            isLoading={initiativeStatsFetcher.state === 'loading'}
           />
         </AccordionBox>
       )}
-      {!!groupedActivitiesResponse?.launchItems?.length && (
-        <AccordionBox title="Activity Categories by Launch">
+      {!!groupedActivitiesResponse?.initiatives?.length && (
+        <AccordionBox title="Activity Categories by Initiative">
           <ArtifactsByInitiative
-            type="launchItems"
             groupedActivities={groupedActivitiesResponse}
-            initiatives={loaderData.launchItems}
+            initiatives={loaderData.initiatives}
             dateRangeLabel={dateRangeLabel}
             isLoading={groupedActivitiesFetcher.state === 'loading'}
           />
         </AccordionBox>
       )}
-      {!!groupedActivitiesResponse?.launchItems?.length && (
-        <AccordionBox title=" Activity Phases by Launch">
+      {!!groupedActivitiesResponse?.initiatives?.length && (
+        <AccordionBox title=" Activity Phases by Initiative">
           <PhasesByInitiative
-            type="launchItems"
             groupedActivities={groupedActivitiesResponse}
-            initiatives={loaderData.launchItems}
+            initiatives={loaderData.initiatives}
             dateRangeLabel={dateRangeLabel}
             isLoading={groupedActivitiesFetcher.state === 'loading'}
           />

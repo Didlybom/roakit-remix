@@ -88,19 +88,19 @@ export const incrementInitiativeCounters = async (
   );
 };
 
-export const upsertLaunchItemIndividualCounters = async (
+export const upsertInitiativeIndividualCounters = async (
   customerId: number,
   identityId: string,
   day: string /* YYYYMMDD */,
-  counters: (InitiativeTicketStats & { launchItemId: string })[],
-  launchItemIdToDelete?: string
+  counters: (InitiativeTicketStats & { initiativeId: string })[],
+  initiativeIdToDelete?: string
 ) => {
-  const coll = firestore.collection(`customers/${customerId}/launchItemCounters`);
+  const coll = firestore.collection(`customers/${customerId}/initiativeCounters`);
   const batch = firestore.batch();
-  if (launchItemIdToDelete) {
+  if (initiativeIdToDelete) {
     let deleteQuery = coll.where('identityId', '==', identityId).where('day', '==', +day);
-    if (launchItemIdToDelete !== '*') {
-      deleteQuery = deleteQuery.where('launchItemId', '==', launchItemIdToDelete);
+    if (initiativeIdToDelete !== '*') {
+      deleteQuery = deleteQuery.where('initiativeId', '==', initiativeIdToDelete);
     }
     (await deleteQuery.get()).docs.forEach(async doc => batch.delete(doc.ref));
   }
@@ -169,8 +169,7 @@ export const upsertNextOngoingActivity = async (customerId: number, previousActi
     ongoing: false,
     action: previousActivity.action,
     artifact: previousActivity.artifact,
-    launchItemId: previousActivity.launchItemId,
-    initiative: previousActivity.initiativeId,
+    initiativeId: previousActivity.initiativeId,
     phase: previousActivity.phase,
     description: previousActivity.description,
     priority: previousActivity.priority,

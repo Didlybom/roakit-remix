@@ -1,12 +1,12 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
-import type { GroupedLaunchStats } from '../../processors/initiativeGrouper';
+import type { GroupedInitiativeStats } from '../../processors/initiativeGrouper';
 import type { InitiativeRecord } from '../../types/types';
 import { pluralizeMemo } from '../../utils/stringUtils';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
-  stats: GroupedLaunchStats;
+  stats: GroupedInitiativeStats;
   initiatives: InitiativeRecord | null;
   dateRangeLabel: string;
   isLoading?: boolean;
@@ -18,10 +18,10 @@ export default function TicketsByInitiative({
   dateRangeLabel,
   isLoading,
 }: Props) {
-  if (!initiatives || !stats.launches) {
+  if (!initiatives || !stats.initiatives) {
     return null;
   }
-  return Object.entries(stats.launches).map(([initiativeId, initiative]) => (
+  return Object.entries(stats.initiatives).map(([initiativeId, initiative]) => (
     <Grid key={initiativeId}>
       <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
         {widgetTitle(initiatives[initiativeId]?.label ?? 'Unknown')}

@@ -6,7 +6,6 @@ export enum View {
 
   Dashboard,
   ActivitySummary,
-  AllActivity,
   ActivityUser,
   Feed,
   Tickets,
@@ -15,7 +14,6 @@ export enum View {
   Summary,
 
   Initiatives,
-  LaunchItems,
   Users,
   Settings,
 
@@ -30,7 +28,7 @@ export enum View {
   FetcherGroupedActivities,
   FetcherStatuses,
   FetcherSummaries,
-  FetcherLaunchStats,
+  FetcherInitiativeStats,
   FetcherTickets,
   FetcherTicketPlanHistory,
 
@@ -64,11 +62,10 @@ export const checkAccess = (
   switch (view) {
     case View.Dashboard:
     case View.ActivitySummary:
-    case View.AllActivity:
     case View.ActivityUser:
     case View.RawEvent:
     case View.FetcherGroupedActivities:
-    case View.FetcherLaunchStats:
+    case View.FetcherInitiativeStats:
     case View.Impersonation:
     case View.AI:
       throwIf(sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor);
@@ -89,7 +86,6 @@ export const checkAccess = (
       break;
 
     case View.Initiatives:
-    case View.LaunchItems:
     case View.Users:
     case View.UsersCSV:
     case View.Settings:

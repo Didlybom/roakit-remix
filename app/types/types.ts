@@ -111,7 +111,7 @@ export type Ticket = {
     name?: string;
     uri?: string;
   };
-  launchItemId?: string;
+  initiativeId?: string;
   plannedHours?: number;
   effort?: Record<string /* YYYYMMDD */, Record<Identity['id'], number | null> | null>;
   lastUpdatedTimestamp?: number;
@@ -193,8 +193,7 @@ export type Activity = {
   artifact: Artifact;
   createdTimestamp: number;
   timestamp: number;
-  initiativeId: string;
-  launchItemId?: string | null;
+  initiativeId?: string | null;
   effort?: number | null;
   ongoing?: boolean | null;
   previousActivityId?: string;
@@ -255,9 +254,9 @@ export type Summary = {
 
 export type DaySummaries = Record<string, Summary>;
 
-export type LaunchActorStats = {
+export type InitiativeActorStats = {
   day: number;
-  launchItemId: string;
+  initiativeId: string;
   identityId: string;
   effort: number;
   tickets: Ticket[];

@@ -42,7 +42,7 @@ import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithS
 import EditTextarea from '../components/datagrid/EditTextarea';
 import { dataGridCommonProps, StyledMuiError } from '../components/datagrid/dataGridCommon';
 import { firestore } from '../firebase.server';
-import { fetchLaunchItems } from '../firestore.server/fetchers.server';
+import { fetchInitiatives } from '../firestore.server/fetchers.server';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
@@ -50,7 +50,7 @@ import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 
-interface LaunchItemRow {
+interface InitiativeRow {
   id: string;
   key: string;
   label?: string;
@@ -59,15 +59,15 @@ interface LaunchItemRow {
   activityMapper?: string;
 }
 
-const areRowsEqual = (a: LaunchItemRow, b: LaunchItemRow) =>
+const areRowsEqual = (a: InitiativeRow, b: InitiativeRow) =>
   a.key === b.key &&
   a.label === b.label &&
   a.color === b.color &&
   a.activityMapper === b.activityMapper;
 
-export const meta = () => [{ title: 'Launch Items Admin | ROAKIT' }];
+export const meta = () => [{ title: 'Initiatives Admin | ROAKIT' }];
 
-const VIEW = View.LaunchItems;
+const VIEW = View.Initiatives;
 
 const DEFAULT_COLOR = '#607d8b';
 const KEY_REGEXP = new RegExp(/^[A-Z][A-Z_]*[A-Z]$/);
@@ -75,16 +75,16 @@ const KEY_REGEXP = new RegExp(/^[A-Z][A-Z_]*[A-Z]$/);
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
-    const launchItems = await fetchLaunchItems(sessionData.customerId!);
-    return { ...sessionData, launchItems };
+    const initiatives = await fetchInitiatives(sessionData.customerId!);
+    return { ...sessionData, initiatives };
   } catch (e) {
-    getLogger('route:launch-items').error(e);
+    getLogger('route:initiatives').error(e);
     throw loaderErrorResponse(e);
   }
 };
 
 interface ActionRequest {
-  launchItemId: string;
+  initiativeId: string;
   key: string;
   label: string;
   color: string | null;
@@ -99,32 +99,32 @@ interface ActionResponse {
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
   const sessionData = await loadSession(request, VIEW);
   const actionRequest = (await request.json()) as ActionRequest;
-  const launchItemId = actionRequest.launchItemId;
+  const initiativeId = actionRequest.initiativeId;
 
   if (request.method === 'DELETE') {
     try {
       await firestore
-        .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
+        .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
         .delete();
-      return { status: { code: 'deleted', message: 'Launch item deleted' } };
+      return { status: { code: 'deleted', message: 'Initiative deleted' } };
     } catch (e) {
-      return { error: errMsg(e, 'Failed to delete launch item') };
+      return { error: errMsg(e, 'Failed to delete initiative') };
     }
   }
 
   try {
-    if (launchItemId) {
+    if (initiativeId) {
       await firestore
-        .doc(`customers/${sessionData.customerId!}/launchItems/${launchItemId}`)
+        .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
         .set(actionRequest, { merge: true });
     } else {
       await firestore
-        .collection(`customers/${sessionData.customerId!}/launchItems`)
+        .collection(`customers/${sessionData.customerId!}/initiatives`)
         .add(actionRequest);
     }
-    return { status: { code: 'saved', message: 'Launch item saved' } };
+    return { status: { code: 'saved', message: 'Initiative saved' } };
   } catch (e) {
-    return { error: errMsg(e, 'Failed to save launch item') };
+    return { error: errMsg(e, 'Failed to save initiative') };
   }
 };
 
@@ -175,13 +175,13 @@ function EditColor(props: GridRenderEditCellParams<any, string>) {
   );
 }
 
-export default function LaunchItems() {
+export default function Initiatives() {
   const navigation = useNavigation();
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const confirm = useConfirm();
-  const [rows, setRows] = useState<LaunchItemRow[]>([]);
+  const [rows, setRows] = useState<InitiativeRow[]>([]);
   const [colorPickerPopover, setShowColorPickerPopover] = useState<BoxPopoverContent | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newKey, setNewKey] = useState('');
@@ -197,12 +197,12 @@ export default function LaunchItems() {
 
   useEffect(() => {
     setRows(
-      loaderData.launchItems.map(launchItem => ({
-        ...launchItem,
-        key: launchItem.key ?? launchItem.id,
+      loaderData.initiatives.map(initiative => ({
+        ...initiative,
+        key: initiative.key ?? initiative.id,
       }))
     );
-  }, [loaderData.launchItems]);
+  }, [loaderData.initiatives]);
 
   useEffect(() => {
     if (!actionData?.status) {
@@ -242,9 +242,9 @@ export default function LaunchItems() {
   };
 
   const handleDeleteClick = useCallback(
-    (launchItemId: GridRowId) => {
-      setRows(rows.filter(row => row.id !== launchItemId));
-      submit({ launchItemId }, deleteJsonOptions);
+    (initiativeId: GridRowId) => {
+      setRows(rows.filter(row => row.id !== initiativeId));
+      submit({ initiativeId }, deleteJsonOptions);
     },
     [rows, submit]
   );
@@ -283,7 +283,7 @@ export default function LaunchItems() {
         flex: 1,
         editable: true,
         sortable: false,
-        renderCell: (params: GridRenderCellParams<LaunchItemRow, string>) => (
+        renderCell: (params: GridRenderCellParams<InitiativeRow, string>) => (
           <Box
             tabIndex={params.tabIndex}
             title={params.value}
@@ -310,7 +310,7 @@ export default function LaunchItems() {
         field: 'actions',
         type: 'actions',
         cellClassName: 'actions',
-        getActions: (params: GridRowParams<LaunchItemRow>) => [
+        getActions: (params: GridRowParams<InitiativeRow>) => [
           <GridActionsCellItem
             key={1}
             icon={<DeleteIcon />}
@@ -319,7 +319,7 @@ export default function LaunchItems() {
               try {
                 await confirm({
                   title: 'Confirm Deletion',
-                  description: `Delete the launch item "${params.row.label || params.row.key}"?`,
+                  description: `Delete the initiative "${params.row.label || params.row.key}"?`,
                 });
                 handleDeleteClick(params.row.id);
               } catch {
@@ -356,7 +356,7 @@ export default function LaunchItems() {
         fullWidth
         disableRestoreFocus
       >
-        <DialogTitle>New Launch Item</DialogTitle>
+        <DialogTitle>New Initiative</DialogTitle>
         <DialogContent>
           <Stack spacing={2} my={1}>
             <Stack direction="row" spacing={2} alignItems="center">
@@ -453,7 +453,7 @@ export default function LaunchItems() {
           startIcon={<AddIcon />}
           sx={{ width: 'fit-content' }}
         >
-          New Launch Item
+          New Initiative
         </Button>
         <StyledMuiError>
           <DataGridWithSingleClickEditing
@@ -466,7 +466,7 @@ export default function LaunchItems() {
               sorting: { sortModel: [{ field: 'key', sort: 'asc' as GridSortDirection }] },
             }}
             onRowEditStop={handleRowEditStop}
-            processRowUpdate={(newRow: LaunchItemRow, oldRow: LaunchItemRow) => {
+            processRowUpdate={(newRow: InitiativeRow, oldRow: InitiativeRow) => {
               if (!newRow.key) return newRow;
               if (rows.find(r => r.key === newRow.key)) return { ...newRow, key: '' };
               const updatedRow = { ...newRow, isNew: false };
@@ -475,7 +475,7 @@ export default function LaunchItems() {
               }
               submit(
                 {
-                  launchItemId: updatedRow.id,
+                  initiativeId: updatedRow.id,
                   key: updatedRow.key,
                   label: updatedRow.label ?? '',
                   color: updatedRow.color ?? null,
@@ -485,7 +485,7 @@ export default function LaunchItems() {
               );
               return updatedRow;
             }}
-            onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save launch item'))}
+            onProcessRowUpdateError={e => setError(errMsg(e, 'Failed to save initiative'))}
           />
         </StyledMuiError>
         <Typography variant="caption" mt={3} align="right">

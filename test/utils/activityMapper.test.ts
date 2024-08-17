@@ -1,5 +1,4 @@
 import {
-  MapperType,
   clearActivityMapperCache,
   compileActivityMappers,
   mapActivity,
@@ -25,11 +24,10 @@ test('evalActivity', () => {
     'ini-6': { key: 'k6', activityMapper: `xxx ~= "xxx" or metadata.label.name ~= "QWer"` },
   };
   clearActivityMapperCache();
-  compileActivityMappers(MapperType.Initiative, mappers);
+  compileActivityMappers(mappers);
 
   const activity: Activity = {
     initiativeId: '',
-    launchItemId: '',
     id: 'id',
     action: 'action',
     createdTimestamp: 0,
@@ -39,20 +37,20 @@ test('evalActivity', () => {
     metadata: { issue: { key: 'iss-a', project: { id: 'proj-a' } } },
   };
 
-  expect(mapActivity(activity).initiatives).toEqual(['ini-1', 'ini-2', 'ini-3', 'ini-4', 'ini-5']);
-  expect(mapActivity({ ...activity, event: 'x' }).initiatives).toEqual(['ini-2', 'ini-3', 'ini-5']);
+  expect(mapActivity(activity)).toEqual(['ini-1', 'ini-2', 'ini-3', 'ini-4', 'ini-5']);
+  expect(mapActivity({ ...activity, event: 'x' })).toEqual(['ini-2', 'ini-3', 'ini-5']);
   expect(
     mapActivity({
       ...activity,
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    }).initiatives
+    })
   ).toEqual(['ini-1', 'ini-3', 'ini-5']);
   expect(
     mapActivity({
       ...activity,
       event: 'x',
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    }).initiatives
+    })
   ).toEqual(['ini-5']);
   expect(
     mapActivity({
@@ -60,19 +58,19 @@ test('evalActivity', () => {
       artifact: 'task',
       event: 'x',
       metadata: { issue: { key: 'iss-a', project: { id: 'x' } } },
-    }).initiatives
+    })
   ).toEqual([]);
   expect(
     mapActivity({
       ...activity,
       metadata: { label: { contentType: 'page', name: 'qwerty' } },
-    }).initiatives
+    })
   ).toEqual(['ini-1', 'ini-3', 'ini-5', 'ini-6']);
   expect(
     mapActivity({
       ...activity,
       metadata: { label: { contentType: 'page', name: 'x' } },
-    }).initiatives
+    })
   ).toEqual(['ini-1', 'ini-3', 'ini-5']);
 });
 
@@ -83,11 +81,10 @@ test('evalActivityWithArrayField', () => {
     'ini-3': { key: 'k2', activityMapper: `metadata.commits_1st.message ~= "eee"` },
   };
   clearActivityMapperCache();
-  compileActivityMappers(MapperType.Initiative, mappers);
+  compileActivityMappers(mappers);
 
   const activity: Activity = {
     initiativeId: '',
-    launchItemId: '',
     id: 'id',
     action: 'action',
     createdTimestamp: 0,
@@ -97,5 +94,5 @@ test('evalActivityWithArrayField', () => {
     metadata: { commits: [{ message: 'xxx abc yyy' }, { message: 'zzz' }] },
   };
 
-  expect(mapActivity(activity).initiatives).toEqual(['ini-1']);
+  expect(mapActivity(activity)).toEqual(['ini-1']);
 });

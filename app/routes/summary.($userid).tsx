@@ -47,13 +47,12 @@ import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
-  fetchLaunchItemMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import { MapperType, compileActivityMappers, mapActivity } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
 import { loadSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
@@ -81,9 +80,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
-    const [initiatives, launchItems, accounts, identities] = await Promise.all([
+    const [initiatives, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -108,7 +106,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       reportIds: userIdentity.reportIds,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       initiatives,
-      launchItems,
     };
   } catch (e) {
     getLogger('route:summary.user').error(e);
@@ -197,9 +194,8 @@ export default function Summary() {
   const hasAiSummary = aiSummaryTexts.length > 0 && !!aiSummaryTexts[0];
 
   useEffect(() => {
-    compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
-    compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-  }, [loaderData.initiatives, loaderData.launchItems]);
+    compileActivityMappers(loaderData.initiatives);
+  }, [loaderData.initiatives]);
 
   // load activities for the selected day
   useEffect(() => {
@@ -255,13 +251,9 @@ export default function Summary() {
     }
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
-      if (!activity.initiativeId || !activity.launchItemId) {
-        const mapping = mapActivity(activity);
-        if (!activity.initiativeId) {
-          activity.initiativeId = mapping.initiatives[0] ?? '';
-        }
-        if (!activity.launchItemId) {
-          activity.launchItemId = mapping.launchItems[0] ?? '';
+      if (!activity.initiativeId) {
+        if (activity.initiativeId == null) {
+          activity.initiativeId = mapActivity(activity)[0] ?? '';
         }
       }
     });

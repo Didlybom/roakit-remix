@@ -55,7 +55,7 @@ import {
   fetchAccountMap,
   fetchGroups,
   fetchIdentities,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import ConfluenceIcon from '../icons/Confluence';
@@ -71,7 +71,7 @@ import {
   reactionNames,
 } from '../processors/activityFeed';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import { type Activity, type Initiative } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { formatMonthDayTime } from '../utils/dateUtils';
@@ -112,7 +112,7 @@ export const shouldRevalidate = () => false;
 
 const VIEW = View.Feed;
 
-const SEARCH_PARAM_LAUNCH = 'launch';
+const SEARCH_PARAM_INITIATIVE = 'initiative';
 const SEARCH_PARAM_ARTIFACT = 'artifact';
 
 const PAGE_SIZE = 50;
@@ -156,16 +156,15 @@ const feedStyles = (
   />
 );
 
-const launchFilterOptions = createFilterOptions({
+const initiativeFilterOptions = createFilterOptions({
   stringify: (option: Initiative) => option.key + ' ' + option.label,
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
   try {
-    const [launchItems, accounts, identities, groups] = await Promise.all([
-      //  fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, accounts, identities, groups] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
       fetchGroups(sessionData.customerId!),
@@ -208,7 +207,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       groupId,
       identityId: userIdentity.id,
       activityUserIds,
-      launchItems,
+      initiatives,
       actors,
       accountMap: identities.accountMap,
       identities: identities.list,
@@ -255,15 +254,15 @@ export default function Feed() {
   const newActivitiesFetcher = useFetcher<ActivityPageResponse>();
   const newFetchedActivities = newActivitiesFetcher.data;
   const [activities, setActivities] = useState<ActivityRow[]>([]);
-  const [launchFilter, setLaunchFilter] = useState(
-    searchParams.get(SEARCH_PARAM_LAUNCH)?.split(',') ?? []
+  const [initiativeFilter, setInitiativeFilter] = useState(
+    searchParams.get(SEARCH_PARAM_INITIATIVE)?.split(',') ?? []
   );
   const [artifactFilter, setArtifactFilter] = useState(
     searchParams.get(SEARCH_PARAM_ARTIFACT)?.split(',') ?? []
   );
   const [groupFilter, setGroupFilter] = useState(loaderData.groupId);
   const [actorFilter, setActorFilter] = useState(loaderData.userId);
-  const hasFilters = launchFilter.length || artifactFilter.length || groupFilter || actorFilter;
+  const hasFilters = initiativeFilter.length || artifactFilter.length || groupFilter || actorFilter;
   const [codePopover, setCodePopover] = useState<CodePopoverContent | null>(null);
   const [popover, setPopover] = useState<BoxPopoverContent | null>(null);
   const [snackMessage, setSnackMessage] = useState('');
@@ -274,16 +273,16 @@ export default function Feed() {
   const listRef = useRef<VariableSizeList | null>(null);
   const heightsRef = useRef<number[]>([]);
 
-  let launchItemsByKey = new Map<string, Initiative>();
-  Object.entries(loaderData.launchItems).forEach(([id, launchItem]) =>
-    launchItemsByKey.set(launchItem.key, { id, ...launchItem })
+  let initiativesByKey = new Map<string, Initiative>();
+  Object.entries(loaderData.initiatives).forEach(([id, initiative]) =>
+    initiativesByKey.set(initiative.key, { id, ...initiative })
   );
-  launchItemsByKey = new Map([...launchItemsByKey.entries()].sort());
+  initiativesByKey = new Map([...initiativesByKey.entries()].sort());
 
   const loadMoreRows = () => {
     let query = `/fetcher/activities/page?limit=${PAGE_SIZE}&combine=true`;
-    if (launchFilter.length) {
-      query += `&launchIds=${launchFilter.map(k => launchItemsByKey.get(k)!.id).join(',')}`;
+    if (initiativeFilter.length) {
+      query += `&initiativeIds=${initiativeFilter.map(k => initiativesByKey.get(k)!.id).join(',')}`;
     }
     if (artifactFilter.length) {
       query += `&artifacts=${artifactFilter.join(',')}`;
@@ -316,36 +315,30 @@ export default function Feed() {
     (fetchedActivities: ActivityPageResponse['activities']) => {
       const activityRows: ActivityRow[] = [];
       fetchedActivities?.forEach((activity: Activity) => {
-        let mapping;
-        if (!activity.initiativeId || activity.launchItemId == null) {
-          mapping = mapActivity(activity);
-        }
-        const { initiativeId, ...activityFields } = activity;
-        // activity.launchItemId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
-        let launchItemId = '';
-        if (activity.launchItemId != null) {
-          launchItemId = activity.launchItemId;
+        // activity.initiativeId is '', not null, if user explicitly unset it (perhaps because they didn't like the mapping)
+        let initiativeId = '';
+        if (activity.initiativeId != null) {
+          initiativeId = activity.initiativeId;
         } else {
-          launchItemId = mapping?.launchItems[0] ?? '';
+          initiativeId = mapActivity(activity)[0] ?? '';
         }
         if (
-          launchFilter.length === 0 ||
-          (launchItemId && launchFilter.includes(loaderData.launchItems[launchItemId].key))
+          initiativeFilter.length === 0 ||
+          (initiativeId && initiativeFilter.includes(loaderData.initiatives[initiativeId].key))
         ) {
           activityRows.push({
-            ...activityFields,
+            ...activity,
             actorId:
               activity.actorId ?
                 (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
               : undefined,
-            initiativeId: initiativeId || mapping?.initiatives[0] || '',
-            launchItemId,
+            initiativeId,
           });
         }
       });
       return activityRows;
     },
-    [launchFilter, loaderData.accountMap, loaderData.launchItems]
+    [initiativeFilter, loaderData.accountMap, loaderData.initiatives]
   );
 
   const clear = () => {
@@ -354,10 +347,8 @@ export default function Feed() {
   };
 
   useEffect(() => {
-    if (loaderData.launchItems) {
-      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-    }
-  }, [loaderData.launchItems]);
+    compileActivityMappers(loaderData.initiatives);
+  }, [loaderData.initiatives]);
 
   // handle cookie expired errors
   useEffect(() => {
@@ -569,10 +560,10 @@ export default function Feed() {
               </Tooltip>
             )}
             <Box flexGrow={1} />
-            {activity.launchItemId != null && (
-              <Tooltip title={loaderData.launchItems[activity.launchItemId]?.label}>
-                <Box color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}>
-                  {loaderData.launchItems[activity.launchItemId]?.key}
+            {activity.initiativeId != null && (
+              <Tooltip title={loaderData.initiatives[activity.initiativeId]?.label}>
+                <Box color={loaderData.initiatives[activity.initiativeId]?.color ?? undefined}>
+                  {loaderData.initiatives[activity.initiativeId]?.key}
                 </Box>
               </Tooltip>
             )}
@@ -637,14 +628,14 @@ export default function Feed() {
             disableClearable
             size="small"
             sx={{ width: FILTER_WIDTH }}
-            value={launchFilter.map(key => launchItemsByKey.get(key)!)}
-            options={[...launchItemsByKey.values()]}
+            value={initiativeFilter.map(key => initiativesByKey.get(key)!)}
+            options={[...initiativesByKey.values()]}
             isOptionEqualToValue={(option, value) => option.key === value.key}
-            filterOptions={launchFilterOptions}
+            filterOptions={initiativeFilterOptions}
             onChange={(_e, options) => {
               const keys = options.map(option => option.key);
-              setLaunchFilter(keys);
-              setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_LAUNCH, keys));
+              setInitiativeFilter(keys);
+              setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_INITIATIVE, keys));
               clear();
               loadNewRows();
             }}
@@ -685,10 +676,10 @@ export default function Feed() {
             renderInput={params => (
               <TextField
                 {...params}
-                placeholder={launchFilter.length === 0 ? 'Launch Items' : undefined}
+                placeholder={initiativeFilter.length === 0 ? 'Initiatives' : undefined}
                 InputProps={{
                   ...params.InputProps,
-                  ...(launchFilter.length === 0 && {
+                  ...(initiativeFilter.length === 0 && {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
                         <FilterIcon fontSize="small" />
@@ -745,9 +736,11 @@ export default function Feed() {
               window.open(
                 '/feed/' +
                   (value ? `group:${value}/` : '') +
-                  (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
-                  (launchFilter.length && artifactFilter.length ? '&' : '') +
-                  (!launchFilter.length && artifactFilter.length ? '?' : '') +
+                  (initiativeFilter.length ?
+                    `?initiative=${encodeURI(initiativeFilter.join(','))}`
+                  : '') +
+                  (initiativeFilter.length && artifactFilter.length ? '&' : '') +
+                  (!initiativeFilter.length && artifactFilter.length ? '?' : '') +
                   (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
                 '_self'
               );
@@ -772,9 +765,11 @@ export default function Feed() {
               window.open(
                 '/feed/' +
                   (option != null ? `${option.value}/` : '') +
-                  (launchFilter.length ? `?launch=${encodeURI(launchFilter.join(','))}` : '') +
-                  (launchFilter.length && artifactFilter.length ? '&' : '') +
-                  (!launchFilter.length && artifactFilter.length ? '?' : '') +
+                  (initiativeFilter.length ?
+                    `?initiative=${encodeURI(initiativeFilter.join(','))}`
+                  : '') +
+                  (initiativeFilter.length && artifactFilter.length ? '&' : '') +
+                  (!initiativeFilter.length && artifactFilter.length ? '?' : '') +
                   (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
                 '_self'
               );

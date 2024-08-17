@@ -1,6 +1,6 @@
 import retry from 'async-retry';
 import dayjs from 'dayjs';
-import { FieldPath } from 'firebase-admin/firestore';
+import { FieldPath, type Query } from 'firebase-admin/firestore';
 import NodeCache from 'node-cache';
 import { firestore } from '../firebase.server';
 import { combineAndPushActivity } from '../processors/activityCombiner';
@@ -22,8 +22,8 @@ import {
   type GroupToIdentitiesRecord,
   type Identity,
   type Initiative,
+  type InitiativeActorStats,
   type InitiativeRecord,
-  type LaunchActorStats,
   type Phase,
   type Summary,
   type Ticket,
@@ -180,7 +180,15 @@ export const queryTeamIdentities = async (
   return identities;
 };
 
-export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
+const makeInitiativeCacheKey = (customerId: number) => `${customerId};initiatives`;
+const initiativeCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
+
+export const fetchInitiativesWithCache = async (customerId: number): Promise<InitiativeRecord> => {
+  const cacheKey = makeInitiativeCacheKey(customerId);
+  const cache: InitiativeRecord | undefined = initiativeCache.get(cacheKey);
+  if (cache != null) {
+    return cache;
+  }
   const initiatives: InitiativeRecord = {};
   (
     await retry(
@@ -188,13 +196,37 @@ export const fetchInitiativeMap = async (customerId: number): Promise<Initiative
       retryProps('Retrying fetchInitiatives...')
     )
   ).forEach(doc => {
-    const data = parse<schemas.InitiativeType>(schemas.initiativeSchema, doc.data(), 'initiative');
+    const data = parse<schemas.InitiativeType>(
+      schemas.initiativeSchema,
+      doc.data(),
+      'initiative ' + doc.id
+    );
+    initiatives[doc.id] = {
+      key: data.key ?? doc.id,
+      activityMapper: data.activityMapper,
+    };
+  });
+  initiativeCache.set(cacheKey, initiatives);
+  return initiatives;
+};
+
+export const fetchInitiativeMap = async (customerId: number): Promise<InitiativeRecord> => {
+  const initiatives: InitiativeRecord = {};
+  (
+    await retry(
+      async () => await firestore.collection(`customers/${customerId}/initiatives`).get(),
+      retryProps('Retrying fetchInitiativeMap...')
+    )
+  ).forEach(doc => {
+    const data = parse<schemas.InitiativeType>(
+      schemas.initiativeSchema,
+      doc.data(),
+      'initiative ' + doc.id
+    );
     initiatives[doc.id] = {
       key: data.key ?? doc.id,
       label: data.label,
-      tags: data.tags,
-      reference: data.reference,
-      url: data.url,
+      color: data.color,
       activityMapper: data.activityMapper,
       counters:
         data.counters ?
@@ -213,73 +245,6 @@ export const fetchInitiatives = async (customerId: number): Promise<Initiative[]
     initiatives.push({ ...initiative, id })
   );
   return initiatives.sort((a, b) => a.key.localeCompare(b.key));
-};
-
-const makeLaunchItemsCacheKey = (customerId: number) => `${customerId};launchItems`;
-const launchItemsCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
-
-export const fetchLaunchItemsWithCache = async (customerId: number): Promise<InitiativeRecord> => {
-  const cacheKey = makeLaunchItemsCacheKey(customerId);
-  const cache: InitiativeRecord | undefined = launchItemsCache.get(cacheKey);
-  if (cache != null) {
-    return cache;
-  }
-  const launchItems: InitiativeRecord = {};
-  (
-    await retry(
-      async () => await firestore.collection(`customers/${customerId}/launchItems`).get(),
-      retryProps('Retrying fetchLaunchItemMappers...')
-    )
-  ).forEach(doc => {
-    const data = parse<schemas.InitiativeType>(
-      schemas.initiativeSchema,
-      doc.data(),
-      'launch item ' + doc.id
-    );
-    launchItems[doc.id] = {
-      key: data.key ?? doc.id,
-      activityMapper: data.activityMapper,
-    };
-  });
-  launchItemsCache.set(cacheKey, launchItems);
-  return launchItems;
-};
-
-export const fetchLaunchItemMap = async (customerId: number): Promise<InitiativeRecord> => {
-  const launchItems: InitiativeRecord = {};
-  (
-    await retry(
-      async () => await firestore.collection(`customers/${customerId}/launchItems`).get(),
-      retryProps('Retrying fetchLaunchItems...')
-    )
-  ).forEach(doc => {
-    const data = parse<schemas.InitiativeType>(
-      schemas.initiativeSchema,
-      doc.data(),
-      'launch item ' + doc.id
-    );
-    launchItems[doc.id] = {
-      key: data.key ?? doc.id,
-      label: data.label,
-      color: data.color,
-      activityMapper: data.activityMapper,
-      counters:
-        data.counters ?
-          { activities: data.counters.activities }
-        : { activities: { code: 0, codeOrg: 0, task: 0, taskOrg: 0, doc: 0, docOrg: 0 } },
-      countersLastUpdated: data.countersLastUpdated ?? 0,
-    };
-  });
-  return launchItems;
-};
-
-export const fetchLaunchItems = async (customerId: number): Promise<Initiative[]> => {
-  const launchItems: Initiative[] = [];
-  const launchItemMap = await fetchLaunchItemMap(customerId);
-  Object.entries(launchItemMap).forEach(([id, launchItem]) =>
-    launchItems.push({ ...launchItem, id })
-  );
-  return launchItems.sort((a, b) => a.key.localeCompare(b.key));
 };
 
 const findIdentity = (identities: Identity[], id: string) => identities.find(i => i.id === id)!;
@@ -663,8 +628,7 @@ export const fetchActivities = async ({
         artifact: data.artifact as Artifact,
         createdTimestamp: data.createdTimestamp,
         timestamp: data.eventTimestamp ?? data.createdTimestamp,
-        initiativeId: data.initiative,
-        launchItemId: data.launchItemId,
+        initiativeId: data.initiativeId,
         effort: data.effort,
         ongoing: data.ongoing,
         previousActivityId: data.previousActivityId,
@@ -694,41 +658,6 @@ export const fetchActivities = async ({
   return activities;
 };
 
-const makeActivityCountCacheKey = (
-  customerId: number,
-  { withInitiatives }: { withInitiatives?: boolean }
-) => {
-  let suffix = '';
-  if (withInitiatives != null) {
-    suffix = withInitiatives ? ';withInitiatives' : ';withoutInitiatives';
-  }
-  return `${customerId};activityTotal${suffix}`;
-};
-const activityCountCache = new NodeCache({ stdTTL: 60 /* seconds */, useClones: false });
-
-const fetchActivityTotalWithCache = async (
-  customerId: number,
-  withInitiatives?: boolean
-): Promise<number> => {
-  const cacheKey = makeActivityCountCacheKey(customerId, { withInitiatives });
-  const cache: number | undefined = activityCountCache.get(cacheKey);
-  if (cache != null) {
-    return cache;
-  }
-  return await retry(async () => {
-    const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
-    let activityQuery;
-    if (withInitiatives == null) {
-      activityQuery = activitiesCollection;
-    } else {
-      activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
-    }
-    const activityTotal = (await activityQuery.count().get()).data().count;
-    activityCountCache.set(cacheKey, activityTotal);
-    return activityTotal;
-  }, retryProps('Retrying fetchActivityTotal...'));
-};
-
 export const fetchActivitiesPage = async ({
   customerId,
   startAfter,
@@ -737,10 +666,7 @@ export const fetchActivitiesPage = async ({
   artifacts,
   limit,
   combine,
-  withInitiatives,
-  withTotal = false,
   useIdentityId = false,
-  includeFuture = false,
 }: {
   customerId: number;
   startAfter?: number;
@@ -749,21 +675,13 @@ export const fetchActivitiesPage = async ({
   artifacts?: string[];
   limit: number;
   combine?: boolean;
-  withInitiatives?: boolean;
-  withTotal?: boolean;
   useIdentityId?: boolean;
-  includeFuture?: boolean;
 }) => {
   if (startAfter != null && endBefore != null) {
     throw Error('startAfter and endBefore are mutually exclusive params.');
   }
   const activitiesCollection = firestore.collection(`customers/${customerId}/activities`);
-  let activityQuery;
-  if (withInitiatives == null) {
-    activityQuery = activitiesCollection;
-  } else {
-    activityQuery = activitiesCollection.where('initiative', withInitiatives ? '!=' : '==', '');
-  }
+  let activityQuery = activitiesCollection as Query;
   if (userIds?.length) {
     activityQuery = activityQuery.where(
       useIdentityId ? 'identityId' : 'actorAccountId',
@@ -787,16 +705,14 @@ export const fetchActivitiesPage = async ({
     logger.debug(await explainQuery(activityPageQuery));
   }
 
-  let [activityPage, activityTotal] = await Promise.all([
-    retry(async () => activityPageQuery.get(), retryProps('Retrying fetchActivitiesPage...')),
-    withTotal ? fetchActivityTotalWithCache(customerId, withInitiatives) : undefined,
-  ]);
+  let activityPage = await retry(
+    async () => activityPageQuery.get(),
+    retryProps('Retrying fetchActivitiesPage...')
+  );
 
   const activities: Activity[] = [];
   const ticketPrioritiesToFetch = new Set<string>();
   const activityTickets = new Map<string, string>();
-
-  const now = Date.now();
 
   activityPage.forEach(doc => {
     const data = parse<schemas.ActivityType>(
@@ -804,12 +720,6 @@ export const fetchActivitiesPage = async ({
       doc.data(),
       `activity ${doc.id}`
     );
-    if (!includeFuture && data.createdTimestamp > now) {
-      if (activityTotal != null) {
-        activityTotal--;
-      }
-      return;
-    }
     const priority = data.priority;
     if (!priority || priority === -1) {
       // will find priority from metadata for activities missing one
@@ -829,8 +739,7 @@ export const fetchActivitiesPage = async ({
       createdTimestamp: data.createdTimestamp,
       timestamp: data.eventTimestamp ?? data.createdTimestamp,
       priority: data.priority,
-      initiativeId: data.initiative,
-      launchItemId: data.launchItemId,
+      initiativeId: data.initiativeId,
       phase: data.phase as Phase,
       effort: data.effort,
       ongoing: data.ongoing,
@@ -848,7 +757,7 @@ export const fetchActivitiesPage = async ({
       combineAndPushActivity(activities[i], combinedActivities);
     }
     combinedActivities.sort((a, b) => b.timestamp - a.timestamp);
-    return { activities: combinedActivities, activityTotal };
+    return combinedActivities;
   }
   if (ticketPrioritiesToFetch.size > 0) {
     const tickets = await fetchTicketPrioritiesWithCache(customerId, [...ticketPrioritiesToFetch]);
@@ -861,7 +770,7 @@ export const fetchActivitiesPage = async ({
     });
   }
 
-  return { activities, activityTotal };
+  return activities;
 };
 
 export const fetchSummaries = async (
@@ -933,7 +842,7 @@ export const fetchAllSummaries = async (
   return summaries;
 };
 
-export const fetchLaunchStats = async ({
+export const fetchInitiativeStats = async ({
   customerId,
   startDay /* YYYYMMDD */,
   endDay,
@@ -942,10 +851,10 @@ export const fetchLaunchStats = async ({
   startDay: number;
   endDay?: number;
 }) => {
-  const stats: LaunchActorStats[] = [];
+  const stats: InitiativeActorStats[] = [];
 
   let query = firestore
-    .collection(`customers/${customerId}/launchItemCounters`)
+    .collection(`customers/${customerId}/initiativeCounters`)
     .orderBy('day')
     .startAt(startDay);
   if (endDay) {
@@ -954,13 +863,13 @@ export const fetchLaunchStats = async ({
   query = query.limit(20000); // FIXME limit
   const documents = await retry(
     async () => await query.get(),
-    retryProps('Retrying fetchLaunchStats...')
+    retryProps('Retrying fetchInitiativeStats...')
   );
   documents.forEach(doc => {
-    const data = parse<schemas.LaunchStatsType>(
-      schemas.launchStatsSchema,
+    const data = parse<schemas.InitiativeStatsType>(
+      schemas.initiativeStatsSchema,
       doc.data(),
-      'launch stats ' + doc.id
+      'initiative stats ' + doc.id
     );
     stats.push(data);
   });

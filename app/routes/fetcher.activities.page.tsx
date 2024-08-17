@@ -2,9 +2,9 @@ import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtim
 import { json } from '@remix-run/server-runtime';
 import {
   fetchActivitiesPage,
-  fetchLaunchItemsWithCache,
+  fetchInitiativesWithCache,
 } from '../firestore.server/fetchers.server';
-import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import type { Activity } from '../types/types';
 import { loadSession } from '../utils/authUtils.server';
 import { errMsg, RoakitError } from '../utils/errorUtils';
@@ -16,7 +16,6 @@ import { View } from '../utils/rbac';
 export interface ActivityPageResponse {
   error?: ErrorField;
   activities?: Activity[];
-  activityTotal?: number;
 }
 
 export const shouldRevalidate = () => false;
@@ -37,17 +36,9 @@ export const loader = async ({
   const startAfter = searchParams.get('startAfter') ? +searchParams.get('startAfter')! : undefined;
   const endBefore = searchParams.get('endBefore') ? +searchParams.get('endBefore')! : undefined;
   const userIds = searchParams.get('userIds')?.split(',') ?? undefined;
-  const launchIds = searchParams.get('launchIds')?.split(',') ?? undefined;
+  const initiativeIds = searchParams.get('initiativeIds')?.split(',') ?? undefined;
   const artifacts = searchParams.get('artifacts')?.split(',') ?? undefined;
   const limit = searchParams.get('limit') ? +searchParams.get('limit')! : undefined;
-  const withInitiatives =
-    searchParams.get('withInitiatives') ?
-      searchParams.get('withInitiatives') === 'true'
-    : undefined;
-  const withTotal =
-    searchParams.get('withTotal') ? searchParams.get('withTotal') === 'true' : undefined;
-  const includeFuture =
-    searchParams.get('includeFuture') ? searchParams.get('includeFuture') === 'true' : undefined;
   const useIdentityId =
     searchParams.get('useIdentityId') ? searchParams.get('useIdentityId') === 'true' : undefined;
   const combine = searchParams.get('combine') ? searchParams.get('combine') === 'true' : undefined;
@@ -55,45 +46,43 @@ export const loader = async ({
     return errorJsonResponse('Fetching activities page failed. Invalid params.', 400);
   }
   try {
-    if (!launchIds?.length) {
-      const { activities, activityTotal } = await fetchActivitiesPage({
+    if (!initiativeIds?.length) {
+      const activities = await fetchActivitiesPage({
         customerId: sessionData.customerId!,
         startAfter,
         endBefore,
         userIds,
         artifacts,
         limit,
-        withInitiatives,
-        withTotal,
         useIdentityId,
-        includeFuture,
         combine,
       });
-      return json({ activities, activityTotal });
+      return json({ activities });
     } else {
-      const launchItems = await fetchLaunchItemsWithCache(sessionData.customerId!);
-      compileActivityMappers(MapperType.LaunchItem, launchItems);
+      const initiatives = await fetchInitiativesWithCache(sessionData.customerId!);
+      compileActivityMappers(initiatives);
       let fetchCount = 0;
       let startAfterDate = startAfter;
       while (fetchCount < 1000 / limit) {
         fetchCount++;
-        const { activities } = await fetchActivitiesPage({
+        const activities = await fetchActivitiesPage({
           customerId: sessionData.customerId!,
           startAfter: startAfterDate,
           userIds,
           artifacts,
           limit,
           useIdentityId,
-          includeFuture,
           combine,
         });
         const filteredActivities = activities
           .map(activity =>
-            activity.launchItemId != null ?
+            activity.initiativeId != null ?
               activity
-            : { ...activity, launchItemId: mapActivity(activity)?.launchItems[0] ?? '' }
+            : { ...activity, initiativeId: mapActivity(activity)[0] ?? '' }
           )
-          .filter(activity => activity.launchItemId && launchIds.includes(activity.launchItemId));
+          .filter(
+            activity => activity.initiativeId && initiativeIds.includes(activity.initiativeId)
+          );
         if (filteredActivities.length > 0) {
           return json({ activities: filteredActivities });
         }

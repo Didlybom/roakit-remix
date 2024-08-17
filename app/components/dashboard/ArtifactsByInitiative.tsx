@@ -6,7 +6,6 @@ import { pluralizeMemo } from '../../utils/stringUtils';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
-  type: 'initiatives' | 'launchItems';
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   dateRangeLabel: string;
@@ -14,19 +13,18 @@ type Props = {
 };
 
 export default function ArtifactsByInitiatives({
-  type,
   groupedActivities,
   initiatives,
   dateRangeLabel,
   isLoading,
 }: Props) {
-  if (!initiatives || !groupedActivities?.[type]?.length) {
+  if (!initiatives || !groupedActivities?.initiatives?.length) {
     return null;
   }
 
   const SHOW_TOTAL = false;
 
-  return groupedActivities[type].map(initiative => {
+  return groupedActivities.initiatives.map(initiative => {
     const totalCounters = initiatives[initiative.id].counters!.activities;
     return (
       <Grid key={initiative.id}>

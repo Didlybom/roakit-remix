@@ -4,11 +4,11 @@ import dayjs from 'dayjs';
 import {
   fetchActivities,
   fetchIdentities,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { groupActivities, type GroupedActivities } from '../processors/activityGrouper';
 import { identifyActivities } from '../processors/activityIdentifier';
-import { MapperType, compileActivityMappers, mapActivity } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import { loadSession } from '../utils/authUtils.server';
 import type { DateRange } from '../utils/dateUtils';
 import { dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
@@ -55,9 +55,8 @@ export const loader = async ({
       return errorJsonResponse('Fetching grouped activities failed. Invalid params.', 400);
     }
 
-    const [launchItems, identities, activities] = await Promise.all([
-      // fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, identities, activities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
       fetchActivities({
         customerId: sessionData.customerId!,
@@ -67,18 +66,10 @@ export const loader = async ({
       }),
     ]);
 
-    // compileActivityMappers(MapperType.Initiative, initiatives);
-    compileActivityMappers(MapperType.LaunchItem, launchItems);
+    compileActivityMappers(initiatives);
     activities.forEach(activity => {
-      let mapping;
-      if (/*!activity.initiativeId ||*/ !activity.launchItemId) {
-        mapping = mapActivity(activity);
-      }
-      // if (!activity.initiativeId) {
-      //   activity.initiativeId = mapping?.initiatives[0] ?? '';
-      // }
-      if (!activity.launchItemId) {
-        activity.launchItemId = mapping?.launchItems[0] ?? '';
+      if (activity.initiativeId == null) {
+        activity.initiativeId = mapActivity(activity)[0] ?? '';
       }
     });
 

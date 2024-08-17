@@ -4,29 +4,12 @@ import type { Activity, Initiative, InitiativeRecord } from '../types/types';
 
 // see https://github.com/joewalnes/filtrex
 
-export enum MapperType {
-  Initiative,
-  LaunchItem,
-}
-
-let compiledExpressions: Record<MapperType, Record<Initiative['id'], (obj: unknown) => unknown>> = {
-  [MapperType.Initiative]: {},
-  [MapperType.LaunchItem]: {},
-};
-let expressionsHash: Record<MapperType, string> = {
-  [MapperType.Initiative]: '',
-  [MapperType.LaunchItem]: '',
-};
+let compiledExpressions: Record<Initiative['id'], (obj: unknown) => unknown> = {};
+let expressionsHash = '';
 
 export const clearActivityMapperCache = () => {
-  compiledExpressions = {
-    [MapperType.Initiative]: {},
-    [MapperType.LaunchItem]: {},
-  };
-  expressionsHash = {
-    [MapperType.Initiative]: '',
-    [MapperType.LaunchItem]: '',
-  };
+  compiledExpressions = {};
+  expressionsHash = '';
 };
 
 // Adapted from https://github.com/m93a/filtrex/blob/main/src/filtrex.mjs#L208
@@ -76,44 +59,38 @@ const options = {
   },
 };
 
-export const compileActivityMappers = (type: MapperType, map: InitiativeRecord) => {
+export const compileActivityMappers = (map: InitiativeRecord) => {
   const hash = stringify(
     Object.values(map)
       .filter(i => !i.activityMapper)
       .map(i => i.activityMapper)
   );
-  if (hash === expressionsHash[type]) {
+  if (hash === expressionsHash) {
     return compiledExpressions;
   }
-  compiledExpressions[type] = {};
+  compiledExpressions = {};
   Object.entries(map).forEach(([initiativeId, initiative]) => {
     if (initiative.activityMapper) {
-      compiledExpressions[type][initiativeId] = compileExpression(
+      compiledExpressions[initiativeId] = compileExpression(
         initiative.activityMapper,
         // @ts-expect-error no need to overwrite all Operators
         options
       );
     }
   });
-  expressionsHash[type] = hash;
+  expressionsHash = hash;
 };
 
 export const mapActivity = (activity: Activity | Omit<Activity, 'id'>) => {
   const initiatives: string[] = [];
-  const launchItems: string[] = [];
 
   // Note: Filtrex returns an error as a string (so, not === true) when something goes wrong.
   //       It doesn't throw.
-  Object.entries(compiledExpressions[MapperType.Initiative]).forEach(([id, compiledExpression]) => {
+  Object.entries(compiledExpressions).forEach(([id, compiledExpression]) => {
     if (compiledExpression(activity) === true) {
       initiatives.push(id);
     }
   });
-  Object.entries(compiledExpressions[MapperType.LaunchItem]).forEach(([id, compiledExpression]) => {
-    if (compiledExpression(activity) === true) {
-      launchItems.push(id);
-    }
-  });
 
-  return { initiatives, launchItems };
+  return initiatives;
 };

@@ -11,14 +11,12 @@ import { pluralizeMemo } from '../../utils/stringUtils';
 import { commonPaperSx, pastelColors, widgetSize, widgetTitle } from './common';
 
 type Props = {
-  type: 'initiatives' | 'launchItems';
   groupedActivities: GroupedActivities;
   initiatives: InitiativeRecord | null;
   isLoading?: boolean;
 };
 
 export default function ContributorsByInitiative({
-  type,
   groupedActivities,
   initiatives,
   isLoading,
@@ -37,29 +35,25 @@ export default function ContributorsByInitiative({
     [initiatives]
   );
 
-  if (!initiatives || !groupedActivities?.[type]?.length) {
-    return null;
-  }
+  if (!initiatives || !groupedActivities?.initiatives?.length) return null;
   return (
     <Grid>
       <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-        {widgetTitle(
-          type === 'initiatives' ? '# Contributors by Goal' : '# Contributors by Launch'
-        )}
+        {widgetTitle('# Contributors by Initiative')}
         <BarChart
           series={[
             {
-              id: `contributors-${type}`,
+              id: `contributors-by-initiative`,
               valueFormatter: value => `${value} ${pluralizeMemo('contributor', value ?? 0)}`,
-              data: groupedActivities[type].map(i => i.actorCount),
+              data: groupedActivities.initiatives.map(i => i.actorCount),
             },
           ]}
           yAxis={[
             {
-              data: groupedActivities[type].map(i => initiatives[i.id].key),
+              data: groupedActivities.initiatives.map(i => initiatives[i.id].key),
               colorMap: {
                 type: 'ordinal',
-                colors: groupedActivities[type].map(
+                colors: groupedActivities.initiatives.map(
                   i => initiatives[i.id].color ?? pastelColors[0]
                 ),
               },

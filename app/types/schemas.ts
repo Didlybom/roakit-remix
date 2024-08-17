@@ -88,7 +88,7 @@ export const ticketSchema = z.object({
     .object({ id: z.string(), key: z.string(), name: z.string(), uri: z.string().optional() })
     .optional(),
   plannedHours: z.number().optional(),
-  launchItemId: z.string().optional(),
+  initiativeId: z.string().optional(),
   effort: z.record(z.string(), z.record(z.string(), z.number().nullable()).nullable()).optional(),
   lastUpdatedTimestamp: z.number().optional(),
 });
@@ -116,8 +116,7 @@ export const activitySchema = z.object({
   createdTimestamp: z.number(),
   eventTimestamp: z.number().optional(),
   artifact: z.string(), //z.enum(ARTIFACTS), // don't use an enum so ingestion backend can be deployed with new artifacts before updating frontend
-  initiative: z.string(),
-  launchItemId: z.string().nullable().optional(),
+  initiativeId: z.string().nullable().optional(),
   phase: z.string().nullable().optional(),
   effort: z.number().nullable().optional(),
   ongoing: z.boolean().nullable().optional(),
@@ -143,14 +142,14 @@ export const summarySchema = z.object({
 });
 export type SummaryType = z.infer<typeof summarySchema>;
 
-export const launchStatsSchema = z.object({
-  launchItemId: z.string(),
+export const initiativeStatsSchema = z.object({
+  initiativeId: z.string(),
   identityId: z.string(),
   day: z.number(),
   effort: z.number(),
   tickets: z.object({ key: z.string(), status: z.string().optional() }).array(),
 });
-export type LaunchStatsType = z.infer<typeof launchStatsSchema>;
+export type InitiativeStatsType = z.infer<typeof initiativeStatsSchema>;
 
 export const parse = <T>(
   schema: z.AnyZodObject,

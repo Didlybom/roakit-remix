@@ -121,7 +121,7 @@ export default function NavDrawer({
             {/* {item(View.AllActivity, '/activities', HistoryIcon, 'All Activity', view)} */}
             {role === Role.Admin && (
               <>
-                {item(View.LaunchItems, '/launch-items', LaunchIcon, 'Launch Items', view)}
+                {item(View.Initiatives, '/initiatives', LaunchIcon, 'Initiatives', view)}
                 {/* {item(View.Initiatives, '/goals', BusinessCenterIcon, 'Goals', view)} */}
                 {item(View.Users, '/users', BusinessIcon, 'Directory', view)}
                 {item(View.Impersonation, '/impersonation', PeopleIcon, 'User Impersonation', view)}

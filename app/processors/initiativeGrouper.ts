@@ -1,15 +1,15 @@
-import type { LaunchActorStats } from '../types/types';
+import type { InitiativeActorStats } from '../types/types';
 import { TicketStatus } from '../types/types';
 
-type ActorLaunchStats = Record<
+type ActorInitiativeStats = Record<
   string,
   {
-    launches: string[];
+    initiatives: string[];
     blocked: number;
   }
 >;
 
-type LaunchStats = Record<
+type InitiativeStats = Record<
   string,
   {
     effort: number;
@@ -21,14 +21,14 @@ type LaunchStats = Record<
   }
 >;
 
-export type GroupedLaunchStats = {
-  actors?: ActorLaunchStats;
-  launches?: LaunchStats;
+export type GroupedInitiativeStats = {
+  actors?: ActorInitiativeStats;
+  initiatives?: InitiativeStats;
 };
 
-export const groupLaunchStats = (stats: LaunchActorStats[]): GroupedLaunchStats => {
-  const actors: ActorLaunchStats = {};
-  const launches: LaunchStats = {};
+export const groupInitiativeStats = (stats: InitiativeActorStats[]): GroupedInitiativeStats => {
+  const actors: ActorInitiativeStats = {};
+  const initiatives: InitiativeStats = {};
 
   const latestTicketStatus: Record<string, TicketStatus> = {};
   stats
@@ -37,23 +37,23 @@ export const groupLaunchStats = (stats: LaunchActorStats[]): GroupedLaunchStats 
       // actors
       let actorStats = actors[stat.identityId];
       if (!actorStats) {
-        actorStats = { launches: [], blocked: 0 };
+        actorStats = { initiatives: [], blocked: 0 };
         actors[stat.identityId] = actorStats;
       }
-      if (!actorStats.launches.includes(stat.launchItemId)) {
-        actorStats.launches.push(stat.launchItemId);
+      if (!actorStats.initiatives.includes(stat.initiativeId)) {
+        actorStats.initiatives.push(stat.initiativeId);
       }
       // actorStats.blocked += stat.blocked;
 
-      // launches
-      let launch = launches[stat.launchItemId];
-      if (!launch) {
-        launch = { effort: 0, new: 0, ongoing: 0, blocked: 0, completed: 0, tickets: [] };
-        launches[stat.launchItemId] = launch;
+      // initiatives
+      let initiative = initiatives[stat.initiativeId];
+      if (!initiative) {
+        initiative = { effort: 0, new: 0, ongoing: 0, blocked: 0, completed: 0, tickets: [] };
+        initiatives[stat.initiativeId] = initiative;
       }
-      launch.effort += stat.effort;
+      initiative.effort += stat.effort;
       stat.tickets.forEach(t => {
-        if (!launch.tickets.includes(t.key)) launch.tickets.push(t.key);
+        if (!initiative.tickets.includes(t.key)) initiative.tickets.push(t.key);
       });
 
       stat.tickets
@@ -63,16 +63,15 @@ export const groupLaunchStats = (stats: LaunchActorStats[]): GroupedLaunchStats 
         });
     });
 
-  Object.keys(launches).forEach(launchId => {
-    const launch = launches[launchId];
-    launch.tickets.forEach(ticket => {
+  Object.values(initiatives).forEach(initiative => {
+    initiative.tickets.forEach(ticket => {
       const status = latestTicketStatus[ticket];
-      if (status === TicketStatus.New) launch.new++;
-      if (status === TicketStatus.InProgress) launch.ongoing++;
-      if (status === TicketStatus.Blocked) launch.blocked++;
-      if (status === TicketStatus.Completed) launch.completed++;
+      if (status === TicketStatus.New) initiative.new++;
+      if (status === TicketStatus.InProgress) initiative.ongoing++;
+      if (status === TicketStatus.Blocked) initiative.blocked++;
+      if (status === TicketStatus.Completed) initiative.completed++;
     });
   });
 
-  return { actors, launches };
+  return { actors, initiatives };
 };

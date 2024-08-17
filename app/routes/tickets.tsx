@@ -52,7 +52,7 @@ import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchIdentities,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
@@ -89,15 +89,15 @@ const SEARCH_PARAM_QUERY = 'q';
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW);
   try {
-    const [launchItems, accounts, identities] = await Promise.all([
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
     const actors = identifyAccounts(accounts, identities.list, identities.accountMap);
     return {
       ...sessionData,
-      launchItems,
+      initiatives,
       actors,
       accountMap: identities.accountMap,
     };
@@ -228,7 +228,7 @@ function PlannedHours({
       </Box>;
 }
 
-export default function LaunchItems() {
+export default function Tickets() {
   const navigation = useNavigation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -253,7 +253,7 @@ export default function LaunchItems() {
   const [confirmation, setConfirmation] = useState('');
   const [error] = useState('');
 
-  const launchElementId = (id: string) => `LAUNCH-${id}`;
+  const initiativeElementId = (key: string) => `INITIATIVE-${key}`;
 
   // load tickets
   useEffect(() => {
@@ -284,7 +284,7 @@ export default function LaunchItems() {
           spentHours: allActorHours.reduce((totalHours, hours) => totalHours + hours, 0),
         };
       });
-      const groupedTickets = groupByArray(tickets, 'launchItemId');
+      const groupedTickets = groupByArray(tickets, 'initiativeId');
       setTickets(
         sortMap(groupedTickets, (a, b) => {
           if (!a.key) return 1;
@@ -304,7 +304,7 @@ export default function LaunchItems() {
   // Auto scrollers
   useEffect(() => {
     if (scrollToGroup != null) {
-      const element = document.getElementById(launchElementId(scrollToGroup));
+      const element = document.getElementById(initiativeElementId(scrollToGroup));
       setScrollToGroup(null);
       if (element) {
         setTimeout(
@@ -423,45 +423,47 @@ export default function LaunchItems() {
     [loaderData.actors, loaderData.customerSettings?.ticketBaseUrl] // ticketPlanHistoryFetcher must be omitted
   );
 
-  const launchList = useMemo(
+  const initiativeList = useMemo(
     () =>
-      [...tickets.keys()].map((launchId, i) => {
+      [...tickets.keys()].map((initiativeId, i) => {
         let label;
-        if (!launchId) {
-          label = 'No launch item';
+        if (!initiativeId) {
+          label = 'No initiative';
         } else {
-          label = loaderData.launchItems[launchId]?.label || 'Unknown launch item';
+          label = loaderData.initiatives[initiativeId]?.label || 'Unknown initiative';
         }
         return (
           <Box
             key={i}
-            mt={launchId ? undefined : 2}
-            color={launchId ? undefined : theme.palette.grey[500]}
+            mt={initiativeId ? undefined : 2}
+            color={initiativeId ? undefined : theme.palette.grey[500]}
           >
             <Link
               sx={{
                 ...linkSx,
                 '&:hover': {
                   color:
-                    launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
+                    initiativeId ?
+                      loaderData.initiatives[initiativeId]?.color || undefined
+                    : undefined,
                 },
               }}
-              color={launchId ? undefined : theme.palette.grey[500]}
-              onClick={() => setScrollToGroup(launchId)}
+              color={initiativeId ? undefined : theme.palette.grey[500]}
+              onClick={() => setScrollToGroup(initiativeId)}
             >
               {label}
             </Link>
           </Box>
         );
       }),
-    [loaderData.launchItems, tickets]
+    [loaderData.initiatives, tickets]
   );
 
   const navBar = (
     <Box mr={3} sx={desktopDisplaySx}>
       <Box sx={{ position: 'relative' }}>
         <Box fontSize="small" color={theme.palette.grey[700]} sx={verticalStickyBarSx}>
-          {launchList}
+          {initiativeList}
         </Box>
       </Box>
     </Box>
@@ -580,15 +582,15 @@ export default function LaunchItems() {
   );
 
   const grids = useMemo(() => {
-    return [...tickets].map(([launchId, rows], i) => {
-      let launchKey;
-      let launchLabel;
-      if (!launchId) {
-        launchKey = '';
-        launchLabel = 'No launch item';
+    return [...tickets].map(([initiativeId, rows], i) => {
+      let initiativeKey;
+      let initiativeLabel;
+      if (!initiativeId) {
+        initiativeKey = '';
+        initiativeLabel = 'No initiative';
       } else {
-        launchKey = loaderData.launchItems[launchId]?.key ?? '';
-        launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+        initiativeKey = loaderData.initiatives[initiativeId]?.key ?? '';
+        initiativeLabel = loaderData.initiatives[initiativeId]?.label ?? 'Unknown initiative';
       }
       const search = searchTerm.trim().toLowerCase();
       const filteredRows =
@@ -601,29 +603,29 @@ export default function LaunchItems() {
             return false;
           })
         : rows;
-      return !filteredRows?.length || launchId == null ?
+      return !filteredRows?.length || initiativeId == null ?
           null
-        : <Stack id={launchElementId(launchId)} key={i} sx={{ mb: 3 }}>
+        : <Stack id={initiativeElementId(initiativeId)} key={i} sx={{ mb: 3 }}>
             <Stack
               direction="row"
               spacing={1}
               divider={<Divider orientation="vertical" flexItem />}
-              color={theme.palette.grey[launchId ? 600 : 400]}
+              color={theme.palette.grey[initiativeId ? 600 : 400]}
               mb={1}
               sx={{ textWrap: 'nowrap' }}
             >
-              {launchKey && (
+              {initiativeKey && (
                 <Typography
                   variant="h6"
                   fontSize="1.1rem"
                   fontWeight={600}
-                  color={loaderData.launchItems[launchId]?.color || undefined}
+                  color={loaderData.initiatives[initiativeId]?.color || undefined}
                 >
-                  {launchKey}
+                  {initiativeKey}
                 </Typography>
               )}
               <Typography variant="h6" fontSize="1.1rem">
-                {launchLabel}
+                {initiativeLabel}
               </Typography>
             </Stack>
             <DataGridWithSingleClickEditing
@@ -641,7 +643,7 @@ export default function LaunchItems() {
             />
           </Stack>;
     });
-  }, [tickets, searchTerm, loaderData.launchItems, columns]);
+  }, [tickets, searchTerm, loaderData.initiatives, columns]);
 
   return (
     <App

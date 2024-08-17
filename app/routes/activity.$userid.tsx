@@ -59,7 +59,7 @@ import {
   fetchAccountMap,
   fetchIdentities,
   // fetchInitiativeMap,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
 import { getActivityDescription } from '../processors/activityDescription';
@@ -70,7 +70,7 @@ import {
   buildArtifactActionKey,
 } from '../processors/activityFeed';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import { MapperType, compileActivityMappers, mapActivity } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import {
   PHASES,
   type Account,
@@ -141,7 +141,7 @@ const userActivityRows = (
 
 enum GroupBy {
   Contributor = 'contributor',
-  Launch = 'launch',
+  Initiative = 'initiative',
 }
 
 enum SortActorsBy {
@@ -152,7 +152,7 @@ enum SortActorsBy {
 
 const groupActivityKey: Record<GroupBy, keyof Activity> = {
   [GroupBy.Contributor]: 'actorId',
-  [GroupBy.Launch]: 'launchItemId',
+  [GroupBy.Initiative]: 'initiativeId',
 };
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -179,9 +179,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 
   try {
-    const [launchItems, accounts, identities] = await Promise.all([
-      //fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -203,8 +202,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userId,
       identityId: userIdentity.id,
       activityUserIds,
-      // initiatives,
-      launchItems,
+      initiatives,
       actors,
       accountMap: identities.accountMap,
     };
@@ -260,8 +258,8 @@ export default function UserActivity() {
       if (groupBy === GroupBy.Contributor) {
         return loaderData.actors[key]?.name ?? 'ZZZ';
       }
-      if (groupBy === GroupBy.Launch) {
-        return loaderData.launchItems[key]?.label ?? 'ZZZ';
+      if (groupBy === GroupBy.Initiative) {
+        return loaderData.initiatives[key]?.label ?? 'ZZZ';
       }
       return '';
     };
@@ -303,7 +301,7 @@ export default function UserActivity() {
         )
       );
     }
-  }, [groupBy, loaderData.actors, loaderData.launchItems, actionFilter, sortActors]);
+  }, [groupBy, loaderData.actors, loaderData.initiatives, actionFilter, sortActors]);
 
   const fetchActivities = useCallback((dateFilter: DateRangeEnding) => {
     setIsRendering(true);
@@ -316,13 +314,8 @@ export default function UserActivity() {
   }, []);
 
   useEffect(() => {
-    // if (loaderData.initiatives) {
-    //   compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
-    // }
-    if (loaderData.launchItems) {
-      compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-    }
-  }, [loaderData.launchItems]);
+    compileActivityMappers(loaderData.initiatives);
+  }, [loaderData.initiatives]);
 
   // load activities
   useEffect(() => {
@@ -340,14 +333,8 @@ export default function UserActivity() {
       let activityCount = 0;
       Object.values(fetchedActivity.activities).forEach(activity => {
         activityCount++;
-        if (!activity.initiativeId || !activity.launchItemId) {
-          const mapping = mapActivity(activity);
-          // if (!activity.initiativeId) {
-          //   activity.initiativeId = mapping.initiatives[0] ?? '';
-          // }
-          if (!activity.launchItemId) {
-            activity.launchItemId = mapping.launchItems[0] ?? '';
-          }
+        if (!activity.initiativeId) {
+          activity.initiativeId = mapActivity(activity)[0] ?? '';
         }
       });
       setTotalActivityCount(activityCount);
@@ -403,29 +390,29 @@ export default function UserActivity() {
         ]
       : []),
       actionColDef({ field: 'action' }),
-      ...(groupBy !== GroupBy.Launch ?
+      ...(groupBy !== GroupBy.Initiative ?
         [
           {
-            field: 'launchItemId',
-            headerName: 'Launch',
-            valueGetter: (value: string) => loaderData.launchItems[value]?.key,
+            field: 'initiativeId',
+            headerName: 'Initiative',
+            valueGetter: (value: string) => loaderData.initiatives[value]?.key,
             getSortComparator: sortComparatorKeepingNullAtTheBottom,
             renderCell: (params: GridRenderCellParams<Activity, string>) => {
               const activity = params.row;
-              return activity.launchItemId ?
+              return activity.initiativeId ?
                   <Link
                     onClick={() => {
                       reset();
-                      setGroupBy(GroupBy.Launch);
+                      setGroupBy(GroupBy.Initiative);
                       setSearchParams(
-                        prev => getSearchParam(prev, SEARCH_PARAM_GROUPBY, GroupBy.Launch),
+                        prev => getSearchParam(prev, SEARCH_PARAM_GROUPBY, GroupBy.Initiative),
                         { preventScrollReset: true }
                       );
-                      setTimeout(() => setScrollToGroup(activity.launchItemId), 0);
+                      setTimeout(() => setScrollToGroup(activity.initiativeId), 0);
                     }}
-                    title={loaderData.launchItems[activity.launchItemId]?.label}
+                    title={loaderData.initiatives[activity.initiativeId]?.label}
                     sx={linkSx}
-                    color={loaderData.launchItems[activity.launchItemId]?.color ?? undefined}
+                    color={loaderData.initiatives[activity.initiativeId]?.color ?? undefined}
                   >
                     {params.value}
                   </Link>
@@ -434,16 +421,6 @@ export default function UserActivity() {
           },
         ]
       : []),
-      // {
-      //   field: 'initiativeId',
-      //   headerName: 'Goal',
-      //   valueGetter: (value: string) => loaderData.initiatives[value]?.key,
-      //   getSortComparator: sortComparatorKeepingNullAtTheBottom,
-      //   renderCell: (params: GridRenderCellParams<Activity, string>) =>
-      //     params.row.initiativeId ?
-      //       <Box title={loaderData.initiatives[params.row.initiativeId]?.label}>{params.value}</Box>
-      //     : null,
-      // },
       descriptionColDef(
         { field: 'metadata' },
         (element, content) => setPopover({ element, content }),
@@ -470,8 +447,7 @@ export default function UserActivity() {
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.actors,
       loaderData.accountMap,
-      loaderData.launchItems,
-      // loaderData.initiatives,
+      loaderData.initiatives,
       reset,
       setSearchParams,
     ]
@@ -584,36 +560,39 @@ export default function UserActivity() {
     return [actorList, actorActivityCount];
   }, [activities, groupBy, loaderData.actors, loaderData.userId, showOnlyActor, sortActors]);
 
-  const [launchList, launchActivityCount] = useMemo(() => {
-    if (groupBy !== GroupBy.Launch) {
+  const [initiativeList, initiativeActivityCount] = useMemo(() => {
+    if (groupBy !== GroupBy.Initiative) {
       return [null, null];
     }
-    let launchActivityCount = 0;
-    const launchList = [...activities.keys()].map((launchId, i) => {
-      const activityCount = activities.get(launchId)?.length ?? 0;
-      launchActivityCount += activityCount;
+    let initiativeActivityCount = 0;
+    const initiativeList = [...activities.keys()].map((initiativeId, i) => {
+      const activityCount = activities.get(initiativeId)?.length ?? 0;
+      initiativeActivityCount += activityCount;
       let label;
-      if (!launchId) {
-        label = 'No launch item';
+      if (!initiativeId) {
+        label = 'No initiative';
       } else {
-        label = loaderData.launchItems[launchId]?.label || 'Unknown launch item';
+        label = loaderData.initiatives[initiativeId]?.label || 'Unknown initiative';
       }
       return (
         <Box
           key={i}
           mb={i === 9 ? 2 : undefined}
-          mt={launchId ? undefined : 2}
-          color={launchId ? undefined : theme.palette.grey[500]}
+          mt={initiativeId ? undefined : 2}
+          color={initiativeId ? undefined : theme.palette.grey[500]}
         >
           <Link
             sx={{
               ...linkSx,
               '&:hover': {
-                color: launchId ? loaderData.launchItems[launchId]?.color || undefined : undefined,
+                color:
+                  initiativeId ?
+                    loaderData.initiatives[initiativeId]?.color || undefined
+                  : undefined,
               },
             }}
-            color={launchId ? undefined : theme.palette.grey[500]}
-            onClick={() => setScrollToGroup(launchId)}
+            color={initiativeId ? undefined : theme.palette.grey[500]}
+            onClick={() => setScrollToGroup(initiativeId)}
           >
             {label}
           </Link>
@@ -621,10 +600,10 @@ export default function UserActivity() {
         </Box>
       );
     });
-    return [launchList, launchActivityCount];
-  }, [activities, groupBy, loaderData.launchItems]);
+    return [initiativeList, initiativeActivityCount];
+  }, [activities, groupBy, loaderData.initiatives]);
 
-  let activityCount = actorActivityCount ?? launchActivityCount;
+  let activityCount = actorActivityCount ?? initiativeActivityCount;
 
   const gridsByContributor = useMemo(() => {
     if (groupBy !== GroupBy.Contributor) {
@@ -656,19 +635,19 @@ export default function UserActivity() {
       });
   }, [activities, actorHeader, columns, groupBy, isRendering, searchTerm, showOnlyActor]);
 
-  const gridsByLaunch = useMemo(() => {
-    if (groupBy !== GroupBy.Launch) {
+  const gridsByInitiative = useMemo(() => {
+    if (groupBy !== GroupBy.Initiative) {
       return null;
     }
-    return [...activities].map(([launchId, rows], i) => {
-      let launchKey;
-      let launchLabel;
-      if (!launchId) {
-        launchKey = '';
-        launchLabel = 'No launch item';
+    return [...activities].map(([initiativeId, rows], i) => {
+      let initiativeKey;
+      let initiativeLabel;
+      if (!initiativeId) {
+        initiativeKey = '';
+        initiativeLabel = 'No initiative';
       } else {
-        launchKey = loaderData.launchItems[launchId]?.key ?? '';
-        launchLabel = loaderData.launchItems[launchId]?.label ?? 'Unknown launch item';
+        initiativeKey = loaderData.initiatives[initiativeId]?.key ?? '';
+        initiativeLabel = loaderData.initiatives[initiativeId]?.label ?? 'Unknown initiative';
       }
       const filteredRows =
         searchTerm ?
@@ -684,29 +663,29 @@ export default function UserActivity() {
             return description && description.toLowerCase().indexOf(searchTerm) >= 0;
           })
         : rows;
-      return !filteredRows?.length || launchId == null ?
+      return !filteredRows?.length || initiativeId == null ?
           null
-        : <Stack id={groupElementId(launchId)} key={i} sx={{ mb: 3 }}>
+        : <Stack id={groupElementId(initiativeId)} key={i} sx={{ mb: 3 }}>
             <Stack
               direction="row"
               spacing={1}
               divider={<Divider orientation="vertical" flexItem />}
-              color={theme.palette.grey[launchId ? 600 : 400]}
+              color={theme.palette.grey[initiativeId ? 600 : 400]}
               mb={1}
               sx={{ textWrap: 'nowrap' }}
             >
-              {launchKey && (
+              {initiativeKey && (
                 <Typography
                   variant="h6"
                   fontSize="1.1rem"
                   fontWeight={600}
-                  color={loaderData.launchItems[launchId]?.color || undefined}
+                  color={loaderData.initiatives[initiativeId]?.color || undefined}
                 >
-                  {launchKey}
+                  {initiativeKey}
                 </Typography>
               )}
               <Typography variant="h6" fontSize="1.1rem">
-                {launchLabel}
+                {initiativeLabel}
               </Typography>
             </Stack>
             <DataGrid
@@ -724,7 +703,7 @@ export default function UserActivity() {
     groupBy,
     isRendering,
     loaderData.actors,
-    loaderData.launchItems,
+    loaderData.initiatives,
     searchTerm,
   ]);
 
@@ -780,7 +759,11 @@ export default function UserActivity() {
   }
 
   const navBar =
-    groupBy && (loaderData.userId === ALL || groupBy === GroupBy.Launch) && activities.size > 0 ?
+    (
+      groupBy &&
+      (loaderData.userId === ALL || groupBy === GroupBy.Initiative) &&
+      activities.size > 0
+    ) ?
       <Box mr={2} sx={desktopDisplaySx}>
         <Box sx={{ position: 'relative' }}>
           <Box fontSize="small" color={theme.palette.grey[700]} sx={verticalStickyBarSx}>
@@ -801,8 +784,8 @@ export default function UserActivity() {
                   <ToggleButton
                     value={SortActorsBy.Name}
                     title={
-                      groupBy === GroupBy.Launch ?
-                        'Sort navigation list by launch item'
+                      groupBy === GroupBy.Initiative ?
+                        'Sort navigation list by initiative'
                       : "Sort navigation list by contributor's name"
                     }
                   >
@@ -824,7 +807,7 @@ export default function UserActivity() {
               </Stack>
             </FormControl>
             {actorList}
-            {launchList}
+            {initiativeList}
           </Box>
         </Box>
       </Box>
@@ -840,7 +823,7 @@ export default function UserActivity() {
             variant="text"
             href={
               '/activity/*?groupby=' +
-              (groupBy === GroupBy.Launch ? 'launch' : 'contributor') +
+              (groupBy === GroupBy.Initiative ? 'initiative' : 'contributor') +
               (actionFilter.length ? `&action=${actionFilter.join(',')}` : '')
             }
             endIcon={<ZoomOutIcon fontSize="small" />}
@@ -874,7 +857,7 @@ export default function UserActivity() {
                 ...(loaderData.userId === ALL ?
                   [{ value: GroupBy.Contributor, label: 'Contributor' }]
                 : []),
-                { value: GroupBy.Launch, label: 'Launch' },
+                { value: GroupBy.Initiative, label: 'Initiative' },
               ]}
               onChange={value => {
                 reset();
@@ -957,7 +940,7 @@ export default function UserActivity() {
           {filterBar}
           {totalIndicator}
           {gridsByContributor}
-          {gridsByLaunch}
+          {gridsByInitiative}
           {gridsUngrouped}
         </Stack>
       </Stack>

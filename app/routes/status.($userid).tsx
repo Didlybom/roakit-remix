@@ -82,12 +82,12 @@ import {
   fetchAccountMap,
   fetchGroups,
   fetchIdentities,
-  fetchLaunchItemMap,
+  fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import {
   insertActivity,
-  upsertLaunchItemIndividualCounters,
+  upsertInitiativeIndividualCounters,
   upsertNextOngoingActivity,
   upsertTicket,
 } from '../firestore.server/updaters.server';
@@ -96,10 +96,10 @@ import { findFirstTicket, inferTicketStatus } from '../processors/activityFeed';
 import {
   groupActorActivities,
   type GroupedActorActivities,
-  type LaunchItemWithTicketStats,
+  type InitiativeWithTicketStats,
 } from '../processors/activityGrouper';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import { compileActivityMappers, mapActivity, MapperType } from '../processors/activityMapper';
+import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import {
   CUSTOM_EVENT,
   PHASES,
@@ -148,9 +148,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const sessionData = await loadSession(request, VIEW, params);
 
   try {
-    const [launchItems, accounts, identities] = await Promise.all([
-      // fetchInitiativeMap(sessionData.customerId!),
-      fetchLaunchItemMap(sessionData.customerId!),
+    const [initiatives, accounts, identities] = await Promise.all([
+      fetchInitiativeMap(sessionData.customerId!),
       fetchAccountMap(sessionData.customerId!), // could be optimized if we fetch identity first, we don't need it for individual contributors
       fetchIdentities(sessionData.customerId!),
     ]);
@@ -182,8 +181,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       userDisplayName: userIdentity.displayName,
       reportIds: userIdentity.reportIds,
       groups,
-      // initiatives,
-      launchItems,
+      initiatives,
       actors: identifyAccounts(accounts, identities.list, identities.accountMap),
       accountMap: identities.accountMap,
       identities: identities.list.filter(
@@ -200,7 +198,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 type NewActivity = {
   action: string;
   artifact: Artifact;
-  launchItemId: string;
+  initiativeId: string;
   phase: Phase | null;
   description: string;
   priority: number | null;
@@ -211,7 +209,7 @@ type NewActivity = {
 const emptyActivity: NewActivity = {
   action: '',
   artifact: '' as Artifact,
-  launchItemId: '',
+  initiativeId: '',
   phase: null,
   description: '',
   priority: null,
@@ -224,7 +222,7 @@ interface ActionRequest {
 
   // update
   activityId: string;
-  launchItemId: string;
+  initiativeId: string;
   phase: string;
   description: string;
   priority: number;
@@ -240,13 +238,12 @@ interface ActionRequest {
   artifact: Artifact;
   createdTimestamp: number;
   timestamp: number;
-  initiativeId: string;
 
   // creation
   newActivity?: NewActivity;
 
-  // launch item stats
-  launchItemStats?: Record<Identity['id'], LaunchItemWithTicketStats[]>;
+  // initiative stats
+  initiativeStats?: Record<Identity['id'], InitiativeWithTicketStats[]>;
 }
 
 interface ActionResponse {
@@ -283,7 +280,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     // update activity
     if (actionRequest.activityId) {
       const activity = {
-        launchItemId: actionRequest.launchItemId,
+        initiativeId: actionRequest.initiativeId,
         phase: actionRequest.phase as Phase,
         description: actionRequest.description,
         priority: actionRequest.priority,
@@ -346,11 +343,11 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     getLogger('route:status.user').info('Updated ticket ' + actionRequest.ticket.key);
   }
 
-  // update launch item stats
-  if (actionRequest.launchItemStats) {
+  // update initiative stats
+  if (actionRequest.initiativeStats) {
     await Promise.all(
-      Object.entries(actionRequest.launchItemStats).map(
-        async ([statIdentityId, launchItemStats]) => {
+      Object.entries(actionRequest.initiativeStats).map(
+        async ([statIdentityId, initiativeStats]) => {
           // ensure users are legit owner or reports
           if (identityId !== statIdentityId) {
             if (
@@ -360,11 +357,11 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
               throw Error('Invalid contributor');
             }
           }
-          await upsertLaunchItemIndividualCounters(
+          await upsertInitiativeIndividualCounters(
             sessionData.customerId!,
             statIdentityId,
             actionRequest.day,
-            launchItemStats,
+            initiativeStats,
             '*'
           );
         }
@@ -450,23 +447,22 @@ export default function Status() {
 
   const updateStats = useCallback((activities: Activity[]) => {
     const groupedActivities: Record<Identity['id'], GroupedActorActivities> = {};
-    const launchItemStats: Record<Identity['id'], LaunchItemWithTicketStats[]> = {};
+    const initiativeStats: Record<Identity['id'], InitiativeWithTicketStats[]> = {};
     [...new Set(activities.map(a => a.actorId))].forEach(identityId => {
       groupedActivities[identityId!] = groupActorActivities(
         activities.filter(a => a.actorId === identityId)
       );
-      if (identityId && groupedActivities[identityId].launchItems) {
-        launchItemStats[identityId] = groupedActivities[identityId].launchItems;
+      if (identityId && groupedActivities[identityId].initiatives) {
+        initiativeStats[identityId] = groupedActivities[identityId].initiatives;
       }
     });
     setGroupedActivities(groupedActivities);
-    return launchItemStats;
+    return initiativeStats;
   }, []);
 
   useEffect(() => {
-    // compileActivityMappers(MapperType.Initiative, loaderData.initiatives);
-    compileActivityMappers(MapperType.LaunchItem, loaderData.launchItems);
-  }, [loaderData.launchItems]);
+    compileActivityMappers(loaderData.initiatives);
+  }, [loaderData.initiatives]);
 
   // (re)load activities for the selected day
   useEffect(() => {
@@ -493,17 +489,12 @@ export default function Status() {
     const ticketKeys: string[] = [];
     const activities = Object.values(fetchedActivities.activities);
     activities.forEach(activity => {
-      let mapping;
-      if (!activity.initiativeId || activity.launchItemId == null) {
-        mapping = mapActivity(activity);
-      }
       const activityStats = groupActorActivities([activity]);
       const ticketKey = activityStats.tickets[0]?.key;
       activityRows.push({
         ...activity,
-        initiativeId: activity.initiativeId || mapping?.initiatives[0] || '',
-        launchItemId:
-          activity.launchItemId != null ? activity.launchItemId : (mapping?.launchItems[0] ?? ''),
+        initiativeId:
+          activity.initiativeId != null ? activity.initiativeId : (mapActivity(activity)[0] ?? ''),
         actorId:
           activity.actorId ?
             (loaderData.accountMap[activity.actorId] ?? activity.actorId) // resolve identity
@@ -517,11 +508,11 @@ export default function Status() {
     }
 
     setActivities(activityRows);
-    const launchItemStats = updateStats(activityRows);
+    const initiativeStats = updateStats(activityRows);
     submit(
       {
         day: formatYYYYMMDD(selectedDay),
-        launchItemStats: launchItemStats ?? null,
+        initiativeStats: initiativeStats ?? null,
       },
       postJsonOptions
     );
@@ -546,16 +537,16 @@ export default function Status() {
     }
   }, [fetchedActivities?.error, fetchedTickets?.error, navigate]);
 
-  const launchItemOptions = useMemo<SelectOption[]>(
+  const initiativeOptions = useMemo<SelectOption[]>(
     () => [
       { value: '', label: 'None', color: theme.palette.grey[500] },
-      ...Object.entries(loaderData.launchItems).map(([launchId, launchItem]) => ({
-        value: launchId,
-        label: `[${launchItem.key}] ${launchItem.label}`,
-        color: launchItem.color,
+      ...Object.entries(loaderData.initiatives).map(([initiativeId, initiative]) => ({
+        value: initiativeId,
+        label: `[${initiative.key}] ${initiative.label}`,
+        color: initiative.color,
       })),
     ],
-    [loaderData.launchItems]
+    [loaderData.initiatives]
   );
 
   const isActivitySubmittable = useCallback(
@@ -578,10 +569,10 @@ export default function Status() {
       id: '',
       initiativeId: '',
     };
-    const launchItemStats = updateStats([activity, ...activities]);
+    const initiativeStats = updateStats([activity, ...activities]);
     setShowNewDialog(false);
     submit(
-      { newActivity: activity, day: formatYYYYMMDD(selectedDay), launchItemStats },
+      { newActivity: activity, day: formatYYYYMMDD(selectedDay), initiativeStats },
       postJsonOptions
     );
   }, [activities, isActivitySubmittable, newActivity, selectedDay, submit, updateStats]);
@@ -589,14 +580,14 @@ export default function Status() {
   const handleDeleteClick = useCallback(
     (activityId: GridRowId, activities: Activity[]) => {
       const updatedActivities = activities.filter(row => row.id !== activityId);
-      const launchItemStats = updateStats(updatedActivities);
+      const initiativeStats = updateStats(updatedActivities);
       setActivities(updatedActivities);
       // FIXME update ticket effort when deleting activity
       submit(
         {
           activityId,
           day: formatYYYYMMDD(selectedDay),
-          launchItemStats,
+          initiativeStats,
         },
         deleteJsonOptions
       );
@@ -674,15 +665,15 @@ export default function Status() {
         renderEditCell: params => <AutocompleteSelect {...params} options={priorityOptions} />,
       }),
       {
-        field: 'launchItemId',
-        headerName: 'Launch',
+        field: 'initiativeId',
+        headerName: 'Initiative',
         minWidth: 100,
         type: 'singleSelect',
-        valueOptions: launchItemOptions,
+        valueOptions: initiativeOptions,
         sortComparator: (a: string, b: string, paramA, paramB) =>
           gridStringOrNumberComparator(
-            a ? loaderData.launchItems[a].key : '',
-            b ? loaderData.launchItems[b].key : '',
+            a ? loaderData.initiatives[a].key : '',
+            b ? loaderData.initiatives[b].key : '',
             paramA,
             paramB
           ),
@@ -698,8 +689,8 @@ export default function Status() {
                 a =>
                   a.id !== params.row.id &&
                   a.ticketKey === params.row.ticketKey &&
-                  a.launchItemId &&
-                  a.launchItemId !== params.props.value
+                  a.initiativeId &&
+                  a.initiativeId !== params.props.value
               ),
         }),
         renderCell: params => (
@@ -708,16 +699,16 @@ export default function Status() {
               layout="dropdown"
               hovered={params.row.hovered}
               label={
-                <Box color={loaderData.launchItems[`${params.value}`]?.color ?? undefined}>
+                <Box color={loaderData.initiatives[`${params.value}`]?.color ?? undefined}>
                   {params.value ?
-                    (loaderData.launchItems[`${params.value}`]?.key ?? 'unknown')
+                    (loaderData.initiatives[`${params.value}`]?.key ?? 'unknown')
                   : '⋯'}
                 </Box>
               }
             />
           </Box>
         ),
-        renderEditCell: params => <AutocompleteSelect {...params} options={launchItemOptions} />,
+        renderEditCell: params => <AutocompleteSelect {...params} options={initiativeOptions} />,
       },
       {
         field: 'phase',
@@ -838,11 +829,11 @@ export default function Status() {
     ],
     [
       showTeam,
-      launchItemOptions,
+      initiativeOptions,
       loaderData.actors,
       loaderData.customerSettings?.ticketBaseUrl,
       loaderData.accountMap,
-      loaderData.launchItems,
+      loaderData.initiatives,
       gridApiRef,
       confirm,
       handleDeleteClick,
@@ -901,10 +892,10 @@ export default function Status() {
             <Grid container spacing={3}>
               <Grid>
                 <SelectField
-                  value={newActivity.launchItemId}
-                  onChange={launchItemId => setNewActivity({ ...newActivity, launchItemId })}
-                  label="Launch"
-                  items={launchItemOptions}
+                  value={newActivity.initiativeId}
+                  onChange={initiativeId => setNewActivity({ ...newActivity, initiativeId })}
+                  label="Initiative"
+                  items={initiativeOptions}
                 />
               </Grid>
               <Grid>
@@ -1116,7 +1107,7 @@ export default function Status() {
                 }}
                 isCellEditable={(params: GridCellParams<Activity>) => {
                   if (
-                    params.field === 'launchItemId' ||
+                    params.field === 'initiativeId' ||
                     params.field === 'phase' ||
                     params.field === 'effort' ||
                     params.field === 'ongoing'
@@ -1132,7 +1123,7 @@ export default function Status() {
                   if (
                     updatedRow.description !== oldRow.description ||
                     updatedRow.priority != oldRow.priority ||
-                    updatedRow.launchItemId !== oldRow.launchItemId ||
+                    updatedRow.initiativeId !== oldRow.initiativeId ||
                     updatedRow.phase !== oldRow.phase ||
                     updatedRow.effort !== oldRow.effort ||
                     updatedRow.ongoing != oldRow.ongoing
@@ -1143,7 +1134,7 @@ export default function Status() {
                       activity.id === updatedRow.id ? { ...updatedRow } : activity
                     );
                     setActivities(updatedActivities);
-                    const launchItemStats = updateStats(updatedActivities);
+                    const initiativeStats = updateStats(updatedActivities);
                     let totalTicketEffort = null;
                     if (updatedRow.effort != null && updatedRow.ticketKey) {
                       totalTicketEffort = activities
@@ -1172,18 +1163,18 @@ export default function Status() {
                         );
                       }
                     }
-                    let ticketLaunchItemId = updatedRow.launchItemId;
-                    if (!ticketLaunchItemId && oldRow.launchItemId != null) {
-                      // the ticket might still have the launch item in other activities (FIXME multiple launches per activity/ticket)
+                    let ticketInitiativeId = updatedRow.initiativeId;
+                    if (!ticketInitiativeId && oldRow.initiativeId != null) {
+                      // the ticket might still have the initiative in other activities (FIXME multiple initiatives per activity/ticket)
                       if (
                         activities.some(
                           a =>
                             a.id !== updatedRow.id &&
-                            a.launchItemId === oldRow.launchItemId &&
+                            a.initiativeId === oldRow.initiativeId &&
                             a.ticketKey === updatedRow.ticketKey
                         )
                       ) {
-                        ticketLaunchItemId = oldRow.launchItemId;
+                        ticketInitiativeId = oldRow.initiativeId;
                       }
                     }
                     const day = formatYYYYMMDD(selectedDay);
@@ -1192,7 +1183,7 @@ export default function Status() {
                         activityId: updatedRow.id,
                         description: updatedRow.description ?? null,
                         priority: updatedRow.priority ? +updatedRow.priority : -1,
-                        launchItemId: updatedRow.launchItemId ?? null,
+                        initiativeId: updatedRow.initiativeId ?? null,
                         phase: updatedRow.phase ?? null,
                         effort: updatedRow.effort ?? null,
                         ongoing: updatedRow.ongoing ?? null,
@@ -1207,12 +1198,12 @@ export default function Status() {
                           metadata: updatedRow.metadata,
                         }),
                         day,
-                        launchItemStats,
+                        initiativeStats,
                         ticket:
                           activityStats.tickets.length ?
                             {
                               ...activityStats.tickets[0],
-                              launchItemId: ticketLaunchItemId ?? null,
+                              initiativeId: ticketInitiativeId ?? null,
                               // FIXME different actors for one ticket
                               effort: { [day]: { [updatedRow.actorId!]: totalTicketEffort } },
                             }
@@ -1232,7 +1223,7 @@ export default function Status() {
                 {activities.length > 0 ?
                   <>
                     Some cells editable by clicking on them. Hours will be aggregated by ticket.
-                    Limited to one single launch item per ticket.
+                    Limited to one single initiative per ticket.
                     <br />
                     Use the{' '}
                     <SmallButton
