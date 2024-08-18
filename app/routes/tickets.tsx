@@ -1,4 +1,8 @@
-import { Close as CloseIcon, Edit as EditIcon, ZoomIn as ZoomInIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  Edit as EditIcon,
+  ManageSearch as ZoomInIcon,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -16,6 +20,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableRow,
   TextField,
   Typography,
@@ -37,6 +42,7 @@ import {
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import App from '../components/App';
+import { ClickableAvatar } from '../components/Avatars';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import HelperText from '../components/HelperText';
@@ -63,6 +69,7 @@ import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import {
   desktopDisplaySx,
+  ellipsisSx,
   errorAlert,
   getSearchParam,
   HEADER_HEIGHT,
@@ -162,16 +169,26 @@ function SpentHours({ effort, actorMap }: { effort: Ticket['effort']; actorMap: 
         .map(([date, actors], i) => (
           <Box key={i}>
             <Box fontWeight={600}>{formatDayLocal(date)}</Box>
-            <Table size="small" sx={{ mb: 2 }}>
+            <Table size="small" sx={{ width: 300, mb: 2 }}>
               <TableBody>
                 {Object.entries(actors!)
                   .sort(([, hours1], [, hours2]) => (hours2 ?? 0) - (hours1 ?? 0))
-                  .map(([actorId, hours], i) => (
-                    <TableRow key={i} sx={{ '&:last-child td': { border: 0 } }}>
-                      <TableCell>{actorMap[actorId]?.name ?? 'Unknown'}</TableCell>
-                      <TableCell align="right">{hours}</TableCell>
-                    </TableRow>
-                  ))}
+                  .map(([actorId, hours], i) => {
+                    const actorName = actorMap[actorId]?.name;
+                    return (
+                      <TableRow key={i} sx={{ '&:last-child td': { border: 0 } }}>
+                        <TableCell sx={{ maxWidth: 150 }}>
+                          <Stack direction="row" spacing="4px" alignItems="center">
+                            <ClickableAvatar name={actorName} size={18} fontSize={10} />
+                            <Box title={actorName} sx={ellipsisSx}>
+                              {actorName}
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell align="right">{hours}</TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           </Box>
@@ -219,13 +236,45 @@ function PlannedHours({
     }
   }, [fetchedTicketPlanHistory?.error, navigate]);
 
-  return ticketPlanHistory ?
-      <Box>
-        {ticketKey} {JSON.stringify(ticketPlanHistory)}
-      </Box>
-    : <Box display="flex" justifyContent="center" mx={10} my={6}>
+  if (!ticketPlanHistory) {
+    return (
+      <Box display="flex" justifyContent="center" width={400} mx={10} my={6}>
         <CircularProgress size={30} />
-      </Box>;
+      </Box>
+    );
+  }
+  return (
+    <Table size="small" sx={{ width: 400, my: 2 }}>
+      {ticketPlanHistory
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .map((plan, i) => {
+          const actorName = actorMap[plan.identityId]?.name;
+          return (
+            <>
+              <TableHead>
+                <TableRow>
+                  <TableCell colSpan={3}>{formatDayLocal(plan.timestamp)}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow key={i} sx={{ verticalAlign: 'top', '&:last-child td': { border: 0 } }}>
+                  <TableCell>{plan.comment}</TableCell>
+                  <TableCell sx={{ maxWidth: 120 }}>
+                    <Stack direction="row" spacing="4px" alignItems="center">
+                      <ClickableAvatar name={actorName} size={18} fontSize={10} />
+                      <Box title={actorName} sx={ellipsisSx}>
+                        {actorName}
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell align="right">{plan.plannedHours}</TableCell>
+                </TableRow>
+              </TableBody>
+            </>
+          );
+        })}
+    </Table>
+  );
 }
 
 export default function Tickets() {
@@ -350,6 +399,7 @@ export default function Tickets() {
       {
         field: 'plannedHours',
         headerName: 'Planned hours',
+        minWidth: 130,
         renderCell: (params: GridRenderCellParams<Ticket, number>) => {
           return (
             <Stack direction="row" display="flex" height="100%" alignItems="center">
@@ -364,30 +414,27 @@ export default function Tickets() {
               >
                 {params.value || '⋯'}
               </Button>
-              <IconButton
-                onClick={e => {
-                  const ticketKey = params.row.key;
-                  // if (!ticketPlanHistory[ticketKey]) {
-                  //   console.log('go fetch');
-                  //   ticketPlanHistoryFetcher.load(`/fetcher/ticket/${ticketKey}/plan-history`);
-                  // }
-                  setPopover?.({
-                    element: e.currentTarget,
-                    content: (
-                      <PlannedHours
-                        ticketKey={ticketKey}
-                        cache={ticketPlanHistoryCache.current}
-                        cacheAdd={ticketPlanHistory =>
-                          ticketPlanHistoryCache.current.push(ticketPlanHistory)
-                        }
-                        actorMap={loaderData.actors!}
-                      />
-                    ),
-                  });
-                }}
-              >
-                <ZoomInIcon fontSize="small" />
-              </IconButton>
+              {params.row.plannedHours != null && (
+                <IconButton
+                  onClick={e =>
+                    setPopover?.({
+                      element: e.currentTarget,
+                      content: (
+                        <PlannedHours
+                          ticketKey={params.row.key}
+                          cache={ticketPlanHistoryCache.current}
+                          cacheAdd={ticketPlanHistory =>
+                            ticketPlanHistoryCache.current.push(ticketPlanHistory)
+                          }
+                          actorMap={loaderData.actors!}
+                        />
+                      ),
+                    })
+                  }
+                >
+                  <ZoomInIcon fontSize="small" />
+                </IconButton>
+              )}
             </Stack>
           );
         },
@@ -395,9 +442,10 @@ export default function Tickets() {
       {
         field: 'spentHours',
         headerName: 'Spent hours',
+        minWidth: 130,
         renderCell: (params: GridRenderCellParams<Ticket, number>) => (
-          <Box alignItems="center">
-            {params.value}
+          <Stack direction="row" display="flex" height="100%" spacing={1} alignItems="center">
+            <Box>{params.value}</Box>
             {params.value && params.row.effort && (
               <IconButton
                 onClick={e =>
@@ -412,7 +460,7 @@ export default function Tickets() {
                 <ZoomInIcon fontSize="small" />
               </IconButton>
             )}
-          </Box>
+          </Stack>
         ),
       },
       viewJsonActionsColDef({}, (element: HTMLElement, content: unknown) =>
@@ -550,7 +598,7 @@ export default function Tickets() {
             required
             value={updatingPlannedHours?.comment}
             onChange={e =>
-              setUpdatingPlannedHours({ ...updatingPlannedHours, comment: e.target.value.trim() })
+              setUpdatingPlannedHours({ ...updatingPlannedHours, comment: e.target.value })
             }
           />
         </Stack>
