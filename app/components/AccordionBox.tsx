@@ -1,5 +1,10 @@
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { Accordion, AccordionDetails, AccordionSummary, Grid } from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Unstable_Grid2 as Grid,
+} from '@mui/material';
 import type { ReactNode } from 'react';
 
 export default function AccordionBox({

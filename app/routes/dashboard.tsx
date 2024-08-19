@@ -113,16 +113,6 @@ export default function Dashboard() {
           isLoading={groupedActivitiesFetcher.state === 'loading'}
         />
       </Grid>
-      {/* {!!groupedActivitiesResponse?.initiatives?.length && (
-      <AccordionBox title="Activity Categories by Initiative">
-        <ArtifactsByInitiative
-          groupedActivities={groupedActivitiesResponse}
-          initiatives={loaderData.initiatives}
-          dateRangeLabel={dateRangeLabel}
-          isLoading={groupedActivitiesFetcher.state === 'loading'}
-        />
-      </AccordionBox>
-      )} */}
       {!!initiativeStatsResponse?.initiatives && (
         <AccordionBox title="Ticket Status by Initiative">
           <TicketsByInitiative
