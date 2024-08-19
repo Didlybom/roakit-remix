@@ -10,7 +10,7 @@ export default function Layout({
   children: ReactNode;
 }) {
   return showCopyright ?
-      <Stack direction="column" minHeight="100vh">
+      <Stack height="100%">
         <Box>{children}</Box>
         <Box flexGrow={1} />
         <Copyright />

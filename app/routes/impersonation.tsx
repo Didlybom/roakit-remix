@@ -21,8 +21,8 @@ import { useState } from 'react';
 import App from '../components/App';
 import SmallButton from '../components/SmallButton';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
-import { loadSession } from '../utils/authUtils.server';
-import { loaderErrorResponse } from '../utils/jsxUtils';
+import { loadAndValidateSession } from '../utils/authUtils.server';
+import { HEADER_HEIGHT, loaderErrorResponse } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 
@@ -31,7 +31,7 @@ export const meta = () => [{ title: 'Impersonation | ROAKIT' }];
 const VIEW = View.Impersonation;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     return { ...sessionData, identities };
@@ -55,7 +55,7 @@ export default function Impersonation() {
         when you click on a name here.
       </Alert>
       <FormControl sx={{ mx: 3, mt: 2, mb: 1 }}>
-        <FormLabel sx={{ fontSize: 'small' }}>Links go to...</FormLabel>
+        <FormLabel sx={{ fontSize: 'small' }}>Links go to:</FormLabel>
         <RadioGroup
           row
           value={route}
@@ -69,7 +69,7 @@ export default function Impersonation() {
       <List
         sx={{
           mx: 2,
-          maxHeight: 'calc(100vh - 200px)',
+          maxHeight: `calc(100vh - ${HEADER_HEIGHT + 170}px)`,
           display: 'flex',
           flexFlow: 'column wrap',
           '& .MuiListItem-root': { py: 0, width: 'auto' },

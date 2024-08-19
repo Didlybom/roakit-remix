@@ -258,6 +258,6 @@ export type InitiativeActorStats = {
   day: number;
   initiativeId: string;
   identityId: string;
-  effort: number;
+  effort?: number;
   tickets: Ticket[];
 };

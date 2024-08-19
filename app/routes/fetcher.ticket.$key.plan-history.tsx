@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtim
 import { json } from '@remix-run/server-runtime';
 import { fetchTicketPlanHistory } from '../firestore.server/fetchers.server';
 import type { TicketPlanHistory } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
@@ -21,12 +21,12 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<TicketPlanHistoryResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW, params);
+    sessionData = await loadAndValidateSession(request, VIEW, params);
   } catch (e) {
     return errorJsonResponse('Fetching ticket plan history failed. Invalid session.', 401);
   }
   try {
-    const planHistory = await fetchTicketPlanHistory(sessionData.customerId!, params.ticketkey!);
+    const planHistory = await fetchTicketPlanHistory(sessionData.customerId!, params.key!);
     return json({ planHistory });
   } catch (e) {
     getLogger('route:fetcher.ticket.plan-history').error(e);

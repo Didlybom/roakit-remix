@@ -9,7 +9,7 @@ import {
 import { groupActivities, type GroupedActivities } from '../processors/activityGrouper';
 import { identifyActivities } from '../processors/activityIdentifier';
 import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import type { DateRange } from '../utils/dateUtils';
 import { dateFilterToStartDate, endOfDay, isValidDate } from '../utils/dateUtils';
 import { RoakitError, errMsg } from '../utils/errorUtils';
@@ -32,7 +32,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<GroupedActivitiesResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW);
+    sessionData = await loadAndValidateSession(request, VIEW);
   } catch (e) {
     return errorJsonResponse('Fetching grouped activities failed. Invalid session.', 401);
   }

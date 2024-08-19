@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { json } from '@remix-run/server-runtime';
 import { fetchEvent } from '../cloudstore.server/fetchers.server';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
@@ -9,7 +9,7 @@ import { View } from '../utils/rbac';
 const VIEW = View.RawEvent;
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  await loadSession(request, VIEW);
+  await loadAndValidateSession(request, VIEW);
   try {
     const eventJsonString = await fetchEvent(params['*']!);
     return new Response(eventJsonString, { headers: { 'Content-Type': 'application/json' } });

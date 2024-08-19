@@ -23,6 +23,8 @@ import type { ClientEnv } from './client-env/client-env.server';
 import clientConfig from './client-env/client-env.server';
 import ClientStyleContext from './components/ClientStyleContext';
 import Layout from './components/Layout';
+import faviconPng from './icons/favicon.png';
+import faviconSvg from './icons/favicon.svg';
 import { errMsg } from './utils/errorUtils';
 import { linkSx } from './utils/jsxUtils';
 import theme from './utils/theme';
@@ -67,13 +69,10 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         {!!title && <title>{title}</title>}
         <Meta />
         <Links />
-        <link rel="icon" href="data:;base64,=" />
+        <link rel="icon" type="image/svg+xml" href={faviconSvg} />
+        <link rel="icon" type="image/png" href={faviconPng} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
-        />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap"

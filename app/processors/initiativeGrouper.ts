@@ -5,7 +5,6 @@ type ActorInitiativeStats = Record<
   string,
   {
     initiatives: string[];
-    blocked: number;
   }
 >;
 
@@ -37,13 +36,12 @@ export const groupInitiativeStats = (stats: InitiativeActorStats[]): GroupedInit
       // actors
       let actorStats = actors[stat.identityId];
       if (!actorStats) {
-        actorStats = { initiatives: [], blocked: 0 };
+        actorStats = { initiatives: [] };
         actors[stat.identityId] = actorStats;
       }
       if (!actorStats.initiatives.includes(stat.initiativeId)) {
         actorStats.initiatives.push(stat.initiativeId);
       }
-      // actorStats.blocked += stat.blocked;
 
       // initiatives
       let initiative = initiatives[stat.initiativeId];
@@ -51,7 +49,7 @@ export const groupInitiativeStats = (stats: InitiativeActorStats[]): GroupedInit
         initiative = { effort: 0, new: 0, ongoing: 0, blocked: 0, completed: 0, tickets: [] };
         initiatives[stat.initiativeId] = initiative;
       }
-      initiative.effort += stat.effort;
+      initiative.effort += stat.effort ?? 0;
       stat.tickets.forEach(t => {
         if (!initiative.tickets.includes(t.key)) initiative.tickets.push(t.key);
       });

@@ -44,7 +44,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import App from '../components/App';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
-import SearchField from '../components/SearchField';
 import TabPanel from '../components/TabPanel';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditMultipleSelect from '../components/datagrid/EditMultipleSelect';
@@ -54,6 +53,7 @@ import {
   dateColDef,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
+import SearchField from '../components/forms/SearchField';
 import { auth, firestore } from '../firebase.server';
 import {
   fetchAccountsToReview,
@@ -70,7 +70,7 @@ import {
   type Account,
   type Identity,
 } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, linkSx, loaderErrorResponse } from '../utils/jsxUtils';
@@ -99,7 +99,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({ actionResult }) => 
 const VIEW = View.Users;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     const [identities, groups, fetchedAccountsToReview] = await Promise.all([
       fetchIdentities(sessionData.customerId!),
@@ -142,7 +142,7 @@ interface ActionResponse {
 }
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   const actionRequest = (await request.json()) as ActionRequest;
 
   // update manager

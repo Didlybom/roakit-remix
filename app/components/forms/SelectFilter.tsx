@@ -11,9 +11,9 @@ import {
   Select,
 } from '@mui/material';
 import type { ReactElement } from 'react';
-import { ellipsisSx } from '../utils/jsxUtils';
+import { ellipsisSx } from '../../utils/jsxUtils';
 
-export default function FilterMenu({
+export default function SelectFilter({
   multiple = false,
   chips = false,
   items,

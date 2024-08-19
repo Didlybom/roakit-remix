@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtim
 import { json } from '@remix-run/server-runtime';
 import { fetchTickets } from '../firestore.server/fetchers.server';
 import type { Ticket } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
@@ -21,7 +21,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<TicketsResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW, params);
+    sessionData = await loadAndValidateSession(request, VIEW, params);
   } catch (e) {
     return errorJsonResponse('Fetching tickets failed. Invalid session.', 401);
   }

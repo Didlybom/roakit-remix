@@ -13,7 +13,7 @@ import { isToday, type DateRangeEnding } from '../../utils/dateUtils';
 import { desktopDisplaySx } from '../../utils/jsxUtils';
 import { Role, View } from '../../utils/rbac';
 import { ClickableAvatar } from '../Avatars';
-import DateRangePicker from '../DateRangePicker';
+import DateRangePicker from '../forms/DateRangePicker';
 
 interface NavBarProps extends AppBarProps {
   navbarWidth: number;

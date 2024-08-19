@@ -1,6 +1,6 @@
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import type { SelectOption } from '../utils/jsxUtils';
-import theme from '../utils/theme';
+import type { SelectOption } from '../../utils/jsxUtils';
+import theme from '../../utils/theme';
 
 export default function SelectField({
   items,

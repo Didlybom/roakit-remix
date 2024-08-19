@@ -46,11 +46,10 @@ import { ClickableAvatar } from '../components/Avatars';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
-import FilterMenu from '../components/FilterMenu';
+import FilterMenu from '../components/forms/SelectFilter';
 import HelperText from '../components/HelperText';
 import InfiniteList from '../components/InfiniteList';
 import Pulse from '../components/navigation/Pulse';
-import { firestore } from '../firebase.server';
 import {
   fetchAccountMap,
   fetchGroups,
@@ -58,6 +57,7 @@ import {
   fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
+import { upsertLike } from '../firestore.server/updaters.server';
 import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
 import { getActivityAction, getActivityUrl } from '../processors/activityDescription';
@@ -73,7 +73,7 @@ import {
 import { identifyAccounts } from '../processors/activityIdentifier';
 import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import { type Activity, type Initiative } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { formatMonthDayTime } from '../utils/dateUtils';
 import { RoakitError } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -117,7 +117,7 @@ const SEARCH_PARAM_ARTIFACT = 'artifact';
 
 const PAGE_SIZE = 50;
 
-const FILTER_WIDTH = 220;
+const FILTER_WIDTH = 230;
 
 const feedStyles = (
   <GlobalStyles
@@ -161,7 +161,7 @@ const initiativeFilterOptions = createFilterOptions({
 });
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
   try {
     const [initiatives, accounts, identities, groups] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
@@ -231,13 +231,16 @@ interface ActionResponse {
 }
 
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
 
   const actionRequest = (await request.json()) as ActionRequest;
   const identity = await queryIdentity(sessionData.customerId!, { email: sessionData.email });
-  await firestore
-    .doc(`customers/${sessionData.customerId!}/activities/${actionRequest.activityId}`)
-    .set({ reactions: { like: { [identity.id]: actionRequest.plusOne } } }, { merge: true });
+  await upsertLike(
+    sessionData.customerId!,
+    actionRequest.activityId,
+    identity.id,
+    actionRequest.plusOne
+  );
 
   return { status: { code: 'reacted' } };
 };

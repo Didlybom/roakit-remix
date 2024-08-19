@@ -5,6 +5,7 @@ import { useSubmit } from '@remix-run/react';
 import { useEffect } from 'react';
 import App from '../components/App';
 import { clientAuth } from '../firebase.client';
+import { postJsonOptions } from '../utils/httpUtils';
 import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
 
@@ -25,7 +26,7 @@ export default function Logout() {
       await clientAuth.signOut();
     }
     void signOutFromGoogle();
-    submit({}, { method: 'post' }); // handle to server to redirect and clear cookie
+    submit({}, postJsonOptions); // handle to server to redirect and clear cookie
   }, [submit]);
 
   return (

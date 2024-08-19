@@ -6,7 +6,7 @@ import {
   queryTeamIdentities,
 } from '../firestore.server/fetchers.server';
 import type { ActivityRecord } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
@@ -29,7 +29,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<ActivityResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW, params);
+    sessionData = await loadAndValidateSession(request, VIEW, params);
   } catch (e) {
     return errorJsonResponse('Fetching activities failed. Invalid session.', 401);
   }

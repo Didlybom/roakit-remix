@@ -6,13 +6,11 @@ import {
 import {
   Box,
   Button,
-  ClickAwayListener,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Popover,
-  Popper,
   Snackbar,
   Stack,
   TextField,
@@ -23,27 +21,27 @@ import type {
   GridEventListener,
   GridPreProcessEditCellProps,
   GridRenderCellParams,
-  GridRenderEditCellParams,
   GridRowId,
   GridRowParams,
   GridSortDirection,
 } from '@mui/x-data-grid';
-import { GridActionsCellItem, GridRowEditStopReasons, useGridApiContext } from '@mui/x-data-grid';
+import { GridActionsCellItem, GridRowEditStopReasons } from '@mui/x-data-grid';
 import { useActionData, useLoaderData, useNavigation, useSubmit } from '@remix-run/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { SwatchesPicker as ColorPicker, type ColorResult } from 'react-color';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SwatchesPicker as ColorPicker } from 'react-color';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
+import EditColor, { ColorValue } from '../components/datagrid/EditColor';
 import EditTextarea from '../components/datagrid/EditTextarea';
 import { dataGridCommonProps, StyledMuiError } from '../components/datagrid/dataGridCommon';
-import { firestore } from '../firebase.server';
 import { fetchInitiatives } from '../firestore.server/fetchers.server';
-import { loadSession } from '../utils/authUtils.server';
+import { deleteInitiative, upsertInitiative } from '../firestore.server/updaters.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { errMsg } from '../utils/errorUtils';
 import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
@@ -73,7 +71,7 @@ const DEFAULT_COLOR = '#607d8b';
 const KEY_REGEXP = new RegExp(/^[A-Z][A-Z_]*[A-Z]$/);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     const initiatives = await fetchInitiatives(sessionData.customerId!);
     return { ...sessionData, initiatives };
@@ -97,15 +95,13 @@ interface ActionResponse {
 }
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   const actionRequest = (await request.json()) as ActionRequest;
   const initiativeId = actionRequest.initiativeId;
 
   if (request.method === 'DELETE') {
     try {
-      await firestore
-        .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
-        .delete();
+      await deleteInitiative(sessionData.customerId!, initiativeId);
       return { status: { code: 'deleted', message: 'Initiative deleted' } };
     } catch (e) {
       return { error: errMsg(e, 'Failed to delete initiative') };
@@ -113,67 +109,13 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
   }
 
   try {
-    if (initiativeId) {
-      await firestore
-        .doc(`customers/${sessionData.customerId!}/initiatives/${initiativeId}`)
-        .set(actionRequest, { merge: true });
-    } else {
-      await firestore
-        .collection(`customers/${sessionData.customerId!}/initiatives`)
-        .add(actionRequest);
-    }
+    const { initiativeId: id, ...fields } = actionRequest;
+    await upsertInitiative(sessionData.customerId!, { id, ...fields });
     return { status: { code: 'saved', message: 'Initiative saved' } };
   } catch (e) {
     return { error: errMsg(e, 'Failed to save initiative') };
   }
 };
-
-function ColorValue({ color }: { color?: string }) {
-  return (
-    <Box
-      width={40}
-      height={20}
-      border="solid 1px"
-      sx={{ cursor: 'pointer', backgroundColor: color, opacity: color ? 1 : 0.3 }}
-    />
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function EditColor(props: GridRenderEditCellParams<any, string>) {
-  const { id, field, value } = props;
-  const [valueState, setValueState] = useState(value);
-  const [showPicker, setShowPicker] = useState(true);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>();
-  const apiRef = useGridApiContext();
-
-  const handleRef = useCallback((el: HTMLElement | null) => setAnchorEl(el), []);
-
-  const handleChange = useCallback(
-    async (color: ColorResult, event: ChangeEvent<HTMLInputElement>) => {
-      setValueState(color.hex);
-      setShowPicker(false);
-      await apiRef.current.setEditCellValue({ id, field, value: color.hex }, event);
-      apiRef.current.stopCellEditMode({ id, field });
-    },
-    [apiRef, field, id]
-  );
-
-  return (
-    <Box display="flex" height="100%" alignItems="center" ml={1} ref={handleRef}>
-      {anchorEl && (
-        <Popper open={showPicker} anchorEl={anchorEl} placement="bottom-start">
-          <ClickAwayListener onClickAway={() => setShowPicker(false)}>
-            <ColorPicker color={valueState} onChange={handleChange} />
-          </ClickAwayListener>
-        </Popper>
-      )}
-      <Box onClick={() => setShowPicker(true)}>
-        <ColorValue color={valueState} />
-      </Box>
-    </Box>
-  );
-}
 
 export default function Initiatives() {
   const navigation = useNavigation();
@@ -468,11 +410,10 @@ export default function Initiatives() {
             onRowEditStop={handleRowEditStop}
             processRowUpdate={(newRow: InitiativeRow, oldRow: InitiativeRow) => {
               if (!newRow.key) return newRow;
-              if (rows.find(r => r.key === newRow.key)) return { ...newRow, key: '' };
+              if (rows.find(r => r.id !== newRow.id && r.key === newRow.key))
+                return { ...newRow, key: '' };
               const updatedRow = { ...newRow, isNew: false };
-              if (areRowsEqual(newRow, oldRow)) {
-                return updatedRow;
-              }
+              if (areRowsEqual(newRow, oldRow)) return updatedRow;
               submit(
                 {
                   initiativeId: updatedRow.id,

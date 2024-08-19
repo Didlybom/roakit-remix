@@ -26,7 +26,9 @@ interface InfiniteListProps {
   rowHeights: number[];
   setRowHeights: (heights: number[]) => void;
 }
-
+/**
+ * A just-in-time-loading, auto-refreshing, infinite list with cells of variable height adjusting themselves to width resizing.
+ */
 export default function InfiniteList({
   height,
   rowSx,

@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from '@remix-run/server-runtime';
 import { fetchIdentities } from '../firestore.server/fetchers.server';
 import { GITHUB_FEED_TYPE, JIRA_FEED_TYPE } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { contentLength } from '../utils/httpUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
@@ -9,7 +9,7 @@ import { View } from '../utils/rbac';
 const VIEW = View.UsersCSV;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     const identities = await fetchIdentities(sessionData.customerId!);
     let csv = 'ID,email,name,managerID,jiraID,githubUsername\n';

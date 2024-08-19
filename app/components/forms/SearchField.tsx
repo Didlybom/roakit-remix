@@ -1,6 +1,6 @@
 import { Clear as ClearIcon, Search as SearchIcon } from '@mui/icons-material';
 import { IconButton, InputAdornment, TextField, type SxProps } from '@mui/material';
-import { desktopDisplaySx } from '../utils/jsxUtils';
+import { desktopDisplaySx } from '../../utils/jsxUtils';
 
 export default function SearchField({
   title,

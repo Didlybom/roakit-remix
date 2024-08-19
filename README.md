@@ -1,4 +1,4 @@
-# ROAKIT Prototype
+# ROAKIT Remix webapp
 
 Based on https://github.com/mui/material-ui/tree/master/examples/material-ui-remix-ts
 
@@ -12,16 +12,16 @@ To run locally, add the following secrets to your `.env` file in the root direct
 - The JSON value of `FIREBASE_SERVICE_ACCOUNT` is generated from the
   [Firebase console](https://console.firebase.google.com/u/4/project/eternal-impulse-412418/settings/serviceaccounts/adminsdk)
   and formatted in one line.
-- The string value of `CLIENT_ID_KEY` can be found in the `Liaison` project.
+- The string value of `CLIENT_ID_KEY` can be found in the `ingest` project.
 
-Then, `npm run local`.
+Then, `npm run local`
 
 ## Environments
 
 - `eternal_impulse-412418` is the dev/stage project.
 - `roakit-production` is the production project.
 
-[`npm run local`](package.json) and [`npm run local.prod`](package.json) pass the environment to the
+[`npm run local`](package.json) and [`npm run local:prod`](package.json) pass the environment to the
 code via a `ROAKTIV_ENV` env variable. So you can run locally against dev or prod data (for now). In
 the cloud the `ROAKTIV_ENV` value is read from
 [.env.eternal-impulse-412418](functions/.env.eternal-impulse-412418) and
@@ -30,8 +30,8 @@ configs into the code.
 
 ## Cloud Deployment
 
-- `npm run deploy` and `npm run deploy.prod` will deploy the Remix app and its Cloud function
+- `npm run deploy` and `npm run deploy:prod` will deploy the Remix app and its Cloud function
   ([see src](functions/src/index.ts))
   [Remix adapter](https://remix.run/docs/en/main/other-api/adapter) that will read the secrets
   mentioned above from
-  [Google Secret Management](https://console.cloud.google.com/security/secret-manager?project=eternal-impulse-412418).
+  [Google Secret Management](https://console.cloud.google.com/security/secret-manager).

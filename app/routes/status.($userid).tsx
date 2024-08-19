@@ -73,9 +73,9 @@ import {
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import EditableCellField from '../components/datagrid/EditableCellField';
 import AutocompleteSelect from '../components/datagrid/EditAutocompleteSelect';
-import FilterMenu from '../components/FilterMenu';
+import SelectField from '../components/forms/SelectField';
+import FilterMenu from '../components/forms/SelectFilter';
 import HelperText from '../components/HelperText';
-import SelectField from '../components/SelectField';
 import SmallButton from '../components/SmallButton';
 import { firestore } from '../firebase.server';
 import {
@@ -111,7 +111,7 @@ import {
   type Phase,
   type Ticket,
 } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import {
   formatYYYYMMDD,
   isToday,
@@ -145,7 +145,7 @@ const VIEW = View.Status;
 const SEARCH_PARAM_DAY = 'day';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
 
   try {
     const [initiatives, accounts, identities] = await Promise.all([
@@ -252,7 +252,7 @@ interface ActionResponse {
 }
 
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
 
   const actionRequest = (await request.json()) as ActionRequest;
 
@@ -567,7 +567,6 @@ export default function Status() {
       timestamp,
       createdTimestamp: timestamp,
       id: '',
-      initiativeId: '',
     };
     const initiativeStats = updateStats([activity, ...activities]);
     setShowNewDialog(false);
@@ -578,16 +577,37 @@ export default function Status() {
   }, [activities, isActivitySubmittable, newActivity, selectedDay, submit, updateStats]);
 
   const handleDeleteClick = useCallback(
-    (activityId: GridRowId, activities: Activity[]) => {
+    (activityId: GridRowId, activities: ActivityRow[]) => {
       const updatedActivities = activities.filter(row => row.id !== activityId);
       const initiativeStats = updateStats(updatedActivities);
+      let totalTicketEffort = null;
+      const deletedActivity = activities.find(a => a.id === activityId);
+      if (deletedActivity && deletedActivity.effort != null && deletedActivity.ticketKey) {
+        totalTicketEffort = updatedActivities
+          .filter(
+            a =>
+              a.ticketKey === deletedActivity.ticketKey &&
+              a.actorId === deletedActivity.actorId &&
+              a.effort != null
+          )
+          .reduce((totalEffort, activity) => totalEffort + activity.effort!, 0);
+      }
+      if (totalTicketEffort === 0) totalTicketEffort = null;
+
       setActivities(updatedActivities);
-      // FIXME update ticket effort when deleting activity
+      const day = formatYYYYMMDD(selectedDay);
       submit(
         {
           activityId,
-          day: formatYYYYMMDD(selectedDay),
+          day,
           initiativeStats,
+          ticket:
+            deletedActivity?.ticketKey ?
+              {
+                key: deletedActivity.ticketKey,
+                effort: { [day]: { [deletedActivity.actorId!]: totalTicketEffort } },
+              }
+            : null,
         },
         deleteJsonOptions
       );
@@ -916,21 +936,6 @@ export default function Status() {
                   items={priorityOptions}
                 />
               </Grid>
-              <Grid>
-                <TextField
-                  autoComplete="off"
-                  label="Hours"
-                  type="number"
-                  helperText="0 to 24"
-                  size="small"
-                  sx={{ maxWidth: 90 }}
-                  onChange={e => setNewActivity({ ...newActivity, effort: +e.target.value })}
-                  error={
-                    newActivity.effort != null &&
-                    (newActivity.effort < 0 || newActivity.effort > 24)
-                  }
-                />
-              </Grid>
             </Grid>
           </Box>
           <TextField
@@ -1142,6 +1147,7 @@ export default function Status() {
                           a =>
                             a.id !== updatedRow.id &&
                             a.ticketKey === updatedRow.ticketKey &&
+                            a.actorId === updatedRow.actorId &&
                             a.effort != null
                         )
                         .reduce(
@@ -1204,11 +1210,9 @@ export default function Status() {
                             {
                               ...activityStats.tickets[0],
                               initiativeId: ticketInitiativeId ?? null,
-                              // FIXME different actors for one ticket
                               effort: { [day]: { [updatedRow.actorId!]: totalTicketEffort } },
                             }
                           : null,
-                        totalTicketEffort,
                       },
                       postJsonOptions
                     );
@@ -1220,23 +1224,27 @@ export default function Status() {
             </StyledMuiError>
             {!isMobile && (
               <HelperText>
-                {activities.length > 0 ?
+                {activities.length > 0 && (
                   <>
-                    Some cells editable by clicking on them. Hours will be aggregated by ticket.
-                    Limited to one single initiative per ticket.
-                    <br />
-                    Use the{' '}
-                    <SmallButton
-                      href="/tickets/"
-                      label="Tickets"
-                      icon={<TicketIcon fontSize="small" />}
-                    />{' '}
-                    page to set and adjust <b>planned hours</b>.{' '}
+                    <p>
+                      Some cells editable by clicking on them. Hours will be aggregated by ticket.
+                      Limited to one single initiative per ticket.
+                    </p>
+                    <p>
+                      Use the{' '}
+                      <SmallButton
+                        href="/tickets/"
+                        label="Tickets"
+                        icon={<TicketIcon fontSize="small" />}
+                      />{' '}
+                      page to set and adjust <strong>planned hours</strong>.
+                    </p>
                   </>
-                : ''}
-                <br />
-                Press <code>N</code> to create a custom activity, <code>[</code> and <code>]</code>{' '}
-                to go to previous/next day.
+                )}
+                <p>
+                  Press <code>N</code> to create a custom activity, <code>[</code> and{' '}
+                  <code>]</code> to go to previous/next day.
+                </p>
               </HelperText>
             )}
             {loaderData.isLocal && (

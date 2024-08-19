@@ -6,7 +6,7 @@ import {
   queryIdentity,
 } from '../firestore.server/fetchers.server';
 import type { DaySummaries, Summary } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
@@ -31,7 +31,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<SummariesResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW, params);
+    sessionData = await loadAndValidateSession(request, VIEW, params);
   } catch (e) {
     return errorJsonResponse('Fetching summaries failed. Invalid session.', 401);
   }

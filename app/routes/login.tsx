@@ -18,6 +18,7 @@ import { auth as serverAuth } from '../firebase.server';
 import { queryUser } from '../firestore.server/fetchers.server';
 import { ONE_DAY } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
+import { postJsonOptions } from '../utils/httpUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
 import { sessionCookie } from '../utils/sessionCookie.server';
@@ -79,6 +80,7 @@ export default function Login() {
 
   const [refreshedToken, setRefreshedToken] = useState<string | undefined>();
 
+  // signInWithPopup works better than signInWithRedirect on mobile
   // useEffect(() => {
   //   async function getAuthRedirect() {
   //     try {
@@ -128,6 +130,7 @@ export default function Login() {
     try {
       const googleAuthProvider = new GoogleAuthProvider();
       // await signInWithRedirect(clientAuth, googleAuthProvider);
+      // signInWithPopup works better than signInWithRedirect on mobile
       const credential = await signInWithPopup(
         clientAuth,
         googleAuthProvider,
@@ -155,7 +158,7 @@ export default function Login() {
     try {
       const credential = await signInWithEmailAndPassword(clientAuth, email, password);
       const idToken = await credential.user.getIdToken();
-      fetcher.submit({ idToken }, { method: 'post' }); // hand over to server action
+      fetcher.submit({ idToken }, postJsonOptions); // hand over to server action
     } catch (e) {
       // https://firebase.google.com/docs/reference/js/auth#autherrorcodes
       setLoginError(errMsg(e, 'Error signing in'));
@@ -163,7 +166,7 @@ export default function Login() {
   };
 
   return (
-    <Stack display="flex" minHeight="100vh" bgcolor={theme.palette.grey[100]}>
+    <Stack display="flex" height="100%" bgcolor={theme.palette.grey[100]}>
       <App view={VIEW} isLoggedIn={false} showProgress={navigation.state !== 'idle'}>
         <Box display="flex" justifyContent="center" mt={10}>
           <Stack spacing={2} width={360}>
@@ -210,7 +213,7 @@ export default function Login() {
               </Button>
               {!!googleError && <Alert severity="error">{googleError}</Alert>}
               <Typography variant="caption" color={theme.palette.grey[400]}>
-                <b>No account?</b> Please contact your Roakit administrator to register.
+                <strong>No account?</strong> Please contact your Roakit administrator to register.
               </Typography>
             </Paper>
           </Stack>

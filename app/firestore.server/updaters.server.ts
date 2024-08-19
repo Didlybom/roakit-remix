@@ -6,6 +6,7 @@ import {
   type Activity,
   type Artifact,
   type ArtifactCounts,
+  type Initiative,
   type InitiativeRecord,
   type InitiativeTicketStats,
   type Ticket,
@@ -188,4 +189,53 @@ export const upsertTicket = async (customerId: number, ticket: Ticket) => {
   const { key, ...ticketFields } = ticket;
   const ticketDoc = firestore.doc(`customers/${customerId}/tickets/${key}`);
   await ticketDoc.set({ ...ticketFields, lastUpdatedTimestamp: Date.now() }, { merge: true });
+};
+
+export const upsertTicketPlan = async (
+  customerId: number,
+  identityId: string,
+  ticketKey: string,
+  plannedHours: number | null,
+  comment: string
+) => {
+  const batch = firestore.batch();
+  batch.set(
+    firestore.doc(`customers/${customerId!}/tickets/${ticketKey}`),
+    { plannedHours },
+    { merge: true }
+  );
+  const planColl = firestore.collection(
+    `customers/${customerId!}/tickets/${ticketKey}/planHistory/`
+  );
+  batch.create(planColl.doc(), {
+    identityId,
+    timestamp: Date.now(),
+    plannedHours,
+    comment,
+  });
+  batch.commit();
+};
+
+export const upsertLike = async (
+  customerId: number,
+  activityId: string,
+  identityId: string,
+  plusOne: boolean
+) => {
+  await firestore
+    .doc(`customers/${customerId}/activities/${activityId}`)
+    .set({ reactions: { like: { [identityId]: plusOne } } }, { merge: true });
+};
+
+export const upsertInitiative = async (customerId: number, initiative: Initiative) => {
+  const { id, ...fields } = initiative;
+  if (id) {
+    await firestore.doc(`customers/${customerId!}/initiatives/${id}`).set(fields, { merge: true });
+  } else {
+    await firestore.collection(`customers/${customerId!}/initiatives/`).add(fields);
+  }
+};
+
+export const deleteInitiative = async (customerId: number, initiativeId: string) => {
+  await firestore.doc(`customers/${customerId}/initiatives/${initiativeId}`).delete();
 };

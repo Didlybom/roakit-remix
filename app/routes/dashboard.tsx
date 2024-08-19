@@ -1,19 +1,10 @@
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Unstable_Grid2 as Grid,
-  Stack,
-} from '@mui/material';
+import { Unstable_Grid2 as Grid, Stack } from '@mui/material';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import AccordionBox from '../components/AccordionBox';
 import App from '../components/App';
-import type { GroupedActivities } from '../processors/activityGrouper';
-import { identifyAccounts } from '../processors/activityIdentifier';
-// import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ArtifactsByInitiative from '../components/dashboard/ArtifactsByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
 import EffortByInitiative from '../components/dashboard/EffortByInitiative';
@@ -25,8 +16,10 @@ import {
   fetchIdentities,
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
+import type { GroupedActivities } from '../processors/activityGrouper';
+import { identifyAccounts } from '../processors/activityIdentifier';
 import type { GroupedInitiativeStats } from '../processors/initiativeGrouper';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import {
   dateFilterToStartDate,
   DateRange,
@@ -46,7 +39,7 @@ export const shouldRevalidate = () => false;
 const VIEW = View.Dashboard;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     // retrieve initiatives and users
     const [initiatives, accounts, identities] = await Promise.all([
@@ -61,32 +54,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw loaderErrorResponse(e);
   }
 };
-
-function AccordionBox({
-  title,
-  children,
-  expanded = true,
-}: {
-  title: string;
-  children: ReactNode;
-  expanded?: boolean;
-}) {
-  return (
-    <Accordion
-      variant="outlined"
-      disableGutters
-      defaultExpanded={expanded}
-      sx={{ '& .MuiAccordionSummary-content': { fontSize: 'small' } }}
-    >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>{title}</AccordionSummary>
-      <AccordionDetails sx={{ mb: 2, ml: '3px' }}>
-        <Grid container spacing={5}>
-          {children}
-        </Grid>
-      </AccordionDetails>
-    </Accordion>
-  );
-}
 
 export default function Dashboard() {
   const navigation = useNavigation();

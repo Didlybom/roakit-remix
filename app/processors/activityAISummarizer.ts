@@ -1,16 +1,13 @@
 import type { GenerateContentResult } from '@google-cloud/vertexai';
 import {
-  getActivityActionDescription,
-  getActivityDescription,
-} from '../processors/activityDescription';
-import {
   CUSTOM_EVENT,
   type Activity,
   type ActorRecord,
   type InitiativeRecord,
 } from '../types/types';
-import { formatJson } from './jsxUtils';
-import { cloneArray } from './mapUtils';
+import { formatJson } from '../utils/jsxUtils';
+import { cloneArray } from '../utils/mapUtils';
+import { getActivityActionDescription, getActivityDescription } from './activityDescription';
 
 export const DEFAULT_PROMPT =
   'Output a categorized summary of these activities. Remove duplicates. Without title, introduction, notes and conclusion. Output markdown.';

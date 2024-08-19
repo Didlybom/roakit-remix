@@ -16,9 +16,8 @@ import App from '../components/App';
 import IconIndicator from '../components/IconIndicator';
 import MarkdownText from '../components/MarkdownText';
 import { fetchAccountMap, fetchIdentities } from '../firestore.server/fetchers.server';
-import {} from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import {
   errorAlert,
@@ -40,9 +39,8 @@ const VIEW = View.ActivitySummary;
 const SEARCH_PARAM_DAY = 'day';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
-    // retrieve initiatives and users
     const [accounts, identities] = await Promise.all([
       fetchAccountMap(sessionData.customerId!),
       fetchIdentities(sessionData.customerId!),
@@ -57,8 +55,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const SummaryBox = styled(Paper)(({ theme }) => ({
   borderColor: theme.palette.grey[200],
-  // maxHeight: 300,
-  // overflow: 'scroll',
   padding: theme.spacing(1),
   marginTop: theme.spacing(1),
   marginBottom: theme.spacing(1),
@@ -203,7 +199,7 @@ export default function Dashboard() {
         </Stack>
         <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
           <Typography fontSize="small">
-            <b>Work in progress.</b>{' '}
+            <strong>Work in progress.</strong>{' '}
             <Link
               onClick={() => {
                 setSelectedDay(dayjs('20240418'));

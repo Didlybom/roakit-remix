@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, TypedResponse } from '@remix-run/server-runtim
 import { json } from '@remix-run/server-runtime';
 import { fetchInitiativeStats } from '../firestore.server/fetchers.server';
 import { groupInitiativeStats, type GroupedInitiativeStats } from '../processors/initiativeGrouper';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { RoakitError, errMsg } from '../utils/errorUtils';
 import type { ErrorField } from '../utils/httpUtils';
 import { errorJsonResponse } from '../utils/httpUtils';
@@ -21,7 +21,7 @@ export const loader = async ({
 }: LoaderFunctionArgs): Promise<TypedResponse<GroupedInitiativeStatsResponse>> => {
   let sessionData;
   try {
-    sessionData = await loadSession(request, VIEW, params);
+    sessionData = await loadAndValidateSession(request, VIEW, params);
   } catch (e) {
     return errorJsonResponse('Fetching initiative stats failed. Invalid session.', 401);
   }

@@ -21,7 +21,7 @@ import { firestore } from '../../firebase.server';
 import { fetchInitiatives } from '../../firestore.server/fetchers.server';
 import { bannedRecordSchema, feedSchema } from '../../types/schemas';
 import { FEED_TYPES } from '../../types/types';
-import { loadSession } from '../../utils/authUtils.server';
+import { loadAndValidateSession } from '../../utils/authUtils.server';
 import { createClientId } from '../../utils/createClientId.server';
 import { getLogger } from '../../utils/loggerUtils.server';
 import { View } from '../../utils/rbac';
@@ -35,7 +35,7 @@ export const meta = () => [{ title: 'Settings | ROAKIT' }];
 const VIEW = View.Settings;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     // retrieve feeds
     const feedsCollection = firestore.collection('customers/' + sessionData.customerId + '/feeds');
@@ -91,7 +91,7 @@ interface ActionRequest {
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
 
   try {
     const customerId = sessionData.customerId;

@@ -171,8 +171,8 @@ export default function ConfluenceSettings({
         <strong>
           Administration {'>'} General Configuration {'>'} Webhooks
         </strong>{' '}
-        (you must be a<code>Confluence Administrator</code> or a <code>System Administrator</code>).
-        Create the webhook using the values indicated above.
+        (you must be a <code>Confluence Administrator</code> or a <code>System Administrator</code>
+        ). Create the webhook using the values indicated above.
         <List
           sx={{ listStyleType: 'disc', pl: 2, '& .MuiListItem-root': { display: 'list-item' } }}
         >

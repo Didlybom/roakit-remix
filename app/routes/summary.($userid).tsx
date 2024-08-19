@@ -51,10 +51,14 @@ import {
 } from '../firestore.server/fetchers.server';
 import { upsertSummary } from '../firestore.server/updaters.server';
 import { generateContent } from '../gemini.server/gemini.server';
+import {
+  DEFAULT_PROMPT,
+  buildActivitySummaryPrompt,
+  getSummaryResult,
+} from '../processors/activityAISummarizer';
 import { identifyAccounts } from '../processors/activityIdentifier';
 import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
-import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { formatDayLocal, formatYYYYMM, formatYYYYMMDD, isValidDate } from '../utils/dateUtils';
 import { postJsonOptions } from '../utils/httpUtils';
 import {
@@ -77,7 +81,7 @@ const VIEW = View.Summary;
 const SEARCH_PARAM_DAY = 'day';
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
 
   try {
     const [initiatives, accounts, identities] = await Promise.all([
@@ -128,7 +132,7 @@ interface ActionResponse {
 }
 
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW, params);
+  const sessionData = await loadAndValidateSession(request, VIEW, params);
 
   const actionRequest = (await request.json()) as ActionRequest;
 

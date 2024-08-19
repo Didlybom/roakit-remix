@@ -27,9 +27,13 @@ import {
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import { generateContent } from '../gemini.server/gemini.server';
+import {
+  DEFAULT_PROMPT,
+  buildActivitySummaryPrompt,
+  getSummaryResult,
+} from '../processors/activityAISummarizer';
 import { identifyAccounts, identifyActivities } from '../processors/activityIdentifier';
-import { DEFAULT_PROMPT, buildActivitySummaryPrompt, getSummaryResult } from '../utils/aiUtils';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { DateRange, dateFilterToStartDate } from '../utils/dateUtils';
 import { formatJson, loaderErrorResponse } from '../utils/jsxUtils';
 import { Role, View } from '../utils/rbac';
@@ -42,7 +46,7 @@ export const shouldRevalidate = () => false;
 const VIEW = View.AI;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   if (sessionData.role !== Role.Admin && sessionData.role !== Role.Monitor) {
     throw new Response(null, { status: 403 });
   }
@@ -77,7 +81,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await loadSession(request, VIEW);
+  await loadAndValidateSession(request, VIEW);
   const formData = await request.formData();
   const prompt = formData.get('prompt')?.toString();
   if (!prompt) {

@@ -146,7 +146,7 @@ export const initiativeStatsSchema = z.object({
   initiativeId: z.string(),
   identityId: z.string(),
   day: z.number(),
-  effort: z.number(),
+  effort: z.number().optional(),
   tickets: z.object({ key: z.string(), status: z.string().optional() }).array(),
 });
 export type InitiativeStatsType = z.infer<typeof initiativeStatsSchema>;

@@ -12,16 +12,15 @@ interface ActionRequest {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const actionRequest = (await request.json()) as ActionRequest;
-  const jsonReq = actionRequest ?? ((await request.json()) as ActionRequest);
   const cookie = await parseCookie(request);
-  if (jsonReq.isNavOpen != null) {
-    cookie.isNavOpen = jsonReq.isNavOpen;
+  if (actionRequest.isNavOpen != null) {
+    cookie.isNavOpen = actionRequest.isNavOpen;
   }
-  if (jsonReq.dateRange != null) {
-    cookie.dateRange = jsonReq.dateRange;
+  if (actionRequest.dateRange != null) {
+    cookie.dateRange = actionRequest.dateRange;
   }
-  if (jsonReq.endDay != null) {
-    cookie.endDay = isToday(jsonReq.endDay) ? undefined : jsonReq.endDay;
+  if (actionRequest.endDay != null) {
+    cookie.endDay = isToday(actionRequest.endDay) ? undefined : actionRequest.endDay;
   }
   return cookie.isNavOpen != null || cookie.dateRange != null ?
       json(null, {

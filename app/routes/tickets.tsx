@@ -40,13 +40,12 @@ import {
   useSubmit,
 } from '@remix-run/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-runtime';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import App from '../components/App';
 import { ClickableAvatar } from '../components/Avatars';
 import BoxPopover, { type BoxPopoverContent } from '../components/BoxPopover';
 import CodePopover, { type CodePopoverContent } from '../components/CodePopover';
 import HelperText from '../components/HelperText';
-import SearchField from '../components/SearchField';
 import DataGridWithSingleClickEditing from '../components/datagrid/DataGridWithSingleClickEditing';
 import {
   dataGridCommonProps,
@@ -54,16 +53,17 @@ import {
   priorityColDef,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
-import { firestore } from '../firebase.server';
+import SearchField from '../components/forms/SearchField';
 import {
   fetchAccountMap,
   fetchIdentities,
   fetchInitiativeMap,
   queryIdentity,
 } from '../firestore.server/fetchers.server';
+import { upsertTicketPlan } from '../firestore.server/updaters.server';
 import { identifyAccounts } from '../processors/activityIdentifier';
 import type { ActorRecord, Ticket, TicketPlanHistory } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import { formatDayLocal } from '../utils/dateUtils';
 import { errMsg } from '../utils/errorUtils';
 import { postJsonOptions } from '../utils/httpUtils';
@@ -82,7 +82,7 @@ import { getLogger } from '../utils/loggerUtils.server';
 import { groupByArray, sortMap } from '../utils/mapUtils';
 import { View } from '../utils/rbac';
 import theme from '../utils/theme';
-import type { TicketPlanHistoryResponse } from './fetcher.ticket.$ticketkey.plan-history';
+import type { TicketPlanHistoryResponse } from './fetcher.ticket.$key.plan-history';
 import type { TicketsResponse } from './fetcher.tickets';
 
 export const meta = () => [{ title: 'Tickets | ROAKIT' }];
@@ -94,7 +94,7 @@ const VIEW = View.Tickets;
 const SEARCH_PARAM_QUERY = 'q';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   try {
     const [initiatives, accounts, identities] = await Promise.all([
       fetchInitiativeMap(sessionData.customerId!),
@@ -126,7 +126,7 @@ interface ActionResponse {
 }
 
 export const action = async ({ request }: ActionFunctionArgs): Promise<ActionResponse> => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
   const actionRequest = (await request.json()) as ActionRequest;
 
   if (!actionRequest.key) {
@@ -142,17 +142,13 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<ActionRes
 
   try {
     const plannedHours = actionRequest.plannedHours != null ? +actionRequest.plannedHours : null;
-    const comment = actionRequest.comment;
-    await Promise.all([
-      firestore
-        .doc(`customers/${sessionData.customerId!}/tickets/${actionRequest.key}`)
-        .set({ plannedHours }, { merge: true }),
-      firestore
-        .collection(
-          `customers/${sessionData.customerId!}/tickets/${actionRequest.key}/planHistory/`
-        )
-        .add({ identityId, timestamp: Date.now(), plannedHours, comment }),
-    ]);
+    await upsertTicketPlan(
+      sessionData.customerId!,
+      identityId,
+      actionRequest.key,
+      plannedHours,
+      actionRequest.comment
+    );
     return { status: { code: 'saved', message: 'Ticket saved' } };
   } catch (e) {
     return { error: errMsg(e, 'Failed to save ticket') };
@@ -238,26 +234,26 @@ function PlannedHours({
 
   if (!ticketPlanHistory) {
     return (
-      <Box display="flex" justifyContent="center" width={400} mx={10} my={6}>
+      <Box display="flex" justifyContent="center" width={360} mx={10} my={6}>
         <CircularProgress size={30} />
       </Box>
     );
   }
   return (
-    <Table size="small" sx={{ width: 400, my: 2 }}>
+    <Table size="small" sx={{ width: 360, my: 2 }}>
       {ticketPlanHistory
         .sort((a, b) => b.timestamp - a.timestamp)
         .map((plan, i) => {
           const actorName = actorMap[plan.identityId]?.name;
           return (
-            <>
+            <Fragment key={i}>
               <TableHead>
                 <TableRow>
                   <TableCell colSpan={3}>{formatDayLocal(plan.timestamp)}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                <TableRow key={i} sx={{ verticalAlign: 'top', '&:last-child td': { border: 0 } }}>
+                <TableRow sx={{ verticalAlign: 'top', '&:last-child td': { border: 0 } }}>
                   <TableCell>{plan.comment}</TableCell>
                   <TableCell sx={{ maxWidth: 120 }}>
                     <Stack direction="row" spacing="4px" alignItems="center">
@@ -270,7 +266,7 @@ function PlannedHours({
                   <TableCell align="right">{plan.plannedHours}</TableCell>
                 </TableRow>
               </TableBody>
-            </>
+            </Fragment>
           );
         })}
     </Table>
@@ -408,7 +404,7 @@ export default function Tickets() {
                 size="small"
                 endIcon={<EditIcon style={{ width: 12, height: 12 }} />}
                 onClick={() => {
-                  setUpdatingPlannedHours({ hours: params.row.plannedHours });
+                  setUpdatingPlannedHours({ hours: params.row.plannedHours, comment: '' });
                   setShowDialogForTicket(params.row.key);
                 }}
               >
@@ -521,7 +517,7 @@ export default function Tickets() {
     <Grid container spacing={2} alignItems="center" mb={1}>
       <Grid>
         <HelperText infoIcon>
-          You can use this page to fill out <b>planned hours</b>.
+          You can use this page to fill out <strong>planned hours</strong>.
         </HelperText>
       </Grid>
       <Grid flex={1} />
@@ -699,7 +695,7 @@ export default function Tickets() {
       isLoggedIn={true}
       role={loaderData.role}
       isNavOpen={loaderData.isNavOpen}
-      showProgress={navigation.state !== 'idle'}
+      showProgress={navigation.state !== 'idle' || ticketsFetcher.state !== 'idle'}
     >
       {errorAlert(actionData?.error)}
       {errorAlert(error)}
@@ -722,7 +718,7 @@ export default function Tickets() {
       <Stack m={3} direction="row">
         {navBar}
         <Stack flex={1} minWidth={0}>
-          {filterBar}
+          {tickets.size > 0 && filterBar}
           {grids}
         </Stack>
       </Stack>

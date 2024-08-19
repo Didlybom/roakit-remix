@@ -42,9 +42,6 @@ import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
 import type { CodePopoverContent } from '../components/CodePopover';
 import CodePopover from '../components/CodePopover';
-import FilterMenu from '../components/FilterMenu';
-import SearchField from '../components/SearchField';
-import SmallChip from '../components/SmallChip';
 import {
   actionColDef,
   actorColDef,
@@ -55,10 +52,12 @@ import {
   sortComparatorKeepingNullAtTheBottom,
   viewJsonActionsColDef,
 } from '../components/datagrid/dataGridCommon';
+import SearchField from '../components/forms/SearchField';
+import FilterMenu from '../components/forms/SelectFilter';
+import SmallChip from '../components/SmallChip';
 import {
   fetchAccountMap,
   fetchIdentities,
-  // fetchInitiativeMap,
   fetchInitiativeMap,
 } from '../firestore.server/fetchers.server';
 import JiraIcon from '../icons/Jira';
@@ -78,7 +77,7 @@ import {
   type Activity,
   type ActivityRecord,
 } from '../types/types';
-import { loadSession } from '../utils/authUtils.server';
+import { loadAndValidateSession } from '../utils/authUtils.server';
 import {
   DateRange,
   dateFilterToStartDate,
@@ -156,7 +155,7 @@ const groupActivityKey: Record<GroupBy, keyof Activity> = {
 };
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
-  const sessionData = await loadSession(request, VIEW);
+  const sessionData = await loadAndValidateSession(request, VIEW);
 
   // validate url
   const { searchParams } = new URL(request.url);

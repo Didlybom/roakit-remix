@@ -6,7 +6,11 @@ import { getSessionData } from './sessionCookie.server';
 
 const logger = getLogger('authUtils');
 
-export const loadSession = async (request: Request, view: View, params?: Params<string>) => {
+export const loadAndValidateSession = async (
+  request: Request,
+  view: View,
+  params?: Params<string>
+) => {
   let sessionData;
   try {
     sessionData = await getSessionData(request);
