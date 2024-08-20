@@ -1,5 +1,5 @@
 // see https://github.com/kylefarris/J2M and https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=all
-// Fixed a few things. Still not prefect.
+// Fixed many things. Still not perfect at all (tables, etc.)
 
 const UNORDERED_LIST = new RegExp(/^[ \t]*(\*+)\s+/gm);
 const ORDERED_LIST = new RegExp(/^[ \t]*(#+)\s+/gm);
@@ -7,7 +7,7 @@ const HEADER = new RegExp(/^h([0-6])\.(.*)$/gm);
 const BOLD = new RegExp(/\b\*(\S.*?)\*\b/g);
 const ITALIC = new RegExp(/\b_(\S.*?)_\b/g);
 const MONOSPACED = new RegExp(/\{\{([^}]+)\}\}/g);
-const QUOTE = new RegExp(/{quote}(\S.*?){quote}/g);
+const QUOTE = new RegExp(/{quote}(\S.*?){quote}/gs);
 const INSERT = new RegExp(/\+([^+]*?)\+/g);
 //const SUPERSCRIPT = new RegExp(/\^([^^]*?)\^/g);
 //const SUBSCRIPT = new RegExp(/~([^~]*?)~/g);
