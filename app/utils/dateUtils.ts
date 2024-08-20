@@ -24,10 +24,10 @@ dayjs.updateLocale('en', {
     hh: '%dh',
     d: '1d',
     dd: '%dd',
-    M: '1 month',
-    MM: '%d months',
-    y: '1year',
-    yy: '%d years',
+    M: '1mo',
+    MM: '%dmo',
+    y: '1y',
+    yy: '%dy',
   },
 });
 
