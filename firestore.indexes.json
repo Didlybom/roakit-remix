@@ -56,6 +56,20 @@
         },
         {
           "fieldPath": "createdTimestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "artifact",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdTimestamp",
           "order": "DESCENDING"
         }
       ]
