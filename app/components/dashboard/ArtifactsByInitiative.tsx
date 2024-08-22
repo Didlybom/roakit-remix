@@ -33,14 +33,11 @@ export default function ArtifactsByInitiatives({
           <BarChart
             series={[
               {
-                id: `${initiative.id} artifacts`,
+                id: `${initiative.id}-artifacts`,
                 data: [
-                  initiative.artifactCount.code,
-                  initiative.artifactCount.codeOrg,
-                  initiative.artifactCount.task,
-                  initiative.artifactCount.taskOrg,
-                  initiative.artifactCount.doc,
-                  initiative.artifactCount.docOrg,
+                  initiative.artifactCount.code + initiative.artifactCount.codeOrg,
+                  initiative.artifactCount.task + initiative.artifactCount.taskOrg,
+                  initiative.artifactCount.doc + initiative.artifactCount.docOrg,
                 ],
                 valueFormatter: value => `${value} ${pluralizeMemo('activity', value ?? 0)}`,
                 label: dateRangeLabel,
@@ -50,15 +47,15 @@ export default function ArtifactsByInitiatives({
               ...(SHOW_TOTAL ?
                 [
                   {
-                    id: `${initiative.id} artifacts total`,
+                    id: `${initiative.id}-artifacts-total`,
                     data: [
-                      // max() is useful is totalCounters are behind (updated every hour only)
-                      Math.max(totalCounters.code, initiative.artifactCount.code),
-                      Math.max(totalCounters.codeOrg, initiative.artifactCount.codeOrg),
-                      Math.max(totalCounters.task, initiative.artifactCount.task),
-                      Math.max(totalCounters.taskOrg, initiative.artifactCount.taskOrg),
-                      Math.max(totalCounters.codeOrg, initiative.artifactCount.doc),
-                      Math.max(totalCounters.taskOrg, initiative.artifactCount.docOrg),
+                      // max() is useful is totalCounters are behind (updated only every hour)
+                      Math.max(totalCounters.code, initiative.artifactCount.code) +
+                        Math.max(totalCounters.codeOrg, initiative.artifactCount.codeOrg),
+                      Math.max(totalCounters.task, initiative.artifactCount.task) +
+                        Math.max(totalCounters.taskOrg, initiative.artifactCount.taskOrg),
+                      Math.max(totalCounters.codeOrg, initiative.artifactCount.doc) +
+                        Math.max(totalCounters.taskOrg, initiative.artifactCount.docOrg),
                     ],
                     valueFormatter: (value: number | null) =>
                       `${value} ${pluralizeMemo('activity', value ?? 0)}`,
@@ -70,7 +67,7 @@ export default function ArtifactsByInitiatives({
             ]}
             xAxis={[
               {
-                data: ['Dev', 'Dev Org', 'Task', 'Task Org', 'Doc', 'Doc Org'],
+                data: ['Code', 'Task', 'Doc.'],
                 scaleType: 'band',
                 tickLabelStyle: { angle: -45, textAnchor: 'end' },
                 tickMinStep: 1,

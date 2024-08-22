@@ -7,7 +7,7 @@ import {
   type Ticket,
 } from '../types/types';
 import { JIRA_FAKE_TICKET_REGEXP } from '../utils/stringUtils';
-import { buildArtifactActionKey, findTickets, inferTicketStatus } from './activityFeed';
+import { artifactToActivityType, findTickets, inferTicketStatus } from './activityFeed';
 
 export const TOP_ACTORS_OTHERS_ID = 'TOP_ACTORS_OTHERS';
 
@@ -47,11 +47,11 @@ export const groupActivities = (activities: Activity[]): GroupedActivities => {
   let initiatives: InitiativeWithCounts[] = [];
 
   activities.forEach(activity => {
-    const { actorId, initiativeId, priority: priorityId, artifact, phase, action } = activity;
+    const { actorId, initiativeId, priority: priorityId, artifact, phase } = activity;
 
     // top actors
     if (actorId != null) {
-      const topActorKey = buildArtifactActionKey(artifact, action);
+      const topActorKey = artifactToActivityType[artifact];
       if (topActors[topActorKey] == null) {
         topActors[topActorKey] = [];
       }

@@ -4,6 +4,7 @@ import {
   fetchActivitiesPage,
   fetchInitiativesWithCache,
 } from '../firestore.server/fetchers.server';
+import { activityTypesToArtifacts } from '../processors/activityFeed';
 import { compileActivityMappers, mapActivity } from '../processors/activityMapper';
 import type { Activity } from '../types/types';
 import { loadAndValidateSession } from '../utils/authUtils.server';
@@ -37,7 +38,9 @@ export const loader = async ({
   const endBefore = searchParams.get('endBefore') ? +searchParams.get('endBefore')! : undefined;
   const userIds = searchParams.get('userIds')?.split(',') ?? undefined;
   const initiativeIds = searchParams.get('initiativeIds')?.split(',') ?? undefined;
-  const artifacts = searchParams.get('artifacts')?.split(',') ?? undefined;
+  const artifacts = activityTypesToArtifacts(
+    searchParams.get('activityTypes')?.split(',') ?? undefined
+  );
   const limit = searchParams.get('limit') ? +searchParams.get('limit')! : undefined;
   const useIdentityId =
     searchParams.get('useIdentityId') ? searchParams.get('useIdentityId') === 'true' : undefined;

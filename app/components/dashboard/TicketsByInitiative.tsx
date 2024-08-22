@@ -28,7 +28,7 @@ export default function TicketsByInitiative({
         <BarChart
           series={[
             {
-              id: `${initiativeId} tickets`,
+              id: `${initiativeId}-tickets`,
               data: [initiative.new, initiative.ongoing, initiative.blocked, initiative.completed],
               valueFormatter: value => `${value} ${pluralizeMemo('ticket', value ?? 0)}`,
               label: dateRangeLabel,

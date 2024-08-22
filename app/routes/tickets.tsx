@@ -164,7 +164,9 @@ function SpentHours({ effort, actorMap }: { effort: Ticket['effort']; actorMap: 
         .sort(([date1], [date2]) => +date2 - +date1)
         .map(([date, actors], i) => (
           <Box key={i}>
-            <Box fontWeight={600}>{formatDayLocal(date)}</Box>
+            <Box fontWeight={600} ml={2}>
+              {formatDayLocal(date)}
+            </Box>
             <Table size="small" sx={{ width: 300, mb: 2 }}>
               <TableBody>
                 {Object.entries(actors!)
@@ -248,14 +250,15 @@ function PlannedHours({
           return (
             <Fragment key={i}>
               <TableHead>
-                <TableRow>
-                  <TableCell colSpan={3}>{formatDayLocal(plan.timestamp)}</TableCell>
+                <TableRow sx={{ th: { fontWeight: 600 } }}>
+                  <TableCell colSpan={2}>{formatDayLocal(plan.timestamp)}</TableCell>
+                  <TableCell align="right">{plan.plannedHours}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 <TableRow sx={{ verticalAlign: 'top', '&:last-child td': { border: 0 } }}>
                   <TableCell>{plan.comment}</TableCell>
-                  <TableCell sx={{ maxWidth: 120 }}>
+                  <TableCell colSpan={2} sx={{ maxWidth: 140 }}>
                     <Stack direction="row" spacing="4px" alignItems="center">
                       <ClickableAvatar name={actorName} size={18} fontSize={10} />
                       <Box title={actorName} sx={ellipsisSx}>
@@ -263,7 +266,6 @@ function PlannedHours({
                       </Box>
                     </Stack>
                   </TableCell>
-                  <TableCell align="right">{plan.plannedHours}</TableCell>
                 </TableRow>
               </TableBody>
             </Fragment>

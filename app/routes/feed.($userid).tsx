@@ -62,7 +62,7 @@ import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
 import { getActivityAction, getActivityUrl } from '../processors/activityDescription';
 import {
-  artifacts,
+  activityTypes,
   confluenceSourceName,
   gitHubSourceName,
   inferTicketStatus,
@@ -113,7 +113,7 @@ export const shouldRevalidate = () => false;
 const VIEW = View.Feed;
 
 const SEARCH_PARAM_INITIATIVE = 'initiative';
-const SEARCH_PARAM_ARTIFACT = 'artifact';
+const SEARCH_PARAM_ARTIFACT = 'activityType';
 
 const PAGE_SIZE = 50;
 
@@ -288,7 +288,7 @@ export default function Feed() {
       query += `&initiativeIds=${initiativeFilter.map(k => initiativesByKey.get(k)!.id).join(',')}`;
     }
     if (artifactFilter.length) {
-      query += `&artifacts=${artifactFilter.join(',')}`;
+      query += `&activityTypes=${artifactFilter.join(',')}`;
     }
     // if concerned with activities at the same millisecond, use a doc snapshot instead of createdTimestamp (requiring fetching it though)
     // https://firebase.google.com/docs/firestore/query-data/query-cursors#use_a_document_snapshot_to_define_the_query_cursor
@@ -306,7 +306,7 @@ export default function Feed() {
     if (newActivitiesFetcher.state !== 'idle') return;
 
     let query = `/fetcher/activities/page?limit=1000&combine=true`; // if there are more than 1000 activities between now and activity[0] we'll miss some
-    if (artifactFilter.length) query += `&artifacts=${artifactFilter.join(',')}`;
+    if (artifactFilter.length) query += `&activityTypes=${artifactFilter.join(',')}`;
     if (activities.length) query += `&endBefore=${activities[0].createdTimestamp}`;
     if (loaderData.activityUserIds?.length) query += `&userIds=${loaderData.activityUserIds}`;
     if (loaderData.groupId) query += '&useIdentityId=true';
@@ -710,13 +710,16 @@ export default function Feed() {
             }
           ></Autocomplete>
           <FilterMenu
-            label="Artifacts"
+            label="Activity Type"
             multiple
             chips={true}
             sx={{ width: FILTER_WIDTH }}
             selectedValue={artifactFilter}
             items={[
-              ...[...artifacts].map(([key, artifact]) => ({ value: key, label: artifact.label })),
+              ...[...activityTypes].map(([key, artifact]) => ({
+                value: key,
+                label: artifact.label,
+              })),
             ]}
             onChange={values => {
               setArtifactFilter(values as string[]);

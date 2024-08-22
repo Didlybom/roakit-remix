@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import AccordionBox from '../components/AccordionBox';
 import App from '../components/App';
+import ActiveContributors from '../components/dashboard/ActiveContributors.';
 import ArtifactsByInitiative from '../components/dashboard/ArtifactsByInitiative';
 import ContributorsByInitiative from '../components/dashboard/ContributorsByInitiative';
 import EffortByInitiative from '../components/dashboard/EffortByInitiative';
@@ -124,7 +125,7 @@ export default function Dashboard() {
         </AccordionBox>
       )}
       {!!groupedActivitiesResponse?.initiatives?.length && (
-        <AccordionBox title="Activity Categories by Initiative">
+        <AccordionBox title="Activity Types by Initiative">
           <ArtifactsByInitiative
             groupedActivities={groupedActivitiesResponse}
             initiatives={loaderData.initiatives}
@@ -143,16 +144,16 @@ export default function Dashboard() {
           />
         </AccordionBox>
       )}
-      {/* {groupedActivitiesResponse?.topActors &&
+      {groupedActivitiesResponse?.topActors &&
         Object.keys(groupedActivitiesResponse.topActors).length > 0 && (
-         <AccordionBox title="Active Contributors">
+          <AccordionBox title="Active Contributors">
             <ActiveContributors
               groupedActivities={groupedActivitiesResponse}
               actors={loaderData.actors}
               isLoading={groupedActivitiesFetcher.state === 'loading'}
             />
-        </AccordionBox>
-        )} */}
+          </AccordionBox>
+        )}
     </Stack>
   );
 

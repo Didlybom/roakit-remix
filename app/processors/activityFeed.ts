@@ -26,14 +26,35 @@ export const artifactActions = new Map<string, { sortOrder: number; label: strin
   ['doc-updated', { sortOrder: 15, label: 'Doc updated' }],
 ]);
 
-export const artifacts = new Map<string, { label: string }>([
-  ['task', { label: 'Task' }],
-  ['taskOrg', { label: 'Task Org.' }],
-  ['code', { label: 'Code' }],
-  ['codeOrg', { label: 'Code Org.' }],
-  ['doc', { label: 'Doc.' }],
-  ['docOrg', { label: 'Doc. Org.' }],
+export const activityTypes = new Map<string, { sortOrder: number; label: string }>([
+  ['task', { sortOrder: 1, label: 'Task' }],
+  ['code', { sortOrder: 2, label: 'Code' }],
+  ['doc', { sortOrder: 3, label: 'Documentation' }],
 ]);
+
+export const activityTypesToArtifacts = (activityTypes: string[] | undefined) => {
+  if (!activityTypes) return undefined;
+  const artifacts: string[] = [];
+  activityTypes.forEach(activityType => {
+    if (activityType === 'task') {
+      artifacts.push('task', 'taskOrg');
+    } else if (activityType === 'code') {
+      artifacts.push('code', 'codeOrg');
+    } else if (activityType === 'doc') {
+      artifacts.push('doc', 'docOrg');
+    }
+  });
+  return artifacts;
+};
+
+export const artifactToActivityType = {
+  task: 'task',
+  taskOrg: 'task',
+  code: 'code',
+  codeOrg: 'code',
+  doc: 'doc',
+  docOrg: 'doc',
+};
 
 // return the first ticket referenced from metadata fields
 export const findFirstTicket = (metadata?: ActivityMetadata, description?: string | null) => {

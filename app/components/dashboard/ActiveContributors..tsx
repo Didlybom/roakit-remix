@@ -1,6 +1,6 @@
 import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
-import { artifactActions } from '../../processors/activityFeed';
+import { activityTypes } from '../../processors/activityFeed';
 import { TOP_ACTORS_OTHERS_ID, type GroupedActivities } from '../../processors/activityGrouper';
 import type { ActorRecord } from '../../types/types';
 import { windowOpen } from '../../utils/jsxUtils';
@@ -21,23 +21,23 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
     Object.keys(groupedActivities.topActors)
       .sort(
         (a, b) =>
-          (artifactActions.get(a)?.sortOrder ?? 999) - (artifactActions.get(b)?.sortOrder ?? 999)
+          (activityTypes.get(a)?.sortOrder ?? 999) - (activityTypes.get(b)?.sortOrder ?? 999)
       )
-      .map(action => (
-        <Grid key={action}>
+      .map(activityType => (
+        <Grid key={activityType}>
           <Paper variant="outlined" sx={commonPaperSx({ isLoading })}>
-            {widgetTitle(artifactActions.get(action)?.label ?? action)}
+            {widgetTitle(activityTypes.get(activityType)?.label ?? activityType)}
             <BarChart
               series={[
                 {
-                  id: `top-actors-${action}`,
+                  id: `top-actors-${activityType}`,
                   valueFormatter: val => `${val} ${pluralizeMemo('activity', val ?? 0)}`,
-                  data: groupedActivities.topActors![action].map(a => a.count),
+                  data: groupedActivities.topActors![activityType].map(a => a.count),
                 },
               ]}
               yAxis={[
                 {
-                  data: groupedActivities.topActors![action].map(a =>
+                  data: groupedActivities.topActors![activityType].map(a =>
                     a.id === TOP_ACTORS_OTHERS_ID ? 'All others' : (actors[a.id]?.name ?? 'unknown')
                   ),
                   scaleType: 'band',
@@ -47,11 +47,11 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                 if (data) {
                   windowOpen(
                     event,
-                    `/activity/${
+                    `/feed/${
                       data.dataIndex === 10 ?
                         '*'
-                      : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
-                    }?action=${action}`
+                      : encodeURI(groupedActivities.topActors![activityType][data.dataIndex].id)
+                    }?activityType=${activityType}`
                   );
                 }
               }}
@@ -59,11 +59,11 @@ export default function ActiveContributors({ groupedActivities, actors, isLoadin
                 if (data) {
                   windowOpen(
                     event,
-                    `/activity/${
+                    `/feed/${
                       data.dataIndex === 10 ?
                         '*'
-                      : encodeURI(groupedActivities.topActors![action][data.dataIndex].id)
-                    }?action=${action}`
+                      : encodeURI(groupedActivities.topActors![activityType][data.dataIndex].id)
+                    }?activityType=${activityType}`
                   );
                 }
               }}

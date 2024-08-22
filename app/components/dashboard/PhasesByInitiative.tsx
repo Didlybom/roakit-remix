@@ -40,7 +40,7 @@ export default function PhasesByInitiatives({
             <BarChart
               series={[
                 {
-                  id: `${initiative.id} phases`,
+                  id: `${initiative.id}-phases`,
                   data: [
                     initiative.phaseCount.design,
                     initiative.phaseCount.dev,
