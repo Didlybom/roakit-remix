@@ -8,7 +8,7 @@ import {
   Box,
   Button,
   FormControlLabel,
-  Unstable_Grid2 as Grid,
+  Grid2 as Grid,
   Link,
   Pagination,
   Paper,

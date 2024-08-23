@@ -1,4 +1,4 @@
-import { Unstable_Grid2 as Grid, Stack } from '@mui/material';
+import { Grid2 as Grid, Stack } from '@mui/material';
 import type { LoaderFunctionArgs } from '@remix-run/node';
 import { useFetcher, useLoaderData, useNavigate, useNavigation } from '@remix-run/react';
 import dayjs from 'dayjs';

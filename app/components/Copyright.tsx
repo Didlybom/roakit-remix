@@ -1,4 +1,4 @@
-import { Unstable_Grid2 as Grid, Typography } from '@mui/material';
+import { Grid2 as Grid, Typography } from '@mui/material';
 import theme from '../utils/theme';
 
 export default function Copyright() {

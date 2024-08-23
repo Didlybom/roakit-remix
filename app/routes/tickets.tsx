@@ -12,7 +12,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Unstable_Grid2 as Grid,
+  Grid2 as Grid,
   IconButton,
   Link,
   Snackbar,

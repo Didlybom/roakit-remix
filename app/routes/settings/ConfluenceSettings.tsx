@@ -8,7 +8,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Unstable_Grid2 as Grid,
   IconButton,
   Link,
   List,
@@ -55,23 +54,20 @@ export default function ConfluenceSettings({
   return (
     <>
       <Stack spacing={3} maxWidth={600}>
-        <Grid container spacing={1}>
-          <Grid xs={10}>
-            <TextField
-              label="URL"
-              value={url}
-              fullWidth
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid xs={2}>
-            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
-          </Grid>
-        </Grid>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            label="URL"
+            value={url}
+            fullWidth
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+
+          {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
+        </Stack>
         {navigation.state !== 'loading' && (
-          <Grid container spacing={1}>
-            <Grid xs={10}>
+          <>
+            <Stack direction="row" spacing={1}>
               {secret === serverData.secret ?
                 <Tooltip title="If you've lost or forgotten the Confluence webhook secret, you can change it, but be aware that the webhook configuration on Confluence will need to be updated.">
                   <Button variant="contained" color="secondary" onClick={() => setSecret(uuidv4())}>
@@ -98,8 +94,6 @@ export default function ConfluenceSettings({
                   }}
                 />
               }
-            </Grid>
-            <Grid xs={2}>
               <Stack direction={'row'}>
                 {secret !== serverData.secret &&
                   actionIcon(<CopyIcon />, 'Copy secret to clipboard', () => handleCopy(secret))}
@@ -125,7 +119,7 @@ export default function ConfluenceSettings({
                   </Box>
                 )}
               </Stack>
-            </Grid>
+            </Stack>
             {secret !== serverData.secret && (
               <Typography variant="caption" sx={{ m: 1 }}>
                 <strong>Copy</strong> this secret (to paste it on the Confluence Webhook
@@ -133,22 +127,19 @@ export default function ConfluenceSettings({
                 For security reasons, it will be hidden once saved.
               </Typography>
             )}
-          </Grid>
+          </>
         )}
-        <Grid container spacing={1}>
-          <Grid xs={10}>
-            <TextField
-              label="Events"
-              value={events}
-              fullWidth
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid xs={2}>
-            {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
-          </Grid>
-        </Grid>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            label="Events"
+            value={events}
+            fullWidth
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+
+          {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
+        </Stack>
       </Stack>
       <Alert severity="warning" sx={{ mt: 2 }}>
         The instructions below are for <strong>Confluence Server</strong> (self-hosted).{' '}

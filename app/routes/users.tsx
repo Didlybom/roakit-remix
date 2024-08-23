@@ -10,7 +10,7 @@ import {
   Box,
   Button,
   Divider,
-  Unstable_Grid2 as Grid,
+  Grid2 as Grid,
   IconButton,
   Link,
   Pagination,

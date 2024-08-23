@@ -16,7 +16,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  Unstable_Grid2 as Grid,
+  Grid2 as Grid,
   IconButton,
   Link,
   Snackbar,

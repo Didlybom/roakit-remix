@@ -31,7 +31,8 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/server-r
 import { compileExpression } from 'filtrex';
 import { useConfirm } from 'material-ui-confirm';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SwatchesPicker as ColorPicker } from 'react-color';
+import reactColor from 'react-color';
+// import { SwatchesPicker as ColorPicker } from 'react-color';
 import App from '../components/App';
 import type { BoxPopoverContent } from '../components/BoxPopover';
 import BoxPopover from '../components/BoxPopover';
@@ -47,6 +48,7 @@ import { deleteJsonOptions, postJsonOptions } from '../utils/httpUtils';
 import { ellipsisSx, errorAlert, loaderErrorResponse } from '../utils/jsxUtils';
 import { getLogger } from '../utils/loggerUtils.server';
 import { View } from '../utils/rbac';
+const { SwatchesPicker: ColorPicker } = reactColor;
 
 interface InitiativeRow {
   id: string;

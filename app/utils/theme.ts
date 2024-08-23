@@ -34,7 +34,7 @@ const theme = createTheme({
   components: {
     MuiPaper: {
       styleOverrides: {
-        rounded: { borderRadius: 8 },
+        rounded: { borderRadius: 4 },
       },
     },
   },

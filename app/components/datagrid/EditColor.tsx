@@ -2,7 +2,9 @@ import { Box, ClickAwayListener, Popper } from '@mui/material';
 import { useGridApiContext, type GridRenderEditCellParams } from '@mui/x-data-grid';
 import { useCallback, useState, type ChangeEvent } from 'react';
 import type { ColorResult } from 'react-color';
-import { SwatchesPicker as ColorPicker } from 'react-color';
+import reactColor from 'react-color';
+const { SwatchesPicker: ColorPicker } = reactColor;
+// import { SwatchesPicker as ColorPicker } from 'react-color';
 
 export function ColorValue({ color }: { color?: string }) {
   return (

@@ -1,14 +1,5 @@
 import { ContentCopy as CopyIcon } from '@mui/icons-material';
-import {
-  Box,
-  Unstable_Grid2 as Grid,
-  Link,
-  List,
-  ListItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Link, List, ListItem, Stack, TextField, Typography } from '@mui/material';
 import { JIRA_FEED_TYPE, type Settings } from '../../types/types';
 import BannedItems from './BannedItems.';
 import jiraImage from './images/jira-webhook.png';
@@ -32,48 +23,36 @@ export default function JiraSettings({
   return (
     <>
       <Stack spacing={3} maxWidth={600}>
-        <Grid container spacing={1}>
-          <Grid xs={10}>
-            <TextField
-              label="URL"
-              value={url}
-              fullWidth
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid xs={2}>
-            {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
-          </Grid>
-        </Grid>
-        <Grid container spacing={1}>
-          <Grid xs={10}>
-            <TextField
-              label="Scope"
-              value={scope}
-              fullWidth
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid xs={2}>
-            {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(scope))}
-          </Grid>
-        </Grid>
-        <Grid container spacing={1}>
-          <Grid xs={10}>
-            <TextField
-              label="Events"
-              value={events}
-              fullWidth
-              size="small"
-              InputProps={{ readOnly: true }}
-            />
-          </Grid>
-          <Grid xs={2}>
-            {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
-          </Grid>
-        </Grid>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            label="URL"
+            value={url}
+            fullWidth
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+          {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            label="Scope"
+            value={scope}
+            fullWidth
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+          {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(scope))}
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            label="Events"
+            value={events}
+            fullWidth
+            size="small"
+            InputProps={{ readOnly: true }}
+          />
+          {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
+        </Stack>
       </Stack>
       <Box
         component="img"

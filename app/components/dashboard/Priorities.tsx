@@ -1,4 +1,4 @@
-import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
+import { Grid2 as Grid, Paper } from '@mui/material';
 import { PieChart, type PieValueType } from '@mui/x-charts';
 import type { GroupedActivities } from '../../processors/activityGrouper';
 import { pluralizeMemo } from '../../utils/stringUtils';

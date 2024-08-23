@@ -1,4 +1,4 @@
-import { Unstable_Grid2 as Grid, Paper } from '@mui/material';
+import { Grid2 as Grid, Paper } from '@mui/material';
 import { BarChart } from '@mui/x-charts';
 import type { GroupedActivities } from '../../processors/activityGrouper';
 import type { InitiativeRecord } from '../../types/types';
