@@ -13,6 +13,7 @@ export interface ClientEnv {
     messagingSenderId: string;
     appId: string;
   };
+  compiler?: string;
 }
 
 declare global {
@@ -27,6 +28,10 @@ if (process.env.ROAKIT_ENV === 'production') {
   clientEnv = productionConfig;
 } else {
   clientEnv = defaultConfig;
+}
+
+if (process.env.COMPILER) {
+  clientEnv.compiler = process.env.COMPILER;
 }
 
 export default clientEnv;

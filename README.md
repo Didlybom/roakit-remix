@@ -32,7 +32,7 @@ Confluence, etc. feeds into Firestore and GCS Roakit storage, consumed by this p
 ### Compiler
 
 Remix is in the process of switching to Vite. We try to get ready with a
-[vite config](vite.config.js), but there are still issues with MUI not being ESM.
+[vite config](vite.config.js).
 
 ## Developer Notes
 

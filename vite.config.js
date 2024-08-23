@@ -21,6 +21,6 @@ export default defineConfig({
     }),
   ],
   ssr: {
-    noExternal: ['@mui/utils', '@mui/x-charts'], // see https://github.com/mui/mui-x/issues/11016#issuecomment-2037404367
+    noExternal: ['@mui/x-charts', '@mui/utils', '@mui/x-charts-vendor'], // see https://github.com/mui/mui-x/issues/11016#issuecomment-2037404367
   },
 });

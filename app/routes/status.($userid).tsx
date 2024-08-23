@@ -324,7 +324,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     if (actionRequest.newActivity) {
       const newActivityId = await insertActivity(sessionData.customerId!, {
         ...actionRequest.newActivity,
-        priority: actionRequest.newActivity.priority ?? -1,
+        priority: actionRequest.newActivity.priority || -1,
         eventType: CUSTOM_EVENT,
         event: CUSTOM_EVENT,
         actorAccountId: identityId,
@@ -930,7 +930,7 @@ export default function Status() {
                 <SelectField
                   value={`${!newActivity.priority || newActivity.priority == -1 ? '' : newActivity.priority}`}
                   onChange={priority =>
-                    setNewActivity({ ...newActivity, priority: +priority ?? -1 })
+                    setNewActivity({ ...newActivity, priority: +priority || -1 })
                   }
                   label="Priority"
                   items={priorityOptions}

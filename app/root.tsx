@@ -41,63 +41,65 @@ export function loader(): ClientEnv {
   return clientConfig;
 }
 
-const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCache) => {
-  const clientStyleData = useContext(ClientStyleContext);
+const Document = withEmotionCache(
+  ({ children, title, compiler }: DocumentProps & { compiler?: string }, emotionCache) => {
+    const clientStyleData = useContext(ClientStyleContext);
 
-  // Only executed on client
-  useEnhancedEffect(() => {
-    // re-link sheet container
-    emotionCache.sheet.container = document.head;
-    // re-inject tags
-    const tags = emotionCache.sheet.tags;
-    emotionCache.sheet.flush();
-    tags.forEach(tag => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (emotionCache.sheet as any)._insertTag(tag);
-    });
-    // reset cache to reapply global styles
-    clientStyleData.reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Only executed on client
+    useEnhancedEffect(() => {
+      // re-link sheet container
+      emotionCache.sheet.container = document.head;
+      // re-inject tags
+      const tags = emotionCache.sheet.tags;
+      emotionCache.sheet.flush();
+      tags.forEach(tag => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        (emotionCache.sheet as any)._insertTag(tag);
+      });
+      // reset cache to reapply global styles
+      clientStyleData.reset();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <meta name="theme-color" content={theme.palette.primary.main} />
-        {!!title && <title>{title}</title>}
-        <Meta />
-        <Links />
-        <link rel="icon" type="image/svg+xml" href={faviconSvg} />
-        <link rel="icon" type="image/png" href={faviconPng} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap"
-        />
-        <meta name="emotion-insertion-point" content="emotion-insertion-point" />
-      </head>
-      <body>
-        {children}
-        <ScrollRestoration />
-        <Scripts />
-        <LiveReload />
-      </body>
-    </html>
-  );
-});
+    return (
+      <html lang="en">
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <meta name="theme-color" content={theme.palette.primary.main} />
+          {!!title && <title>{title}</title>}
+          <Meta />
+          <Links />
+          <link rel="icon" type="image/svg+xml" href={faviconSvg} />
+          <link rel="icon" type="image/png" href={faviconPng} />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
+          />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap"
+          />
+          <meta name="emotion-insertion-point" content="emotion-insertion-point" />
+        </head>
+        <body>
+          {children}
+          <ScrollRestoration />
+          <Scripts />
+          {compiler !== 'vite' && <LiveReload />}
+        </body>
+      </html>
+    );
+  }
+);
 
 // https://remix.run/docs/en/main/file-conventions/routes
 export default function App() {
   const clientEnv = useLoaderData<typeof loader>();
   return (
-    <Document>
+    <Document compiler={clientEnv.compiler}>
       <script
         // see https://remix.run/docs/en/main/guides/envvars
         dangerouslySetInnerHTML={{ __html: `window.ROAKIT_ENV = ${JSON.stringify(clientEnv)}` }}
