@@ -20,10 +20,11 @@ const PRE = new RegExp(/{noformat}/g);
 // const IMAGE = new RegExp(/!(.+)!/g);
 const NAMED_LINK = new RegExp(/\[(.+?)\|(.+?)\]/g);
 const BLOCKQUOTE = new RegExp(/^bq\.\s+/gm);
-const COLOR = new RegExp(/\{color:[^}]+\}([^]*?)\{color\}/gm);
-const PANEL = new RegExp(/\{panel:title=([^}]*)\}\n?([^]*?)\n?\{panel\}/gm);
-const TABLE_HEADER = new RegExp(/^[ \t]*((?:\|\|.*?)+\|\|)[ \t]*$/gm);
-const TABLE_LEADING_SPACE = new RegExp(/^[ \t]*\|/gm);
+const COLOR = new RegExp(/\{color:[^}]+\}(.*?)\{color\}/gm);
+const PANEL_COLOR = new RegExp(/\{panel:bgColor=[^}]+\}(.*?)\{panel\}/gs);
+const PANEL = new RegExp(/\{panel:title=([^}]*)\}(.*?)\{panel\}/gs);
+const TABLE_HEADER = new RegExp(/^[ \t]*((?:\|\|.*?)+\|\|)[ \t]*$/gs);
+const TABLE_LEADING_SPACE = new RegExp(/^[ \t]*\|/gs);
 
 export const jira2md = (str: string) =>
   str
@@ -65,6 +66,7 @@ export const jira2md = (str: string) =>
     .replace(BLOCKQUOTE, '> ')
     // Remove color: unsupported in md
     .replace(COLOR, '$1')
+    .replace(PANEL_COLOR, '$1')
     // panel into table
     .replace(PANEL, '\n| $1 |\n| --- |\n| $2 |')
     // table header
