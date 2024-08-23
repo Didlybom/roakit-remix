@@ -44,7 +44,7 @@
     "fast-memoize": "^2.5.2",
     "filtrex": "^3.0.0",
     "firebase": "^10.13.0",
-    "firebase-admin": "^12.3.1",
+    "firebase-admin": "^12.4.0",
     "google-protobuf": "^3.21.4",
     "isbot": "^5.1.17",
     "json-stable-stringify": "^1.1.1",

@@ -2,5 +2,12 @@
   "projects": {
     "default": "eternal-impulse-412418",
     "prod": "roakit-production"
-  }
+  },
+  "targets": {},
+  "etags": {
+    "roakit-production": {
+      "extensionInstances": {}
+    }
+  },
+  "dataconnectEmulatorConfig": {}
 }
