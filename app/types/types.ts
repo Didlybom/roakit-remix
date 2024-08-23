@@ -75,7 +75,6 @@ export interface Identity {
 export const displayName = (id: Identity) => id.displayName || id.email || id.id;
 
 export type AccountToIdentityRecord = Record<Account['id'], Identity['id']>;
-export type GroupToIdentitiesRecord = Record<Group['id'], Identity['id'][]>;
 
 export type Group = {
   id: string;

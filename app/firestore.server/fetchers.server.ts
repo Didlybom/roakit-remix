@@ -19,7 +19,6 @@ import {
   type CustomerSettings,
   type DaySummaries,
   type Group,
-  type GroupToIdentitiesRecord,
   type Identity,
   type Initiative,
   type InitiativeActorStats,
@@ -254,11 +253,9 @@ export const fetchIdentities = async (
 ): Promise<{
   list: Identity[];
   accountMap: AccountToIdentityRecord;
-  groupMap: GroupToIdentitiesRecord;
 }> => {
   const identities: Identity[] = [];
   const accountMap: AccountToIdentityRecord = {};
-  const groupMap: GroupToIdentitiesRecord = {};
 
   const usersByEmail: Record<string, { id: string; role: Role }> = {};
   (
@@ -295,11 +292,6 @@ export const fetchIdentities = async (
         accountMap[account.name] = doc.id;
       }
     });
-    // map groups to identities
-    data.groups?.forEach(group => {
-      if (!groupMap[group]) groupMap[group] = [];
-      groupMap[group].push(doc.id);
-    });
   });
   // add the report member ids
   identities.forEach(identity => {
@@ -316,7 +308,6 @@ export const fetchIdentities = async (
   return {
     list: identities.sort((a, b) => displayName(a).localeCompare(displayName(b))),
     accountMap,
-    groupMap,
   };
 };
 
@@ -663,6 +654,7 @@ export const fetchActivitiesPage = async ({
   startAfter,
   endBefore,
   userIds,
+  groupId,
   artifacts,
   limit,
   combine,
@@ -672,6 +664,7 @@ export const fetchActivitiesPage = async ({
   startAfter?: number;
   endBefore?: number;
   userIds?: string[];
+  groupId?: string;
   artifacts?: string[];
   limit: number;
   combine?: boolean;
@@ -689,24 +682,27 @@ export const fetchActivitiesPage = async ({
       userIds
     );
   }
+  if (groupId) {
+    activityQuery = activityQuery.where('groups', 'array-contains', groupId);
+  }
   if (artifacts?.length) {
     activityQuery = activityQuery.where('artifact', 'in', artifacts);
   }
-  let activityPageQuery = activityQuery.orderBy('createdTimestamp', 'desc');
+  activityQuery = activityQuery.orderBy('createdTimestamp', 'desc');
   if (startAfter != null) {
-    activityPageQuery = activityPageQuery.startAfter(startAfter).limit(limit);
+    activityQuery = activityQuery.startAfter(startAfter).limit(limit);
   } else if (endBefore != null) {
-    activityPageQuery = activityPageQuery.endBefore(endBefore).limitToLast(limit);
+    activityQuery = activityQuery.endBefore(endBefore).limitToLast(limit);
   } else {
-    activityPageQuery = activityPageQuery.limit(limit);
+    activityQuery = activityQuery.limit(limit);
   }
 
   if (EXPLAIN_QUERIES) {
-    logger.debug(await explainQuery(activityPageQuery));
+    logger.debug(await explainQuery(activityQuery));
   }
 
   let activityPage = await retry(
-    async () => activityPageQuery.get(),
+    async () => activityQuery.get(),
     retryProps('Retrying fetchActivitiesPage...')
   );
 

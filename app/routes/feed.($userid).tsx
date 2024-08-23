@@ -190,7 +190,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
     if (params.userid && params.userid?.startsWith('group:')) {
       groupId = params.userid.slice(6);
-      activityUserIds = identities.groupMap[groupId];
     }
 
     if (userId && !actors[userId]) {
@@ -296,9 +295,12 @@ export default function Feed() {
       const oldestActivity = activities[activities.length - 1];
       query += `&startAfter=${oldestActivity.combined?.length ? oldestActivity.combined[0].timestamp : oldestActivity.createdTimestamp}`;
     }
-    if (loaderData.activityUserIds?.length)
+    if (loaderData.activityUserIds?.length) {
       query += `&userIds=${loaderData.activityUserIds.join(',')}`;
-    if (loaderData.groupId) query += '&useIdentityId=true';
+    } else if (loaderData.groupId) {
+      query += `&groupId=${loaderData.groupId}`;
+    }
+
     moreActivitiesFetcher.load(query);
   };
 
@@ -308,8 +310,11 @@ export default function Feed() {
     let query = `/fetcher/activities/page?limit=1000&combine=true`; // if there are more than 1000 activities between now and activity[0] we'll miss some
     if (artifactFilter.length) query += `&activityTypes=${artifactFilter.join(',')}`;
     if (activities.length) query += `&endBefore=${activities[0].createdTimestamp}`;
-    if (loaderData.activityUserIds?.length) query += `&userIds=${loaderData.activityUserIds}`;
-    if (loaderData.groupId) query += '&useIdentityId=true';
+    if (loaderData.activityUserIds?.length) {
+      query += `&userIds=${loaderData.activityUserIds.join(',')}`;
+    } else if (loaderData.groupId) {
+      query += `&groupId=${loaderData.groupId}`;
+    }
 
     newActivitiesFetcher.load(query); // FIXME this causes rerendering even when there are no new activities
   };

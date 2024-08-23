@@ -79,6 +79,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "groups",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdTimestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "identityId",
           "order": "ASCENDING"
         },

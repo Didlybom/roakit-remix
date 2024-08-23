@@ -37,6 +37,7 @@ export const loader = async ({
   const startAfter = searchParams.get('startAfter') ? +searchParams.get('startAfter')! : undefined;
   const endBefore = searchParams.get('endBefore') ? +searchParams.get('endBefore')! : undefined;
   const userIds = searchParams.get('userIds')?.split(',') ?? undefined;
+  const groupId = searchParams.get('groupId') ?? undefined;
   const initiativeIds = searchParams.get('initiativeIds')?.split(',') ?? undefined;
   const artifacts = activityTypesToArtifacts(
     searchParams.get('activityTypes')?.split(',') ?? undefined
@@ -55,6 +56,7 @@ export const loader = async ({
         startAfter,
         endBefore,
         userIds,
+        groupId,
         artifacts,
         limit,
         useIdentityId,
@@ -72,6 +74,7 @@ export const loader = async ({
           customerId: sessionData.customerId!,
           startAfter: startAfterDate,
           userIds,
+          groupId,
           artifacts,
           limit,
           useIdentityId,
