@@ -680,15 +680,17 @@ export default function Feed() {
               <TextField
                 {...params}
                 placeholder={initiativeFilter.length === 0 ? 'Initiatives' : undefined}
-                InputProps={{
-                  ...params.InputProps,
-                  ...(initiativeFilter.length === 0 && {
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
-                        <FilterIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }),
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    ...(initiativeFilter.length === 0 && {
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ ml: '8px', mr: 0 }}>
+                          <FilterIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    }),
+                  },
                 }}
               />
             )}
@@ -793,19 +795,21 @@ export default function Feed() {
               <TextField
                 {...params}
                 placeholder="Single Contributor"
-                InputProps={{
-                  ...params.InputProps,
-                  startAdornment: (
-                    <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
-                      {actorFilter ?
-                        <ClickableAvatar
-                          size={20}
-                          fontSize={9}
-                          name={loaderData.actors[actorFilter].name}
-                        />
-                      : <OpenInNewIcon fontSize="small" />}
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
+                        {actorFilter ?
+                          <ClickableAvatar
+                            size={20}
+                            fontSize={9}
+                            name={loaderData.actors[actorFilter].name}
+                          />
+                        : <OpenInNewIcon fontSize="small" />}
+                      </InputAdornment>
+                    ),
+                  },
                 }}
               />
             )}

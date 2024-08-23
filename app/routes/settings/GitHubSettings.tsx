@@ -55,7 +55,7 @@ export default function GitHubSettings({
             value={url}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
           {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
         </Stack>
@@ -75,16 +75,18 @@ export default function GitHubSettings({
                   disabled={navigation.state !== 'idle'}
                   fullWidth
                   size="small"
-                  InputProps={{
-                    ...(navigation.state === 'idle' && {
-                      endAdornment: (
-                        <Tooltip title="Regenerate a secret">
-                          <IconButton onClick={() => setSecret(uuidv4())}>
-                            <RefreshIcon />
-                          </IconButton>
-                        </Tooltip>
-                      ),
-                    }),
+                  slotProps={{
+                    input: {
+                      ...(navigation.state === 'idle' && {
+                        endAdornment: (
+                          <Tooltip title="Regenerate a secret">
+                            <IconButton onClick={() => setSecret(uuidv4())}>
+                              <RefreshIcon />
+                            </IconButton>
+                          </Tooltip>
+                        ),
+                      }),
+                    },
                   }}
                 />
               }

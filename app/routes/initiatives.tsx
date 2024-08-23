@@ -347,7 +347,9 @@ export default function Initiatives() {
               multiline
               rows={2}
               fullWidth
-              inputProps={{ style: { fontFamily: 'Roboto Mono, monospace', fontSize: '11px' } }}
+              slotProps={{
+                input: { style: { fontFamily: 'Roboto Mono, monospace', fontSize: '11px' } },
+              }}
               onChange={e => setNewActivityMapper(e.target.value)}
               error={newActivityMapperError}
               helperText={

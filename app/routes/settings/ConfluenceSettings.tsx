@@ -60,7 +60,7 @@ export default function ConfluenceSettings({
             value={url}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
 
           {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
@@ -81,16 +81,18 @@ export default function ConfluenceSettings({
                   disabled={navigation.state !== 'idle'}
                   fullWidth
                   size="small"
-                  InputProps={{
-                    ...(navigation.state === 'idle' && {
-                      endAdornment: (
-                        <Tooltip title="Regenerate a secret">
-                          <IconButton onClick={() => setSecret(uuidv4())}>
-                            <RefreshIcon />
-                          </IconButton>
-                        </Tooltip>
-                      ),
-                    }),
+                  slotProps={{
+                    input: {
+                      ...(navigation.state === 'idle' && {
+                        endAdornment: (
+                          <Tooltip title="Regenerate a secret">
+                            <IconButton onClick={() => setSecret(uuidv4())}>
+                              <RefreshIcon />
+                            </IconButton>
+                          </Tooltip>
+                        ),
+                      }),
+                    },
                   }}
                 />
               }
@@ -135,7 +137,7 @@ export default function ConfluenceSettings({
             value={events}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
 
           {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}

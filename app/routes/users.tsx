@@ -624,12 +624,14 @@ jsmith@example.com, Jane Smith,, qyXNw7qryWGENPNbTnZW,"
                 setError('');
                 setImports(e.target.value);
               }}
-              inputProps={{
-                style: {
-                  fontFamily: 'Roboto Mono, monospace',
-                  fontSize: '.8rem',
-                  backgroundColor: theme.palette.grey[100],
-                  padding: '5px',
+              slotProps={{
+                htmlInput: {
+                  style: {
+                    fontFamily: 'Roboto Mono, monospace',
+                    fontSize: '.8rem',
+                    backgroundColor: theme.palette.grey[100],
+                    padding: '5px',
+                  },
                 },
               }}
             />

@@ -21,21 +21,23 @@ export default function SearchField({
       title={title}
       size="small"
       sx={sx}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start" sx={desktopDisplaySx}>
-            <SearchIcon />
-          </InputAdornment>
-        ),
-        ...(value && {
-          endAdornment: (
-            <InputAdornment position="end" sx={desktopDisplaySx}>
-              <IconButton edge="end" onClick={() => setValue('')}>
-                <ClearIcon />
-              </IconButton>
+      slotProps={{
+        input: {
+          startAdornment: (
+            <InputAdornment position="start" sx={desktopDisplaySx}>
+              <SearchIcon />
             </InputAdornment>
           ),
-        }),
+          ...(value && {
+            endAdornment: (
+              <InputAdornment position="end" sx={desktopDisplaySx}>
+                <IconButton edge="end" onClick={() => setValue('')}>
+                  <ClearIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }),
+        },
       }}
       onChange={e => setValue(e.target.value)}
       onKeyDown={e => (e.key === 'Escape' ? setValue('') : null)}

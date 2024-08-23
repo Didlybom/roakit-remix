@@ -29,7 +29,7 @@ export default function JiraSettings({
             value={url}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
           {actionIcon(<CopyIcon />, 'Copy URL to clipboard', () => handleCopy(url))}
         </Stack>
@@ -39,7 +39,7 @@ export default function JiraSettings({
             value={scope}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
           {actionIcon(<CopyIcon />, 'Copy scopes to clipboard', () => handleCopy(scope))}
         </Stack>
@@ -49,7 +49,7 @@ export default function JiraSettings({
             value={events}
             fullWidth
             size="small"
-            InputProps={{ readOnly: true }}
+            slotProps={{ input: { readOnly: true } }}
           />
           {actionIcon(<CopyIcon />, 'Copy events to clipboard', () => handleCopy(events))}
         </Stack>

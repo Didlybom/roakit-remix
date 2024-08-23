@@ -156,8 +156,10 @@ export default function AIPlayground() {
               minRows={3}
               maxRows={3}
               size="small"
-              inputProps={{ style: { fontSize: 'smaller' } }}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                htmlInput: { style: { fontSize: 'smaller' } },
+                inputLabel: { shrink: true },
+              }}
             />
             <TextField
               name="promptActivities"
@@ -168,8 +170,10 @@ export default function AIPlayground() {
               minRows={15}
               maxRows={15}
               size="small"
-              inputProps={{ style: { fontSize: 'smaller' } }}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                htmlInput: { style: { fontSize: 'smaller' } },
+                inputLabel: { shrink: true },
+              }}
               onChange={e => setPrompt(e.target.value)}
               sx={{ mt: 2 }}
             />
@@ -241,7 +245,7 @@ export default function AIPlayground() {
             <TextField
               name="temperature"
               type="number"
-              inputProps={{ step: 0.1 }}
+              slotProps={{ htmlInput: { step: 0.1 } }}
               label="Temperature"
               defaultValue="0.4"
               size="small"
@@ -258,7 +262,7 @@ export default function AIPlayground() {
             <TextField
               name="topP"
               type="number"
-              inputProps={{ step: 0.1 }}
+              slotProps={{ htmlInput: { step: 0.1 } }}
               label="Top-P"
               defaultValue="1.0"
               size="small"

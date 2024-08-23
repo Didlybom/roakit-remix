@@ -391,10 +391,12 @@ export default function Summary() {
                     minRows={12}
                     maxRows={12}
                     size="small"
-                    inputProps={{
-                      sx: { mt: 1, fontSize: 'smaller', backgroundColor: theme.palette.grey[50] },
+                    slotProps={{
+                      htmlInput: {
+                        sx: { mt: 1, fontSize: 'smaller', backgroundColor: theme.palette.grey[50] },
+                      },
+                      inputLabel: { shrink: true },
                     }}
-                    InputLabelProps={{ shrink: true }}
                     sx={{ mt: 3 }}
                     onChange={e => setActivitiesText(e.target.value)}
                   />
@@ -442,8 +444,10 @@ export default function Summary() {
                                 minRows={12}
                                 maxRows={12}
                                 size="small"
-                                inputProps={{ style: { fontSize: 'smaller' } }}
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{
+                                  htmlInput: { style: { fontSize: 'smaller' } },
+                                  inputLabel: { shrink: true },
+                                }}
                                 onChange={e =>
                                   setAiSummaryTexts(
                                     aiSummaryTexts.map((existing, j) =>
@@ -504,8 +508,10 @@ export default function Summary() {
                     minRows={3}
                     maxRows={3}
                     size="small"
-                    inputProps={{ style: { fontSize: 'smaller' } }}
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{
+                      input: { style: { fontSize: 'smaller' } },
+                      inputLabel: { shrink: true },
+                    }}
                     onChange={e => setUserSummaryText(e.target.value)}
                     sx={{ mt: 3 }}
                   />

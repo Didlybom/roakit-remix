@@ -54,12 +54,14 @@ export default function BannedItems({
         minRows={5}
         maxRows={15}
         size="small"
-        inputProps={{
-          style: {
-            fontFamily: 'Roboto Mono, monospace',
-            fontSize: '.8rem',
-            backgroundColor: theme.palette.grey[200],
-            padding: '5px',
+        slotProps={{
+          input: {
+            style: {
+              fontFamily: 'Roboto Mono, monospace',
+              fontSize: '.8rem',
+              backgroundColor: theme.palette.grey[200],
+              padding: '5px',
+            },
           },
         }}
       />
