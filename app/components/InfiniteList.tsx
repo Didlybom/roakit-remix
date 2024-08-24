@@ -1,5 +1,5 @@
 import { Box, type SxProps } from '@mui/material';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
 import { useResizeDetector } from 'react-resize-detector';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { VariableSizeList } from 'react-window';
@@ -21,7 +21,8 @@ interface InfiniteListProps {
   rowElement: (index: number) => JSX.Element;
   loadMoreItems: () => void;
   loadNewItems: () => void;
-  setRef: (ref: VariableSizeList | null) => void;
+  listLoaderRef: MutableRefObject<InfiniteLoader | null>; // provides resetloadMoreItemsCache()
+  setRef: (ref: VariableSizeList | null) => void; // provides scrollToItem() etc.
   setListScrollOffset?: (scrollOffset: number) => void;
   rowHeights: number[];
   setRowHeights: (heights: number[]) => void;
@@ -41,6 +42,7 @@ export default function InfiniteList({
   rowElement,
   loadMoreItems,
   loadNewItems,
+  listLoaderRef,
   setRef,
   setListScrollOffset,
   rowHeights,
@@ -101,6 +103,7 @@ export default function InfiniteList({
       <AutoSizer>
         {({ height, width }) => (
           <InfiniteLoader
+            ref={listLoaderRef}
             isItemLoaded={isItemLoaded}
             itemCount={itemCount}
             loadMoreItems={loadMoreItems}

@@ -40,6 +40,7 @@ import {
 } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VariableSizeList } from 'react-window';
+import type InfiniteLoader from 'react-window-infinite-loader';
 import ActivityCard from '../components/ActivityCard';
 import App from '../components/App';
 import AutoRefreshingRelativeDate from '../components/AutoRefreshingRelativeData';
@@ -276,6 +277,7 @@ export default function Feed() {
 
   const [listScrollOffset, setListScrollOffset] = useState(0);
   const listRef = useRef<VariableSizeList | null>(null);
+  const listLoaderRef = useRef<InfiniteLoader | null>(null);
   const heightsRef = useRef<number[]>([]);
 
   let initiativesByKey = new Map<string, Initiative>();
@@ -308,8 +310,6 @@ export default function Feed() {
   };
 
   const loadNewRows = () => {
-    if (newActivitiesFetcher.state !== 'idle') return;
-
     let query = `/fetcher/activities/page?limit=1000&combine=true`; // if there are more than 1000 activities between now and activity[0] we'll miss some
     if (artifactFilter.length) query += `&activityTypes=${artifactFilter.join(',')}`;
     if (activities.length) query += `&endBefore=${activities[0].createdTimestamp}`;
@@ -318,7 +318,6 @@ export default function Feed() {
     } else if (loaderData.groupId) {
       query += `&groupId=${loaderData.groupId}`;
     }
-
     newActivitiesFetcher.load(query); // FIXME this causes rerendering even when there are no new activities
   };
 
@@ -351,11 +350,6 @@ export default function Feed() {
     },
     [initiativeFilter, loaderData.accountMap, loaderData.initiatives]
   );
-
-  const clear = () => {
-    setActivities([]);
-    listRef.current?.scrollToItem(0);
-  };
 
   useEffect(() => {
     compileActivityMappers(loaderData.initiatives);
@@ -391,6 +385,13 @@ export default function Feed() {
       ...activities,
     ]);
   }, [buildAndFilterActivityRows, newFetchedActivities?.activities]);
+
+  // handle filters
+  useEffect(() => {
+    setActivities([]);
+    listRef.current?.scrollToItem(0);
+    listLoaderRef.current?.resetloadMoreItemsCache(true);
+  }, [artifactFilter, initiativeFilter]);
 
   const isActivityRowLoaded = (activityIndex: number) => activityIndex < activities.length;
 
@@ -662,8 +663,6 @@ export default function Feed() {
               const keys = options.map(option => option.key);
               setInitiativeFilter(keys);
               setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_INITIATIVE, keys));
-              clear();
-              loadNewRows();
             }}
             renderOption={(options, option, { selected }) => {
               const { key, ...optionProps } = options;
@@ -749,7 +748,6 @@ export default function Feed() {
             onChange={values => {
               setArtifactFilter(values as string[]);
               setSearchParams(prev => getSearchParam(prev, SEARCH_PARAM_ARTIFACT, values));
-              clear();
             }}
           />
           <FilterMenu
@@ -868,6 +866,7 @@ export default function Feed() {
           sx={{ borderRight: { xs: undefined, sm: `1px solid ${theme.palette.grey[200]}` } }}
         >
           <InfiniteList
+            refreshIntervalMs={0}
             height={`calc(100vh - ${HEADER_HEIGHT + 22}px)`}
             rowSx={{ pr: { xs: 2, sm: 3 } }}
             head={feedStyles}
@@ -876,6 +875,7 @@ export default function Feed() {
             rowElement={rowElement}
             loadMoreItems={moreActivitiesFetcher.state === 'idle' ? loadMoreRows : () => {}}
             loadNewItems={loadNewRows}
+            listLoaderRef={listLoaderRef}
             setRef={ref => (listRef.current = ref)}
             setListScrollOffset={setListScrollOffset}
             rowHeights={heightsRef.current}
