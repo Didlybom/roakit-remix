@@ -84,6 +84,20 @@
         },
         {
           "fieldPath": "createdTimestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "groups",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdTimestamp",
           "order": "DESCENDING"
         }
       ]
