@@ -62,6 +62,7 @@ import ConfluenceIcon from '../icons/Confluence';
 import JiraIcon from '../icons/Jira';
 import { getActivityAction, getActivityUrl } from '../processors/activityDescription';
 import {
+  accountUrlToWeb,
   activityTypes,
   confluenceSourceName,
   gitHubSourceName,
@@ -443,8 +444,8 @@ export default function Feed() {
 
     const isLiked = activity.reactions?.like[loaderData.identityId];
     const likeCount = activity.reactions ? reactionCount(activity.reactions).like : 0;
-    const userName = activity.actorId ? loaderData.actors[activity.actorId]?.name : undefined;
-    const userUrl = activity.actorId ? `/feed/${encodeURI(activity.actorId)}` : undefined;
+    const actor = activity.actorId ? loaderData.actors[activity.actorId] : undefined;
+    const actorUrl = activity.actorId ? `/feed/${encodeURI(activity.actorId)}` : undefined;
 
     const activityUrl = activity.metadata ? getActivityUrl(activity) : undefined;
     let sourceIcon;
@@ -462,15 +463,14 @@ export default function Feed() {
       }
     }
     const status = inferTicketStatus(activity.metadata);
-
     return (
       <Stack direction="row" mb={2}>
-        <ClickableAvatar name={userName} href={userUrl} sx={{ mr: 1 }} />
+        <ClickableAvatar name={actor?.name} href={actorUrl} sx={{ mr: 1 }} />
         <Stack flexGrow={1} minWidth={0}>
           <Stack useFlexGap direction="row" spacing="4px" mb="4px" alignItems="center">
-            {userUrl && (
+            {actorUrl && (
               <Link
-                href={userUrl}
+                href={actorUrl}
                 sx={{
                   fontWeight: 600,
                   color: theme.palette.text.primary,
@@ -479,9 +479,25 @@ export default function Feed() {
                   '&:hover': { textDecoration: 'underline' },
                 }}
               >
-                {userName ?? 'unknown'}
+                {actor?.name ?? 'unknown'}
               </Link>
             )}
+            {actor?.accounts
+              ?.filter(account => account.url)
+              .map((account, i) => (
+                <IconButton
+                  key={i}
+                  component="a"
+                  href={accountUrlToWeb(account)}
+                  target="_blank"
+                  title="Go to external profile"
+                  size="small"
+                  color="primary"
+                >
+                  {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
+                  {account.type === 'jira' && <JiraIcon sx={{ width: 15, height: 15 }} />}
+                </IconButton>
+              ))}
             <Tooltip title={formatMonthDayTime(activity.timestamp)}>
               <Box fontSize="14px" color={theme.palette.grey[500]} sx={{ whiteSpace: 'nowrap' }}>
                 • <AutoRefreshingRelativeDate date={activity.timestamp} />

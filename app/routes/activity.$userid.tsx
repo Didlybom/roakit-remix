@@ -471,12 +471,12 @@ export default function UserActivity() {
                   component="a"
                   href={accountUrlToWeb(account)}
                   target="_blank"
-                  title="Go to source"
+                  title="Go to external profile"
                   size="small"
                   color="primary"
                 >
                   {account.type === 'github' && <GitHubIcon sx={{ width: 15, height: 15 }} />}
-                  {account.type === 'jira' && <JiraIcon width={15} height={15} />}
+                  {account.type === 'jira' && <JiraIcon sx={{ width: 15, height: 15 }} />}
                 </IconButton>
               ))}
             {loaderData.userId === ALL && actorId && (
