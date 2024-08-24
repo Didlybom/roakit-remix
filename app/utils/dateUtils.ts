@@ -16,8 +16,8 @@ dayjs.extend(isYesterdayPlugin);
 dayjs.updateLocale('en', {
   relativeTime: {
     future: 'in %s',
-    past: '%s',
-    s: 'few secs',
+    past: '%s ago',
+    s: 'a moment',
     m: '1m',
     mm: '%dm',
     h: '1h',
