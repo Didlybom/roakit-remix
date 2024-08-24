@@ -33,6 +33,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from '@remi
 import {
   useFetcher,
   useLoaderData,
+  useLocation,
   useNavigate,
   useSearchParams,
   useSubmit,
@@ -249,6 +250,7 @@ type ActivityRow = Activity & { note?: string };
 
 export default function Feed() {
   const navigate = useNavigate();
+  const location = useLocation();
   const submit = useSubmit();
   const [searchParams, setSearchParams] = useSearchParams();
   const loaderData = useLoaderData<typeof loader>();
@@ -762,17 +764,7 @@ export default function Feed() {
             ]}
             onChange={value => {
               setGroupFilter(value as string);
-              window.open(
-                '/feed/' +
-                  (value ? `group:${value}/` : '') +
-                  (initiativeFilter.length ?
-                    `?initiative=${encodeURI(initiativeFilter.join(','))}`
-                  : '') +
-                  (initiativeFilter.length && artifactFilter.length ? '&' : '') +
-                  (!initiativeFilter.length && artifactFilter.length ? '?' : '') +
-                  (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
-                '_self'
-              );
+              window.open('/feed/' + (value ? `group:${value}` : '') + location.search, '_self');
             }}
           />
           <Autocomplete
@@ -791,17 +783,7 @@ export default function Feed() {
             isOptionEqualToValue={(option, value) => option.value === value.value}
             onChange={(_e, option) => {
               setActorFilter(option?.value);
-              window.open(
-                '/feed/' +
-                  (option != null ? `${option.value}/` : '') +
-                  (initiativeFilter.length ?
-                    `?initiative=${encodeURI(initiativeFilter.join(','))}`
-                  : '') +
-                  (initiativeFilter.length && artifactFilter.length ? '&' : '') +
-                  (!initiativeFilter.length && artifactFilter.length ? '?' : '') +
-                  (artifactFilter.length ? `artifact=${encodeURI(artifactFilter.join(','))}` : ''),
-                '_self'
-              );
+              window.open(`/feed/${option?.value ?? ''}${location.search}`, '_self');
             }}
             renderOption={(props, option: SelectOption) => {
               const { key, ...optionProps } = props;
