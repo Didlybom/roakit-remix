@@ -6,6 +6,7 @@ export function ClickableAvatar({
   name,
   title,
   href,
+  onClick,
   size = 36,
   fontSize = 15,
   sx,
@@ -13,6 +14,7 @@ export function ClickableAvatar({
   name?: string;
   title?: string;
   href?: string;
+  onClick?: (e: any) => void;
   size?: number;
   fontSize?: number;
   sx?: SxProps;
@@ -22,6 +24,7 @@ export function ClickableAvatar({
       component={href ? 'a' : 'div'}
       title={title}
       href={href}
+      onClick={onClick}
       sx={{
         bgcolor: stringColor(name),
         width: size,

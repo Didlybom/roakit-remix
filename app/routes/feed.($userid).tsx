@@ -37,6 +37,7 @@ import {
   useNavigate,
   useSearchParams,
   useSubmit,
+  type ShouldRevalidateFunction,
 } from '@remix-run/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VariableSizeList } from 'react-window';
@@ -111,12 +112,14 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [{ title: `${title} Feed | ROAKIT` }];
 };
 
-export const shouldRevalidate = () => false;
-
-const VIEW = View.Feed;
-
 const SEARCH_PARAM_INITIATIVE = 'initiative';
 const SEARCH_PARAM_ARTIFACT = 'activityType';
+const GROUP_PARAM_PREFIX = 'group:';
+
+export const shouldRevalidate: ShouldRevalidateFunction = ({ currentParams, nextParams }) =>
+  currentParams.userid !== nextParams.userid;
+
+const VIEW = View.Feed;
 
 const PAGE_SIZE = 50;
 
@@ -183,7 +186,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     let userId;
     let groupId;
     let activityUserIds: string[] = [];
-    if (params.userid && !params.userid?.startsWith('group:')) {
+    if (params.userid && !params.userid?.startsWith(GROUP_PARAM_PREFIX)) {
       userId = params.userid;
       activityUserIds = getAllPossibleActivityUserIds(
         [params.userid],
@@ -191,8 +194,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         identities.accountMap
       );
     }
-    if (params.userid && params.userid?.startsWith('group:')) {
-      groupId = params.userid.slice(6);
+    if (params.userid && params.userid?.startsWith(GROUP_PARAM_PREFIX)) {
+      groupId = params.userid.slice(GROUP_PARAM_PREFIX.length);
     }
 
     if (userId && !actors[userId]) {
@@ -253,6 +256,7 @@ export default function Feed() {
   const navigate = useNavigate();
   const location = useLocation();
   const submit = useSubmit();
+  const fetcher = useFetcher();
   const [searchParams, setSearchParams] = useSearchParams();
   const loaderData = useLoaderData<typeof loader>();
   const moreActivitiesFetcher = useFetcher<ActivityPageResponse>();
@@ -305,7 +309,6 @@ export default function Feed() {
     } else if (loaderData.groupId) {
       query += `&groupId=${loaderData.groupId}`;
     }
-
     moreActivitiesFetcher.load(query);
   };
 
@@ -365,7 +368,7 @@ export default function Feed() {
     }
   }, [moreFetchedActivities?.error, navigate, newFetchedActivities?.error?.status]);
 
-  // handle fetched activities
+  // handle fetched new activities
   useEffect(() => {
     if (!moreFetchedActivities?.activities) return;
     setIsLoading(false);
@@ -377,6 +380,7 @@ export default function Feed() {
     }
   }, [moreFetchedActivities?.activities, buildAndFilterActivityRows]);
 
+  // handle fetched older activities
   useEffect(() => {
     if (!newFetchedActivities?.activities) return;
     setIsLoading(false);
@@ -389,11 +393,32 @@ export default function Feed() {
   // handle filters
   useEffect(() => {
     setActivities([]);
-    listRef.current?.scrollToItem(0);
-    listLoaderRef.current?.resetloadMoreItemsCache(true);
   }, [artifactFilter, initiativeFilter]);
 
+  // handle actor and group reload
+  useEffect(() => {
+    setActivities([]);
+    setActorFilter(loaderData.userId);
+    setGroupFilter(loaderData.groupId);
+  }, [loaderData.userId, loaderData.groupId]);
+
+  // refresh page after activities reset by filters
+  useEffect(() => {
+    if (activities.length === 0) {
+      listRef.current?.scrollToItem(0);
+      listLoaderRef.current?.resetloadMoreItemsCache(true);
+    }
+  }, [activities]);
+
   const isActivityRowLoaded = (activityIndex: number) => activityIndex < activities.length;
+
+  const gotoActor = (actorId: string | undefined) => {
+    setActorFilter(actorId);
+    setGroupFilter(undefined);
+    const href = `/feed/${actorId ?? ''}${location.search}`;
+    navigate(href);
+    fetcher.submit(href);
+  };
 
   const rowElement = (index: number) => {
     if (index === 0) {
@@ -468,12 +493,24 @@ export default function Feed() {
     const status = inferTicketStatus(activity.metadata);
     return (
       <Stack direction="row" mb={2}>
-        <ClickableAvatar name={actor?.name} href={actorUrl} sx={{ mr: 1 }} />
+        <ClickableAvatar
+          name={actor?.name}
+          href={actorUrl}
+          onClick={e => {
+            e.preventDefault();
+            gotoActor(activity.actorId);
+          }}
+          sx={{ mr: 1 }}
+        />
         <Stack flexGrow={1} minWidth={0}>
           <Stack useFlexGap direction="row" spacing="4px" mb="4px" alignItems="center">
             {actorUrl && (
               <Link
                 href={actorUrl}
+                onClick={e => {
+                  e.preventDefault();
+                  gotoActor(activity.actorId);
+                }}
                 sx={{
                   fontWeight: 600,
                   color: theme.palette.text.primary,
@@ -761,8 +798,12 @@ export default function Feed() {
               ...loaderData.groups.map(group => ({ value: group.id, label: group.name })),
             ]}
             onChange={value => {
+              setActorFilter(undefined);
               setGroupFilter(value as string);
-              window.open('/feed/' + (value ? `group:${value}` : '') + location.search, '_self');
+              const href =
+                '/feed/' + (value ? `${GROUP_PARAM_PREFIX}${value}` : '') + location.search;
+              navigate(href);
+              fetcher.submit(href);
             }}
           />
           <Autocomplete
@@ -779,10 +820,7 @@ export default function Feed() {
             }))}
             disableClearable={actorFilter == null}
             isOptionEqualToValue={(option, value) => option.value === value.value}
-            onChange={(_e, option) => {
-              setActorFilter(option?.value);
-              window.open(`/feed/${option?.value ?? ''}${location.search}`, '_self');
-            }}
+            onChange={(_e, option) => gotoActor(option?.value)}
             renderOption={(props, option: SelectOption) => {
               const { key, ...optionProps } = props;
               return (
