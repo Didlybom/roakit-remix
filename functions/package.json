@@ -11,17 +11,17 @@
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.4.2",
-    "@remix-run/node": "^2.11.2",
+    "@remix-run/node": "^2.13.1",
     "compression": "^1.7.4",
-    "firebase-admin": "^12.4.0",
-    "firebase-functions": "^5.1.0"
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^5.1.1"
   },
   "devDependencies": {
     "@types/compression": "^1.7.5",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "eslint": "^8.57.0",
-    "typescript": "^5.5.4"
+    "eslint": "^8.57.1",
+    "typescript": "^5.6.3"
   },
   "engines": {
     "node": "20"
