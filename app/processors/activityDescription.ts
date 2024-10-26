@@ -160,7 +160,7 @@ export const getActivityActionDescription = (
         if (changeLog.field === 'Rank' && changeLog.newValue) {
           actions.push(changeLog.newValue); // "Ranked higher"
         }
-        // FIXME NURSA specific custom fields
+        // FIXME Customer specific custom fields
         if (changeLog.field === 'Start Date' && !changeLog.oldValue && changeLog.newValue) {
           actions.push(transitionString('Start  date: ', changeLog));
         }
