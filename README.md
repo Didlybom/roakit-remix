@@ -7,6 +7,11 @@ as a Node.js "backend for frontend". The server code resides in the `load` and `
 the [routes](app/routes). The [MUI](https://mui.com) UX is responsive, working on desktop and mobile
 browsers.
 
+### Architecture
+
+[High-level system architecture ](https://docs.google.com/drawings/d/1RmzvH6djX6aSpKaVxJvNUvPZgK6_3px8HvpOOxWrcIc)
+designed for rapid product exploration and iteration.
+
 ### Authentication
 
 Users [sign in](app/routes/login.tsx) with [Firebase authentication](app/firebase.client.ts). We
